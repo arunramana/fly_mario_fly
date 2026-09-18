@@ -1,0 +1,26 @@
+# Pinned for Windows + Python 3.12. nes-py 8.2.1's C extension does an
+# unsigned-byte multiply that overflows under NumPy 2.0's stricter casting
+# (OverflowError in rom.py's prg_rom_stop), so numpy must stay <2.
+# nes-py also still returns the pre-0.26 4-tuple from step() (obs, reward,
+# done, info); gym>=0.26 wraps env.step() expecting the 5-tuple
+# (terminated/truncated split) and raises a ValueError unpacking it, so gym
+# must stay <0.26.
+# gym 0.23.1 imports `distutils`, removed from the stdlib in Python 3.12;
+# setuptools<70 provides the shim, but only if setuptools is imported before
+# gym (`import setuptools` before `import gym`).
+numpy<2
+gym==0.23.1
+setuptools<70
+nes-py
+gym-super-mario-bros
+pandas
+pyarrow
+
+# opencv-python-headless>=5 requires numpy>=2 and will silently re-upgrade
+# numpy past the pin above if you `pip install opencv-python` unpinned.
+opencv-python-headless<4.10
+
+# Do NOT install matplotlib into this venv: it pulls in contourpy, which
+# requires numpy>=2 and breaks nes-py the same way. Diagnostics that need
+# matplotlib (tune.py) run under the system Python instead -- run_mario.py
+# only imports the matplotlib-free helpers in sensory.py.
