@@ -1,0 +1,127 @@
+{
+  "real": {
+    "g": 1.5,
+    "screen_candidates": [
+      1.5,
+      2.0,
+      3.0
+    ],
+    "rho_g1": 0.8209700490749914
+  },
+  "shuffle00": {
+    "g": 3.0,
+    "screen_candidates": [
+      3.0
+    ],
+    "rho_g1": 0.26725821092721436
+  },
+  "shuffle01": {
+    "g": 3.0,
+    "screen_candidates": [
+      3.0
+    ],
+    "rho_g1": 0.2845247101605323
+  },
+  "shuffle02": {
+    "g": 2.0,
+    "screen_candidates": [
+      2.0
+    ],
+    "rho_g1": 0.30625371388567046
+  },
+  "shuffle03": {
+    "g": null,
+    "screen_candidates": [],
+    "rho_g1": 0.3860702281486734
+  },
+  "shuffle04": {
+    "g": null,
+    "screen_candidates": [],
+    "rho_g1": 0.2873550879293883
+  },
+  "shuffle05": {
+    "g": null,
+    "screen_candidates": [],
+    "rho_g1": 0.28229810315173537
+  },
+  "shuffle06": {
+    "g": 3.0,
+    "screen_candidates": [
+      3.0
+    ],
+    "rho_g1": 0.3104086361421017
+  },
+  "shuffle07": {
+    "g": 3.0,
+    "screen_candidates": [
+      3.0
+    ],
+    "rho_g1": 0.31614548664594855
+  },
+  "shuffle08": {
+    "g": null,
+    "screen_candidates": [],
+    "rho_g1": 0.29503663563443455
+  },
+  "shuffle09": {
+    "g": 3.0,
+    "screen_candidates": [
+      3.0
+    ],
+    "rho_g1": 0.28871489665028033
+  },
+  "shuffle10": {
+    "g": null,
+    "screen_candidates": [],
+    "rho_g1": 0.2913175872940588
+  },
+  "shuffle11": {
+    "g": null,
+    "screen_candidates": [],
+    "rho_g1": 0.35743153234429503
+  },
+  "shuffle12": {
+    "g": null,
+    "screen_candidates": [],
+    "rho_g1": 0.3352869733757129
+  },
+  "shuffle13": {
+    "g": null,
+    "screen_candidates": [],
+    "rho_g1": 0.2933554618936643
+  },
+  "shuffle14": {
+    "g": null,
+    "screen_candidates": [],
+    "rho_g1": 0.28448599342702546
+  },
+  "shuffle15": {
+    "g": null,
+    "screen_candidates": [],
+    "rho_g1": 0.2844807749314314
+  },
+  "shuffle16": {
+    "g": null,
+    "screen_candidates": [],
+    "rho_g1": 0.28179946524141075
+  },
+  "shuffle17": {
+    "g": 3.0,
+    "screen_candidates": [
+      3.0
+    ],
+    "rho_g1": 0.28544292259484816
+  },
+  "shuffle18": {
+    "g": 3.0,
+    "screen_candidates": [
+      3.0
+    ],
+    "rho_g1": 0.2860410333473849
+  },
+  "shuffle19": {
+    "g": null,
+    "screen_candidates": [],
+    "rho_g1": 0.2925359508055567
+  }
+}

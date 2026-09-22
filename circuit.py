@@ -188,6 +188,46 @@ def build_weight_matrix(bodies: pd.DataFrame, edges: pd.DataFrame,
     return W, order, diag
 
 
+def shuffle_edges(edges: pd.DataFrame, seed: int = 0) -> pd.DataFrame:
+    """SPEC section 5's control: same neurons, same in/out degree
+    distribution, same signs, edges rewired at random.
+
+    Implementation: permute the `body_post` column across all edge rows,
+    leaving `body_pre` and `weight` attached to their original row. This
+    exactly preserves, per neuron: out-degree and out-weight (a pre-neuron's
+    rows, and the weights on them, are untouched) and in-degree, i.e. edge
+    COUNT (the multiset of post ids is a permutation of itself, so every
+    post id appears exactly as many times as before) -- only which specific
+    pre now supplies which specific edge is randomised. Signs are a property
+    of `body_pre` (Dale's law), so they travel with the row and are
+    automatically preserved. In-WEIGHT per post-neuron is not preserved
+    exactly (a post now receives whatever weight happened to be on the row
+    reassigned to it) -- SPEC asks for degree distribution, not weight sum,
+    and downstream row-normalisation renormalises per-post input anyway.
+
+    A handful of reassignments land on self-loops (pre == post) or exact
+    duplicates of an original edge; both are vanishingly rare at this
+    density and are left in rather than hand-patched, to avoid quietly
+    biasing the "random" in "rewired at random."
+    """
+    rng = np.random.default_rng(seed)
+    shuffled = edges.copy()
+    perm = rng.permutation(len(edges))
+    shuffled["body_post"] = edges["body_post"].to_numpy()[perm]
+    return shuffled
+
+
+def build_shuffled(bodies: pd.DataFrame, edges: pd.DataFrame, total_input: pd.Series,
+                    signs: pd.Series, seed: int = 0):
+    """The section-5 control built from an already-extracted real subgraph
+    (same bodies/edges/total_input/signs `load_cached.load` returns) --
+    rewire the edges, then run them through the exact same normalisation
+    pipeline as the real network."""
+    shuffled_edges = shuffle_edges(edges, seed=seed)
+    W_shuf, order_shuf, diag_shuf = build_weight_matrix(bodies, shuffled_edges, total_input, signs)
+    return W_shuf, order_shuf, diag_shuf
+
+
 def spectral_radius(W: np.ndarray, g: float) -> float:
     eig = np.linalg.eigvals(g * W)
     return float(np.max(np.abs(eig)))

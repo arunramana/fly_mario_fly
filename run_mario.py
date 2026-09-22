@@ -31,7 +31,13 @@ import dynamics
 from load_cached import load
 
 # ---- hand-set scalars -------------------------------------------------
-G = 3.5
+# G was 3.5 -- passed the single-ramp diagnostics in tune.py but failed
+# Diagnostic 4 (diag4.py, SPEC section 3): under sustained bilateral input
+# the network never returned to baseline and pinned at the clip ceiling,
+# so the 9 jumps in the first recorded video were not caused by looming.
+# g=2.0 is the middle of the band [1.12, 3.35] that passes Diagnostic 4
+# (checked robust across 5 random trace seeds) -- see diag4.py.
+G = 2.0
 DNP01_SPIKE_THRESHOLD = 0.5
 TTMN_PRESS_THRESHOLD = 3.0
 SPIKE_AMP = 50.0
@@ -41,27 +47,41 @@ JUMP_HOLD_FRAMES = 25
 JUMP_COOLDOWN_FRAMES = 40
 
 W_TILE = 16.0
-MAX_FRAMES = 1200
+MAX_FRAMES = 300
 
 # RAM addresses, SPEC section 2
 ADDR_MARIO_X = 0x0086
 ADDR_MARIO_PAGE = 0x006D
 ADDR_ENEMY_X = 0x0087
 ADDR_ENEMY_ACTIVE = 0x000F
+ADDR_ENEMY_TYPE = 0x0016
 N_ENEMY_SLOTS = 5
+
+# Powerups (mushroom/flower/star/1-up) share the same 5 enemy-object slots
+# as actual enemies (SPEC_odour.md section 1) -- they are approach targets,
+# not threats, and must never reach the looming detectors. Bug found via
+# SPEC_habituation.md's investigation: run_steering.py's synthetic mushroom
+# injection (a static object, never removed) was being read by this
+# function as a permanent, unresolvable "enemy" once Mario ended up parked
+# near it -- a real Goomba eventually gets walked past or jumped over,
+# changing d and letting theta decay; a static injected object never does.
+POWERUP_ID = 0x2E
 
 MOVES = [["right", "B"], ["right", "A", "B"]]
 RUN, JUMP = 0, 1
 
 
 def enemy_thetas(ram, mario_x, prev_theta):
-    """Nearest active enemy's theta/dtheta per hemisphere. Enemies ahead of
+    """Nearest active THREAT's theta/dtheta per hemisphere. Enemies ahead of
     Mario (on-screen x >= mario_x) route Right; behind route Left -- our
-    convention, SPEC doesn't fix one since retinotopy is skipped (section 2)."""
+    convention, SPEC doesn't fix one since retinotopy is skipped (section 2).
+    Powerup-type slots are skipped -- see POWERUP_ID's comment."""
     theta = {"L": 0.0, "R": 0.0}
     d_out = {"L": None, "R": None}
     for i in range(N_ENEMY_SLOTS):
         if ram[ADDR_ENEMY_ACTIVE + i] == 0:
+            continue
+        if ram[ADDR_ENEMY_TYPE + i] == POWERUP_ID:
             continue
         enemy_x = int(ram[ADDR_ENEMY_X + i])
         d = enemy_x - int(mario_x)

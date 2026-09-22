@@ -1,0 +1,19 @@
+controller,param,level,seed,noop_frames,survival_frames,jumps,unsticks,died_or_flagged
+B_shuffle07,"g=3.0 (best of 20 shuffles, confirmed Diagnostic-4)",1-1,1,283,4000,2,31,False
+B_shuffle07,"g=3.0 (best of 20 shuffles, confirmed Diagnostic-4)",1-1,0,510,4000,2,31,False
+A_real,g=2.0 (2x2-confirmed: survives with/without warm-up),1-2,0,510,4000,2,34,False
+A_real,g=2.0 (2x2-confirmed: survives with/without warm-up),1-2,1,283,4000,2,34,False
+A_real,g=2.0 (2x2-confirmed: survives with/without warm-up),1-2,2,502,4000,2,34,False
+A_real,g=2.0 (2x2-confirmed: survives with/without warm-up),1-1,0,510,4000,2,31,False
+A_real,g=2.0 (2x2-confirmed: survives with/without warm-up),1-1,1,283,4000,2,31,False
+A_real,g=2.0 (2x2-confirmed: survives with/without warm-up),1-1,2,502,4000,2,31,False
+C_theta,"c=0.7500 (tuned to A's jump rate at g=2.0, 1-1 seed 0)",1-1,0,510,4000,2,31,False
+C_theta,"c=0.7500 (tuned to A's jump rate at g=2.0, 1-1 seed 0)",1-1,1,283,4000,2,31,False
+C_theta,"c=0.7500 (tuned to A's jump rate at g=2.0, 1-1 seed 0)",1-1,2,502,4000,2,31,False
+C_theta,"c=0.7500 (tuned to A's jump rate at g=2.0, 1-1 seed 0)",1-2,0,510,4000,1,32,False
+C_theta,"c=0.7500 (tuned to A's jump rate at g=2.0, 1-1 seed 0)",1-2,1,283,4000,1,32,False
+C_theta,"c=0.7500 (tuned to A's jump rate at g=2.0, 1-1 seed 0)",1-2,2,502,4000,1,32,False
+B_shuffle07,"g=3.0 (best of 20 shuffles, confirmed Diagnostic-4)",1-2,0,510,4000,2,34,False
+B_shuffle07,"g=3.0 (best of 20 shuffles, confirmed Diagnostic-4)",1-2,1,283,4000,2,34,False
+B_shuffle07,"g=3.0 (best of 20 shuffles, confirmed Diagnostic-4)",1-2,2,502,4000,2,34,False
+B_shuffle07,"g=3.0 (best of 20 shuffles, confirmed Diagnostic-4)",1-1,2,502,4000,2,31,False

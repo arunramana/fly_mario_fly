@@ -266,6 +266,37 @@ plot. If no value of `g` gives all three, say so rather than picking the least
 bad — that would be a real finding about the model, and we'd revisit the
 normalisation or the leak rather than paper over it.
 
+### Diagnostic 4 — sustained input (added after the first video)
+
+**A single ramp from rest is not enough, and trusting it cost us a run.** In the
+game the circuit receives input continuously for thousands of frames: enemies
+approach, pass, reappear, with no reset between them. An amplifying network that
+looks stable on one transient will integrate that sustained drive and pin itself
+against the clip ceiling, after which every unit is a constant and the circuit
+has stopped computing — while still "working" in the sense that the numbers are
+finite and a threshold is still being crossed.
+
+So before any emulator run, replay a **long input trace** — at minimum 2,000
+steps containing several approaches separated by gaps — and assert:
+
+1. `LC4_mean` and `LPLC2_mean` **vary with θ** across the whole trace. Report
+   their correlation with θ. If it is near zero, the circuit is saturated.
+2. No unit sits at the clip ceiling for more than a brief transient. Report the
+   fraction of steps any unit spends clipped.
+3. Activity **returns toward baseline in the gaps** between approaches.
+4. `TTMn` crosses its press threshold on approaches and **not** in the gaps.
+
+Fail the run loudly if any of these break. A jump that happens while the
+detectors are pinned at a constant is not caused by looming, whatever the video
+looks like.
+
+### The press must be caused by the circuit
+
+Assert the causal chain every frame, and log violations: A is pressed **iff**
+TTMn is over threshold, and TTMn is over threshold only when DNp01 has spiked
+within the last few steps. If A fires while DNp01 is silent, or DNp01 spikes
+with no press, that is a broken chain — report it, do not render it.
+
 ---
 
 ## 4. Output — the jump muscle
@@ -316,6 +347,42 @@ incompatibilities, recorded in `requirements.txt`):
 
 Verified end to end in `fly_mario/.venv`: reset, RAM read, 60 steps holding
 right moved Mario x 40 → 121. `stable-retro` not needed.
+
+## 7b. The visual — this sprint must end with Mario jumping
+
+**This is the sprint's definition of done.** Not a plot: Mario, on screen,
+launching and jumping because the circuit fired.
+
+Deliver a recorded run (MP4 or GIF, committed) of SMB 1-1 with Mario holding
+right, jumping Goombas under circuit control, with a live overlay panel beside
+or below the game frame showing:
+
+- θ and dθ/dt, the looming signal
+- LC4 mean, LPLC2 mean — the detector populations
+- **DNp01** — the Giant Fiber, its own trace
+- **TTMn** — the jump muscle, with the press threshold drawn as a line
+- a visible flash on the frame where A is pressed
+
+Rolling traces, last ~2 seconds. Keep it plain — this is a diagnostic readout
+we will be staring at for hours, not a showpiece. The 3D brain render comes
+later.
+
+### Ship the visual even if the dynamics are imperfect
+
+If the expanded subgraph gives a stable-and-sharp band for `g`, use it and say
+so. **If it does not**, do not stall — fall back to giving **DNp01 itself**
+spike-threshold-and-refractory dynamics while the detector populations stay
+rate-based, and ship the video anyway with that stated plainly in the README.
+
+That fallback is defensible: the Giant Fiber's all-or-none spiking with a
+refractory period is a documented property of that specific neuron, and a rate
+model of a two-neuron command stage cannot represent it. It is modelling real
+biophysics, not papering over a gap. What would *not* be acceptable is a
+saturating sigmoid chosen because it produces the answer we want — that
+attributes the decision to a nonlinearity we picked rather than to the fly.
+
+Whichever path it takes, the README states in one sentence which one, and how
+many hand-set constants the final system has.
 
 ## 7. Explicitly out of scope
 

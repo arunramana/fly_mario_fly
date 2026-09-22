@@ -84,3 +84,50 @@ class HybridState:
         self.h = h_new
         self.just_spiked = spiking
         return self.h
+
+
+class AdaptiveHybridState(HybridState):
+    """HybridState plus firing-rate adaptation on every rate-coded unit
+    (everyone except DNp01, which already has its own reset via spiking).
+
+    Diagnostic-4 finding: without this, LC4/LPLC2 have nothing to stop them
+    integrating sustained drive forever -- real looming detectors adapt.
+    Modeled the standard way for a rate unit: a slow trace `a` of the unit's
+    own recent output is subtracted from its drive before phi (a Ca2+-gated
+    K+ current or synaptic depression would do this biologically):
+
+        a(t+1) = (1 - alpha_a) * a(t) + alpha_a * h(t)
+        h(t+1) = (1 - alpha) * h(t) + alpha * phi(g*W@h(t) + I(t) - beta*a(t))
+
+    This is exploratory (SPEC section 3, "check whether a leak/adaptation
+    term is the missing piece") and adds TWO more hand-set scalars
+    (`alpha_a`, `beta`) on top of the three already flagged in the README --
+    only adopt it, and say so plainly, if it actually earns its place by
+    making Diagnostic 4 pass at a workable g.
+    """
+
+    def __init__(self, K: int, dnp01_idx: np.ndarray, spike_threshold: float,
+                 alpha_a: float, beta: float, spike_amp: float = CLIP):
+        super().__init__(K, dnp01_idx, spike_threshold, spike_amp)
+        self.a = np.zeros(K)
+        self.alpha_a = alpha_a
+        self.beta = beta
+        self.adapt_mask = np.ones(K, dtype=bool)
+        self.adapt_mask[self.dnp01_idx] = False
+
+    def step(self, W: np.ndarray, g: float, I: np.ndarray, alpha: float = ALPHA):
+        drive = g * (W @ self.h) + I
+        drive[self.adapt_mask] -= self.beta * self.a[self.adapt_mask]
+        h_new = (1.0 - alpha) * self.h + alpha * phi(drive)
+
+        dnp01_drive = np.maximum(drive[self.dnp01_idx], 0.0)
+        self.mem = (1.0 - alpha) * self.mem + alpha * dnp01_drive
+        spiking = self.mem >= self.spike_threshold
+        spike_out = np.where(spiking, self.spike_amp, 0.0)
+        self.mem = np.where(spiking, 0.0, self.mem)
+
+        h_new[self.dnp01_idx] = spike_out
+        self.a = (1.0 - self.alpha_a) * self.a + self.alpha_a * self.h
+        self.h = h_new
+        self.just_spiked = spiking
+        return self.h

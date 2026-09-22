@@ -48,6 +48,93 @@ working around it.
    Same neurons, same degree distribution, same signs, edges rewired at random.
    Without it we cannot claim the fly's wiring is doing anything.
 
+## Every change ends with a video in `runs/`
+
+Not optional, and not only when asked. Any sprint that changes what the agent
+does — a new gain, a new population, a new controller, a bug fix that alters
+behaviour — finishes by recording a run and writing it to `runs/`.
+
+```
+runs/NNN_<short-slug>.mp4      e.g. runs/004_shuffle_n20.mp4
+```
+
+Three-digit counter, never reuse a number, never overwrite an earlier run. The
+point is a visual history we can scrub back through: when a later change makes
+things worse, the previous video is the evidence of what "better" looked like.
+
+Use `brain_panel.render_run(telemetry_df, frames_dir, "runs/NNN_slug.mp4")`.
+That composites the live-brain panel beside the emulator frames. The panel is
+141,781 real soma positions from `somaLocation`, projected x (left-right)
+against z (brain → nerve cord) — LC4 and LPLC2 light up in the optic lobes,
+TTMn down in VNC segment T2, because that is where those cells actually are.
+
+Alongside each video write `runs/NNN_<slug>.md`: two or three lines saying what
+changed, what the numbers were, and whether it got better or worse. When a run
+compares controllers, record one video per controller with the same counter and
+a suffix (`004a_real.mp4`, `004b_shuffled.mp4`, `004c_theta.mp4`).
+
+**Then append an entry to `docs/RUNS.md`** — the project's running log, and the
+first thing anyone reads. Always the same four fields, in this order:
+
+```
+## NNN — short name (`runs/NNN_slug.mp4`)
+
+**Setup.** What the circuit was, what changed from last time, the scalars.
+**What happened.** The numbers. Survival, jumps, what it did on screen.
+**What we learned.** The finding, including when the finding is "this failed
+and here is why."
+```
+
+Append only. **Never edit an earlier entry to make it look better** — not even
+the runs that were wrong, especially not those. Run 001 shipped a video of a
+saturated circuit that looked convincing; that entry is why Diagnostic 4 exists.
+A log that records only successes is a log that teaches nothing.
+
+If a change produces no watchable behaviour — a pure analysis sprint — say so
+and skip the video rather than recording a frozen screen.
+
+## Use the GPU where it pays — and measure before porting
+
+The machine has an NVIDIA GPU and it has been idle for this whole project.
+Consider it for every new compute-heavy step. But port on evidence, not reflex:
+measured on this workload, a naive port makes things **slower**.
+
+**Where the GPU wins — use it:**
+
+- The full 166,700-neuron network (8.4M synapses): ~9.6 ms/step on CPU, roughly
+  an order of magnitude better on GPU. If we scale past the 1,255-neuron
+  subgraph, port it.
+- Per-neuron rendering in `brain_panel.py`: 141,781 points × thousands of frames
+  is genuinely GPU-shaped.
+- Anything batching hundreds of independent simulations as dense tensors.
+
+**Where it loses — don't:**
+
+- The current 1,255-neuron step loop. One sparse matvec is **0.039 ms** on a
+  single CPU core; a CUDA kernel launch is ~5–10 µs and a step needs ~6 ops, so
+  the GPU floor is ~0.03–0.06 ms *before any arithmetic*. You would pay launch
+  overhead to match what the CPU already does.
+- Anything sequential in time. `h(t+1)` depends on `h(t)`, so the 30,000 steps
+  in a Diagnostic-4 call cannot be batched across time. GPUs win on throughput;
+  this is latency-bound.
+- `nes-py`. It is a CPU emulator, sequential within a run, and sets a hard floor
+  on any battery no matter how fast the network gets.
+
+**The rule:** if a step is under ~1 ms on CPU *and* sequential, the GPU loses.
+Benchmark both before committing a port, and put the numbers in the commit.
+
+**Do these first — they beat a GPU port on this workload:**
+
+1. **Flush denormals**, `h[h < 1e-30] = 0.0` after each update. Measured **84×**
+   on affected runs: subnormal floats collapse x86 FP throughput, which is why
+   one shuffle took 21 minutes against 45 seconds for its neighbours.
+2. **Multiprocess across networks/runs** (~8× on this box). The 21 sweep
+   networks and the 27 battery runs are fully independent. Keep
+   `OMP_NUM_THREADS=1` per worker.
+3. **Batch the gain grid as columns.** `g` is a scalar outside the matvec, so
+   all 14 gains share one `W @ H` with H of shape (n, 14) instead of 14 separate
+   matvecs. Measured 2.0×.
+
 ## Style
 
 Python. Small, readable modules over one large file. Assert the verified
