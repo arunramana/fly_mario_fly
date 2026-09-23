@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# The full controller, used by run_steering.py: each frame it picks Mario's
+# buttons. It turns the game's memory into sights and smells, runs them
+# through small networks of simulated neurons wired like the real fly
+# (escape jumps, long jumps over pits, steering, walking speed, backing up, a
+# learning area), adds a hop-when-stuck rule, and picks direction, jump, run.
 """bridge/full_policy.py -- the full jump/steering/terrain/mushroom-body/
 habituation/MDN system as one Policy, driven by ProjectConfig. Each
 `act()` call is one emulator frame; only cross-frame state (hold/cooldown
@@ -20,12 +26,13 @@ from bridge.perception import (
     hunger_multiplier, HUNGER_MULT_HUNGRY,
 )
 from bridge.motor import action_index
+from mario.entities.registry import KindRegistry
 from config.project_config import ProjectConfig
 from fly.network import dynamics
 from fly.network.integrator import Integrator
 from fly.network.network import Network
 from fly.sensing.olfactory_adaptation import OlfactoryAdaptation
-from fly.state.reflex_habituation import ReflexHabituation, HAB_GIVE_UP
+from fly.state.reflex_habituation import ReflexHabituation
 from fly.connectome.load_cached import load as load_jump
 from fly.circuits.load_steering_cached import load as load_steering
 from fly.circuits.load_takeoff_cached import load as load_takeoff
@@ -105,7 +112,8 @@ class FullPolicy:
                                           np.where(self.j_msk["DNp01_R"])[0]])
         self.jump_dnp01_mask = self.j_msk["DNp01_L"] | self.j_msk["DNp01_R"]
         self.jump_network = Network(
-            W_j, Integrator(spike_idx=self.dnp01_idx,
+            W_j, Integrator(alpha=c.network.alpha, clip=c.network.clip,
+                             spike_idx=self.dnp01_idx,
                              spike_threshold=c.jump.dnp01_spike_threshold,
                              spike_amp=c.jump.spike_amp),
             g=c.jump.g, populations=self.j_msk)
@@ -113,8 +121,12 @@ class FullPolicy:
         if retinotopic:
             from fly.sensing import retinotopy as rt
             self._rt = rt
-            j_rf = {"LC4": rt.receptive_field_centers("LC4", j_bodies),
-                    "LPLC2": rt.receptive_field_centers("LPLC2", j_bodies)}
+            j_rf = {"LC4": rt.receptive_field_centers(
+                        "LC4", j_bodies, spread_fallback=c.retinotopy.hex1_spread_fallback,
+                        spread_floor=c.retinotopy.hex1_spread_floor),
+                    "LPLC2": rt.receptive_field_centers(
+                        "LPLC2", j_bodies, spread_fallback=c.retinotopy.hex1_spread_fallback,
+                        spread_floor=c.retinotopy.hex1_spread_floor)}
             self.j_rf = j_rf
             self.j_azimuth_ref = {}
             for t in ("LC4", "LPLC2"):
@@ -135,8 +147,9 @@ class FullPolicy:
         sm = lambda t, s: ((s_bodies["type"] == t) & (s_bodies["somaSide"] == s)).to_numpy()
         self.dna01_l_mask, self.dna01_r_mask = sm("DNa01", "L"), sm("DNa01", "R")
         self.dna02_l_mask, self.dna02_r_mask = sm("DNa02", "L"), sm("DNa02", "R")
-        self.steering_network = Network(W_s, Integrator(), g=c.steering.g,
-                                         populations={"R": self.r_mask, "L": self.l_mask})
+        self.steering_network = Network(
+            W_s, Integrator(alpha=c.network.alpha, clip=c.network.clip), g=c.steering.g,
+            populations={"R": self.r_mask, "L": self.l_mask})
 
         log.debug("Loading the takeoff circuit (DNp01 -> GFC1-4 -> DLMn, cached)...")
         t_bodies, _, _, _, W_t, _, _ = _memo_load("takeoff", load_takeoff)
@@ -144,22 +157,24 @@ class FullPolicy:
         self.takeoff_dnp01_mask = (t_bodies["type"] == "DNp01").to_numpy()
         self.dlmn_mask = t_bodies["type"].isin(["DLMn c-f", "DLMn a, b"]).to_numpy()
         self.takeoff_network = Network(
-            W_t, Integrator(), g=c.takeoff.g,
+            W_t, Integrator(alpha=c.network.alpha, clip=c.network.clip), g=c.takeoff.g,
             populations={"DNp01": self.takeoff_dnp01_mask, "DLMn": self.dlmn_mask})
 
         log.debug("Loading the speed circuit (DNp09, N=60, cached)...")
         p_bodies, _, _, _, W_p, _, _ = _memo_load("speed", load_speed)
         self.Kp = W_p.shape[0]
         self.dnp09_mask = (p_bodies["type"] == "DNp09").to_numpy()
-        self.speed_network = Network(W_p, Integrator(), g=c.speed.g,
-                                      populations={"DNp09": self.dnp09_mask})
+        self.speed_network = Network(
+            W_p, Integrator(alpha=c.network.alpha, clip=c.network.clip), g=c.speed.g,
+            populations={"DNp09": self.dnp09_mask})
 
         log.debug("Loading the MDN circuit (backward walking, N=60, cached)...")
         m_bodies, _, _, _, W_m, _, _ = _memo_load("mdn", load_mdn)
         self.Km = W_m.shape[0]
         self.mdn_mask = (m_bodies["type"] == "MDN").to_numpy()
-        self.mdn_network = Network(W_m, Integrator(), g=c.mdn.g,
-                                    populations={"MDN": self.mdn_mask})
+        self.mdn_network = Network(
+            W_m, Integrator(alpha=c.network.alpha, clip=c.network.clip), g=c.mdn.g,
+            populations={"MDN": self.mdn_mask})
 
         log.debug("Loading the DNp02 circuit (second escape pathway, N=60, cached)...")
         dp_bodies, _, _, _, W_dp, _, _ = _memo_load("dnp02", load_dnp02)
@@ -173,7 +188,8 @@ class FullPolicy:
         self.dnp02_ttmn_l = ((dp_bodies["type"] == "TTMn") & (dp_bodies["somaSide"] == "L")).to_numpy()
         self.dnp02_ttmn_r = ((dp_bodies["type"] == "TTMn") & (dp_bodies["somaSide"] == "R")).to_numpy()
         self.dnp02_network = Network(
-            W_dp, Integrator(spike_idx=self.dnp02_idx,
+            W_dp, Integrator(alpha=c.network.alpha, clip=c.network.clip,
+                              spike_idx=self.dnp02_idx,
                               spike_threshold=c.dnp02.spike_threshold,
                               spike_amp=c.jump.spike_amp),
             g=c.dnp02.g,
@@ -206,6 +222,8 @@ class FullPolicy:
             _feats = _mb_rng.choice(N_MB_SENSORY, size=3, replace=False)
             self.mb_proj[_i, _feats] = 1.0
         self.MBON_DNA02_FRAC = {"L": 0.00379, "R": 0.00632}
+        self.substeps = c.network.substeps
+        self.registry = KindRegistry(entity_width_px=c.entity.entity_width_px)
 
         self.reset(seed=0)
 
@@ -231,8 +249,10 @@ class FullPolicy:
         self._prev_enemy_slots: dict[int, int] = {}  # slot -> mario_x, for the stomp proxy
         self.orn_adapt = OlfactoryAdaptation()
         self.orn_adapt_avers = OlfactoryAdaptation()
-        self.hab_escape = ReflexHabituation()
-        self.hab_climb = ReflexHabituation()
+        self.hab_escape = ReflexHabituation(give_up=self.config.habituation.hab_give_up,
+                                             progress_px=self.config.habituation.hab_progress_px)
+        self.hab_climb = ReflexHabituation(give_up=self.config.habituation.hab_give_up,
+                                            progress_px=self.config.habituation.hab_progress_px)
         self.mdn_backup_hold = 0
         self.mb_elig = np.zeros(self.n_kc)
         self.mb_prev_dnp09 = 0.0
@@ -292,7 +312,7 @@ class FullPolicy:
         self.prev_mario_size = mario_size
 
         # ---- escape jump + pit-triggered graded takeoff --------------
-        theta, dtheta, d_out = enemy_thetas(ram, mario_x, self.prev_theta)
+        theta, dtheta, d_out = enemy_thetas(ram, mario_x, self.prev_theta, registry=self.registry)
         self.prev_theta = theta
         for _side in ("L", "R"):
             if d_out[_side] is not None:
@@ -311,7 +331,7 @@ class FullPolicy:
                     if mag == 0.0:
                         continue
                     origin, far, _ = self.j_azimuth_ref[(t, _side)]
-                    az1 = rt.azimuth_target(d_out[_side], origin, far)
+                    az1 = rt.azimuth_target(d_out[_side], origin, far, d_ref=c.retinotopy.azimuth_d_ref)
                     w = rt.tuning_weights(az1, self.j_rf[t])
                     Ij[self.j_msk[f"{t}_{_side}"]] = mag * w[self.j_msk[f"{t}_{_side}"]]
         else:
@@ -320,7 +340,7 @@ class FullPolicy:
         if not refusing:
             Ij[self.jump_dnp01_mask] += c.takeoff.gap_gain * gap_w
 
-        for _ in range(dynamics.SUBSTEPS):
+        for _ in range(self.substeps):
             hj = self.jump_network.step(Ij, noise=self.noise)
             It = np.zeros(self.Kt)
             It[self.takeoff_dnp01_mask] = hj[self.jump_dnp01_mask]
@@ -335,13 +355,13 @@ class FullPolicy:
         Idp = np.zeros(self.Kdp)
         Idp[self.dnp02_lc4_l] = self.dnp02_ema["L"]; Idp[self.dnp02_lc4_r] = self.dnp02_ema["R"]
         Idp[self.dnp02_idx] += self.mb_bias_dnp02
-        for _ in range(dynamics.SUBSTEPS):
+        for _ in range(self.substeps):
             h_dnp02 = self.dnp02_network.step(Idp, noise=self.noise)
         self.dnp02_network.flush_denormals()
         ttmn_val_dnp02 = max(h_dnp02[self.dnp02_ttmn_l].mean(), h_dnp02[self.dnp02_ttmn_r].mean())
 
         # ---- steering: home bias + odour (mushroom + ?-blocks), WTA ---
-        mush = mushroom_odor(ram, mario_x)
+        mush = mushroom_odor(ram, mario_x, registry=self.registry)
         qblock = question_block_odor(ram)
         hunger = hunger_multiplier(ram)
         odor_gain_eff = c.odour.odour_gain * hunger
@@ -351,7 +371,7 @@ class FullPolicy:
         odor_r_eff = adapted_odor["R"]
         odor_l_eff = adapted_odor["L"]
 
-        avers_raw = goomba_odor(ram, mario_x)
+        avers_raw = goomba_odor(ram, mario_x, registry=self.registry)
         avers_scaled = {"R": c.odour.odour_gain * avers_raw["R"], "L": c.odour.odour_gain * avers_raw["L"]}
         avers_adapted = self.orn_adapt_avers.apply(avers_scaled)
         avers_r_eff = avers_adapted["R"]
@@ -368,7 +388,8 @@ class FullPolicy:
         kc_active[mb_top] = 1.0
 
         mbon_drive = self.W_kc_mbon @ kc_active
-        self.h_mbon = (1.0 - dynamics.ALPHA) * self.h_mbon + dynamics.ALPHA * dynamics.phi(mbon_drive)
+        self.h_mbon = ((1.0 - c.network.alpha) * self.h_mbon
+                       + c.network.alpha * dynamics.phi(mbon_drive, clip=c.network.clip))
         self.h_mbon[self.h_mbon < 1e-30] = 0.0
 
         mario_x_abs = int(ram[ADDR_MARIO_PAGE]) * 256 + mario_x
@@ -399,7 +420,7 @@ class FullPolicy:
             Is[self.l_mask] += c.takeoff.gap_gain * gap_w
         Is[self.dna02_all & self.r_mask] += mb_bias_r
         Is[self.dna02_all & self.l_mask] += mb_bias_l
-        for _ in range(dynamics.SUBSTEPS):
+        for _ in range(self.substeps):
             h_steer = self.steering_network.step(Is, noise=self.noise)
         self.steering_network.flush_denormals()
 
@@ -507,8 +528,8 @@ class FullPolicy:
         # ---- MDN: the escape-failed fallback ---------------------------
         if self.mdn_backup_hold == 0:
             Im = np.zeros(self.Km)
-            Im[self.mdn_mask] = c.mdn.mdn_drive if self.hab_escape.hab_level >= HAB_GIVE_UP else 0.0
-            for _ in range(dynamics.SUBSTEPS):
+            Im[self.mdn_mask] = c.mdn.mdn_drive if self.hab_escape.hab_level >= self.hab_escape.give_up else 0.0
+            for _ in range(self.substeps):
                 h_mdn = self.mdn_network.step(Im, noise=self.noise)
             self.mdn_network.flush_denormals()
             mdn_val = h_mdn[self.mdn_mask].mean()
@@ -547,7 +568,7 @@ class FullPolicy:
             odor_brake = min(c.speed.walk_drive, max(0.0, odor_l_eff + odor_r_eff - c.steering.home_bias))
             Ip[self.dnp09_mask] = (c.speed.walk_drive
                                     - (c.speed.walk_suppression if busy else 0.0) - odor_brake)
-        for _ in range(dynamics.SUBSTEPS):
+        for _ in range(self.substeps):
             h_speed = self.speed_network.step(Ip, noise=self.noise)
         self.speed_network.flush_denormals()
         dnp09_val = h_speed[self.dnp09_mask].mean()

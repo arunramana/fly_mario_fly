@@ -25,8 +25,8 @@ SUBSTEPS = 10       # network steps per emulator frame (60fps frame = 16.7ms)
 CLIP = 50.0         # upper clip on firing rate, arbitrary units
 
 
-def phi(x: np.ndarray) -> np.ndarray:
-    return np.clip(x, 0.0, CLIP)
+def phi(x: np.ndarray, clip: float = CLIP) -> np.ndarray:
+    return np.clip(x, 0.0, clip)
 
 
 class NoiseConfig:

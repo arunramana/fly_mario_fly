@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Turns raw number codes in the game's memory into named things. For each of
+# the game's five enemy slots it says whether it holds a Goomba, a Koopa,
+# some other enemy or a power-up, where it is, and what labels it carries
+# (every enemy gets the same width, 16 pixels unless set otherwise). It can
+# also name a map tile and describe a pit directly ahead of Mario.
 """mario/entities/registry.py -- maps RAM type bytes to entity kinds, traits
 and dimensions. Every "is this enemy slot a powerup or a threat" question
 goes through `enemy_records()`. Tile IDs stay in mario.ram.tile_ram and are
@@ -42,8 +48,13 @@ _KIND_TRAITS: dict[EntityKind, frozenset[Trait]] = {
 
 
 class KindRegistry:
-    """Stateless; methods take the `ram` array. DEFAULT is the shared
-    instance."""
+    """Methods take the `ram` array; the only state is `entity_width_px`.
+    DEFAULT is the shared, default-width instance every caller uses unless
+    it builds its own (tool/PLAN.md C2 -- FullPolicy builds one from
+    config.entity.entity_width_px)."""
+
+    def __init__(self, entity_width_px: int = ENTITY_WIDTH_PX):
+        self.entity_width_px = entity_width_px
 
     def traits_of(self, kind: EntityKind) -> frozenset[Trait]:
         return _KIND_TRAITS[kind]
@@ -62,7 +73,7 @@ class KindRegistry:
             kind=kind,
             x=int(ram[ADDR_ENEMY_X + slot]),
             y=int(ram[ADDR_ENEMY_Y + slot]),
-            width=ENTITY_WIDTH_PX,
+            width=self.entity_width_px,
             height=None,
             active=active,
             traits=self.traits_of(kind),

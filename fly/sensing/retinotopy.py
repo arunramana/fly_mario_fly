@@ -51,11 +51,18 @@ def _hex_lookup() -> pd.DataFrame:
     return ann
 
 
-def receptive_field_centers(target_type: str, bodies: pd.DataFrame) -> dict:
+def receptive_field_centers(target_type: str, bodies: pd.DataFrame,
+                             spread_fallback: float = 3.0, spread_floor: float = 0.5) -> dict:
     """Per-cell RF centre for every body of `target_type` (LC4 or LPLC2) in
     the jump circuit's `bodies` table, so the arrays align 1:1 with its
     rows. Synapse-weighted mean hex position over each cell's hex-carrying
     partners.
+
+    `spread_fallback`: bandwidth assigned to a body with no hex-carrying
+    input at all (verified empty for LC4/LPLC2, so this never actually
+    fires). `spread_floor`: minimum bandwidth for a single-partner cell,
+    which would otherwise measure exactly zero and make its tuning curve a
+    delta function.
 
     Returns {"hex1", "hex2", "hex1_spread", "has_rf"}, each len(bodies),
     zero/False for a body with no hex input (none, for LC4/LPLC2). `hex2`
@@ -77,7 +84,7 @@ def receptive_field_centers(target_type: str, bodies: pd.DataFrame) -> dict:
     n = len(bodies)
     hex1 = np.zeros(n)
     hex2 = np.zeros(n)
-    hex1_spread = np.full(n, 3.0)  # fallback bandwidth for the (verified-empty) no-coverage case
+    hex1_spread = np.full(n, spread_fallback)  # the (verified-empty) no-coverage case
     has_rf = np.zeros(n, dtype=bool)
 
     id_to_row = {bid: i for i, bid in enumerate(bodies["bodyId"].to_numpy())}
@@ -93,8 +100,8 @@ def receptive_field_centers(target_type: str, bodies: pd.DataFrame) -> dict:
         s1 = np.sqrt(np.average((h1 - m1) ** 2, weights=w))
         hex1[row] = m1
         hex2[row] = m2
-        hex1_spread[row] = max(s1, 0.5)  # floor -- a single-partner cell has zero measured
-        has_rf[row] = True               # spread, which would make its tuning curve a delta function
+        hex1_spread[row] = max(s1, spread_floor)
+        has_rf[row] = True
 
     return {"hex1": hex1, "hex2": hex2, "hex1_spread": hex1_spread, "has_rf": has_rf}
 
