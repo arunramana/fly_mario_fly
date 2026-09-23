@@ -161,9 +161,23 @@ Benchmark both before committing a port, and put the numbers in the commit.
 
 **Do these first — they beat a GPU port on this workload:**
 
-1. **Flush denormals**, `h[h < 1e-30] = 0.0` after each update. Measured **84×**
-   on affected runs: subnormal floats collapse x86 FP throughput, which is why
-   one shuffle took 21 minutes against 45 seconds for its neighbours.
+1. **Flush denormals**, `h[h < 1e-30] = 0.0` after each update — but the
+   **84× figure above is corrected, not confirmed, by REFACTOR_PLAN.md
+   phase 4's probe (`denormal_probe.py`, docs/RUNS.md's phase 4 note).**
+   `shuffle_sweep.py` in the current repo applies no flush at all, so
+   whatever produced the original 21-minutes-vs-45-seconds number either
+   ran from an uncommitted shell session or against code that no longer
+   exists in this form — docs/RUNS.md has no entry describing it. Measured
+   directly on the jump circuit's own real weight matrix instead (the one
+   circuit phase 3 found was never flushed): a real, non-negligible cost,
+   but **~3.2× under a realistic bursty trace and ~4.7× under worst-case
+   sustained silence — not 84×**. Genuine IEEE-754 denormals (down to
+   float64's smallest representable subnormal) do occur, so this isn't a
+   "no denormals present" case either; it is a real cost, honestly smaller
+   than claimed, same shape as the brain_panel GPU claim sprint 026
+   corrected. Not fixed on jump yet — doing so re-baselines every golden
+   and makes runs 001-026 non-reproducible, so it needs a deliberate,
+   dedicated sprint, not a drive-by fix inside a config-extraction phase.
 2. **Multiprocess across networks/runs** (~8× on this box). The 21 sweep
    networks and the 27 battery runs are fully independent. Keep
    `OMP_NUM_THREADS=1` per worker.
