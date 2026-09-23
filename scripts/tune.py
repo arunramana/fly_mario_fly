@@ -6,7 +6,7 @@ constant velocity; theta(t) is fed straight to the LC4/LPLC2 populations of
 one hemisphere. Sweep g and check the three diagnostics the spec asks for
 before this circuit is ever allowed near an emulator.
 
-    python tune.py
+    .venv/Scripts/python.exe -m scripts.tune
 """
 
 from __future__ import annotations
@@ -127,7 +127,7 @@ def print_sweep(rows):
               f"{str(r['all_three']):>6}")
 
 
-def plot_chosen(W, bodies, g, path="tune_diagnostics.png"):
+def plot_chosen(W, bodies, g, path="projects/legacy/runs/tune_diagnostics.png"):
     K = W.shape[0]
     msk = masks(bodies)
     d, theta, dtheta = theta_ramp()
@@ -199,4 +199,4 @@ if __name__ == "__main__":
     else:
         best_sharp = max(rows, key=lambda r: (r["decays_to_zero"] and r["no_ringing"],
                                                -(r["rise_width_frac"] or 1.0)))
-        plot_chosen(W, bodies, best_sharp["g"], path="tune_diagnostics_no_winner.png")
+        plot_chosen(W, bodies, best_sharp["g"], path="projects/legacy/runs/tune_diagnostics_no_winner.png")

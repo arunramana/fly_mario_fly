@@ -10,12 +10,12 @@ segment T2 where the jump muscle is driven.
 
 Usage as a module:
 
-    import brain_panel
-    brain_panel.render_run(telemetry_df, frames_dir, "runs/006_shuffle_n20.mp4")
+    from render import brain_panel
+    brain_panel.render_run(telemetry_df, frames_dir, "projects/<name>/runs/006_shuffle_n20.mp4")
 
-Usage from the command line:
+Usage from the command line (repo root):
 
-    python brain_panel.py telemetry.csv frames/ runs/006_whatever.mp4
+    python -m render.brain_panel telemetry.csv frames/ projects/<name>/runs/006_whatever.mp4
 
 `telemetry_df` needs one row per emulator frame with columns:
     lc4, lplc2, mem, spike, ttmn      (population means + Giant Fiber state)
@@ -39,7 +39,8 @@ invents colours the NES never drew), vertically centred in the 1080-tall
 canvas (a 60px letterbox top and bottom, native emulator aspect differs
 from the panel's).
 
-Profiled first (`profile_brain_panel.py`), per sprint instructions: one
+Profiled first (sprint 026's `profile_brain_panel.py`, since removed; see
+git history), per sprint instructions: one
 full panel() call was 8.4ms median (worst case, every banner active,
 10.2ms) against a 16.7ms real-time budget -- already under budget before
 any of this sprint's changes. The one real waste `_font()` reloading TTF
@@ -62,7 +63,8 @@ import pandas as pd
 import pyarrow.feather as feather
 from PIL import Image, ImageDraw, ImageFont
 
-ROOT = Path(__file__).resolve().parent
+# Repo root (this file lives in render/); the connectome data sits beside the repo.
+ROOT = Path(__file__).resolve().parent.parent
 ANN = ROOT / ".." / "data" / "malecns_v1.0" / \
     "body-annotations-male-cns-v1.0-minconf-0.5.feather"
 

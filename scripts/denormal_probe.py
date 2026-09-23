@@ -19,7 +19,7 @@ applies no flush at all, so the original 84x measurement's supporting code
 either no longer exists in this form or was run from an uncommitted shell
 session -- docs/RUNS.md has no entry describing it.
 
-    .venv/Scripts/python.exe denormal_probe.py
+    .venv/Scripts/python.exe -m scripts.denormal_probe
 """
 from __future__ import annotations
 

@@ -6,7 +6,7 @@ a pit-triggered graded long jump (DNp01's own output recruiting DLMn via
 the real GFC1-4 relay) and a DNp09 speed circuit that finally lets Mario
 stop holding B unconditionally. The jump circuit (DNp01/TTMn) itself is
 untouched -- imported from run_mario.py and stepped exactly as
-compare_controllers.py's make_circuit_decider does.
+scripts/compare_controllers.py's make_circuit_decider does.
 
     .venv/Scripts/python.exe run_steering.py
 """
@@ -49,7 +49,7 @@ from config.params import (
 # JUMP_HOLD_FRAMES, JUMP_COOLDOWN_FRAMES) stay defined in run_mario.py.
 # This module does not re-import them: FullPolicy reads JumpParams, and
 # the diagnostic scripts import run_mario directly.
-from compare_controllers import _ensure_ffmpeg_on_path
+from render.video import _ensure_ffmpeg_on_path
 
 # ---- hand-set scalars, SPEC_odour.md section 0 ---------------------------
 # Run 006's finding: 1/40=0.025 vs HOME_BIAS=1.0 is a 40x gap BY
@@ -862,7 +862,7 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
             observer.write(csv_path)
         if record_video:
             _ensure_ffmpeg_on_path()
-            import brain_panel
+            from render import brain_panel
             brain_panel.render_run(tel, tmp, out_mp4,
                                     caption=f"{level}: aversive+attractive odour, DNp09 brake, "
                                             "refusal rule, DNp01 vs DNp02, pit->DLMn long jump, "
@@ -892,7 +892,7 @@ def run_008():
     the original MUSHROOM_INJECT_FRAME=220 after finding 220 sometimes lands
     after an already-fatal encounter near 1-1's first ?-block wobble (see
     the writeup) -- 60 is safely before that on every level tried."""
-    from pit_report import find_pit_events, summarize, print_table
+    from sim.pit_report import find_pit_events, summarize, print_table
 
     print("=" * 70)
     print("SPEC_odour.md section 3: pit generalisation across 1-1/1-2/1-3")
@@ -1006,7 +1006,7 @@ def run_023(max_frames=1500, gap_frame=600):
     machinery), `retinotopic=True` gets `runs/023_retinotopy.mp4` -- the
     first video since 017 because this is the first sprint since then
     that changes what Mario does."""
-    from commitment_report import report
+    from sim.commitment_report import report
 
     print("=" * 70)
     print("sprint 023: retinotopy paired comparison, level 1-1")
@@ -1062,12 +1062,12 @@ def run_024(max_frames=1500, gap_frame=600):
     baseline median -- earlier is the win; (2) whether corr(pop,dtheta)
     exceeds corr(pop,theta) for LC4 AND LPLC2 (023 found the LC4-only
     version of this check was confounded by LC4's own scalar drive
-    already being dtheta -- see commitment_report.py); (3) survival and
+    already being dtheta -- see sim/commitment_report.py); (3) survival and
     commitment count vs the 807-frame / 10-commit baseline. Hard stop,
     stated before running: if this fails, retinotopy is closed
     permanently -- `retinotopic` stays default False and no third mapping
     convention gets proposed."""
-    from commitment_report import report
+    from sim.commitment_report import report
 
     print("=" * 70)
     print("sprint 024: retinotopy, fovea-at-density-mode, second and final attempt")

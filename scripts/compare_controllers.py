@@ -28,7 +28,7 @@ Also does the section-5 shuffle control properly (n=20, each tuned via
 Diagnostic 4 -- see shuffle_sweep.py, run that first), a 3-level x 3-seed
 battery, and the runs/004*.mp4 recordings CLAUDE.md requires.
 
-    python compare_controllers.py
+    .venv/Scripts/python.exe -m scripts.compare_controllers
 """
 from __future__ import annotations
 
@@ -50,6 +50,7 @@ from nes_py.wrappers import JoypadSpace
 from fly.connectome import circuit
 from fly.network import dynamics
 from fly.connectome.load_cached import load
+from render.video import _ensure_ffmpeg_on_path
 from run_mario import (ADDR_MARIO_X, ADDR_ENEMY_X, ADDR_ENEMY_ACTIVE,
                         N_ENEMY_SLOTS, W_TILE, enemy_thetas,
                         JUMP_HOLD_FRAMES, JUMP_COOLDOWN_FRAMES,
@@ -345,22 +346,6 @@ def build_telemetry_df(log):
     })
 
 
-def _ensure_ffmpeg_on_path():
-    """brain_panel.render_run shells out to a bare `ffmpeg`; there's no
-    system install here. imageio-ffmpeg bundles a static binary under a
-    version-suffixed name -- copy it to a plain `ffmpeg.exe` once and put
-    that directory on PATH, rather than editing brain_panel.py."""
-    import os
-    import shutil
-    import imageio_ffmpeg
-    src = imageio_ffmpeg.get_ffmpeg_exe()
-    d = Path(src).parent
-    dst = d / "ffmpeg.exe"
-    if not dst.exists():
-        shutil.copy(src, dst)
-    os.environ["PATH"] = str(d) + os.pathsep + os.environ["PATH"]
-
-
 def record_hero_run(decide_fn, label, out_mp4, level="1-1", seed=0, max_frames=MAX_FRAMES,
                      caption=""):
     """One full episode with telemetry + per-frame PNGs captured, composited
@@ -368,7 +353,7 @@ def record_hero_run(decide_fn, label, out_mp4, level="1-1", seed=0, max_frames=M
     behaviour-changing sprint ends with a video in runs/)."""
     import tempfile
     _ensure_ffmpeg_on_path()
-    import brain_panel
+    from render import brain_panel
 
     with tempfile.TemporaryDirectory() as tmp:
         log = run_episode(decide_fn, level=level, seed=seed, max_frames=max_frames,
@@ -419,7 +404,7 @@ if __name__ == "__main__":
     print("Loading the expanded N=60 circuit (cached)...")
     bodies, edges, total_input, signs, W, order, diag = load(N=60)
 
-    with open("shuffle_sweep_results.json") as f:
+    with open("projects/legacy/telemetry/shuffle_sweep_results.json") as f:
         sweep = json.load(f)
     g_real = sweep["real"]["g"]
     n_confirmed = sum(1 for k, v in sweep.items() if k.startswith("shuffle") and v["g"] is not None)
@@ -466,8 +451,8 @@ if __name__ == "__main__":
     print("\n=== Battery: 3 levels x 3 seeds x 3 controllers (multiprocessing.Pool(8)) ===")
     rows = battery(controllers_spec, levels=LEVELS, seeds=(0, 1, 2), n_workers=8)
     df = pd.DataFrame(rows)
-    df.to_csv("compare_controllers_battery.csv", index=False)
-    print("\nSaved compare_controllers_battery.csv. No conclusions drawn here --"
+    df.to_csv("projects/legacy/telemetry/compare_controllers_battery.csv", index=False)
+    print("\nSaved projects/legacy/telemetry/compare_controllers_battery.csv. No conclusions drawn here --"
           " see the README once this is reviewed.")
 
     print("\n=== Recording hero runs (level 1-1, seed 0) for runs/004*.mp4 ===")

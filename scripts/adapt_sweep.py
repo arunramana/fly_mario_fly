@@ -8,12 +8,12 @@ this is only worth running if that sweep comes back empty, since adaptation
 should not be adopted if a bare gain change already fixes it (SPEC's
 two-scalar budget, CLAUDE.md invariant 3).
 
-    python adapt_sweep.py
+    .venv/Scripts/python.exe -m scripts.adapt_sweep
 """
 from __future__ import annotations
 
 from fly.network import dynamics
-from diag4 import diagnostic4
+from scripts.diag4 import diagnostic4
 from fly.connectome.load_cached import load
 
 G_VALUES = [0.3, 0.5, 0.7, 0.9, 1.0, 1.1, 1.3, 1.5, 2.0, 3.5]

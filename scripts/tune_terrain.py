@@ -4,7 +4,7 @@ circuits this sprint (takeoff: DNp01->GFC1-4->DLMn, and speed: DNp09),
 same bar as tune_steering.py: spectral radius at a few g, plus a
 constant/pulsed-drive settling check. Not a full Diagnostic-4 sweep.
 
-    python tune_terrain.py
+    .venv/Scripts/python.exe -m scripts.tune_terrain
 """
 from __future__ import annotations
 

@@ -12,7 +12,7 @@ to the odour side forever; (2) with it, the WTA flips back to home (R)
 after adaptation drags the effective odour down far enough, and reports the
 exact frame that happens.
 
-    .venv/Scripts/python.exe tune_orn_adapt.py
+    .venv/Scripts/python.exe -m scripts.tune_orn_adapt
 """
 from __future__ import annotations
 

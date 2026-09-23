@@ -7,7 +7,7 @@ differently than 1:1, so "effective(d=16px) ~= HOME_BIAS" has to be checked
 against the settled L/R team output, the same quantity run_steering.py's WTA
 actually compares.
 
-    .venv/Scripts/python.exe tune_odour.py
+    .venv/Scripts/python.exe -m scripts.tune_odour
 """
 from __future__ import annotations
 

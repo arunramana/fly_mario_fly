@@ -4,7 +4,7 @@ from an identical savestate, x-progress per episode as the learning curve.
 headless, frame_skip=1 (013's own finding: frame_skip changes behaviour
 chaotically -- not used for training here).
 
-    .venv/Scripts/python.exe train_mushroom_body.py [n_episodes]
+    .venv/Scripts/python.exe -m scripts.train_mushroom_body [n_episodes]
 """
 import sys
 sys.path.insert(0, ".")
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     mb_weights = None
     rows = []
     t_start = time.time()
-    with open("mb_training_curve.csv", "w", newline="") as f:
+    with open("projects/legacy/telemetry/mb_training_curve.csv", "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["episode", "max_x_abs", "n_frames", "died", "n_escape_jumps",
                           "n_dnp01_fired", "n_dnp02_fired", "wall_s"])
@@ -50,6 +50,6 @@ if __name__ == "__main__":
                       f"[{dt:.2f}s/ep, {time.time()-t_start:.0f}s total]", flush=True)
     env.close()
     import numpy as np
-    np.save("mb_trained_weights.npy", mb_weights)
+    np.save("projects/legacy/telemetry/mb_trained_weights.npy", mb_weights)
     print(f"\nDone: {N_EPISODES} episodes in {time.time()-t_start:.1f}s. "
-          f"Saved mb_training_curve.csv and mb_trained_weights.npy")
+          f"Saved projects/legacy/telemetry/mb_training_curve.csv and mb_trained_weights.npy")

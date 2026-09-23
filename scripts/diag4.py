@@ -22,9 +22,9 @@ overlaps. `sensory.sustained_bilateral_trace` is what actually catches it:
 overlapping approaches on both hemispheres are what the real level delivers,
 and what the single-ramp tuning in tune.py never exercised.
 
-    python diag4.py                  # current run_mario.py config (expect FAIL)
-    python diag4.py --g 0.9          # test one g
-    python diag4.py --sweep          # search for a passing g
+    .venv/Scripts/python.exe -m scripts.diag4                  # current run_mario.py config (expect FAIL)
+    .venv/Scripts/python.exe -m scripts.diag4 --g 0.9          # test one g
+    .venv/Scripts/python.exe -m scripts.diag4 --sweep          # search for a passing g
 """
 
 from __future__ import annotations

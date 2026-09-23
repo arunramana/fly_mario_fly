@@ -4,7 +4,7 @@ full Diagnostic-4 sweep (out of scope, "cut for speed"), just spectral
 radius at a few g values plus a constant-bias settling check, the same
 sanity bar the ORIGINAL jump circuit passed before Diagnostic 4 existed.
 
-    python tune_steering.py
+    .venv/Scripts/python.exe -m scripts.tune_steering
 """
 from __future__ import annotations
 

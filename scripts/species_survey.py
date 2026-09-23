@@ -28,7 +28,7 @@ silently named from memory.
 point), is entirely Goombas. Not exhaustive -- a species this survey
 didn't reach may still exist further into either level.
 
-    .venv/Scripts/python.exe species_survey.py
+    .venv/Scripts/python.exe -m scripts.species_survey
 """
 from __future__ import annotations
 

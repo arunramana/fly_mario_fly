@@ -66,33 +66,36 @@ working around it.
    yours.** Every real bottleneck found on this project so far has been I/O
    or a cached-value miss (a TTF file, a weights file, a font, reloaded when
    it didn't need to be), never arithmetic. Sprint 026 profiled
-   `brain_panel.py` expecting the 141,781-point soma scatter to be the cost
+   `render/brain_panel.py` expecting the 141,781-point soma scatter to be the cost
    (see "Use the GPU" below) and found `_font()` reloading fonts from disk
    every frame instead — the scatter itself was 2.6ms of an 8.4ms frame.
    Measure the actual phases before reaching for CuPy, not just before this
    file's own GPU section is updated.
 
-## Every change ends with a video in `runs/`
+## Every change ends with a video in `projects/<name>/runs/`
 
 Not optional, and not only when asked. Any sprint that changes what the agent
 does — a new gain, a new population, a new controller, a bug fix that alters
-behaviour — finishes by recording a run and writing it to `runs/`.
+behaviour — finishes by recording a run and writing it to the project's
+`runs/` folder (REFACTOR_PLAN.md phase 5: outputs live in
+`projects/<name>/runs/` and `projects/<name>/telemetry/`; there is no
+top-level `runs/` any more, and it is gitignored).
 
 ```
-runs/NNN_<short-slug>.mp4      e.g. runs/004_shuffle_n20.mp4
+projects/<name>/runs/NNN_<short-slug>.mp4      e.g. projects/legacy/runs/004_shuffle_n20.mp4
 ```
 
 Three-digit counter, never reuse a number, never overwrite an earlier run. The
 point is a visual history we can scrub back through: when a later change makes
 things worse, the previous video is the evidence of what "better" looked like.
 
-Use `brain_panel.render_run(telemetry_df, frames_dir, "runs/NNN_slug.mp4")`.
+Use `render.brain_panel.render_run(telemetry_df, frames_dir, "projects/<name>/runs/NNN_slug.mp4")`.
 That composites the live-brain panel beside the emulator frames. The panel is
 141,781 real soma positions from `somaLocation`, projected x (left-right)
 against z (brain → nerve cord) — LC4 and LPLC2 light up in the optic lobes,
 TTMn down in VNC segment T2, because that is where those cells actually are.
 
-Alongside each video write `runs/NNN_<slug>.md`: two or three lines saying what
+Alongside each video write `projects/<name>/runs/NNN_<slug>.md`: two or three lines saying what
 changed, what the numbers were, and whether it got better or worse. When a run
 compares controllers, record one video per controller with the same counter and
 a suffix (`004a_real.mp4`, `004b_shuffled.mp4`, `004c_theta.mp4`).
@@ -101,7 +104,7 @@ a suffix (`004a_real.mp4`, `004b_shuffled.mp4`, `004c_theta.mp4`).
 first thing anyone reads. Always the same four fields, in this order:
 
 ```
-## NNN — short name (`runs/NNN_slug.mp4`)
+## NNN — short name (`projects/<name>/runs/NNN_slug.mp4`)
 
 **Setup.** What the circuit was, what changed from last time, the scalars.
 **What happened.** The numbers. Survival, jumps, what it did on screen.
@@ -144,7 +147,7 @@ measured on this workload, a naive port makes things **slower**.
   subgraph, port it.
 - Anything batching hundreds of independent simulations as dense tensors.
 
-**Struck: "per-neuron rendering in `brain_panel.py` is genuinely
+**Struck: "per-neuron rendering in `render/brain_panel.py` is genuinely
 GPU-shaped."** It wasn't. Sprint 026 profiled a real frame before porting
 anything (this section itself told it to): one `panel()` call was **8.4ms**
 against a **16.7ms** real-time budget — already under budget, GPU or not.
@@ -177,8 +180,8 @@ Benchmark both before committing a port, and put the numbers in the commit.
 
 1. **Flush denormals**, `h[h < 1e-30] = 0.0` after each update — but the
    **84× figure above is corrected, not confirmed, by REFACTOR_PLAN.md
-   phase 4's probe (`denormal_probe.py`, docs/RUNS.md's phase 4 note).**
-   `shuffle_sweep.py` in the current repo applies no flush at all, so
+   phase 4's probe (`scripts/denormal_probe.py`, docs/RUNS.md's phase 4 note).**
+   `scripts/shuffle_sweep.py` in the current repo applies no flush at all, so
    whatever produced the original 21-minutes-vs-45-seconds number either
    ran from an uncommitted shell session or against code that no longer
    exists in this form — docs/RUNS.md has no entry describing it. Measured

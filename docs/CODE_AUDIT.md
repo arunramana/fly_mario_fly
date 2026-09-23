@@ -99,6 +99,11 @@ Unifying via the registry would make `fly/` import `mario/` — forbidden.
 Files unused by imports but **kept** (sprint scripts / stubs, not
 garbage): `bridge/motor.py` (now wired), `load_lc10a_cached.py`,
 `plot_mb_curve.py`, `lc10a_pursuit_circuit.py`, tune/diag scripts.
+*Superseded by the later root-folder cleanup:* those three and four other
+one-off scripts (`tune_climb_height2`, `sprint025_sweep`,
+`rerun_battery_g2`, `profile_brain_panel`) were deleted. The surviving
+tune/diag/sweep scripts moved to `scripts/`. `brain_panel.py` moved to
+`render/`, and `pit_report.py`/`commitment_report.py` moved to `sim/`.
 
 ### H — hard-coded values not among the 49
 
@@ -133,7 +138,8 @@ Also outside the 49 by category (not missed inventorship): `N_THRESHOLD = 60`
 - Unify circuit builders or odour helpers
 - Touch `fly/network/dynamics.py`, `Integrator`, plasticity, RAM maps,
   or anything under `projects/`
-- Delete sprint scripts (`plot_mb_curve.py`, `load_lc10a_cached.py`, etc.)
+- Delete sprint scripts (`plot_mb_curve.py`, `load_lc10a_cached.py`, etc.).
+  Done later in the root-folder cleanup (see §3 D note).
 - Flush denormals on the jump circuit (re-baselines goldens 001–026)
 
 ---

@@ -6,3 +6,5 @@ __pycache__/
 *.parquet
 *.feather
 .pytest_cache/
+# Outputs live in projects/<name>/runs/; stray top-level runs/ from old defaults.
+/runs/

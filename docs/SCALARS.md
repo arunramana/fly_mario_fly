@@ -34,9 +34,9 @@ then 8, then 9 hand-set neural/mechanical scalars across 26 sprints.
 
 | field | value | range | provenance | home |
 |---|---|---|---|---|
-| `g` | `2.0` | 1.12-3.35 | measured (diag4.py Diagnostic-4 sweep against the real 1255-neuron subgraph; band checked robust across 5 random trace seeds) | `run_mario.py (G)` |
-| `dnp01_spike_threshold` | `0.5` | unknown | measured (diag4.py sweep) | `run_mario.py (DNP01_SPIKE_THRESHOLD)` |
-| `ttmn_press_threshold` | `3.0` | unknown | measured (diag4.py sweep) | `run_mario.py (TTMN_PRESS_THRESHOLD)` |
+| `g` | `2.0` | 1.12-3.35 | measured (scripts/diag4.py Diagnostic-4 sweep against the real 1255-neuron subgraph; band checked robust across 5 random trace seeds) | `run_mario.py (G)` |
+| `dnp01_spike_threshold` | `0.5` | unknown | measured (scripts/diag4.py sweep) | `run_mario.py (DNP01_SPIKE_THRESHOLD)` |
+| `ttmn_press_threshold` | `3.0` | unknown | measured (scripts/diag4.py sweep) | `run_mario.py (TTMN_PRESS_THRESHOLD)` |
 | `spike_amp` | `50.0` | unknown | measured (matched to CLIP -- a spike is a full-scale event) | `run_mario.py (SPIKE_AMP)` |
 | `jump_hold_frames` | `25` | unknown | invented (mechanical output-interface constant, not part of the neural model, per this project's own convention since sprint 006) | `run_mario.py (JUMP_HOLD_FRAMES)` |
 | `jump_cooldown_frames` | `40` | unknown | invented (mechanical output-interface constant) | `run_mario.py (JUMP_COOLDOWN_FRAMES)` |
@@ -45,7 +45,7 @@ then 8, then 9 hand-set neural/mechanical scalars across 26 sprints.
 
 | field | value | range | provenance | home |
 |---|---|---|---|---|
-| `g` | `1.2` | unknown | measured (tune_dnp02.py/tune_dnp02_widen.py, kept <=0.85x the real spectral-radius boundary -- a per-matrix constraint, not a fixed numeric range) | `run_steering.py (G_DNP02)` |
+| `g` | `1.2` | unknown | measured (scripts/tune_dnp02.py/scripts/tune_dnp02_widen.py, kept <=0.85x the real spectral-radius boundary -- a per-matrix constraint, not a fixed numeric range) | `run_steering.py (G_DNP02)` |
 | `spike_threshold` | `0.1` | unknown | measured | `run_steering.py (DNP02_SPIKE_THRESHOLD)` |
 | `alpha` | `0.1` | unknown | invented (a slow EMA rate on DNp02's own input current, giving it "longer integration" without slowing HybridState's shared alpha -- sprint's own bug-fix choice, not connectome-derived) | `run_steering.py (DNP02_ALPHA)` |
 
@@ -53,9 +53,9 @@ then 8, then 9 hand-set neural/mechanical scalars across 26 sprints.
 
 | field | value | range | provenance | home |
 |---|---|---|---|---|
-| `g` | `0.8` | unknown | measured (tune_terrain.py) | `run_steering.py (G_TAKEOFF)` |
+| `g` | `0.8` | unknown | measured (scripts/tune_terrain.py) | `run_steering.py (G_TAKEOFF)` |
 | `gap_gain` | `0.6` | unknown | invented (external current per non-ground tile ahead onto DNp01 -- no real synapse carries terrain information, same modelling category as HOME_BIAS/WALK_DRIVE/MDN_DRIVE) | `run_steering.py (GAP_GAIN)` |
-| `dlmn_recruit_threshold` | `1.0` | unknown | measured (tune_terrain.py: sits between the width-1 and width-2 DLMn end-of-frame means) | `run_steering.py (DLMN_RECRUIT_THRESHOLD)` |
+| `dlmn_recruit_threshold` | `1.0` | unknown | measured (scripts/tune_terrain.py: sits between the width-1 and width-2 DLMn end-of-frame means) | `run_steering.py (DLMN_RECRUIT_THRESHOLD)` |
 | `long_jump_hold_frames` | `35` | unknown | invented (mechanical output-interface constant) | `run_steering.py (LONG_JUMP_HOLD_FRAMES)` |
 | `gap_lookahead_tiles` | `8` | unknown | invented (perceptual range, mechanical, not a circuit gain) | `run_steering.py (GAP_LOOKAHEAD_TILES)` |
 
@@ -63,7 +63,7 @@ then 8, then 9 hand-set neural/mechanical scalars across 26 sprints.
 
 | field | value | range | provenance | home |
 |---|---|---|---|---|
-| `g` | `1.2` | unknown | measured (tune_terrain.py) | `run_steering.py (G_SPEED)` |
+| `g` | `1.2` | unknown | measured (scripts/tune_terrain.py) | `run_steering.py (G_SPEED)` |
 | `walk_drive` | `1.0` | unknown | invented (constant "walk" current, no real synapse carries it) | `run_steering.py (WALK_DRIVE)` |
 | `walk_suppression` | `1.0` | unknown | invented (cancels WALK_DRIVE while jumping/stalled) | `run_steering.py (WALK_SUPPRESSION)` |
 | `dnp09_speed_threshold` | `0.5` | unknown | measured | `run_steering.py (DNP09_SPEED_THRESHOLD)` |
@@ -72,7 +72,7 @@ then 8, then 9 hand-set neural/mechanical scalars across 26 sprints.
 
 | field | value | range | provenance | home |
 |---|---|---|---|---|
-| `g` | `1.2` | unknown | measured (tune_steering.py) | `run_steering.py (G_STEER)` |
+| `g` | `1.2` | unknown | measured (scripts/tune_steering.py) | `run_steering.py (G_STEER)` |
 | `home_bias` | `1.0` | unknown | invented (constant "go home" current, R-hemisphere only; no real synapse carries it -- explicitly a placed bias, not a scaling error to fix by lowering it, per SPEC_odour.md section 0) | `run_steering.py (HOME_BIAS)` |
 | `climb_stall_frames` | `20` | unknown | invented (mechanical: mario_x unchanged this long while steering=R -> blocked; diagnosed via A/B, see docs/RUNS.md sprint on habituation -- 15->40 was checked and changed nothing) | `run_steering.py (CLIMB_STALL_FRAMES)` |
 | `climb_hop_small_frames` | `10` | unknown | invented (mechanical, small Mario's first-try hop) | `run_steering.py (CLIMB_HOP_SMALL_FRAMES)` |
@@ -85,9 +85,9 @@ then 8, then 9 hand-set neural/mechanical scalars across 26 sprints.
 
 | field | value | range | provenance | home |
 |---|---|---|---|---|
-| `g` | `1.2` | unknown | measured (tune_mdn.py: real spectral radius 0.7345, comfortably under its ~1.36 linear boundary) | `run_steering.py (G_MDN)` |
+| `g` | `1.2` | unknown | measured (scripts/tune_mdn.py: real spectral radius 0.7345, comfortably under its ~1.36 linear boundary) | `run_steering.py (G_MDN)` |
 | `mdn_drive` | `2.0` | unknown | invented (external current -- no real DNp01/GFC1-4 synapse onto MDN in this connectome, checked) | `run_steering.py (MDN_DRIVE)` |
-| `mdn_threshold` | `1.0` | unknown | measured (tune_mdn.py) | `run_steering.py (MDN_THRESHOLD)` |
+| `mdn_threshold` | `1.0` | unknown | measured (scripts/tune_mdn.py) | `run_steering.py (MDN_THRESHOLD)` |
 | `mdn_backup_frames` | `30` | unknown | invented (mechanical, fixed-duration corrective backup) | `run_steering.py (MDN_BACKUP_FRAMES)` |
 
 ## MushroomBodyParams
@@ -109,8 +109,8 @@ then 8, then 9 hand-set neural/mechanical scalars across 26 sprints.
 
 | field | value | range | provenance | home |
 |---|---|---|---|---|
-| `odour_gain` | `16.0` | unknown | invented (chosen by simulating the real steering circuit end to end, tune_odour.py -- the smallest gain that makes a close (16px) encounter cross HOME_BIAS's settled output in the actual recurrent network; fixes a 40x unit mismatch, not a connectome-derived value) | `run_steering.py (ODOUR_GAIN)` |
-| `hunger_mult_hungry` | `3.0` | unknown | measured (tune_odour.py sweep: smallest value that still flips the WTA at d=40px) | `bridge/perception.py (HUNGER_MULT_HUNGRY)` |
+| `odour_gain` | `16.0` | unknown | invented (chosen by simulating the real steering circuit end to end, scripts/tune_odour.py -- the smallest gain that makes a close (16px) encounter cross HOME_BIAS's settled output in the actual recurrent network; fixes a 40x unit mismatch, not a connectome-derived value) | `run_steering.py (ODOUR_GAIN)` |
+| `hunger_mult_hungry` | `3.0` | unknown | measured (scripts/tune_odour.py sweep: smallest value that still flips the WTA at d=40px) | `bridge/perception.py (HUNGER_MULT_HUNGRY)` |
 | `hunger_mult_sated` | `1.0` | unknown | invented (unboosted baseline, not zeroed) | `bridge/perception.py (HUNGER_MULT_SATED)` |
 | `alpha_adapt` | `0.011111111111111112` | unknown | measured (~1.5s time constant at 60fps, the real ORN adaptation timescale asked for) | `fly/sensing/olfactory_adaptation.py (ALPHA_ADAPT)` |
 

@@ -4,7 +4,7 @@ the real MDN circuit (same lighter-touch approach as tune_steering.py /
 tune_terrain.py -- SPEC_habituation.md section 2 explicitly doesn't call
 for a full Diagnostic-4 sweep here).
 
-    .venv/Scripts/python.exe tune_mdn.py
+    .venv/Scripts/python.exe -m scripts.tune_mdn
 """
 from __future__ import annotations
 

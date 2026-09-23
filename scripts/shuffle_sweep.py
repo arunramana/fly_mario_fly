@@ -22,7 +22,7 @@ only the trace LENGTH differs between stages:
      if confirmation fails. A network with no confirmed g is reported as
      exactly that -- SPEC anticipated this as a valid, informative outcome.
 
-    python shuffle_sweep.py
+    .venv/Scripts/python.exe -m scripts.shuffle_sweep
 """
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ import json
 import time
 
 from fly.connectome import circuit
-from diag4 import diagnostic4
+from scripts.diag4 import diagnostic4
 from fly.connectome.load_cached import load
 
 N_SHUFFLES = 20
@@ -92,9 +92,9 @@ if __name__ == "__main__":
         g_s, cand_s = find_g(W_s, bodies, f"shuffle{seed:02d}")
         results[f"shuffle{seed:02d}"] = {"g": g_s, "screen_candidates": cand_s,
                                           "rho_g1": circuit.spectral_radius(W_s, 1.0)}
-        with open("shuffle_sweep_results.json", "w") as f:
+        with open("projects/legacy/telemetry/shuffle_sweep_results.json", "w") as f:
             json.dump(results, f, indent=2)
 
-    print("\nwrote shuffle_sweep_results.json")
+    print("\nwrote projects/legacy/telemetry/shuffle_sweep_results.json")
     n_found = sum(1 for v in results.values() if v["g"] is not None) - (1 if results["real"]["g"] else 0)
     print(f"{n_found}/{N_SHUFFLES} shuffles found a confirmed g.")

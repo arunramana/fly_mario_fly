@@ -7,7 +7,7 @@ section 3). The whole point of a second pathway is that it wins the slow
 case and loses (or ties) the fast case; if that's not true in the pure
 circuit simulation, it will not be true in the game either.
 
-    .venv/Scripts/python.exe tune_dnp02.py
+    .venv/Scripts/python.exe -m scripts.tune_dnp02
 """
 from __future__ import annotations
 

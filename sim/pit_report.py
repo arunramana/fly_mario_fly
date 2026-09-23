@@ -8,7 +8,7 @@ actually encountered and report, per pit: gap width, DNp01 spike rate
 during the approach, whether DLMn crossed threshold, hop vs long jump,
 cleared vs died. Pure telemetry analysis -- no simulation changes.
 
-    from pit_report import find_pit_events, summarize
+    from sim.pit_report import find_pit_events, summarize
 """
 from __future__ import annotations
 

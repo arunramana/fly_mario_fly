@@ -26,7 +26,7 @@ Levers, in the order they actually mattered (measured, not assumed):
      -- eliminates warm-up replay cost per episode. Reported as its own
      lever since it's orthogonal to the Pool/memoization win.
 
-    .venv/Scripts/python.exe bench_episodes.py
+    .venv/Scripts/python.exe -m scripts.bench_episodes
 """
 from __future__ import annotations
 

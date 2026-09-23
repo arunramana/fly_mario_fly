@@ -8,7 +8,7 @@ already excludes those), measure its height, then re-run the SAME
 deterministic approach with a jump of hold=H triggered at that exact frame,
 sweeping H, and check whether Mario ends up past the wall's far column.
 
-    .venv/Scripts/python.exe tune_climb_height.py
+    .venv/Scripts/python.exe -m scripts.tune_climb_height
 """
 from __future__ import annotations
 

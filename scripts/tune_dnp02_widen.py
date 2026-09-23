@@ -7,7 +7,7 @@ Only searches g values with a comfortable safety margin below each
 circuit's own real spectral-radius boundary (g <= 0.85 / rho) -- SPEC's own
 instruction: a result that needs a fragile parameter is not a result.
 
-    .venv/Scripts/python.exe tune_dnp02_widen.py
+    .venv/Scripts/python.exe -m scripts.tune_dnp02_widen
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from fly.network import dynamics
 from fly.circuits import dnp02_circuit
 from run_mario import SPIKE_AMP, DNP01_SPIKE_THRESHOLD, G
 from fly.connectome.load_cached import load as load_jump
-from tune_dnp02 import make_jump_masks, slow_ramp, fast_loom
+from scripts.tune_dnp02 import make_jump_masks, slow_ramp, fast_loom
 
 SAFETY = 0.85
 
