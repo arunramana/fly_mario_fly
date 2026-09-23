@@ -202,7 +202,19 @@ class FullPolicy:
         mb_pam_idx = np.where(mb_pam_mask)[0]
         mb_punish_idx = np.where(mb_punish_mask)[0]
         self.n_kc, self.n_mbon = len(self.mb_kc_idx), len(self.mb_mbon_idx)
-        self.W_kc_mbon = (mb_weights if mb_weights is not None
+        # REFACTOR_PLAN.md phase 6, step 1: a passed-in `mb_weights` is
+        # copied, not aliased. Without this, `self.W_kc_mbon -= (...)`
+        # mutates the CALLER's own array in place (numpy `-=` is
+        # `__isub__`, same object) -- surfaced by phase 6's own
+        # persistence test, which passed a trained matrix into a second
+        # episode expecting to compare it against an untouched "before"
+        # snapshot, and found its own reference had been silently
+        # rewritten out from under it mid-episode. Pre-existing in
+        # run_steering.py's original `main()` before this move (same
+        # missing `.copy()`); no golden or existing caller ever passes
+        # `mb_weights` so this changes zero recorded behaviour -- verified
+        # via a golden re-run, not assumed.
+        self.W_kc_mbon = (mb_weights.copy() if mb_weights is not None
                           else W_mb_full[np.ix_(self.mb_mbon_idx, self.mb_kc_idx)].copy())
         self.mb_pam_reach = W_mb_full[np.ix_(self.mb_mbon_idx, mb_pam_idx)].sum(axis=1)
         self.mb_punish_reach = W_mb_full[np.ix_(self.mb_mbon_idx, mb_punish_idx)].sum(axis=1)
