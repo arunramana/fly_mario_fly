@@ -17,8 +17,12 @@ read from a run_steering.py telemetry DataFrame:
 """
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import pandas as pd
+
+log = logging.getLogger(__name__)
 
 
 def find_commitments(tel: pd.DataFrame) -> list[dict]:
@@ -60,15 +64,15 @@ def report(tel: pd.DataFrame, label: str) -> dict:
     events = find_commitments(tel)
     corr = correlation_signature(tel)
     ftc = [e["frames_to_contact"] for e in events if e["frames_to_contact"] is not None]
-    print(f"\n--- {label} ---")
-    print(f"escape commitments: {len(events)}")
+    log.info(f"\n--- {label} ---")
+    log.info(f"escape commitments: {len(events)}")
     for e in events:
-        print(f"  frame {e['frame']}: pathway={e['pathway']} d_px={e['d_px_commit']} "
-              f"frames_to_contact={e['frames_to_contact']}")
+        log.info(f"  frame {e['frame']}: pathway={e['pathway']} d_px={e['d_px_commit']} "
+                 f"frames_to_contact={e['frames_to_contact']}")
     if ftc:
-        print(f"  median frames_to_contact at commit: {np.median(ftc):.1f}  mean: {np.mean(ftc):.1f}")
+        log.info(f"  median frames_to_contact at commit: {np.median(ftc):.1f}  mean: {np.mean(ftc):.1f}")
     for pop in ("lc4", "lplc2"):
-        print(f"  corr({pop.upper()}, theta)  = {corr[f'corr_{pop}_theta']:.4f}   "
-              f"corr({pop.upper()}, dtheta) = {corr[f'corr_{pop}_dtheta']:.4f}")
+        log.info(f"  corr({pop.upper()}, theta)  = {corr[f'corr_{pop}_theta']:.4f}   "
+                 f"corr({pop.upper()}, dtheta) = {corr[f'corr_{pop}_dtheta']:.4f}")
     return {"events": events, "corr": corr,
             "median_frames_to_contact": float(np.median(ftc)) if ftc else None}

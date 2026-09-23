@@ -38,6 +38,7 @@ One panel() call is ~5.1ms median against a 16.7ms real-time budget
 
 from __future__ import annotations
 
+import logging
 import subprocess
 import sys
 from pathlib import Path
@@ -46,6 +47,8 @@ import numpy as np
 import pandas as pd
 import pyarrow.feather as feather
 from PIL import Image, ImageDraw, ImageFont
+
+log = logging.getLogger(__name__)
 
 # Repo root (this file lives in render/); the connectome data sits beside the repo.
 ROOT = Path(__file__).resolve().parent.parent
@@ -365,7 +368,7 @@ def render_run(tel: pd.DataFrame, frames_dir, out_path, fps: int = 60,
     for f in tmp.glob("*.png"):
         f.unlink()
     tmp.rmdir()
-    print(f"wrote {out_path}")
+    log.info(f"wrote {out_path}")
     return out_path
 
 

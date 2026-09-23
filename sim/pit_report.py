@@ -18,8 +18,12 @@ cleared vs died. Pure telemetry analysis -- no simulation changes.
 """
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import pandas as pd
+
+log = logging.getLogger(__name__)
 
 CLEAR_MARGIN_PX = 16          # extra px of forward progress beyond the gap's
                                # far edge required to call it "cleared"
@@ -102,14 +106,14 @@ def summarize(tel: pd.DataFrame, events: list[dict], died_or_flagged: bool,
 
 def print_table(level: str, rows: list[dict]):
     if not rows:
-        print(f"  {level}: no pits encountered this run.")
+        log.info(f"  {level}: no pits encountered this run.")
         return
-    print(f"  {level}: {len(rows)} pit(s) encountered")
+    log.info(f"  {level}: {len(rows)} pit(s) encountered")
     for i, r in enumerate(rows):
         outcome = "CLEARED" if r["cleared"] else ("DIED" if r["died_here"] else "UNRESOLVED (ran out of frames)")
         jump_kind = "long jump" if r["used_long_jump"] else ("hop" if r["used_hop"] else "no jump seen")
-        print(f"    #{i+1} frame {r['start_frame']}-{r['end_frame']}  "
-              f"gap_width={r['gap_width_tiles']} tiles  "
-              f"spike_rate={r['spike_rate']:.2f}  "
-              f"DLMn_peak={r['dlmn_peak']:.2f} (crossed={r['dlmn_crossed']})  "
-              f"{jump_kind}  -> {outcome}")
+        log.info(f"    #{i+1} frame {r['start_frame']}-{r['end_frame']}  "
+                 f"gap_width={r['gap_width_tiles']} tiles  "
+                 f"spike_rate={r['spike_rate']:.2f}  "
+                 f"DLMn_peak={r['dlmn_peak']:.2f} (crossed={r['dlmn_crossed']})  "
+                 f"{jump_kind}  -> {outcome}")

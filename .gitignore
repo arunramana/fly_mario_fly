@@ -1,7 +1,7 @@
 # What this file does, in plain English:
 # Tells git which files never to save: the virtual environment, Python's
 # compiled caches, videos and images (re-renderable from the saved telemetry
-# CSVs), and the large connectome data files.
+# CSVs), log files, and the large connectome data files.
 .venv/
 __pycache__/
 *.pyc
@@ -12,3 +12,5 @@ __pycache__/
 .pytest_cache/
 # Outputs live in projects/<name>/runs/; stray top-level runs/ from old defaults.
 /runs/
+# Per-run log files (config/logging_setup.py); telemetry CSVs are the record.
+/logs/

@@ -25,6 +25,7 @@ render/     the live-brain panel and video output.
 scripts/    diagnostics, calibration sweeps, the shuffled-connectome
             control, and benchmarks.
 projects/   run artifacts per experiment line (videos, telemetry CSVs).
+logs/       one log file per run (gitignored; created on first run).
 tests/      unit tests plus the golden-telemetry characterisation tests.
 docs/       specs, the run log, audits.
 ```
@@ -62,6 +63,14 @@ The original jump-only demo:
 ```
 .venv/Scripts/python.exe run_mario.py
 ```
+
+Each run writes a log file to `logs/` (for example
+`logs/2026-09-23_165928_028_my_run.log`). The screen shows only the run
+summary and the files written; the log file also has the circuit build
+reports and every per-frame event (jumps, climbs, `?`-block hits). This is
+set up by `config/logging_setup.py`. A tool that imports this code can call
+`setup_logging("my_tool")` itself first, to choose the file name or levels.
+The scripts in `scripts/` still print to the screen.
 
 Diagnostics and sweeps run from the repo root as modules:
 

@@ -24,6 +24,9 @@ the hold durations) come from config.params.JumpParams.
 
 from __future__ import annotations
 
+import logging
+from pathlib import Path
+
 import setuptools  # noqa: F401  -- must import before gym on py3.12 (distutils shim)
 import numpy as np
 import cv2
@@ -37,6 +40,9 @@ from mario.ram.addresses import ADDR_MARIO_X
 from mario.ram.addresses import ADDR_ENEMY_X, ADDR_ENEMY_ACTIVE, N_ENEMY_SLOTS  # noqa: F401
 from bridge.perception import enemy_thetas
 from config.params import JumpParams
+from config.logging_setup import ensure_logging
+
+log = logging.getLogger(__name__)
 
 # ---- hand-set scalars (config.params.JumpParams, docs/SCALARS.md) -------
 # g sits mid-band of the range that passes Diagnostic 4 (scripts/diag4.py):
@@ -104,7 +110,8 @@ def draw_overlay(frame_bgr, info: dict, panel_h=PANEL_H, scale=UPSCALE):
 
 
 def main(out_path="mario_jump.mp4"):
-    print("Loading connectome circuit (cached, expanded N=60)...")
+    ensure_logging(Path(out_path).stem)
+    log.debug("Loading connectome circuit (cached, expanded N=60)...")
     bodies, edges, total_input, signs, W, order, diag = load(N=60)
     K = W.shape[0]
     msk_all = {
@@ -140,7 +147,7 @@ def main(out_path="mario_jump.mp4"):
     jump_cooldown = 0
     n_jumps = 0
 
-    print("Running... (holding right+B, connectome decides when to press A)")
+    log.debug("Running... (holding right+B, connectome decides when to press A)")
     for frame in range(MAX_FRAMES):
         mario_x = ram[ADDR_MARIO_X]
         theta, dtheta, d_out = enemy_thetas(ram, mario_x, prev_theta)
@@ -166,8 +173,8 @@ def main(out_path="mario_jump.mp4"):
         elif jump_hold == 0 and ttmn_val >= TTMN_PRESS_THRESHOLD:
             jump_hold = JUMP_HOLD_FRAMES
             n_jumps += 1
-            print(f"  frame {frame}: TTMn={ttmn_val:.2f} >= {TTMN_PRESS_THRESHOLD} -> JUMP #{n_jumps} "
-                  f"(d={d_out[side]}, theta={theta[side]:.3f})")
+            log.debug(f"  frame {frame}: TTMn={ttmn_val:.2f} >= {TTMN_PRESS_THRESHOLD} -> JUMP #{n_jumps} "
+                      f"(d={d_out[side]}, theta={theta[side]:.3f})")
 
         if jump_hold > 0:
             action = JUMP
@@ -199,12 +206,12 @@ def main(out_path="mario_jump.mp4"):
         writer.write(canvas)
 
         if done:
-            print(f"  episode ended at frame {frame} (death/flag)")
+            log.info(f"  episode ended at frame {frame} (death/flag)")
             break
 
     writer.release()
     env.close()
-    print(f"\nSaved video -> {out_path}  ({frame+1} frames, {n_jumps} jump(s) triggered)")
+    log.info(f"\nSaved video -> {out_path}  ({frame+1} frames, {n_jumps} jump(s) triggered)")
     return n_jumps
 
 

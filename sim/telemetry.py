@@ -13,9 +13,12 @@ keys in; the byte-identical golden comparison depends on it.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pandas as pd
+
+log = logging.getLogger(__name__)
 
 
 class TelemetryObserver:
@@ -42,5 +45,5 @@ class TelemetryObserver:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         self.to_dataframe().to_csv(path, index=False)
-        print(f"wrote {path}")
+        log.info(f"wrote {path}")
         return path

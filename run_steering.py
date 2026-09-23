@@ -26,6 +26,7 @@ os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")
 
+import logging
 import tempfile
 from pathlib import Path
 from types import SimpleNamespace
@@ -50,6 +51,9 @@ from config.params import (
 )
 
 from render.video import _ensure_ffmpeg_on_path
+from config.logging_setup import ensure_logging, setup_logging
+
+log = logging.getLogger(__name__)
 
 # Every scalar below is sourced from config/params.py (docs/SCALARS.md has
 # the value, category and provenance of each). The jump scalars stay in
@@ -171,15 +175,15 @@ def inject_mushroom(ram, mario_x, mario_y, offset=None):
     off = MUSHROOM_OFFSET if offset is None else offset
     slot = find_inactive_slot(ram)
     if slot is None:
-        print("  (no free enemy slot to inject the mushroom into -- skipped)")
+        log.debug("  (no free enemy slot to inject the mushroom into -- skipped)")
         return False
     x = max(int(mario_x) + off, 0)
     ram[ADDR_ENEMY_ACTIVE + slot] = 1
     ram[ADDR_ENEMY_TYPE + slot] = POWERUP_ID
     ram[ADDR_ENEMY_X + slot] = x & 0xFF
     ram[ADDR_ENEMY_Y + slot] = int(mario_y)
-    print(f"  injected synthetic mushroom into slot {slot} at x={x} (mario_x={mario_x}, "
-          f"i.e. {off:+d}px -- {'ahead, reachable' if off > 0 else 'behind, competes with HOME_BIAS'})")
+    log.debug(f"  injected synthetic mushroom into slot {slot} at x={x} (mario_x={mario_x}, "
+              f"i.e. {off:+d}px -- {'ahead, reachable' if off > 0 else 'behind, competes with HOME_BIAS'})")
     return True
 
 
@@ -256,13 +260,14 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
             "more (REFACTOR_PLAN.md phase 5: a run without a named project "
             "must fail loudly, not silently write to a stray top-level "
             "runs/008_run.mp4). Pass out_mp4 directly, or route it through "
-            "a ProjectConfig via sim.output_routing.resolve_run_path() / "
+            "a ProjectConfig via config.output_routing.resolve_run_path() / "
             "sim.project_runner.run_from_config()."
         )
+    ensure_logging(Path(out_mp4).stem)
     if seed is None:
         seed = int(np.random.SeedSequence().entropy % (2**32))
     if sigma > 0.0:
-        print(f"sprint 025: seed={seed} sigma={sigma}")
+        log.info(f"sprint 025: seed={seed} sigma={sigma}")
     if force_mario_size is not None and force_size_from_frame is None:
         assert inject_frame is not None, (
             "force_mario_size needs an explicit force_size_from_frame when "
@@ -362,8 +367,8 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
             if inject_gap_frame is not None and frame >= inject_gap_frame:
                 if gap_target_col is None:
                     gap_target_col = wide_gap_target_col(ram, mario_x)
-                    print(f"  frame {frame}: sprint-016 synthetic wide gap poked at "
-                          f"abs_col={gap_target_col} (mario_x={mario_x})")
+                    log.debug(f"  frame {frame}: sprint-016 synthetic wide gap poked at "
+                              f"abs_col={gap_target_col} (mario_x={mario_x})")
                 poke_wide_gap(ram, gap_target_col)
 
             # ---- decision: FullPolicy.act(); read back what telemetry needs -
@@ -466,12 +471,12 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
                                                      policy.n_refusals)
         n_stomps = policy.n_stomps
         max_x_abs = policy.max_x_abs
-        print(f"\n{frame} frames -- escape jumps={n_escape_jumps} "
-              f"(of which long jumps={n_long_jumps}, DNp01={n_dnp01_fired}, DNp02={n_dnp02_fired})  "
-              f"climb hops={n_climb_hops}  climb jumps={n_climb_jumps}  "
-              f"conflicts={n_conflicts}  odour avoids={n_odor_avoids}  "
-              f"qblock hits={n_qblock_hits}  stomps={n_stomps}  refusal frames={n_refusals}  "
-              f"ended={'died/flagged' if done else 'hit max_frames'}")
+        log.info(f"\n{frame} frames -- escape jumps={n_escape_jumps} "
+                 f"(of which long jumps={n_long_jumps}, DNp01={n_dnp01_fired}, DNp02={n_dnp02_fired})  "
+                 f"climb hops={n_climb_hops}  climb jumps={n_climb_jumps}  "
+                 f"conflicts={n_conflicts}  odour avoids={n_odor_avoids}  "
+                 f"qblock hits={n_qblock_hits}  stomps={n_stomps}  refusal frames={n_refusals}  "
+                 f"ended={'died/flagged' if done else 'hit max_frames'}")
 
         tel = observer.to_dataframe()
         if write_telemetry:
@@ -508,12 +513,12 @@ def run_008():
     """Reproduce run 008: does the long jump generalise across 1-1/1-2/1-3."""
     from sim.pit_report import find_pit_events, summarize, print_table
 
-    print("=" * 70)
-    print("SPEC_odour.md section 3: pit generalisation across 1-1/1-2/1-3")
-    print("=" * 70)
+    log.info("=" * 70)
+    log.info("SPEC_odour.md section 3: pit generalisation across 1-1/1-2/1-3")
+    log.info("=" * 70)
     all_rows = {}
     for level, out_mp4 in LEVEL_RUNS:
-        print(f"\n--- {level} -> {out_mp4} ---")
+        log.info(f"\n--- {level} -> {out_mp4} ---")
         tel, info = main(out_mp4=out_mp4, level=level, max_frames=2500, inject_frame=60)
         events = find_pit_events(tel)
         rows = summarize(tel, events, info["died_or_flagged"], info["n_frames"])
@@ -532,38 +537,38 @@ def run_016(out_mp4="runs/016_smell.mp4", max_frames=1500,
                       inject_frame=mushroom_frame, mushroom_offset=mushroom_offset,
                       inject_gap_frame=gap_frame)
 
-    print("\n" + "=" * 70)
-    print("sprint 016: four-event report")
-    print("=" * 70)
+    log.info("\n" + "=" * 70)
+    log.info("sprint 016: four-event report")
+    log.info("=" * 70)
 
     avoid_frames = tel.index[tel["avoid_odor"] & ~tel["avoid_odor"].shift(1, fill_value=False)]
     if len(avoid_frames):
-        print(f"1. avoids a Goomba (odour): frame {int(tel['frame'].iloc[avoid_frames[0]])} "
-              f"(and {len(avoid_frames) - 1} more time(s) later in the run)")
+        log.info(f"1. avoids a Goomba (odour): frame {int(tel['frame'].iloc[avoid_frames[0]])} "
+                 f"(and {len(avoid_frames) - 1} more time(s) later in the run)")
     else:
-        print("1. avoids a Goomba (odour): DID NOT HAPPEN this run")
+        log.info("1. avoids a Goomba (odour): DID NOT HAPPEN this run")
 
     qb_frames = tel.loc[tel["qblock_hit"], "frame"]
     if len(qb_frames):
-        print(f"2. hits a real '?' block: frame {int(qb_frames.iloc[0])}")
+        log.info(f"2. hits a real '?' block: frame {int(qb_frames.iloc[0])}")
     else:
-        print("2. hits a real '?' block: DID NOT HAPPEN this run")
+        log.info("2. hits a real '?' block: DID NOT HAPPEN this run")
 
     grew = tel.index[tel["mario_size"] > tel["mario_size"].shift(1, fill_value=tel["mario_size"].iloc[0])]
     if len(grew):
-        print(f"3. eats the mushroom: frame {int(tel['frame'].iloc[grew[0]])}")
+        log.info(f"3. eats the mushroom: frame {int(tel['frame'].iloc[grew[0]])}")
     else:
-        print("3. eats the mushroom: DID NOT HAPPEN this run")
+        log.info("3. eats the mushroom: DID NOT HAPPEN this run")
 
     refuse_frames = tel.index[tel["refusing"] & ~tel["refusing"].shift(1, fill_value=False)]
     if len(refuse_frames):
-        print(f"4. refuses a wide pit: frame {int(tel['frame'].iloc[refuse_frames[0]])}")
+        log.info(f"4. refuses a wide pit: frame {int(tel['frame'].iloc[refuse_frames[0]])}")
     else:
-        print("4. refuses a wide pit: DID NOT HAPPEN this run")
+        log.info("4. refuses a wide pit: DID NOT HAPPEN this run")
 
-    print(f"\n{info['n_frames']} frames, "
-          f"{'died/flagged' if info['died_or_flagged'] else 'hit max_frames'}, "
-          f"max_x_abs={info['max_x_abs']}")
+    log.info(f"\n{info['n_frames']} frames, "
+             f"{'died/flagged' if info['died_or_flagged'] else 'hit max_frames'}, "
+             f"max_x_abs={info['max_x_abs']}")
     return tel, info
 
 
@@ -571,17 +576,17 @@ def run_023(max_frames=1500, gap_frame=600):
     """Reproduce run 023: paired retinotopic=False/True comparison on 1-1."""
     from sim.commitment_report import report
 
-    print("=" * 70)
-    print("sprint 023: retinotopy paired comparison, level 1-1")
-    print("=" * 70)
+    log.info("=" * 70)
+    log.info("sprint 023: retinotopy paired comparison, level 1-1")
+    log.info("=" * 70)
 
-    print("\n[before] retinotopic=False (uniform theta/dtheta broadcast)...")
+    log.info("\n[before] retinotopic=False (uniform theta/dtheta broadcast)...")
     tel_before, info_before = main(
         out_mp4="runs/023_retinotopy_before.mp4", level="1-1",
         max_frames=max_frames, record_video=False,
         inject_gap_frame=gap_frame, retinotopic=False)
 
-    print("\n[after] retinotopic=True (per-cell receptive-field weighting)...")
+    log.info("\n[after] retinotopic=True (per-cell receptive-field weighting)...")
     tel_after, info_after = main(
         out_mp4="runs/023_retinotopy.mp4", level="1-1",
         max_frames=max_frames, record_video=True,
@@ -590,20 +595,20 @@ def run_023(max_frames=1500, gap_frame=600):
     before = report(tel_before, "BEFORE (retinotopic=False)")
     after = report(tel_after, "AFTER (retinotopic=True)")
 
-    print("\n" + "=" * 70)
-    print("sprint 023: verdict")
-    print("=" * 70)
+    log.info("\n" + "=" * 70)
+    log.info("sprint 023: verdict")
+    log.info("=" * 70)
     if before["median_frames_to_contact"] is not None and after["median_frames_to_contact"] is not None:
-        print(f"median frames_to_contact at commit: {before['median_frames_to_contact']:.2f} -> "
-              f"{after['median_frames_to_contact']:.2f} "
-              f"({'EARLIER' if after['median_frames_to_contact'] > before['median_frames_to_contact'] else 'not earlier'})")
+        log.info(f"median frames_to_contact at commit: {before['median_frames_to_contact']:.2f} -> "
+                 f"{after['median_frames_to_contact']:.2f} "
+                 f"({'EARLIER' if after['median_frames_to_contact'] > before['median_frames_to_contact'] else 'not earlier'})")
     c_before = before["corr"]; c_after = after["corr"]
-    print(f"corr(LC4,theta) before={c_before['corr_lc4_theta']:.4f} after={c_after['corr_lc4_theta']:.4f}")
-    print(f"corr(LC4,dtheta) before={c_before['corr_lc4_dtheta']:.4f} after={c_after['corr_lc4_dtheta']:.4f}")
+    log.info(f"corr(LC4,theta) before={c_before['corr_lc4_theta']:.4f} after={c_after['corr_lc4_theta']:.4f}")
+    log.info(f"corr(LC4,dtheta) before={c_before['corr_lc4_dtheta']:.4f} after={c_after['corr_lc4_dtheta']:.4f}")
     flipped = (c_after["corr_lc4_dtheta"] > c_after["corr_lc4_theta"]) and \
               not (c_before["corr_lc4_dtheta"] > c_before["corr_lc4_theta"])
-    print(f"velocity-tuning signature (dtheta corr now exceeds theta corr, "
-          f"and didn't before): {flipped}")
+    log.info(f"velocity-tuning signature (dtheta corr now exceeds theta corr, "
+             f"and didn't before): {flipped}")
 
     return dict(tel_before=tel_before, tel_after=tel_after,
                 info_before=info_before, info_after=info_after,
@@ -615,17 +620,17 @@ def run_024(max_frames=1500, gap_frame=600):
     against its three pre-registered criteria."""
     from sim.commitment_report import report
 
-    print("=" * 70)
-    print("sprint 024: retinotopy, fovea-at-density-mode, second and final attempt")
-    print("=" * 70)
+    log.info("=" * 70)
+    log.info("sprint 024: retinotopy, fovea-at-density-mode, second and final attempt")
+    log.info("=" * 70)
 
-    print("\n[before] retinotopic=False (identical to 017/023's own baseline)...")
+    log.info("\n[before] retinotopic=False (identical to 017/023's own baseline)...")
     tel_before, info_before = main(
         out_mp4="runs/024_retinotopy_fovea_before.mp4", level="1-1",
         max_frames=max_frames, record_video=False,
         inject_gap_frame=gap_frame, retinotopic=False)
 
-    print("\n[after] retinotopic=True, origin=density_mode()...")
+    log.info("\n[after] retinotopic=True, origin=density_mode()...")
     tel_after, info_after = main(
         out_mp4="runs/024_retinotopy_fovea.mp4", level="1-1",
         max_frames=max_frames, record_video=True,
@@ -634,26 +639,26 @@ def run_024(max_frames=1500, gap_frame=600):
     before = report(tel_before, "BEFORE (retinotopic=False)")
     after = report(tel_after, "AFTER (retinotopic=True, fovea=density_mode)")
 
-    print("\n" + "=" * 70)
-    print("sprint 024: verdict against the three pre-registered criteria")
-    print("=" * 70)
+    log.info("\n" + "=" * 70)
+    log.info("sprint 024: verdict against the three pre-registered criteria")
+    log.info("=" * 70)
     if before["median_frames_to_contact"] is not None and after["median_frames_to_contact"] is not None:
-        print(f"(1) median frames_to_contact at commit: {before['median_frames_to_contact']:.2f} -> "
-              f"{after['median_frames_to_contact']:.2f} "
-              f"({'EARLIER than 017 baseline' if after['median_frames_to_contact'] > 32 else 'not earlier than 017 baseline (32)'})")
+        log.info(f"(1) median frames_to_contact at commit: {before['median_frames_to_contact']:.2f} -> "
+                 f"{after['median_frames_to_contact']:.2f} "
+                 f"({'EARLIER than 017 baseline' if after['median_frames_to_contact'] > 32 else 'not earlier than 017 baseline (32)'})")
     else:
-        print("(1) frames_to_contact: no commitments in one or both runs -- see (3)")
+        log.info("(1) frames_to_contact: no commitments in one or both runs -- see (3)")
     c_after = after["corr"]
     for pop in ("lc4", "lplc2"):
         exceeds = c_after[f"corr_{pop}_dtheta"] > c_after[f"corr_{pop}_theta"]
-        print(f"(2) {pop.upper()}: corr(theta)={c_after[f'corr_{pop}_theta']:.4f}  "
-              f"corr(dtheta)={c_after[f'corr_{pop}_dtheta']:.4f}  "
-              f"velocity exceeds size: {exceeds}")
-    print(f"(3) commitments: before={len(before['events'])} (baseline=10)  "
-          f"after={len(after['events'])}  "
-          f"survival: before={'died' if info_before['died_or_flagged'] else 'survived'} "
-          f"({info_before['n_frames']} frames)  "
-          f"after={'died' if info_after['died_or_flagged'] else 'survived'} ({info_after['n_frames']} frames)")
+        log.info(f"(2) {pop.upper()}: corr(theta)={c_after[f'corr_{pop}_theta']:.4f}  "
+                 f"corr(dtheta)={c_after[f'corr_{pop}_dtheta']:.4f}  "
+                 f"velocity exceeds size: {exceeds}")
+    log.info(f"(3) commitments: before={len(before['events'])} (baseline=10)  "
+             f"after={len(after['events'])}  "
+             f"survival: before={'died' if info_before['died_or_flagged'] else 'survived'} "
+             f"({info_before['n_frames']} frames)  "
+             f"after={'died' if info_after['died_or_flagged'] else 'survived'} ({info_after['n_frames']} frames)")
 
     return dict(tel_before=tel_before, tel_after=tel_after,
                 info_before=info_before, info_after=info_after,
@@ -662,6 +667,7 @@ def run_024(max_frames=1500, gap_frame=600):
 
 if __name__ == "__main__":
     import sys
+    setup_logging(f"run_steering_{sys.argv[1]}" if len(sys.argv) > 1 else "run_steering")
     if len(sys.argv) > 1 and sys.argv[1] == "008":
         run_008()
     elif len(sys.argv) > 1 and sys.argv[1] == "016":

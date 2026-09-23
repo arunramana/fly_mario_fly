@@ -11,6 +11,8 @@ them per-episode would change behaviour (docs/RUNS.md, refactor phase 5b).
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 
 from bridge.perception import (
@@ -38,6 +40,8 @@ from mario.ram.addresses import (
 )
 from fly.plasticity.dopamine import event_dopamine
 from fly.plasticity.three_factor import update_eligibility, depress
+
+log = logging.getLogger(__name__)
 
 # Loaded circuits are memoised per process: every episode reuses them.
 _circuit_cache: dict = {}
@@ -85,7 +89,7 @@ class FullPolicy:
         self.climb_stall_frames = max(1, round(c.steering.climb_stall_frames / frame_skip))
         self.mdn_backup_frames = max(1, round(c.mdn.mdn_backup_frames / frame_skip))
 
-        print("Loading the jump circuit (unchanged, cached)...")
+        log.debug("Loading the jump circuit (unchanged, cached)...")
         j_bodies, _, _, _, W_j, _, _ = _memo_load("jump", load_jump, N=60)
         self.Kj = W_j.shape[0]
         jm = lambda t, s: ((j_bodies["type"] == t) & (j_bodies["somaSide"] == s)).to_numpy()
@@ -122,7 +126,7 @@ class FullPolicy:
                     origin = rt.density_mode(h1, spread)
                     self.j_azimuth_ref[(t, side)] = (origin, h1.max(), float(np.median(h2)))
 
-        print("Loading the steering circuit (DNa01/DNa02, N=60, cached)...")
+        log.debug("Loading the steering circuit (DNa01/DNa02, N=60, cached)...")
         s_bodies, _, _, _, W_s, _, _ = _memo_load("steering", load_steering)
         self.Ks = W_s.shape[0]
         self.r_mask, self.l_mask = _make_steering_masks(s_bodies)
@@ -134,7 +138,7 @@ class FullPolicy:
         self.steering_network = Network(W_s, Integrator(), g=c.steering.g,
                                          populations={"R": self.r_mask, "L": self.l_mask})
 
-        print("Loading the takeoff circuit (DNp01 -> GFC1-4 -> DLMn, cached)...")
+        log.debug("Loading the takeoff circuit (DNp01 -> GFC1-4 -> DLMn, cached)...")
         t_bodies, _, _, _, W_t, _, _ = _memo_load("takeoff", load_takeoff)
         self.Kt = W_t.shape[0]
         self.takeoff_dnp01_mask = (t_bodies["type"] == "DNp01").to_numpy()
@@ -143,21 +147,21 @@ class FullPolicy:
             W_t, Integrator(), g=c.takeoff.g,
             populations={"DNp01": self.takeoff_dnp01_mask, "DLMn": self.dlmn_mask})
 
-        print("Loading the speed circuit (DNp09, N=60, cached)...")
+        log.debug("Loading the speed circuit (DNp09, N=60, cached)...")
         p_bodies, _, _, _, W_p, _, _ = _memo_load("speed", load_speed)
         self.Kp = W_p.shape[0]
         self.dnp09_mask = (p_bodies["type"] == "DNp09").to_numpy()
         self.speed_network = Network(W_p, Integrator(), g=c.speed.g,
                                       populations={"DNp09": self.dnp09_mask})
 
-        print("Loading the MDN circuit (backward walking, N=60, cached)...")
+        log.debug("Loading the MDN circuit (backward walking, N=60, cached)...")
         m_bodies, _, _, _, W_m, _, _ = _memo_load("mdn", load_mdn)
         self.Km = W_m.shape[0]
         self.mdn_mask = (m_bodies["type"] == "MDN").to_numpy()
         self.mdn_network = Network(W_m, Integrator(), g=c.mdn.g,
                                     populations={"MDN": self.mdn_mask})
 
-        print("Loading the DNp02 circuit (second escape pathway, N=60, cached)...")
+        log.debug("Loading the DNp02 circuit (second escape pathway, N=60, cached)...")
         dp_bodies, _, _, _, W_dp, _, _ = _memo_load("dnp02", load_dnp02)
         self.Kdp = W_dp.shape[0]
         self.dnp02_lc4_r = ((dp_bodies["type"] == "LC4") & (dp_bodies["somaSide"] == "R")).to_numpy()
@@ -176,7 +180,7 @@ class FullPolicy:
             populations={"L": self.dnp02_l_mask, "R": self.dnp02_r_mask,
                          "TTMn_L": self.dnp02_ttmn_l, "TTMn_R": self.dnp02_ttmn_r})
 
-        print("Loading the mushroom body circuit (KC/MBON/DAN, cached)...")
+        log.debug("Loading the mushroom body circuit (KC/MBON/DAN, cached)...")
         mb_bodies, _, _, _, W_mb_full, _, _ = _memo_load("mushroom_body", load_mushroom_body)
         mb_kc_mask = (mb_bodies["role"] == "KC").to_numpy()
         mb_mbon_mask = (mb_bodies["role"] == "MBON").to_numpy()
@@ -261,8 +265,8 @@ class FullPolicy:
         qblock_hit = bool(self.prev_qblock_cols - cur_qblock_cols)
         if qblock_hit:
             self.n_qblock_hits += 1
-            print(f"  '?' block hit (column(s) "
-                  f"{sorted(self.prev_qblock_cols - cur_qblock_cols)} emptied)")
+            log.debug(f"  '?' block hit (column(s) "
+                      f"{sorted(self.prev_qblock_cols - cur_qblock_cols)} emptied)")
         self.prev_qblock_cols = cur_qblock_cols
 
         # ---- stomp detection ------------------------------------------
@@ -284,7 +288,7 @@ class FullPolicy:
 
         mario_size = int(ram[ADDR_MARIO_SIZE])
         if mario_size > self.prev_mario_size:
-            print(f"  Mario grew (size {self.prev_mario_size} -> {mario_size}) -- ate the mushroom")
+            log.debug(f"  Mario grew (size {self.prev_mario_size} -> {mario_size}) -- ate the mushroom")
         self.prev_mario_size = mario_size
 
         # ---- escape jump + pit-triggered graded takeoff --------------
@@ -410,8 +414,8 @@ class FullPolicy:
                            and avers_r_eff >= odor_l_eff and not refusing)
         if avoid_odor and not type(self)._prev_avoid_odor:
             self.n_odor_avoids += 1
-            print(f"  aversive odour steers AWAY (L) -- avers_r_eff={avers_r_eff:.3f} "
-                  f"theta_R={theta['R']:.3f} d_px={d_out['R']}")
+            log.debug(f"  aversive odour steers AWAY (L) -- avers_r_eff={avers_r_eff:.3f} "
+                      f"theta_R={theta['R']:.3f} d_px={d_out['R']}")
         type(self)._prev_avoid_odor = avoid_odor
 
         # ---- contact-based climbing ------------------------------------
@@ -443,10 +447,10 @@ class FullPolicy:
                     self.n_climb_jumps += 1
                 self.climb_hold = hold
                 climb_trigger = True
-                print(f"  blocked-forward -> climb {'hop' if hold != self.climb_jump_frames else 'jump'} "
-                      f"(hold={hold}, mario_size={mario_size})")
+                log.debug(f"  blocked-forward -> climb {'hop' if hold != self.climb_jump_frames else 'jump'} "
+                          f"(hold={hold}, mario_size={mario_size})")
             else:
-                print(f"  climb HABITUATED (level={self.hab_climb.hab_level}) -- suppressed")
+                log.debug(f"  climb HABITUATED (level={self.hab_climb.hab_level}) -- suppressed")
             self.stall_count = 0
 
         # ---- escape-jump trigger: DNp01 vs DNp02, COMPETE not sum ------
@@ -484,21 +488,21 @@ class FullPolicy:
                                           if (closing_px_per_frame and closing_px_per_frame > 0
                                               and d_out[side] is not None) else None)
                     ftc_str = f"{frames_to_contact:.1f}" if frames_to_contact is not None else "?"
-                    print(f"  {pathway_fired} commits -- theta={theta[side]:.3f} "
-                          f"d_px={d_out[side]} est_frames_to_contact={ftc_str}")
+                    log.debug(f"  {pathway_fired} commits -- theta={theta[side]:.3f} "
+                              f"d_px={d_out[side]} est_frames_to_contact={ftc_str}")
                     if long_jump:
                         self.n_long_jumps += 1
-                        print(f"  gap_width={gap_w} DLMn={dlmn_val:.2f} >= "
-                              f"{c.takeoff.dlmn_recruit_threshold} -> LONG JUMP (hold={self.jump_hold})")
+                        log.debug(f"  gap_width={gap_w} DLMn={dlmn_val:.2f} >= "
+                                  f"{c.takeoff.dlmn_recruit_threshold} -> LONG JUMP (hold={self.jump_hold})")
                 else:
-                    print(f"  escape HABITUATED (level={self.hab_escape.hab_level}) -- suppressed")
+                    log.debug(f"  escape HABITUATED (level={self.hab_escape.hab_level}) -- suppressed")
 
         conflict = escape_trigger and (climb_trigger or self.climb_hold > 0)
         if climb_trigger and (self.jump_hold > 0 or escape_trigger):
             conflict = True
         if conflict:
             self.n_conflicts += 1
-            print("  CONFLICT -- escape and climb both want A")
+            log.debug("  CONFLICT -- escape and climb both want A")
 
         # ---- MDN: the escape-failed fallback ---------------------------
         if self.mdn_backup_hold == 0:
@@ -510,7 +514,7 @@ class FullPolicy:
             mdn_val = h_mdn[self.mdn_mask].mean()
             if mdn_val >= c.mdn.mdn_threshold:
                 self.mdn_backup_hold = self.mdn_backup_frames
-                print(f"  escape habituated -> MDN takes over, backing up (hold={self.mdn_backup_frames})")
+                log.debug(f"  escape habituated -> MDN takes over, backing up (hold={self.mdn_backup_frames})")
         else:
             mdn_val = self.mdn_network.h[self.mdn_mask].mean()
 
