@@ -1,3 +1,8 @@
+# What this file does, in plain English:
+# Makes the ffmpeg video tool findable so brain_panel.py can call it to
+# build videos. It copies the ffmpeg program bundled with the imageio-ffmpeg
+# package to a plain "ffmpeg.exe" name and adds its folder to the system
+# search path. Used by run_steering.py and scripts/compare_controllers.py.
 """render/video.py -- video-output plumbing shared by run_steering.py and
 scripts/compare_controllers.py."""
 

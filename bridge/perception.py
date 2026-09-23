@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Works out what Mario "sees" and "smells" from the game's memory, as input
+# for the simulated fly brain. For the nearest enemy on each side it
+# computes how big the enemy looks (as an angle) and how fast that grows. It
+# also computes smells that weaken with distance: attractive ones from
+# power-ups and "?" blocks, a repellent one from enemies, and a hunger boost.
 """bridge/perception.py -- what each entity looks and smells like to the
 fly. The only module that reads mario/'s RAM and produces fly stimuli
 (theta/dtheta, odour concentrations); fly/ never sees RAM.

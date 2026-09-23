@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Makes the run videos. From a per-frame log of numbers and saved game
+# frames, it draws the fly's nervous system as a cloud of dots (each nerve
+# cell at its real measured position, from connectome data kept outside the
+# repo), lights up neuron groups by their activity, adds text readouts, puts
+# the enlarged game screen beside it, and joins the frames into an .mp4 file.
 """
 brain_panel.py — render the MaleCNS soma cloud as a live-brain panel and
 composite it beside the emulator frames.

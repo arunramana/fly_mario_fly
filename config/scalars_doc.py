@@ -1,3 +1,8 @@
+# What this file does, in plain English:
+# Writes docs/SCALARS.md, a table of every hand-picked number listed in
+# config/params.py, with counts of how many were invented or measured. Run it
+# after changing params.py; a test (tests/test_scalars_doc.py) fails if the
+# saved table no longer matches.
 """config/scalars_doc.py -- generates docs/SCALARS.md from config/params.py.
 tests/test_scalars_doc.py fails if the committed file differs.
 

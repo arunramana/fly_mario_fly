@@ -1,3 +1,8 @@
+# What this file does, in plain English:
+# Gathers every group of settings (the hand-picked numbers for each part of
+# the brain model, plus which level to run, for how long, and where outputs
+# go) into one settings object. It can save that object to a JSON text file
+# and load it back, so a project's run can be repeated from its settings.
 """config/project_config.py -- ProjectConfig composes every component's
 params and serialises them (REFACTOR_PLAN.md section 5.3). It exists only
 for the loader and the GUI; components receive their own params, never

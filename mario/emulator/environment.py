@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Wraps the game emulator in a small object that can start a level, advance
+# one frame for a chosen button press, and shut down. After each step it
+# hands back a copy of the game's memory and whether the game has ended. It
+# is used by the test tests/test_episode.py; the main run script
+# (run_steering.py) drives the emulator directly instead.
 """mario/emulator/environment.py -- a concrete sim.protocols.Environment,
 wrapping nes-py/gym_super_mario_bros directly (via mario.emulator.env's
 existing make_env). Generic to any policy -- takes an integer action index

@@ -1,3 +1,7 @@
+# What this file does, in plain English:
+# Starts the Super Mario Bros game emulator (a program that runs the
+# original NES game) on a chosen level such as "1-1", and limits its
+# controller to the eight button combinations in mario/actions/actions.py.
 """mario/emulator/env.py -- nes-py/gym-super-mario-bros env construction."""
 
 from __future__ import annotations

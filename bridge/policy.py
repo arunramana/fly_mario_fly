@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# A cut-down controller (the part that picks the buttons each frame) that
+# uses only the escape-jump circuit, a small network of simulated neurons
+# wired like the real fly. It always holds right and run; when an approaching
+# enemy pushes the simulated jump-muscle neurons past a threshold, it holds
+# jump for a fixed time, then pauses. Used only by tests/test_episode.py.
 """bridge/policy.py -- `JumpPolicy`, a `sim.protocols.Policy` over the
 escape/jump circuit alone: hold right and B, press A once TTMn crosses its
 press threshold, hold the jump for `jump_hold_frames`.

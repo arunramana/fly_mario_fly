@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Reads the part of the game's memory that holds the map of blocks around
+# Mario (ground, bricks, pipes, "?" blocks, empty sky). From it, it answers
+# three questions: is there ground ahead or a pit, and how many blocks wide
+# is the pit; is there a wall or pipe directly in front of Mario; and where
+# are the nearby "?" blocks.
 """
 tile_ram.py — SPEC_terrain.md section 1: decode the SMB collision tile
 buffer at 0x0500-0x069F.

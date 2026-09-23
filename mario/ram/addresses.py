@@ -1,3 +1,8 @@
+# What this file does, in plain English:
+# Lists the locations in the game's memory that this project reads: Mario's
+# position and size, and the position, presence and type of the five enemy
+# slots. It also holds the type code that marks a power-up, since power-ups
+# share those slots with enemies.
 """mario/ram/addresses.py -- every SMB RAM address this project reads
 (documented in docs/SPEC_jump.md section 2).
 """

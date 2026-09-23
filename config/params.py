@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# The single list of every hand-picked number in the brain model (strengths,
+# thresholds, how long a button is held, and so on), grouped by the part it
+# belongs to. Each number carries its value, a known range if there is one,
+# a note on where it came from (for example invented or measured), and where
+# in the code it is used. docs/SCALARS.md is generated from this file.
 """config/params.py -- every hand-set scalar, one frozen dataclass per
 component (REFACTOR_PLAN.md section 5.3).
 

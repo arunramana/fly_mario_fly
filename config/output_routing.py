@@ -1,3 +1,8 @@
+# What this file does, in plain English:
+# Decides where a run's output files go: videos under projects/<name>/runs/
+# and per-frame number logs under projects/<name>/telemetry/, where <name> is
+# the project name in the settings. If no project name is set it stops with
+# an error rather than writing files somewhere unexpected.
 """config/output_routing.py -- turns a ProjectConfig into a run's output
 paths, projects/<name>/runs/ and projects/<name>/telemetry/. A config with
 no project name fails loudly instead of writing to a stray folder.

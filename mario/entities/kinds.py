@@ -1,3 +1,8 @@
+# What this file does, in plain English:
+# Defines names for the kinds of things the code can recognise in the game
+# (Goomba, Koopa, other enemies, power-ups, ground, "?" blocks, used blocks,
+# empty space, pits, other solid tiles) and the labels those things can
+# carry: a threat, something to collect, solid, or deadly to touch.
 """mario/entities/kinds.py -- entity kinds and traits.
 
 GOOMBA and KOOPA are the species screenshot-verified in 1-1/1-2
