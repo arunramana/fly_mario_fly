@@ -1969,6 +1969,70 @@ docs/ENTITIES.md now notes that every earlier "avoided the Goomba" result
 is really "avoided the enemy" -- see that commit for the reasoning
 (phase 6's eligibility trace needs at least two discriminable stimuli).
 
+## Refactor phase 4 -- config extraction and species decoding
+
+No behaviour changed -- verified byte-identical against `tests/golden/`
+after config extraction and again after species decoding, each checked
+separately. Short note, not a four-field entry, same convention as
+phases 0-3.
+
+**The denormal probe (separate commit, before this one).** Phase 3 found
+the jump circuit's own state has never been flushed. Measured directly on
+jump's real weight matrix (`denormal_probe.py`) rather than trusting
+CLAUDE.md's inherited 84x claim: genuine denormals do occur (down to
+float64's smallest representable subnormal), but the actual speedup is
+~3.2x under a realistic trace and ~4.7x worst-case -- real, but nowhere
+near 84x, and `shuffle_sweep.py` in the current repo applies no flush at
+all, so the original measurement's supporting code no longer exists in
+this form. CLAUDE.md corrected to state the measured numbers. Fix NOT
+applied to jump -- flagged for a dedicated future sprint, since it
+re-baselines every golden.
+
+**Config extraction.** `config/params.py`: 15 frozen dataclasses, one per
+component, every field typed with a default matching today's exact value
+and a documented range or an explicit `unknown` -- an invented bound would
+have been scaffolding that looked like data, so almost every field is
+`unknown` on purpose. **The honest count: 49 hand-set scalars**, not the 8
+or 9 this project's own comments had been citing across 26 sprints. Two
+were found while building this file and had never been flagged anywhere:
+bare numeric literals inside `retinotopy.py`'s `receptive_field_centers()`
+(a fallback bandwidth and a spread floor), promoted to documented fields
+even though that whole module is dormant. `docs/SCALARS.md` is generated
+directly from the dataclasses (`config/scalars_doc.py`,
+`tests/test_scalars_doc.py` keeps the two in sync) rather than written by
+hand. `run_mario.py`/`run_steering.py`/`bridge/perception.py`'s own scalar
+definitions now read from these dataclasses; `fly/network/dynamics.py` and
+three other widely-reused modules deliberately still self-define theirs,
+checked equal by `tests/test_params_match_live.py` instead of rewired, to
+avoid a rename-only risk to code used by a dozen diagnostic scripts
+outside the live path.
+
+**Species decoding.** `KindRegistry` now decodes real species from
+`ADDR_ENEMY_TYPE` for the two confirmed present in 1-1/1-2 -- `GOOMBA`
+(`0x06`) and `KOOPA` (`0x00`), both screenshot-verified via a bot-driven
+survey (the real circuit dies too early to see much of either level;
+`docs/ENTITIES.md`'s phase 4 section has the full method and evidence).
+Koopa's identification corroborates sprint 010's own independent manual
+RAM-inspection finding of the same byte. A third byte, `0x0D`, appeared
+further into 1-2 (abs_x~1400) but scrolled off-screen before a screenshot
+could confirm it -- left as generic `ENEMY` rather than guessed, the same
+standard `tile_ram.py`'s own tile IDs were held to. **1-1, surveyed to
+abs_x=1522 (beyond any controller in this project has ever reached it, the
+real circuit's own death point included), is entirely Goombas** -- exactly
+the scenario the phase-3 plan amendment warned about. 1-2 has both
+confirmed species, but only past its underground section (frame ~338),
+which today's baseline circuit doesn't survive to (dies at frame 84).
+Phase 6's
+eligibility trace will need a savestate into 1-2's underground section,
+or a different level, not 1-1 alone. `bridge/profiles/default.json` gives
+`GOOMBA`/`KOOPA` distinct odour channels -- discrimination is now
+POSSIBLE in data, not switched on: `bridge/perception.py`'s functions
+still branch only on `== EntityKind.POWERUP`/`!=`, identically before and
+after, so every non-powerup entity still sums into one undifferentiated
+aversive signal. Verified byte-identical against goldens both before and
+after this change, confirming the `!=`/`==` comparisons never depended on
+which specific non-powerup kind something is.
+
 ## Still open
 
 - **The 009 climb/long-jump livelock is understood, not just patched
