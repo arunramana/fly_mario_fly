@@ -4,11 +4,12 @@ before and after making episodes cheap. No new circuits; this only changes
 how fast the existing ones run.
 
 Levers, in the order they actually mattered (measured, not assumed):
-  1. Circuit-load memoization (run_steering._memo_load) -- ~6.8s of the
-     ~7-8s a single episode used to cost was just re-reading the same 6
-     cached circuits from disk every call. This alone is the single
+  1. Circuit-load memoization (bridge.full_policy._memo_load) -- ~6.8s of
+     the ~7-8s a single episode used to cost was just re-reading the same
+     6 cached circuits from disk every call. This alone is the single
      biggest win and needed no new infrastructure, just not throwing away
-     work already done.
+     work already done. Live copy is in FullPolicy; run_steering no longer
+     owns a duplicate.
   2. Headless (record_video=False) -- already existed, just needs using.
   3. multiprocessing.Pool(8), OMP_NUM_THREADS=1 per worker (same pattern
      compare_controllers.py already established) -- each worker pays the

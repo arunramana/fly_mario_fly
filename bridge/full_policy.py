@@ -38,6 +38,7 @@ from bridge.perception import (
     enemy_thetas, mushroom_odor, question_block_odor, goomba_odor,
     hunger_multiplier, HUNGER_MULT_HUNGRY,
 )
+from bridge.motor import action_index
 from config.project_config import ProjectConfig
 from fly.network import dynamics
 from fly.network.integrator import Integrator
@@ -51,7 +52,6 @@ from fly.circuits.load_speed_cached import load as load_speed
 from fly.circuits.load_mdn_cached import load as load_mdn
 from fly.circuits.load_dnp02_cached import load as load_dnp02
 from fly.circuits.load_mushroom_body_cached import load as load_mushroom_body
-from mario.actions.actions import action_index
 from mario.ram import tile_ram
 from mario.ram.addresses import (
     ADDR_MARIO_X, ADDR_MARIO_PAGE, ADDR_MARIO_SIZE,

@@ -22,12 +22,12 @@ from __future__ import annotations
 import numpy as np
 
 from bridge.perception import enemy_thetas
+from bridge.motor import action_index
 from config.params import JumpParams
 from fly.connectome.load_cached import load as load_jump
 from fly.network import dynamics
 from fly.network.integrator import Integrator
 from fly.network.network import Network
-from mario.actions.actions import action_index
 from mario.ram.addresses import ADDR_MARIO_X
 
 

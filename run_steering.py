@@ -23,64 +23,32 @@ from types import SimpleNamespace
 
 import setuptools  # noqa: F401  -- must import before gym on py3.12
 import numpy as np
-import pandas as pd
 from PIL import Image
 
 from sim.telemetry import TelemetryObserver
 from fly.network import dynamics
-from fly.network.integrator import Integrator
-from fly.network.network import Network
-from fly.sensing.olfactory_adaptation import OlfactoryAdaptation
-from fly.state.reflex_habituation import ReflexHabituation, HAB_GIVE_UP
 from mario.ram import tile_ram
 from mario.ram.addresses import (
-    ADDR_MARIO_X, ADDR_MARIO_PAGE, ADDR_MARIO_Y, ADDR_MARIO_SIZE,
+    ADDR_MARIO_X, ADDR_MARIO_Y, ADDR_MARIO_SIZE,
     ADDR_ENEMY_X, ADDR_ENEMY_Y, ADDR_ENEMY_ACTIVE, ADDR_ENEMY_TYPE,
     N_ENEMY_SLOTS, POWERUP_ID,
 )
-from mario.actions.actions import MOVES, action_index
+from mario.actions.actions import action_index
 from mario.emulator.env import make_env
-from bridge.perception import (
-    enemy_thetas, mushroom_odor, question_block_odor, goomba_odor,
-    hunger_multiplier, HUNGER_MULT_HUNGRY,
-)
-from fly.connectome.load_cached import load as load_jump
-from fly.circuits.load_steering_cached import load as load_steering
-from fly.circuits.load_takeoff_cached import load as load_takeoff
-from fly.circuits.load_speed_cached import load as load_speed
-from fly.circuits.load_mdn_cached import load as load_mdn
-from fly.circuits.load_dnp02_cached import load as load_dnp02
-from fly.circuits.load_mushroom_body_cached import load as load_mushroom_body
+from bridge.perception import HUNGER_MULT_HUNGRY
 from config.params import (
     Dnp02Params, MdnParams, MushroomBodyParams, OdourParams, SpeedParams,
     SteeringParams, TakeoffParams, TerrainParams, DemoParams,
 )
 
-# SPEC_throughput.md: loading all 6 circuits from their on-disk parquet
-# cache takes ~6.8s -- measured, not assumed -- versus well under a second
-# for an actual short episode's worth of simulation. That gap dwarfs
-# anything frame_skip/savestates/Pool can save, so it's the first thing
-# fixed here: memoize each load_*() call per PROCESS (module-global, not
-# per-call), so repeated main() calls in the same process (or the same
-# worker, across a multiprocessing.Pool's episodes) pay the ~6.8s once and
-# reuse it, instead of re-reading the cache from disk every episode.
-_circuit_cache = {}
+# Circuit-load memoization lives in bridge.full_policy (_circuit_cache /
+# _memo_load). This module only orchestrates main(); FullPolicy owns the
+# six cached load_*() calls.
 
-
-def _memo_load(key, loader, *args, **kwargs):
-    if key not in _circuit_cache:
-        _circuit_cache[key] = loader(*args, **kwargs)
-    return _circuit_cache[key]
-
-
-# run_mario.py still owns G/DNP01_SPIKE_THRESHOLD/SPIKE_AMP/TTMN_PRESS_
-# THRESHOLD/JUMP_HOLD_FRAMES/JUMP_COOLDOWN_FRAMES -- the jump circuit's own
-# hand-set scalars, never moved. Consolidating these alongside every other
-# circuit's own gain (which all live here in run_steering.py instead) is a
-# real inconsistency, flagged in docs/REFACTOR_PLAN.md's phase 2 report --
-# out of scope for a phase whose rule is "move code, don't change it".
-from run_mario import (JUMP_HOLD_FRAMES, JUMP_COOLDOWN_FRAMES,
-                        G, DNP01_SPIKE_THRESHOLD, SPIKE_AMP, TTMN_PRESS_THRESHOLD)
+# Jump scalars (G, DNP01_SPIKE_THRESHOLD, SPIKE_AMP, TTMN_PRESS_THRESHOLD,
+# JUMP_HOLD_FRAMES, JUMP_COOLDOWN_FRAMES) stay defined in run_mario.py.
+# This module does not re-import them: FullPolicy reads JumpParams, and
+# the diagnostic scripts import run_mario directly.
 from compare_controllers import _ensure_ffmpeg_on_path
 
 # ---- hand-set scalars, SPEC_odour.md section 0 ---------------------------
@@ -180,10 +148,9 @@ DNP09_SPEED_THRESHOLD = _speed_params.dnp09_speed_threshold  # DNp09 mean activa
 # CLIMB_CLEAR_DISTANCE already uses, just smaller (a single tile is a much
 # lower bar than 24px, deliberately -- habituation should engage before a
 # reflex has failed enough times to also blow through CLIMB_CLEAR_DISTANCE).
-# HAB_PROGRESS_PX/HAB_GIVE_UP moved to fly/state/reflex_habituation.py with
-# ReflexHabituation itself, phase 2 (HAB_GIVE_UP imported above -- main()
-# still compares against it directly for MDN's own trigger). Values
-# unchanged (16px / 3 firings).
+# HAB_PROGRESS_PX/HAB_GIVE_UP live in fly/state/reflex_habituation.py with
+# ReflexHabituation. FullPolicy reads the module defaults (and imports
+# HAB_GIVE_UP itself for the MDN trigger). Values unchanged (16px / 3 firings).
 
 # MDN (backward walking, 4 bodies, confirmed) has no direct synapse from
 # DNp01/GFC1-4 in this connectome (checked) -- same situation DNp09 was in
@@ -434,13 +401,6 @@ def poke_wide_gap(ram, target_col: int, width_tiles=REFUSAL_GAP_TILES + 2):
         col = target_col + k
         buf_addr = tile_ram.BUF1_ADDR if (col // 16) % 2 == 0 else tile_ram.BUF2_ADDR
         ram[buf_addr + tile_ram.GROUND_ROW * 16 + (col % 16)] = tile_ram.EMPTY_ID
-
-
-def make_steering_masks(bodies):
-    dna = bodies["type"].isin(["DNa01", "DNa02"]).to_numpy()
-    r = dna & (bodies["somaSide"] == "R").to_numpy()
-    l = dna & (bodies["somaSide"] == "L").to_numpy()
-    return r, l
 
 
 def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,

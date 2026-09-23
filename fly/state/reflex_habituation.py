@@ -33,17 +33,19 @@ class ReflexHabituation:
         self.give_up = HAB_GIVE_UP if give_up is None else give_up
         self.progress_px = HAB_PROGRESS_PX if progress_px is None else progress_px
 
-    def check(self, mario_x) -> bool:
+    def check(self, x) -> bool:
         """Call exactly once per frame the reflex's OWN trigger condition
         is true. Returns whether the reflex should actually fire this time
-        (False once habituation has reached give_up)."""
+        (False once habituation has reached give_up). `x` is forward
+        progress in the same units the caller already tracks (pixels of
+        screen-relative position) -- a plain float, not a RAM read."""
         if self.last_check_x is not None:
-            progress = mario_x - self.last_check_x
+            progress = x - self.last_check_x
             if progress < self.progress_px:
                 self.hab_level = min(self.hab_level + 1, self.give_up)
             else:
                 self.hab_level = 0
-        self.last_check_x = mario_x
+        self.last_check_x = x
         return self.hab_level < self.give_up
 
     def reset(self):
