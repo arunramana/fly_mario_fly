@@ -69,18 +69,26 @@ frame for direct visual identification.
   different methods, same answer.
 
 **1-1, as far as this project's own controllers can reach it, is entirely
-Goombas.** Exactly the scenario REFACTOR_PLAN.md's phase-4 amendment
-warned about: "if 1-1 is entirely Goombas, then phase 6 still has one
-class in practice." Confirmed true for 1-1. **1-2 has both species** (a
-Goomba at its very start, a Koopa in its underground section) -- a genuine
-two-class scenario exists, but only on 1-2, and only past frame ~338 of a
-run that today's baseline circuit doesn't survive to (it dies at frame 84
-on 1-2 currently). **Phase 6's eligibility trace, if it wants a real
-two-class discrimination test, needs either a level-1-2 scenario that
-survives to the underground section (a savestate starting there would
-work, matching sprint 013's own savestate mechanism) or a different level
-entirely** -- not 1-1 alone, which this survey now shows is genuinely
-one-class in practice, not just in the code's own prior inability to look.
+Goombas.** Confirmed true for 1-1 -- the exact species-level scenario the
+phase-3 amendment raised. **1-2 has both confirmed species** (a Goomba at
+its very start, a Koopa in its underground section), but only past frame
+~338, which today's baseline circuit doesn't survive to (it dies at frame
+84 on 1-2 currently).
+
+**Corrected, per the phase-3 amendment's own later correction
+(REFACTOR_PLAN.md section 7): this is NOT a blocker for phase 6.** Phase
+6's eligibility trace has a real two-class discriminable scenario with
+differing outcomes on 1-1 alone already: the mushroom (appetitive, real
+PAM->MBON reward pathway) versus an enemy (aversive, real PPL/PPM->MBON
+punishment pathway, SPEC_mushroom_body.md/sprint 014) -- no species
+decoding required. What this survey's one-class-on-1-1 finding actually
+bears on is a RICHER, later experiment: whether the fly can learn a Goomba
+is worse than a Koopa specifically. That experiment, if anyone builds it,
+needs either a level-1-2 scenario that survives to the underground section
+(a savestate starting there would work, matching sprint 013's own
+savestate mechanism) or a different level entirely -- not 1-1 alone, which
+this survey shows is genuinely one-species in practice. But nothing about
+phase 6 itself depends on that richer experiment existing.
 
 **A third type byte was found and deliberately NOT named.** `0x0D`
 appeared further into 1-2 (abs_x~1400) during the same survey, but the

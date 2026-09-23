@@ -158,3 +158,26 @@ two numbers this project's own comments had been citing. Three of the
 exercises `retinotopic=True`. One (`DemoParams.mushroom_offset`) only
 matters when a caller explicitly opts into the synthetic-injection demo.
 The other 45 are live in every default run.
+
+## Invented / measured / connectome-derived
+
+Split by the first word of each field's own `provenance` text above, not a
+second hand-maintained tally: **29 invented**, **20 measured**, **0 connectome-derived** (of 49).
+
+**Zero are connectome-derived**, and that's the real finding, not an
+artifact of the split: the connectome determines the WEIGHT MATRIX each
+circuit steps (`W`, one per circuit, streamed from the real synapse data --
+CLAUDE.md invariant 2), but every one of these 49 numbers sits outside
+that matrix -- a gain multiplying it, a threshold compared against its
+output, or a mechanical hold duration with no neural meaning at all. The
+connectome constrains what these circuits CAN compute; it has never
+supplied a single one of the scalars controlling how hard they push on
+that computation. "Measured" means simulated against the real W and
+picked by a sweep (`tune_*.py`/`diag4.py`) or matched to a real biological
+timescale/fraction -- a real number, but still chosen, not read off the
+data the way `W` itself is. **Invented outnumbers measured (29 vs 20)**:
+most of what this project calls "the model" is mechanical scaffolding
+(hold durations, cooldowns, body-scaled thresholds) and placed external
+currents (`HOME_BIAS`, `GAP_GAIN`, `WALK_DRIVE`, `MDN_DRIVE` and others --
+explicitly flagged throughout this project's own comments as currents no
+real synapse carries), not calibrated circuit dynamics.

@@ -34,7 +34,30 @@ then 8, then 9 hand-set neural/mechanical scalars across 26 sprints.
 """
 
 
+_PROVENANCE_BUCKETS = ("invented", "measured", "connectome-derived")
+
+
+def _provenance_split() -> dict[str, list[str]]:
+    """Buckets every field by the first word of its own `provenance`
+    metadata string -- not a second, hand-maintained classification that
+    could drift from the per-field text above it."""
+    buckets: dict[str, list[str]] = {b: [] for b in _PROVENANCE_BUCKETS}
+    buckets["other"] = []
+    for cls in ALL_PARAM_CLASSES:
+        for f in fields(cls):
+            prov = f.metadata.get("provenance", "")
+            key = prov.split(" ", 1)[0].rstrip(":").lower()
+            buckets.setdefault(key, buckets["other"])
+            (buckets[key] if key in buckets else buckets["other"]).append(f"{cls.__name__}.{f.name}")
+    return buckets
+
+
 def _footer(total: int) -> str:
+    split = _provenance_split()
+    counts = ", ".join(f"**{len(split[b])} {b}**" for b in _PROVENANCE_BUCKETS)
+    other_line = (f" {len(split['other'])} fell into neither bucket (check "
+                   f"config/scalars_doc.py's parsing against a new provenance string)."
+                   if split["other"] else "")
     return f"""
 ## What this doc is not
 
@@ -53,6 +76,29 @@ two numbers this project's own comments had been citing. Three of the
 exercises `retinotopic=True`. One (`DemoParams.mushroom_offset`) only
 matters when a caller explicitly opts into the synthetic-injection demo.
 The other {total - 4} are live in every default run.
+
+## Invented / measured / connectome-derived
+
+Split by the first word of each field's own `provenance` text above, not a
+second hand-maintained tally: {counts} (of {total}).{other_line}
+
+**Zero are connectome-derived**, and that's the real finding, not an
+artifact of the split: the connectome determines the WEIGHT MATRIX each
+circuit steps (`W`, one per circuit, streamed from the real synapse data --
+CLAUDE.md invariant 2), but every one of these 49 numbers sits outside
+that matrix -- a gain multiplying it, a threshold compared against its
+output, or a mechanical hold duration with no neural meaning at all. The
+connectome constrains what these circuits CAN compute; it has never
+supplied a single one of the scalars controlling how hard they push on
+that computation. "Measured" means simulated against the real W and
+picked by a sweep (`tune_*.py`/`diag4.py`) or matched to a real biological
+timescale/fraction -- a real number, but still chosen, not read off the
+data the way `W` itself is. **Invented outnumbers measured (29 vs 20)**:
+most of what this project calls "the model" is mechanical scaffolding
+(hold durations, cooldowns, body-scaled thresholds) and placed external
+currents (`HOME_BIAS`, `GAP_GAIN`, `WALK_DRIVE`, `MDN_DRIVE` and others --
+explicitly flagged throughout this project's own comments as currents no
+real synapse carries), not calibrated circuit dynamics.
 """
 
 

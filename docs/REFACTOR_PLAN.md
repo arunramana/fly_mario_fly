@@ -325,22 +325,31 @@ silent numerical drift; goldens are the check.
 Now that each constant has exactly one home, extract once into per-component
 params. Produces `docs/SCALARS.md`, the first honest count we will have had.
 
-**Added after phase 2's finding, not in the original draft:** phase 2 found
-that nothing anywhere in this codebase reads `ADDR_ENEMY_TYPE` for anything
-except the one powerup check -- a Goomba and a Koopa are the same stimulus,
-today, everywhere. This phase should also decode real enemy species from
-that byte into distinct `EntityKind`s (`mario/entities/`), each with its
-own odour channel. Two reasons this can't wait for someone to notice it's
-missing: **phase 6's eligibility trace needs at least two discriminable
-aversive stimuli to have anything to learn a difference between** -- with
-one undifferentiated `ENEMY` channel, a flat or null learning result in
-phase 6 would look exactly like "the trace's time constant is wrong" when
-the real cause is "there was only ever one thing to discriminate," and
-nothing before this note would have said so. And **the tool's own
+**Added after phase 2's finding, not in the original draft, then corrected
+after phase 4 shipped it:** phase 2 found that nothing anywhere in this
+codebase reads `ADDR_ENEMY_TYPE` for anything except the one powerup check
+-- a Goomba and a Koopa are the same stimulus, today, everywhere. This
+phase should also decode real enemy species from that byte into distinct
+`EntityKind`s (`mario/entities/`), each with its own odour channel.
+
+**Corrected reasoning, not the original.** The phase-3 amendment justified
+this partly by claiming "phase 6's eligibility trace needs at least two
+discriminable aversive stimuli to have anything to learn a difference
+between" -- that was wrong, and stated too strongly. Phase 6's three-
+factor plasticity rule (SPEC_mushroom_body.md, sprint 014) already has a
+real two-class discriminable scenario with DIFFERING outcomes on 1-1
+alone, with no species decoding needed: the mushroom (appetitive, real
+PAM->MBON reward pathway) versus an enemy (aversive, real PPL/PPM->MBON
+punishment pathway). That is the discrimination the eligibility trace
+learns from, and 1-1 already provides it. Per-species enemy discrimination
+(does the fly learn a Goomba is worse than a Koopa) is a RICHER, finer-
+grained experiment on top of that -- worth having, not a prerequisite for
+phase 6 to have something to learn.
+
+**What still justifies doing this in phase 4:** the tool's own
 per-character smell knobs (docs/TOOL_VISION.md's enemy-attribute panel)
-have no real enemy identity to bind to without it.** Neither phase 4 nor
-phase 6 said this before; recorded here once rather than left for phase 6
-to rediscover as a confusing negative result.
+have no real enemy identity to bind to without it. That reason alone is
+sufficient and doesn't depend on phase 6 at all.
 
 **Phase 5 — `Episode`, protocols, fitness, telemetry observers, render.**
 `ProjectConfig` drives a run; outputs land in `projects/<name>/`.

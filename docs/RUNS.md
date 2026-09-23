@@ -2120,3 +2120,17 @@ which specific non-powerup kind something is.
   building was in scope) -- worth considering whether HOME_BIAS should
   eventually enter the same way a real sensory population would, the
   next time the steering circuit's own wiring is touched.
+- ~~Phase 6's eligibility trace needs at least two discriminable aversive
+  stimuli to have anything to learn a difference between (phase-3 plan
+  amendment)~~ **CORRECTED**, docs/REFACTOR_PLAN.md section 7: wrong, and
+  stated too strongly. Phase 6's three-factor plasticity rule
+  (SPEC_mushroom_body.md, sprint 014) already has a real two-class
+  discriminable scenario with DIFFERING outcomes on 1-1 alone -- the
+  mushroom (appetitive, real PAM->MBON reward) versus an enemy (aversive,
+  real PPL/PPM->MBON punishment) -- no species decoding required.
+  Per-species enemy discrimination (phase 4's Goomba/Koopa work,
+  docs/ENTITIES.md) is a richer experiment built on top of that, not a
+  prerequisite for phase 6 to have something to learn. The phase-4 work
+  itself stands on its own (the tool's per-character smell panel needs
+  real enemy identity regardless); only the phase-6-necessity claim was
+  wrong.
