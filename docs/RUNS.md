@@ -2202,6 +2202,63 @@ Goldens byte-identical, twice, separate processes, after every commit.
 Both import guards green (and re-verified to fail on a real violation).
 Full 47-test suite green, twice, separate processes.
 
+## Refactor phase 5b, correction — the event count above was wrong
+
+**Not an edit of the entry above — per this file's own rule, a correction
+gets a new entry, especially when the original one was wrong.** Two
+mistakes, both in the measurement script, not in `FullPolicy` or
+`main()`: "damage taken" was a shrink proxy (`mario_size` decreasing) on
+a Mario who never grows, so it could only ever read zero and told us
+nothing about whether an aversive event happens; and the stomp proxy
+reused `enemy_thetas`'s own `d_px`, which tracks only the single dominant
+enemy per hemisphere, so a stomp on any other slot was invisible to it.
+
+Recounted, same 21 runs (baseline + 20-seed `sigma=0.04` sweep), fixed
+both: death (`main()`'s own `died_or_flagged`) as the aversive event, and
+a direct RAM scan of all 5 enemy slots' active+type bytes for the stomp
+proxy (a slot active and within 20px of Mario one frame, gone the next).
+Mushroom spawns (a slot's type/active bytes turning into `POWERUP_ID`)
+counted separately from collections (`mario_size` increasing), per this
+correction's own instruction: a spawn nobody catches is a live pathway
+failure, not an absent reward class.
+
+| | mushroom spawns | mushroom collected | death | stomps | qblock hits | total |
+|---|---|---|---|---|---|---|
+| across 21 runs | 0 (0 runs) | 0 (0 runs) | 1 (21 of 21 runs) | median 5, sum 87 | median 7 | median 13, mean 11.6, min 6, max 13 |
+
+**Stomps are real, verified against a false-positive concern before being
+trusted:** checked one run's stomp frames (245, 412, 535, 546, 681)
+against its death frame (689) -- the last stomp lands 8 frames before
+death, none cluster at the end, ruling out "the killing collision itself
+deactivates the enemy slot" as the source. DNp01/DNp02's escape jumps are
+timed to clear an approaching enemy, and SMB's own jump arc frequently
+puts Mario's falling hitbox on top of it on the way down -- a stomp this
+circuit never aims for, but gets as a side effect of timing the jump
+right, most of the time (median 5 of ~9 escape commitments per run).
+
+**Mushrooms never spawn at all in any of the 21 runs, so their absence
+is not evidence of a broken 016 odour pathway** -- there is nothing for
+that pathway to fail to catch. SMB's own spawn rule (a `?` block flags
+"contains a powerup" once per level, at a fixed block, gated on Mario's
+size at the moment of the hit) means catching one requires hitting that
+specific block while small; 1-1's own qblock geometry relative to where
+these runs die (`max_x` 694-1437, deaths and pit encounters between the
+first and second block clusters) may simply not put this circuit in
+range of the powerup-flagged block before it dies -- untested here, a
+level-geometry question, not a circuit question.
+
+**Revises phase 5b's own conclusion.** There is not "one discriminable
+stimulus class to learn from" -- there are two, both common (median 13
+combined events per run): qblock hits (appetitive, PAM) and death
+(aversive, PPL1/PPM), with stomps as a third, currently-unrouted signal
+(the mushroom body's punishment path is wired to death only, not to
+individual stomps -- whether a stomp should also carry dopamine is a
+phase 6 design question, not answered here). The synthetic-discriminator
+concern is gone; the real open question is whether 60-120 frames of
+`EligibilityTrace` reach back far enough from a mid-episode qblock hit or
+stomp to the decision that caused it, not whether events exist to learn
+from.
+
 ## Still open
 
 - **The 009 climb/long-jump livelock is understood, not just patched
