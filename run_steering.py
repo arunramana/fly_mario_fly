@@ -447,7 +447,8 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
          force_mario_size=None, force_size_from_frame=None, record_video=True,
          inject_frame=None, frame_skip=1, savestate=None, mb_weights=None,
          mushroom_offset=None, inject_gap_frame=None, write_telemetry=True,
-         retinotopic=False, sigma=0.0, seed=None, telemetry_path=None):
+         retinotopic=False, sigma=0.0, seed=None, telemetry_path=None,
+         event_proximal_dopamine=False):
     """REFACTOR_PLAN.md phase 5: `out_mp4` has no default any more. It used
     to be `"runs/008_run.mp4"` -- a silent, stray, top-level fallback that
     every actual caller already overrode (checked: none of run_008/016/023/
@@ -557,7 +558,16 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
     replaying the same seed at the same sigma must reproduce the episode
     exactly). Returned in `info["seed"]`/`info["sigma"]` either way, so a
     caller that didn't choose a seed can still recover and log the one
-    that was actually used."""
+    that was actually used.
+
+    `event_proximal_dopamine`, REFACTOR_PLAN.md phase 6: False (default)
+    keeps the pre-phase-6 mushroom-body reward trigger (continuous, any
+    forward pixel of progress every frame) -- goldens are frozen against
+    this and stay reproducible with it off. True switches PAM dopamine to
+    fire only on the two real discrete appetitive events (a `?` block hit
+    or a stomp), per docs/TRACE_BIOLOGY.md's design consequence. See
+    bridge.full_policy.FullPolicy.__init__'s own docstring for the full
+    reasoning."""
     if out_mp4 is None:
         raise ValueError(
             "main() needs an explicit out_mp4 -- there is no default any "
@@ -596,7 +606,8 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
     _pc = _ProjectConfig()
     _pc = _dataclasses.replace(_pc, noise=_dataclasses.replace(_pc.noise, sigma=sigma))
     policy = FullPolicy(config=_pc, level=level, retinotopic=retinotopic,
-                         frame_skip=frame_skip, mb_weights=mb_weights)
+                         frame_skip=frame_skip, mb_weights=mb_weights,
+                         event_proximal_dopamine=event_proximal_dopamine)
     policy.reset(seed)
 
     Kj, j_msk = policy.Kj, policy.j_msk
@@ -860,12 +871,13 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
         n_conflicts = policy.n_conflicts
         n_odor_avoids, n_qblock_hits, n_refusals = (policy.n_odor_avoids, policy.n_qblock_hits,
                                                      policy.n_refusals)
+        n_stomps = policy.n_stomps
         max_x_abs = policy.max_x_abs
         print(f"\n{frame} frames -- escape jumps={n_escape_jumps} "
               f"(of which long jumps={n_long_jumps}, DNp01={n_dnp01_fired}, DNp02={n_dnp02_fired})  "
               f"climb hops={n_climb_hops}  climb jumps={n_climb_jumps}  "
               f"conflicts={n_conflicts}  odour avoids={n_odor_avoids}  "
-              f"qblock hits={n_qblock_hits}  refusal frames={n_refusals}  "
+              f"qblock hits={n_qblock_hits}  stomps={n_stomps}  refusal frames={n_refusals}  "
               f"ended={'died/flagged' if done else 'hit max_frames'}")
 
         tel = observer.to_dataframe()
@@ -900,7 +912,7 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
                       n_climb_hops=n_climb_hops, n_climb_jumps=n_climb_jumps,
                       n_conflicts=n_conflicts, n_frames=frame, died_or_flagged=done,
                       n_odor_avoids=n_odor_avoids, n_qblock_hits=n_qblock_hits,
-                      n_refusals=n_refusals,
+                      n_stomps=n_stomps, n_refusals=n_refusals,
                       mb_weights=W_kc_mbon, max_x_abs=max_x_abs,
                       seed=seed, sigma=sigma)
 

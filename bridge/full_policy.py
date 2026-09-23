@@ -53,7 +53,11 @@ from fly.circuits.load_dnp02_cached import load as load_dnp02
 from fly.circuits.load_mushroom_body_cached import load as load_mushroom_body
 from mario.actions.actions import action_index
 from mario.ram import tile_ram
-from mario.ram.addresses import ADDR_MARIO_X, ADDR_MARIO_PAGE, ADDR_MARIO_SIZE
+from mario.ram.addresses import (
+    ADDR_MARIO_X, ADDR_MARIO_PAGE, ADDR_MARIO_SIZE,
+    ADDR_ENEMY_ACTIVE, ADDR_ENEMY_TYPE, N_ENEMY_SLOTS, POWERUP_ID,
+)
+from fly.plasticity.dopamine import event_dopamine
 
 # Private to this module -- NOT shared with run_steering.py's own
 # _circuit_cache. During the phase-5b migration both exist; once main()'s
@@ -81,11 +85,24 @@ class FullPolicy:
     _last_x = None            # class-level: see module docstring
 
     def __init__(self, config: ProjectConfig | None = None, level: str = "1-1",
-                 retinotopic: bool = False, frame_skip: int = 1, mb_weights=None):
+                 retinotopic: bool = False, frame_skip: int = 1, mb_weights=None,
+                 event_proximal_dopamine: bool = False):
+        """`event_proximal_dopamine`, REFACTOR_PLAN.md phase 6 step 3:
+        False (default) keeps the pre-phase-6 reward trigger (any forward
+        pixel of progress, continuous, every frame) -- goldens are frozen
+        against this and must stay reproducible with it off. True switches
+        the appetitive (PAM) trigger to the two real discrete events
+        docs/TRACE_BIOLOGY.md's design consequence calls for (a `?` block
+        hit or a stomp), each landing within the real ~1-2s synaptic-tag
+        window instead of every frame regardless of what happened. A
+        structural mode flag, not a hand-set scalar -- same category as
+        `retinotopic` above, not tracked in config/params.py or
+        docs/SCALARS.md."""
         self.config = config or ProjectConfig()
         self.level = level
         self.retinotopic = retinotopic
         self.frame_skip = frame_skip
+        self.event_proximal_dopamine = event_proximal_dopamine
         c = self.config
 
         self.jump_hold_frames = max(1, round(c.jump.jump_hold_frames / frame_skip))
@@ -246,6 +263,8 @@ class FullPolicy:
         self.n_long_jumps = 0
         self.n_dnp01_fired = self.n_dnp02_fired = 0
         self.n_qblock_hits = self.n_odor_avoids = self.n_refusals = 0
+        self.n_stomps = 0
+        self._prev_enemy_slots: dict[int, int] = {}  # slot -> mario_x, for the stomp proxy
         self.orn_adapt = OlfactoryAdaptation()
         self.orn_adapt_avers = OlfactoryAdaptation()
         self.hab_escape = ReflexHabituation()
@@ -285,6 +304,27 @@ class FullPolicy:
             print(f"  '?' block hit (column(s) "
                   f"{sorted(self.prev_qblock_cols - cur_qblock_cols)} emptied)")
         self.prev_qblock_cols = cur_qblock_cols
+
+        # ---- stomp detection: docs/RUNS.md phase 5b's own correction ----
+        # A slot active, non-powerup, and within one tile (16px, matching
+        # this project's own "did that actually help" bar elsewhere) of
+        # Mario last frame, gone this frame -- a kill by landing on it, not
+        # a walk-off-screen despawn (which happens far off-screen instead).
+        # Verified against the false-positive concern before being trusted
+        # as a live signal (docs/RUNS.md's phase 5b correction entry): stomp
+        # frames don't cluster at the death frame, so this isn't counting
+        # Mario's own killing collision (which leaves the enemy active).
+        now_active_enemy_slots = {
+            i for i in range(N_ENEMY_SLOTS)
+            if ram[ADDR_ENEMY_ACTIVE + i] != 0 and ram[ADDR_ENEMY_TYPE + i] != POWERUP_ID
+        }
+        stomp = False
+        for i, last_x in self._prev_enemy_slots.items():
+            if i not in now_active_enemy_slots and abs(last_x - mario_x) < 20:
+                stomp = True
+        if stomp:
+            self.n_stomps += 1
+        self._prev_enemy_slots = {i: mario_x for i in now_active_enemy_slots}
 
         mario_size = int(ram[ADDR_MARIO_SIZE])
         if mario_size > self.prev_mario_size:
@@ -372,12 +412,24 @@ class FullPolicy:
         self.h_mbon[self.h_mbon < 1e-30] = 0.0
 
         mario_x_abs = int(ram[ADDR_MARIO_PAGE]) * 256 + mario_x
-        reward = 0.0 if self.prev_mario_x_abs is None else max(0, mario_x_abs - self.prev_mario_x_abs)
+        progress = 0.0 if self.prev_mario_x_abs is None else max(0, mario_x_abs - self.prev_mario_x_abs)
         self.prev_mario_x_abs = mario_x_abs
         self.max_x_abs = mario_x_abs if self.max_x_abs is None else max(self.max_x_abs, mario_x_abs)
 
         self.mb_elig = (1.0 - 1.0 / c.mushroom_body.trace_decay) * self.mb_elig + \
                        (1.0 / c.mushroom_body.trace_decay) * kc_active
+        # REFACTOR_PLAN.md phase 6 step 3: event-proximal dopamine is an
+        # opt-in replacement for the pre-phase-6 trigger (`reward =
+        # progress`, continuous, every frame with forward motion) -- see
+        # __init__'s own docstring for why this is a mode flag, not a
+        # scalar. Off by default so goldens (frozen against the legacy
+        # trigger) stay reproducible; on, PAM dopamine fires only at a
+        # qblock hit or a stomp, the two real discrete appetitive events
+        # docs/TRACE_BIOLOGY.md's design consequence calls for.
+        if self.event_proximal_dopamine:
+            reward, _punish_unused = event_dopamine(qblock_hit, stomp, died=False)
+        else:
+            reward = progress
         if reward > 0:
             dopamine_reward = reward * self.mb_pam_reach
             self.W_kc_mbon -= (c.mushroom_body.learning_rate * dopamine_reward[:, None]
@@ -567,7 +619,7 @@ class FullPolicy:
             mdn_backing_up=mdn_backing_up, ttmn_val_dnp02=ttmn_val_dnp02,
             pathway_fired=pathway_fired, frames_to_contact=frames_to_contact,
             avers_l_eff=avers_l_eff, avers_r_eff=avers_r_eff, avoid_odor=avoid_odor,
-            refusing=refusing, qblock_hit=qblock_hit, mario_size=mario_size,
+            refusing=refusing, qblock_hit=qblock_hit, stomp=stomp, mario_size=mario_size,
             max_x_abs=self.max_x_abs,
         )
         return action
@@ -581,7 +633,8 @@ class FullPolicy:
         `env.step()`, one level below where `act()` itself runs."""
         if getattr(observation, "done", False):
             c = self.config
-            dopamine_punish = dynamics.CLIP * self.mb_punish_reach
+            _pam_unused, punish_magnitude = event_dopamine(qblock_hit=False, stomp=False, died=True)
+            dopamine_punish = punish_magnitude * self.mb_punish_reach
             self.W_kc_mbon -= (c.mushroom_body.learning_rate * dopamine_punish[:, None]
                                * self.mb_elig[None, :] * self.W_kc_mbon)
 
