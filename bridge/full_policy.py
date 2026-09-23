@@ -10,9 +10,16 @@ habituation/MDN system as one Policy, driven by ProjectConfig. Each
 counters, prev_theta, mushroom-body weights and trace, habituation) lives
 on `self`.
 
-Known quirk, kept for golden parity: `_prev_avoid_odor` and `_last_x` are
-CLASS attributes, so they persist across episodes in one process. Making
-them per-episode would change behaviour (docs/RUNS.md, refactor phase 5b).
+`_prev_avoid_odor`/`_last_x` are per-instance, reset in `reset()`
+(tool/PLAN.md C10). They used to be CLASS attributes, persisting across
+every episode run in one process -- harmless for `_prev_avoid_odor` (it
+only gates a log line/counter), but `_last_x` fed `stall_count`, which
+feeds the real climb-reflex trigger: a leftover value from a PREVIOUS
+episode's last frame could equal a NEW episode's spawn `mario_x` and
+falsely register a stall on frame 0. Never caught by a golden (each is a
+single episode per process, and none of their specific scenarios happened
+to collide), but real for any multi-episode-per-process script -- see
+tool/CODEBASE_CHANGES.md's C10 entry.
 """
 
 from __future__ import annotations
@@ -68,9 +75,6 @@ def _make_steering_masks(bodies):
 
 
 class FullPolicy:
-    _prev_avoid_odor = False  # class-level on purpose: see module docstring
-    _last_x = None
-
     def __init__(self, config: ProjectConfig | None = None, level: str = "1-1",
                  retinotopic: bool = False, frame_skip: int = 1, mb_weights=None,
                  event_proximal_dopamine: bool = False):
@@ -239,6 +243,8 @@ class FullPolicy:
         self.last_reset_x = None
         self.stall_count = 0
         self.direction = "R"
+        self._prev_avoid_odor = False
+        self._last_x = None
         self.prev_qblock_cols = set()
         self.prev_mario_size = None
         self.n_escape_jumps = self.n_climb_hops = self.n_climb_jumps = self.n_conflicts = 0
@@ -433,11 +439,11 @@ class FullPolicy:
 
         avoid_odor = bool(self.direction == "L" and avers_r_eff > 1e-6
                            and avers_r_eff >= odor_l_eff and not refusing)
-        if avoid_odor and not type(self)._prev_avoid_odor:
+        if avoid_odor and not self._prev_avoid_odor:
             self.n_odor_avoids += 1
             log.debug(f"  aversive odour steers AWAY (L) -- avers_r_eff={avers_r_eff:.3f} "
                       f"theta_R={theta['R']:.3f} d_px={d_out['R']}")
-        type(self)._prev_avoid_odor = avoid_odor
+        self._prev_avoid_odor = avoid_odor
 
         # ---- contact-based climbing ------------------------------------
         climb_trigger = False
@@ -446,14 +452,14 @@ class FullPolicy:
             self.last_reset_x = mario_x
 
         if self.jump_hold == 0 and self.climb_hold == 0:
-            if type(self)._last_x == mario_x:
+            if self._last_x == mario_x:
                 self.stall_count += 1
             else:
                 self.stall_count = 0
-            type(self)._last_x = mario_x
+            self._last_x = mario_x
         else:
             self.stall_count = 0
-            type(self)._last_x = mario_x
+            self._last_x = mario_x
 
         if (self.stall_count >= self.climb_stall_frames and self.direction == "R" and wall_ahead
                 and self.jump_hold == 0 and self.climb_hold == 0 and self.climb_cooldown == 0):

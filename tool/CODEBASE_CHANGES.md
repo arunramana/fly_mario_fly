@@ -137,3 +137,58 @@ the returned summary dict), and no existing summary key changes meaning.
 test_summary_info_keys.py` (new): the four keys are present with the
 expected types; two separate runs of the same scenario still produce
 byte-identical telemetry CSVs (the new keys never reached the CSV).
+
+## C10 — `FullPolicy._prev_avoid_odor`/`_last_x` per instance, not per class
+
+**What.** These two moved from CLASS attributes (shared by every
+`FullPolicy` instance in one process, a documented quirk since phase 5b)
+to instance attributes, reset to `False`/`None` in `reset()` like every
+other piece of per-episode state on `self`.
+
+**Why.** `_prev_avoid_odor` only gates a log line and a counter --
+harmless either way. `_last_x` feeds `stall_count`, which feeds the real
+climb-reflex trigger (`bridge/full_policy.py`'s `act()`): a leftover
+value from a PREVIOUS episode's last frame could equal a NEW episode's
+spawn `mario_x` (level 1-1 always spawns at the same x) and falsely
+register a stall on frame 0 of a new episode, biasing when climbing first
+fires. tool/PLAN.md's own P2 planning named this as the reason persistent
+warm workers (below) need a byte-for-byte identity test before they ship
+-- a warm worker running episode 2 right after episode 1 is exactly the
+scenario that used to leak.
+
+**Not caught by any golden before now, and not because the bug wasn't
+real:** every golden is a single episode per process, and none of their
+specific scenarios happened to have episode N's last `mario_x` collide
+with episode N+1's spawn `mario_x` -- there was only ever one episode, so
+the question never arose. The fix and its risk were sitting in
+`bridge/full_policy.py`'s own module docstring since phase 5b, waiting
+for a reason to fix it before persistent workers made it one.
+
+**A real behaviour change for multi-episode-per-process scripts** -- not
+default-preserving the way C1-C4 were, logged here rather than folded in
+as if it were:
+- `scripts/train_mushroom_body.py` (500 sequential episodes, one process,
+  one reused savestate/env): every episode from #2 onward now starts
+  `stall_count` from a genuinely clean slate instead of possibly already
+  primed by episode N-1's final `mario_x`. Any episode whose early
+  climb-reflex timing depended on that leftover value will diverge from a
+  pre-C10 training run at that point onward -- expected and intended, not
+  a regression to chase down.
+- `scripts/record_mb_videos.py` (two sequential `main()` calls in one
+  process, "before" then "after" training): the "after" video/telemetry
+  may differ from a pre-C10 recording for the same reason.
+- `scripts/bench_episodes.py` (24 episodes, timing-focused): frame counts
+  may shift slightly; its own numbers were never meant to reproduce
+  bit-for-bit run to run, so this doesn't invalidate what it measures.
+- Not affected: every scenario in `tests/golden/` and every test in this
+  suite (each already exercises a single episode's worth of `FullPolicy`
+  state, by construction) -- proven, not assumed, below.
+
+**Proof.** `tests/test_golden.py` alone: 3/3 byte-identical. Full suite
+(69 tests) in the normal collection order: 69/69. Full suite in REVERSED
+file order (`test_telemetry_observer.py` first, ..., `test_c2_wiring.py`
+last -- deliberately moving every other `FullPolicy`-constructing test to
+the opposite side of `test_golden.py` from where it falls normally):
+69/69, same result. Together these rule out both "some other test's
+leftover class state was quietly saving the goldens" and "the fix only
+works in whatever order tests happen to run in today."
