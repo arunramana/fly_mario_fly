@@ -35,7 +35,22 @@ from mario.ram.addresses import (
 # exactly as before -- giving it a home, not fixing it (docs/ENTITIES.md).
 ENTITY_WIDTH_PX = 16
 
+# Phase 4: empirically confirmed by playing 1-1/1-2 (bot-driven, since the
+# real circuit dies before reaching much of either level) and screenshotting
+# the frame each new ADDR_ENEMY_TYPE byte first appeared -- same standard
+# tile_ram.py's own tile IDs were held to, not trusted from memory or a web
+# table. See docs/ENTITIES.md's phase 4 report for the full survey
+# (frame numbers, positions, and which byte was screenshotted where).
+GOOMBA_TYPE_BYTE = 0x06
+KOOPA_TYPE_BYTE = 0x00
+_SPECIES_BY_TYPE_BYTE: dict[int, EntityKind] = {
+    GOOMBA_TYPE_BYTE: EntityKind.GOOMBA,
+    KOOPA_TYPE_BYTE: EntityKind.KOOPA,
+}
+
 _KIND_TRAITS: dict[EntityKind, frozenset[Trait]] = {
+    EntityKind.GOOMBA: frozenset({Trait.THREAT, Trait.LETHAL_ON_CONTACT}),
+    EntityKind.KOOPA: frozenset({Trait.THREAT, Trait.LETHAL_ON_CONTACT}),
     EntityKind.ENEMY: frozenset({Trait.THREAT, Trait.LETHAL_ON_CONTACT}),
     EntityKind.POWERUP: frozenset({Trait.COLLECTIBLE}),
     EntityKind.GROUND: frozenset({Trait.SOLID}),
@@ -56,12 +71,13 @@ class KindRegistry:
         return _KIND_TRAITS[kind]
 
     def enemy_kind(self, type_byte: int) -> EntityKind:
-        """The one real classification this project performs on
-        ADDR_ENEMY_TYPE: powerup, or not. See ENTITY_WIDTH_PX's comment and
-        docs/ENTITIES.md for why this is coarser than SMB's real enemy
-        roster -- the type byte carries more information (a Goomba's ID
-        differs from a Koopa's) than anything here has ever read."""
-        return EntityKind.POWERUP if type_byte == POWERUP_ID else EntityKind.ENEMY
+        """Phase 4: real per-species decoding for the two kinds confirmed
+        present in 1-1/1-2 (GOOMBA/KOOPA, see docs/ENTITIES.md); any other
+        non-powerup byte falls back to generic ENEMY -- discrimination is
+        possible where it's been verified, not assumed where it hasn't."""
+        if type_byte == POWERUP_ID:
+            return EntityKind.POWERUP
+        return _SPECIES_BY_TYPE_BYTE.get(type_byte, EntityKind.ENEMY)
 
     def enemy_record(self, ram, slot: int) -> EntityRecord:
         active = bool(ram[ADDR_ENEMY_ACTIVE + slot])

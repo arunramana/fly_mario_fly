@@ -11,7 +11,9 @@ from pathlib import Path
 import numpy as np
 
 from mario.entities.kinds import EntityKind, Trait
-from mario.entities.registry import DEFAULT as registry, ENTITY_WIDTH_PX
+from mario.entities.registry import (
+    DEFAULT as registry, ENTITY_WIDTH_PX, GOOMBA_TYPE_BYTE, KOOPA_TYPE_BYTE,
+)
 from mario.ram.addresses import (
     ADDR_ENEMY_ACTIVE, ADDR_ENEMY_TYPE, ADDR_ENEMY_X, ADDR_ENEMY_Y,
     N_ENEMY_SLOTS, POWERUP_ID,
@@ -26,8 +28,14 @@ def _fake_ram(size=0x800):
 
 
 def test_enemy_kind_matches_the_old_bare_comparison():
+    """Phase 4: 0x00/0x06 are now real species (screenshot-verified,
+    docs/ENTITIES.md), not generic ENEMY -- but bridge/perception.py's
+    own `!= POWERUP` checks never depended on which specific non-powerup
+    kind something is, so this split is behaviour-preserving. 0x02 stands
+    in for "some byte this project hasn't identified yet"."""
     assert registry.enemy_kind(POWERUP_ID) == EntityKind.POWERUP
-    assert registry.enemy_kind(0x00) == EntityKind.ENEMY
+    assert registry.enemy_kind(KOOPA_TYPE_BYTE) == EntityKind.KOOPA
+    assert registry.enemy_kind(GOOMBA_TYPE_BYTE) == EntityKind.GOOMBA
     assert registry.enemy_kind(0x02) == EntityKind.ENEMY
 
 
@@ -37,7 +45,7 @@ def test_enemy_records_reproduces_slot_layout():
     ram[ADDR_ENEMY_TYPE + 0] = POWERUP_ID
     ram[ADDR_ENEMY_X + 0] = 200
     ram[ADDR_ENEMY_ACTIVE + 1] = 1
-    ram[ADDR_ENEMY_TYPE + 1] = 0x00  # some non-powerup enemy
+    ram[ADDR_ENEMY_TYPE + 1] = GOOMBA_TYPE_BYTE
     ram[ADDR_ENEMY_X + 1] = 50
 
     records = registry.enemy_records(ram)
@@ -45,7 +53,7 @@ def test_enemy_records_reproduces_slot_layout():
     assert records[0].active and records[0].kind == EntityKind.POWERUP
     assert records[0].x == 200 and records[0].width == ENTITY_WIDTH_PX
     assert Trait.COLLECTIBLE in records[0].traits
-    assert records[1].active and records[1].kind == EntityKind.ENEMY
+    assert records[1].active and records[1].kind == EntityKind.GOOMBA
     assert Trait.THREAT in records[1].traits
     assert not records[2].active  # untouched slot
 

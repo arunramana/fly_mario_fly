@@ -11,9 +11,11 @@ simulates the game, this project only reads RAM (or, for a pit, the
 absence of a tile), so an entity has no behaviour of its own to own.
 
 `EntityKind` and `Trait` (`mario/entities/kinds.py`) are the vocabulary:
-`ENEMY`, `POWERUP`, `GROUND`, `QUESTION_BLOCK`, `USED_BLOCK`, `EMPTY`,
-`PIT`, `SOLID_OTHER`. This is coarser than SMB's real cast -- see "What
-this model is NOT" below.
+`GOOMBA`, `KOOPA`, `ENEMY`, `POWERUP`, `GROUND`, `QUESTION_BLOCK`,
+`USED_BLOCK`, `EMPTY`, `PIT`, `SOLID_OTHER`. `GOOMBA`/`KOOPA` are real,
+screenshot-verified species (phase 4, below); `ENEMY` is the fallback for
+any enemy-slot occupant this project hasn't identified yet. Still coarser
+than SMB's real cast -- see "What this model is NOT" below.
 
 `KindRegistry` (`mario/entities/registry.py`, one shared instance,
 `DEFAULT`) is the single home the plan asked for: `enemy_kind()`/
@@ -33,28 +35,103 @@ They now all call `registry.enemy_records(ram)` and branch on
 constant every one of these functions already used) -- verified
 byte-identical against `tests/golden/` before and after.
 
+## Phase 4: species decoding -- what was verified, and how
+
+REFACTOR_PLAN.md's phase-4 amendment (docs/REFACTOR_PLAN.md section 7)
+asked for real per-species `EntityKind`s from `ADDR_ENEMY_TYPE`, "Goomba,
+Koopa, and whatever else 1-1 and 1-2 actually contain" -- checked
+empirically, not assumed from memory or a web table, the same standard
+`mario/ram/tile_ram.py`'s own tile IDs were held to.
+
+**Method.** The real circuit dies too early to see much of either level
+(baseline: 1-1 dies at frame 689/x=1432; 1-2 at frame 84/x=184, both fully
+deterministic at sigma=0 so every seed gives the identical trajectory --
+seed only matters once sigma>0). A bot holding right and mashing jump on a
+randomised duty cycle (bypassing the neural circuit entirely -- this is a
+species census, not a circuit-behaviour test) was used instead to explore
+much further into both levels across many simulated lives. Every distinct,
+non-powerup `ADDR_ENEMY_TYPE` byte was logged at first sighting (frame,
+level, on-screen position), and a screenshot was captured at that exact
+frame for direct visual identification.
+
+**Findings.** Two species confirmed, both screenshot-verified:
+
+- **`0x06` = Goomba.** First seen 1-1 frame ~60 (the level's iconic first
+  enemy, right where every SMB player expects it) and 1-2 frame 0.
+  Screenshot shows the unmistakable brown, frowning mushroom shape at
+  ground level.
+- **`0x00` = Koopa Troopa.** First seen 1-2 frame ~338, in the underground
+  section (screenshot shows two walking, shelled enemies; the underground
+  palette recolours them, which is why they don't read as the usual
+  green). This corroborates sprint 010's own independent, manual RAM-
+  inspection identification of the same byte value as "Green Koopa
+  Troopa" (docs/RUNS.md sprint 010) -- two separate identifications,
+  different methods, same answer.
+
+**1-1, as far as this project's own controllers can reach it, is entirely
+Goombas.** Exactly the scenario REFACTOR_PLAN.md's phase-4 amendment
+warned about: "if 1-1 is entirely Goombas, then phase 6 still has one
+class in practice." Confirmed true for 1-1. **1-2 has both species** (a
+Goomba at its very start, a Koopa in its underground section) -- a genuine
+two-class scenario exists, but only on 1-2, and only past frame ~338 of a
+run that today's baseline circuit doesn't survive to (it dies at frame 84
+on 1-2 currently). **Phase 6's eligibility trace, if it wants a real
+two-class discrimination test, needs either a level-1-2 scenario that
+survives to the underground section (a savestate starting there would
+work, matching sprint 013's own savestate mechanism) or a different level
+entirely** -- not 1-1 alone, which this survey now shows is genuinely
+one-class in practice, not just in the code's own prior inability to look.
+
+**A third type byte was found and deliberately NOT named.** `0x0D`
+appeared further into 1-2 (abs_x~1400) during the same survey, but the
+enemy scrolled off-screen before a screenshot could confirm it visually --
+so it stays classified as generic `ENEMY`, not guessed from memory or a
+table. This is the fallback design working exactly as intended: a real,
+checked byte value without independent visual corroboration is reported
+as "found, not yet identified," the same standard `tile_ram.py`'s own tile
+IDs were held to, rather than silently named because a plausible guess
+existed.
+
+**Not exhaustive.** `species_survey.py`'s bot reached abs_x=1522 on 1-1
+and abs_x=1941 on 1-2 (SMB 1-1 alone runs to roughly x=3160) before
+running out of frame budget -- further than either level's full length.
+More species may exist beyond that reach, or in 1-3 (this project's own
+"invalid test level" per sprint 004/011 -- pits, not enemies). `ENEMY`
+remains the correct, honest fallback for `0x0D` and any other byte this
+survey didn't identify, rather than a guessed name.
+
 ## What this model is NOT (read before assuming more discrimination exists)
 
-**`ENEMY` is not "Goomba."** `ADDR_ENEMY_TYPE` is read in exactly one way
-anywhere in this codebase, before or after this phase: is it the powerup ID
-or not. A Goomba, a Green Koopa Troopa and a Piranha Plant are the same
-`EntityKind.ENEMY`, with the same traits, the same width, the same odour
-channel -- not because they're alike, but because no pathway in this
-project has ever looked past that one bit. REFACTOR_PLAN.md section 4's own
-worked example (`GOOMBA`, `KOOPA`, `PIPE` as separate kinds with "Koopa has
-shell state, Piranha is not stompable") describes a richer model than the
-one that exists to move. Building that richer model is new behaviour, not a
-move, and is out of phase-2's "zero logic edits" scope -- now scheduled
-explicitly as a phase-4 item, REFACTOR_PLAN.md section 7, because phase 6's
-eligibility trace needs at least two discriminable stimuli to learn
-anything from.
+**Discrimination is possible, not switched on.** `bridge/perception.py`'s
+`enemy_thetas`/`mushroom_odor`/`goomba_odor` still branch only on
+`rec.kind == EntityKind.POWERUP` (or `!=`) -- exactly as before phase 4 --
+so a Goomba and a Koopa still produce numerically identical looming and
+odour contributions today. `bridge/profiles/default.json` now gives
+`GOOMBA`/`KOOPA` distinct odour channels (`threat_goomba`/`threat_koopa`),
+but nothing reads those channels separately yet; every non-powerup entity
+still sums into run_steering.py's one undifferentiated aversive signal.
+Wiring a real per-species aggregate is live-behaviour work for whichever
+phase actually needs it (phase 6, most likely), not this one.
+
+**`ENEMY` still isn't every real SMB enemy.** Piranha Plant, Buzzy Beetle,
+Hammer Bro, Lakitu, and anything else `ADDR_ENEMY_TYPE` can encode all
+still fall back to generic `ENEMY` -- this project has verified exactly
+two species, not SMB's full cast. REFACTOR_PLAN.md section 4's own worked
+example (`GOOMBA`, `KOOPA`, `PIPE` as separate kinds with "Koopa has shell
+state, Piranha is not stompable") still describes a richer model than
+exists: shell state, stomp-vs-not, and every other real per-species
+BEHAVIOUR difference remain unbuilt, only the KIND label itself is now
+real for the two species this project has actually seen.
 
 **Every earlier "avoided the Goomba" result in this log is really "avoided
-the enemy."** Every recorded avoidance (006/008/016 and onward) was tested
-against whatever RAM put in an enemy slot, never specifically a Goomba --
-harmless on 1-1, which is mostly Goombas anyway, but the record should not
+the enemy" -- including this phase's own new evidence.** Every recorded
+avoidance (006/008/016 and onward) was tested against whatever RAM put in
+an enemy slot, never specifically a Goomba -- and this phase's own survey
+confirms why that was actually fine on 1-1 (it's ALL Goombas there, in the
+region any of those runs reached), while flagging that it would NOT be a
+safe assumption on 1-2 past its underground section. The record should not
 be read as claiming species-specific behaviour that was never actually
-possible to produce.
+possible to produce, before or after this phase.
 
 **Every entity is 16px wide, always.** `ENTITY_WIDTH_PX` is a single
 constant applied to every enemy-slot kind. Real Goombas, Koopas and
@@ -136,12 +213,14 @@ above:
 - `odours`: a **list** of labelled channels (REFACTOR_PLAN.md section 4:
   "Odour must be a list of labelled channels, not a scalar... the only way
   'a Goomba smells bad and a Koopa smells bad differently' is expressible").
-  Today every `ENEMY` shares one `threat` channel and `POWERUP`/
-  `QUESTION_BLOCK` share one `food` channel -- because that's what
-  `run_steering.py`'s `main()` actually computes (`mush["R"] + qblock["R"]`
-  summed into one signal before `ODOUR_GAIN`; `goomba_odor` kept
-  separate). The list shape is what would let a future, real per-species
-  channel exist; nothing here fabricates one that doesn't.
+  As of phase 4, `GOOMBA` and `KOOPA` each have their OWN channel
+  (`threat_goomba`/`threat_koopa`) -- the discrimination the plan asked
+  for is now expressible in data. The generic `ENEMY` fallback and
+  `POWERUP`/`QUESTION_BLOCK` (sharing one `food` channel) still match what
+  `run_steering.py`'s `main()` actually computes today
+  (`mush["R"] + qblock["R"]` summed before `ODOUR_GAIN`; `goomba_odor`
+  kept separate but undifferentiated by species). See "Phase 4: species
+  decoding" above for why the channels exist without yet being read.
 - `looming_salience`, `danger_weight`, `is_food`, `body_scale`: present for
   every kind, matching the plan's `PerceptionProfile` shape, but **not**
   yet read by any live code path -- `run_steering.py` still computes

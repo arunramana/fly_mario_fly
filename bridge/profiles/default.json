@@ -1,5 +1,27 @@
 {
-  "_comment": "REFACTOR_PLAN.md section 4/phase 2: documents, per EntityKind, what bridge/perception.py's already-existing functions actually compute today. Odour is a list of labelled channels (not a scalar) so a Goomba and a Koopa CAN smell different once code exists that tells them apart -- today's ENEMY kind covers both identically, which this file states rather than hides. This is documentation this phase: the live numbers (ODOUR_GAIN, HUNGER_MULT_*) stay hand-set scalars in run_steering.py (CLAUDE.md invariant 3). Making this file the runtime source of those numbers is per-component config extraction, REFACTOR_PLAN.md phase 4, not this one. See docs/ENTITIES.md.",
+  "_comment": "REFACTOR_PLAN.md section 4, phase 2 then phase 4: documents, per EntityKind, what bridge/perception.py's already-existing functions actually compute. Odour is a list of labelled channels (not a scalar) so a Goomba and a Koopa CAN smell different once code exists that tells them apart. Phase 4 gave KindRegistry real GOOMBA/KOOPA kinds (docs/ENTITIES.md's phase 4 report has the empirical survey) and this file now gives them DISTINCT channels ('threat_goomba'/'threat_koopa') -- discrimination is now POSSIBLE, not switched on: bridge/perception.py's goomba_odor still sums every non-powerup entity into one undifferentiated aversive signal regardless of species, and this file's own gain/hunger numbers stay hand-set scalars in config/params.py (CLAUDE.md invariant 3, docs/SCALARS.md). Making the channels here the runtime source of a per-species aggregate is a live-behaviour change (phase 6's own eligibility-trace territory), not this phase's to make silently.",
+
+  "GOOMBA": {
+    "odours": [
+      {"channel": "threat_goomba", "sign": -1, "hunger_gated": false}
+    ],
+    "looming_salience": 1.0,
+    "danger_weight": 1.0,
+    "is_food": false,
+    "body_scale": 1.0,
+    "_note": "ADDR_ENEMY_TYPE==0x06, screenshot-verified (docs/ENTITIES.md phase 4): 1-1's iconic first enemy. Distinct channel from KOOPA's -- not yet read by any live aggregation, which still treats every non-powerup entity as one 'threat' class regardless of this file."
+  },
+
+  "KOOPA": {
+    "odours": [
+      {"channel": "threat_koopa", "sign": -1, "hunger_gated": false}
+    ],
+    "looming_salience": 1.0,
+    "danger_weight": 1.0,
+    "is_food": false,
+    "body_scale": 1.0,
+    "_note": "ADDR_ENEMY_TYPE==0x00, screenshot-verified in 1-2's underground section (docs/ENTITIES.md phase 4) -- corroborates sprint 010's own manual RAM-inspection identification of the same byte as 'Green Koopa Troopa'. Distinct channel from GOOMBA's, same not-yet-live caveat."
+  },
 
   "ENEMY": {
     "odours": [
@@ -9,7 +31,7 @@
     "danger_weight": 1.0,
     "is_food": false,
     "body_scale": 1.0,
-    "_note": "Every active, non-powerup enemy slot -- Goomba, Green Koopa Troopa, Piranha Plant, whatever else SMB puts in this slot -- is this ONE kind. ADDR_ENEMY_TYPE is never read for anything except the powerup check, so this project cannot express 'a Goomba smells different from a Koopa' yet, only document that it doesn't."
+    "_note": "The fallback for any active, non-powerup enemy slot whose ADDR_ENEMY_TYPE isn't GOOMBA or KOOPA -- Piranha Plant and whatever else SMB's later levels contain, not yet identified by this project (docs/ENTITIES.md phase 4's survey covered only as much of 1-1/1-2 as a real or bot-driven playthrough could reach). Kept generic and undifferentiated rather than guessed."
   },
 
   "POWERUP": {
