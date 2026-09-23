@@ -95,7 +95,7 @@ then 8, then 9 hand-set neural/mechanical scalars across 26 sprints.
 | field | value | range | provenance | home |
 |---|---|---|---|---|
 | `kc_sparsity` | `0.05` | unknown | measured (matches the real fly's ~5% concurrently-active KC fraction, enforced structurally via top-k rather than simulating the real APL feedback-inhibition neuron) | `run_steering.py (KC_SPARSITY)` |
-| `trace_decay` | `60.0` | unknown | measured (~1s at 60Hz, the real eligibility-trace timescale asked for) | `run_steering.py (TRACE_DECAY)` |
+| `trace_decay` | `60.0` | 60.0-120.0 | measured (docs/TRACE_BIOLOGY.md, Handler et al. 2019, Cell: KC->MBON synaptic-tag plasticity is significant at ISIs of -1.2s/0s/+0.5s, a ~1-2s window, and negligible by 6s -- 60 frames = 1s at 60Hz sits at that window's near edge, and the range is the window itself, 60-120 frames. REFACTOR_PLAN.md phase 6's own first measured-provenance scalar grounded in a citation to published fly biology rather than a sweep against this project's own connectome -- the value (60) is unchanged from before; what changed is that this is now a checked claim, not an uncited appeal to "the real eligibility-trace timescale" | `run_steering.py (TRACE_DECAY)` |
 | `learning_rate` | `0.001` | unknown | invented (chosen by direct isolated verification against a hand-computed dW on a real KC->MBON weight -- the first guess, 0.01, was rejected on that same test as too aggressive) | `run_steering.py (LEARNING_RATE)` |
 
 ## HabituationParams
