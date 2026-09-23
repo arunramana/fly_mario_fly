@@ -580,19 +580,6 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
             "to silently default to.")
         force_size_from_frame = inject_frame
 
-    # Mechanical hold-duration constants, rescaled into decision ticks --
-    # see frame_skip's docstring. A no-op at frame_skip=1 (every constant
-    # divides by 1).
-    jump_hold_frames = max(1, round(JUMP_HOLD_FRAMES / frame_skip))
-    jump_cooldown_frames = max(1, round(JUMP_COOLDOWN_FRAMES / frame_skip))
-    long_jump_hold_frames = max(1, round(LONG_JUMP_HOLD_FRAMES / frame_skip))
-    climb_hop_small_frames = max(1, round(CLIMB_HOP_SMALL_FRAMES / frame_skip))
-    climb_hop_big_frames = max(1, round(CLIMB_HOP_BIG_FRAMES / frame_skip))
-    climb_jump_frames = max(1, round(CLIMB_JUMP_FRAMES / frame_skip))
-    climb_cooldown_frames = max(1, round(CLIMB_COOLDOWN_FRAMES / frame_skip))
-    climb_stall_frames = max(1, round(CLIMB_STALL_FRAMES / frame_skip))
-    mdn_backup_frames = max(1, round(MDN_BACKUP_FRAMES / frame_skip))
-
     # REFACTOR_PLAN.md phase 5b: circuit setup and all per-episode decision
     # state now live in bridge.full_policy.FullPolicy -- the same code,
     # moved (see that module's own docstring: a verbatim transcription,
@@ -670,23 +657,14 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
         env.unwrapped._backup()
         obs = env.reset()  # land on the just-made backup, not the tail of warmup
 
-    prev_theta = {"L": 0.0, "R": 0.0}
-    d_history = {"L": [], "R": []}  # rolling d_px, for the frames-to-contact estimate at commit
-    dnp02_ema = {"L": 0.0, "R": 0.0}  # DNp02's own "longer integration" -- see its call site
-    jump_hold = jump_cooldown = 0
-    climb_hold = climb_cooldown = 0
-    climb_attempts = 0
-    last_reset_x = int(ram[ADDR_MARIO_X])
-    stall_count = 0
-    direction = "R"
+    # REFACTOR_PLAN.md phase 5b: every other piece of per-episode decision
+    # state (prev_theta, d_history, dnp02_ema, jump_hold/climb_hold,
+    # last_reset_x, stall_count, direction, prev_qblock_cols,
+    # prev_mario_size, every n_* counter) now lives on `policy`, set by
+    # `policy.reset(seed)` above -- only the two remaining test-harness
+    # flags below (not part of the decision system) are still main()'s own.
     injected = False
     gap_target_col = None       # sprint 016: fixed once, on inject_gap_frame
-    prev_qblock_cols = set()    # sprint 016: for detecting a real "?"-block hit
-    prev_mario_size = int(ram[ADDR_MARIO_SIZE])  # sprint 016: for detecting "ate the mushroom"
-    n_escape_jumps = n_climb_hops = n_climb_jumps = n_conflicts = 0
-    n_long_jumps = 0
-    n_dnp01_fired = n_dnp02_fired = 0
-    n_qblock_hits = n_odor_avoids = n_refusals = 0
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
