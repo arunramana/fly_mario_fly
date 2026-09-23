@@ -1,0 +1,5602 @@
+[
+ {
+  "sigma": 0.0,
+  "seed": 0,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 1,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 2,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 3,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 4,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 5,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 6,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 7,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 8,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 9,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 10,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 11,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 12,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 13,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 14,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 15,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 16,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 17,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 18,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 19,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 20,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 21,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 22,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 23,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 24,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 25,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 26,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 27,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 28,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 29,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 30,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 31,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 32,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 33,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 34,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 35,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 36,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 37,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 38,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 39,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 40,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 41,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 42,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 43,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 44,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 45,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 46,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 47,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 48,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.0,
+  "seed": 49,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 0,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 1,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 2,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 3,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 4,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 5,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 6,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 7,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 8,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 9,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 10,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 11,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 12,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 13,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 14,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 15,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 16,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 17,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 18,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 19,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 20,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 21,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 22,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 23,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 24,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 25,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 26,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 27,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 28,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 29,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 30,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 31,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 32,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 33,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 34,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 35,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 36,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 37,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 38,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 39,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 40,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 41,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 42,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 43,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 44,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 45,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 46,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 47,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 48,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.01,
+  "seed": 49,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 0,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 1,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 2,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 3,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 4,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 5,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 6,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 674,
+  "max_x_abs": 710
+ },
+ {
+  "sigma": 0.02,
+  "seed": 7,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 8,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 9,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 10,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 11,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 12,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 13,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 14,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 15,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 16,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 17,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 18,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 19,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 20,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 21,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 22,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 23,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 24,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 25,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 26,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 27,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 670,
+  "max_x_abs": 704
+ },
+ {
+  "sigma": 0.02,
+  "seed": 28,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.02,
+  "seed": 29,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 30,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 31,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 32,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 33,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 34,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 35,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 36,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 37,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 38,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 39,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 40,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 41,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 42,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 43,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 44,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 45,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.02,
+  "seed": 46,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 47,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 48,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.02,
+  "seed": 49,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 0,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 1,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 2,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 3,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 4,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 5,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.03,
+  "seed": 6,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 672,
+  "max_x_abs": 706
+ },
+ {
+  "sigma": 0.03,
+  "seed": 7,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 8,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 9,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 10,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 11,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 12,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 13,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 14,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 15,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 16,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 17,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 18,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 19,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 20,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 21,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 22,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 23,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 24,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 25,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 26,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 27,
+  "dnp01_commit_frame": 151,
+  "survived": false,
+  "n_frames": 759,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 28,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.03,
+  "seed": 29,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 30,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 31,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 32,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 672,
+  "max_x_abs": 704
+ },
+ {
+  "sigma": 0.03,
+  "seed": 33,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 34,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 35,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.03,
+  "seed": 36,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 37,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 38,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 39,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 40,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 41,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 42,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 43,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.03,
+  "seed": 44,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 45,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.03,
+  "seed": 46,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 47,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.03,
+  "seed": 48,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.03,
+  "seed": 49,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 0,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 1,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.05,
+  "seed": 2,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 686,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.05,
+  "seed": 3,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 606,
+  "max_x_abs": 704
+ },
+ {
+  "sigma": 0.05,
+  "seed": 4,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 5,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.05,
+  "seed": 6,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 606,
+  "max_x_abs": 706
+ },
+ {
+  "sigma": 0.05,
+  "seed": 7,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.05,
+  "seed": 8,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.05,
+  "seed": 9,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 686,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.05,
+  "seed": 10,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 11,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1437
+ },
+ {
+  "sigma": 0.05,
+  "seed": 12,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 13,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.05,
+  "seed": 14,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 15,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 16,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 17,
+  "dnp01_commit_frame": 147,
+  "survived": false,
+  "n_frames": 685,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.05,
+  "seed": 18,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 19,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 20,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 686,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.05,
+  "seed": 21,
+  "dnp01_commit_frame": 150,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.05,
+  "seed": 22,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 23,
+  "dnp01_commit_frame": 147,
+  "survived": false,
+  "n_frames": 685,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.05,
+  "seed": 24,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 25,
+  "dnp01_commit_frame": 150,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.05,
+  "seed": 26,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 27,
+  "dnp01_commit_frame": 152,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 447
+ },
+ {
+  "sigma": 0.05,
+  "seed": 28,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.05,
+  "seed": 29,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 30,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.05,
+  "seed": 31,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.05,
+  "seed": 32,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 672,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.05,
+  "seed": 33,
+  "dnp01_commit_frame": 151,
+  "survived": false,
+  "n_frames": 754,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.05,
+  "seed": 34,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 35,
+  "dnp01_commit_frame": 147,
+  "survived": false,
+  "n_frames": 685,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.05,
+  "seed": 36,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 37,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 38,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1437
+ },
+ {
+  "sigma": 0.05,
+  "seed": 39,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 40,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.05,
+  "seed": 41,
+  "dnp01_commit_frame": 118,
+  "survived": false,
+  "n_frames": 578,
+  "max_x_abs": 704
+ },
+ {
+  "sigma": 0.05,
+  "seed": 42,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 43,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.05,
+  "seed": 44,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 45,
+  "dnp01_commit_frame": 152,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 608
+ },
+ {
+  "sigma": 0.05,
+  "seed": 46,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 47,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.05,
+  "seed": 48,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.05,
+  "seed": 49,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.08,
+  "seed": 0,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.08,
+  "seed": 1,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 700,
+  "max_x_abs": 699
+ },
+ {
+  "sigma": 0.08,
+  "seed": 2,
+  "dnp01_commit_frame": 202,
+  "survived": false,
+  "n_frames": 526,
+  "max_x_abs": 708
+ },
+ {
+  "sigma": 0.08,
+  "seed": 3,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 596
+ },
+ {
+  "sigma": 0.08,
+  "seed": 4,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 186,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.08,
+  "seed": 5,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 605
+ },
+ {
+  "sigma": 0.08,
+  "seed": 6,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.08,
+  "seed": 7,
+  "dnp01_commit_frame": 196,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 684
+ },
+ {
+  "sigma": 0.08,
+  "seed": 8,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 188,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.08,
+  "seed": 9,
+  "dnp01_commit_frame": 764,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 894
+ },
+ {
+  "sigma": 0.08,
+  "seed": 10,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 524,
+  "max_x_abs": 689
+ },
+ {
+  "sigma": 0.08,
+  "seed": 11,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 184,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.08,
+  "seed": 12,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 418,
+  "max_x_abs": 700
+ },
+ {
+  "sigma": 0.08,
+  "seed": 13,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.08,
+  "seed": 14,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1208
+ },
+ {
+  "sigma": 0.08,
+  "seed": 15,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 308
+ },
+ {
+  "sigma": 0.08,
+  "seed": 16,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 601
+ },
+ {
+  "sigma": 0.08,
+  "seed": 17,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 686
+ },
+ {
+  "sigma": 0.08,
+  "seed": 18,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 128,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.08,
+  "seed": 19,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 598
+ },
+ {
+  "sigma": 0.08,
+  "seed": 20,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 524,
+  "max_x_abs": 704
+ },
+ {
+  "sigma": 0.08,
+  "seed": 21,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 768,
+  "max_x_abs": 688
+ },
+ {
+  "sigma": 0.08,
+  "seed": 22,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 128,
+  "max_x_abs": 308
+ },
+ {
+  "sigma": 0.08,
+  "seed": 23,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 522,
+  "max_x_abs": 679
+ },
+ {
+  "sigma": 0.08,
+  "seed": 24,
+  "dnp01_commit_frame": 148,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1314
+ },
+ {
+  "sigma": 0.08,
+  "seed": 25,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1427
+ },
+ {
+  "sigma": 0.08,
+  "seed": 26,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 186,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.08,
+  "seed": 27,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 188,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.08,
+  "seed": 28,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 188,
+  "max_x_abs": 289
+ },
+ {
+  "sigma": 0.08,
+  "seed": 29,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 686
+ },
+ {
+  "sigma": 0.08,
+  "seed": 30,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 128,
+  "max_x_abs": 308
+ },
+ {
+  "sigma": 0.08,
+  "seed": 31,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 186,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.08,
+  "seed": 32,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.08,
+  "seed": 33,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 690,
+  "max_x_abs": 708
+ },
+ {
+  "sigma": 0.08,
+  "seed": 34,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.08,
+  "seed": 35,
+  "dnp01_commit_frame": 171,
+  "survived": false,
+  "n_frames": 562,
+  "max_x_abs": 705
+ },
+ {
+  "sigma": 0.08,
+  "seed": 36,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 128,
+  "max_x_abs": 308
+ },
+ {
+  "sigma": 0.08,
+  "seed": 37,
+  "dnp01_commit_frame": 146,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 868
+ },
+ {
+  "sigma": 0.08,
+  "seed": 38,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.08,
+  "seed": 39,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 188,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.08,
+  "seed": 40,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 690,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.08,
+  "seed": 41,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 308
+ },
+ {
+  "sigma": 0.08,
+  "seed": 42,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 186,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.08,
+  "seed": 43,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 580,
+  "max_x_abs": 683
+ },
+ {
+  "sigma": 0.08,
+  "seed": 44,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 522,
+  "max_x_abs": 709
+ },
+ {
+  "sigma": 0.08,
+  "seed": 45,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 186,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.08,
+  "seed": 46,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.08,
+  "seed": 47,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1398
+ },
+ {
+  "sigma": 0.08,
+  "seed": 48,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.08,
+  "seed": 49,
+  "dnp01_commit_frame": 146,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 881
+ },
+ {
+  "sigma": 0.1,
+  "seed": 0,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 516,
+  "max_x_abs": 687
+ },
+ {
+  "sigma": 0.1,
+  "seed": 1,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 688
+ },
+ {
+  "sigma": 0.1,
+  "seed": 2,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 522,
+  "max_x_abs": 708
+ },
+ {
+  "sigma": 0.1,
+  "seed": 3,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 128,
+  "max_x_abs": 308
+ },
+ {
+  "sigma": 0.1,
+  "seed": 4,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 522,
+  "max_x_abs": 708
+ },
+ {
+  "sigma": 0.1,
+  "seed": 5,
+  "dnp01_commit_frame": 146,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 868
+ },
+ {
+  "sigma": 0.1,
+  "seed": 6,
+  "dnp01_commit_frame": 195,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1295
+ },
+ {
+  "sigma": 0.1,
+  "seed": 7,
+  "dnp01_commit_frame": 196,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1031
+ },
+ {
+  "sigma": 0.1,
+  "seed": 8,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 188,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.1,
+  "seed": 9,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 522,
+  "max_x_abs": 710
+ },
+ {
+  "sigma": 0.1,
+  "seed": 10,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 518,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.1,
+  "seed": 11,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 184,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.1,
+  "seed": 12,
+  "dnp01_commit_frame": 627,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1136
+ },
+ {
+  "sigma": 0.1,
+  "seed": 13,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 186,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.1,
+  "seed": 14,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 600,
+  "max_x_abs": 705
+ },
+ {
+  "sigma": 0.1,
+  "seed": 15,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 686
+ },
+ {
+  "sigma": 0.1,
+  "seed": 16,
+  "dnp01_commit_frame": 195,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1403
+ },
+ {
+  "sigma": 0.1,
+  "seed": 17,
+  "dnp01_commit_frame": 196,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 686
+ },
+ {
+  "sigma": 0.1,
+  "seed": 18,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.1,
+  "seed": 19,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 524,
+  "max_x_abs": 711
+ },
+ {
+  "sigma": 0.1,
+  "seed": 20,
+  "dnp01_commit_frame": 199,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1383
+ },
+ {
+  "sigma": 0.1,
+  "seed": 21,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 681
+ },
+ {
+  "sigma": 0.1,
+  "seed": 22,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 736
+ },
+ {
+  "sigma": 0.1,
+  "seed": 23,
+  "dnp01_commit_frame": 197,
+  "survived": false,
+  "n_frames": 522,
+  "max_x_abs": 682
+ },
+ {
+  "sigma": 0.1,
+  "seed": 24,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 188,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.1,
+  "seed": 25,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 684
+ },
+ {
+  "sigma": 0.1,
+  "seed": 26,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 186,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.1,
+  "seed": 27,
+  "dnp01_commit_frame": 692,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 740
+ },
+ {
+  "sigma": 0.1,
+  "seed": 28,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 188,
+  "max_x_abs": 289
+ },
+ {
+  "sigma": 0.1,
+  "seed": 29,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1395
+ },
+ {
+  "sigma": 0.1,
+  "seed": 30,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 186,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.1,
+  "seed": 31,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 186,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.1,
+  "seed": 32,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 526,
+  "max_x_abs": 708
+ },
+ {
+  "sigma": 0.1,
+  "seed": 33,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.1,
+  "seed": 34,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 888
+ },
+ {
+  "sigma": 0.1,
+  "seed": 35,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 190,
+  "max_x_abs": 289
+ },
+ {
+  "sigma": 0.1,
+  "seed": 36,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 128,
+  "max_x_abs": 308
+ },
+ {
+  "sigma": 0.1,
+  "seed": 37,
+  "dnp01_commit_frame": 196,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 686
+ },
+ {
+  "sigma": 0.1,
+  "seed": 38,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 676
+ },
+ {
+  "sigma": 0.1,
+  "seed": 39,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 188,
+  "max_x_abs": 289
+ },
+ {
+  "sigma": 0.1,
+  "seed": 40,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.1,
+  "seed": 41,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 308
+ },
+ {
+  "sigma": 0.1,
+  "seed": 42,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 524,
+  "max_x_abs": 705
+ },
+ {
+  "sigma": 0.1,
+  "seed": 43,
+  "dnp01_commit_frame": 196,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.1,
+  "seed": 44,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 518,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.1,
+  "seed": 45,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 186,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.1,
+  "seed": 46,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 703
+ },
+ {
+  "sigma": 0.1,
+  "seed": 47,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1398
+ },
+ {
+  "sigma": 0.1,
+  "seed": 48,
+  "dnp01_commit_frame": 680,
+  "survived": false,
+  "n_frames": 759,
+  "max_x_abs": 1431
+ },
+ {
+  "sigma": 0.1,
+  "seed": 49,
+  "dnp01_commit_frame": 196,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 704
+ },
+ {
+  "sigma": 0.15,
+  "seed": 0,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 678,
+  "max_x_abs": 684
+ },
+ {
+  "sigma": 0.15,
+  "seed": 1,
+  "dnp01_commit_frame": 701,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 728
+ },
+ {
+  "sigma": 0.15,
+  "seed": 2,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 532,
+  "max_x_abs": 704
+ },
+ {
+  "sigma": 0.15,
+  "seed": 3,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 586,
+  "max_x_abs": 708
+ },
+ {
+  "sigma": 0.15,
+  "seed": 4,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 448,
+  "max_x_abs": 681
+ },
+ {
+  "sigma": 0.15,
+  "seed": 5,
+  "dnp01_commit_frame": 196,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 683
+ },
+ {
+  "sigma": 0.15,
+  "seed": 6,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1034
+ },
+ {
+  "sigma": 0.15,
+  "seed": 7,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 530,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.15,
+  "seed": 8,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 688
+ },
+ {
+  "sigma": 0.15,
+  "seed": 9,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 462,
+  "max_x_abs": 695
+ },
+ {
+  "sigma": 0.15,
+  "seed": 10,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 686
+ },
+ {
+  "sigma": 0.15,
+  "seed": 11,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 522,
+  "max_x_abs": 705
+ },
+ {
+  "sigma": 0.15,
+  "seed": 12,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 688
+ },
+ {
+  "sigma": 0.15,
+  "seed": 13,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1395
+ },
+ {
+  "sigma": 0.15,
+  "seed": 14,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1214
+ },
+ {
+  "sigma": 0.15,
+  "seed": 15,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 686
+ },
+ {
+  "sigma": 0.15,
+  "seed": 16,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 518,
+  "max_x_abs": 701
+ },
+ {
+  "sigma": 0.15,
+  "seed": 17,
+  "dnp01_commit_frame": 196,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1395
+ },
+ {
+  "sigma": 0.15,
+  "seed": 18,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1403
+ },
+ {
+  "sigma": 0.15,
+  "seed": 19,
+  "dnp01_commit_frame": 196,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 706
+ },
+ {
+  "sigma": 0.15,
+  "seed": 20,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 709
+ },
+ {
+  "sigma": 0.15,
+  "seed": 21,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 708
+ },
+ {
+  "sigma": 0.15,
+  "seed": 22,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 518,
+  "max_x_abs": 705
+ },
+ {
+  "sigma": 0.15,
+  "seed": 23,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 700
+ },
+ {
+  "sigma": 0.15,
+  "seed": 24,
+  "dnp01_commit_frame": 196,
+  "survived": false,
+  "n_frames": 534,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.15,
+  "seed": 25,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 602,
+  "max_x_abs": 692
+ },
+ {
+  "sigma": 0.15,
+  "seed": 26,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1148
+ },
+ {
+  "sigma": 0.15,
+  "seed": 27,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 604,
+  "max_x_abs": 693
+ },
+ {
+  "sigma": 0.15,
+  "seed": 28,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1399
+ },
+ {
+  "sigma": 0.15,
+  "seed": 29,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 518,
+  "max_x_abs": 706
+ },
+ {
+  "sigma": 0.15,
+  "seed": 30,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 450,
+  "max_x_abs": 685
+ },
+ {
+  "sigma": 0.15,
+  "seed": 31,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 686
+ },
+ {
+  "sigma": 0.15,
+  "seed": 32,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.15,
+  "seed": 33,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 516,
+  "max_x_abs": 681
+ },
+ {
+  "sigma": 0.15,
+  "seed": 34,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 899
+ },
+ {
+  "sigma": 0.15,
+  "seed": 35,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 516,
+  "max_x_abs": 687
+ },
+ {
+  "sigma": 0.15,
+  "seed": 36,
+  "dnp01_commit_frame": 196,
+  "survived": false,
+  "n_frames": 532,
+  "max_x_abs": 703
+ },
+ {
+  "sigma": 0.15,
+  "seed": 37,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 699
+ },
+ {
+  "sigma": 0.15,
+  "seed": 38,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 524,
+  "max_x_abs": 711
+ },
+ {
+  "sigma": 0.15,
+  "seed": 39,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 522,
+  "max_x_abs": 708
+ },
+ {
+  "sigma": 0.15,
+  "seed": 40,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 686
+ },
+ {
+  "sigma": 0.15,
+  "seed": 41,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 684
+ },
+ {
+  "sigma": 0.15,
+  "seed": 42,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 700
+ },
+ {
+  "sigma": 0.15,
+  "seed": 43,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 534,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.15,
+  "seed": 44,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 526,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.15,
+  "seed": 45,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 186,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.15,
+  "seed": 46,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 516,
+  "max_x_abs": 698
+ },
+ {
+  "sigma": 0.15,
+  "seed": 47,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 518,
+  "max_x_abs": 705
+ },
+ {
+  "sigma": 0.15,
+  "seed": 48,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 588,
+  "max_x_abs": 681
+ },
+ {
+  "sigma": 0.15,
+  "seed": 49,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 706
+ },
+ {
+  "sigma": 0.2,
+  "seed": 0,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 590,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.2,
+  "seed": 1,
+  "dnp01_commit_frame": 701,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 729
+ },
+ {
+  "sigma": 0.2,
+  "seed": 2,
+  "dnp01_commit_frame": 196,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1038
+ },
+ {
+  "sigma": 0.2,
+  "seed": 3,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 462,
+  "max_x_abs": 697
+ },
+ {
+  "sigma": 0.2,
+  "seed": 4,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1225
+ },
+ {
+  "sigma": 0.2,
+  "seed": 5,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 518,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.2,
+  "seed": 6,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1034
+ },
+ {
+  "sigma": 0.2,
+  "seed": 7,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 528,
+  "max_x_abs": 698
+ },
+ {
+  "sigma": 0.2,
+  "seed": 8,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 688
+ },
+ {
+  "sigma": 0.2,
+  "seed": 9,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 592,
+  "max_x_abs": 703
+ },
+ {
+  "sigma": 0.2,
+  "seed": 10,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 518,
+  "max_x_abs": 701
+ },
+ {
+  "sigma": 0.2,
+  "seed": 11,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1142
+ },
+ {
+  "sigma": 0.2,
+  "seed": 12,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 518,
+  "max_x_abs": 703
+ },
+ {
+  "sigma": 0.2,
+  "seed": 13,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1395
+ },
+ {
+  "sigma": 0.2,
+  "seed": 14,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 612,
+  "max_x_abs": 692
+ },
+ {
+  "sigma": 0.2,
+  "seed": 15,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 706
+ },
+ {
+  "sigma": 0.2,
+  "seed": 16,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 704
+ },
+ {
+  "sigma": 0.2,
+  "seed": 17,
+  "dnp01_commit_frame": 196,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 698
+ },
+ {
+  "sigma": 0.2,
+  "seed": 18,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1403
+ },
+ {
+  "sigma": 0.2,
+  "seed": 19,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 686,
+  "max_x_abs": 687
+ },
+ {
+  "sigma": 0.2,
+  "seed": 20,
+  "dnp01_commit_frame": 530,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1403
+ },
+ {
+  "sigma": 0.2,
+  "seed": 21,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 707
+ },
+ {
+  "sigma": 0.2,
+  "seed": 22,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 704
+ },
+ {
+  "sigma": 0.2,
+  "seed": 23,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 530,
+  "max_x_abs": 700
+ },
+ {
+  "sigma": 0.2,
+  "seed": 24,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1229
+ },
+ {
+  "sigma": 0.2,
+  "seed": 25,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 604,
+  "max_x_abs": 692
+ },
+ {
+  "sigma": 0.2,
+  "seed": 26,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 600,
+  "max_x_abs": 687
+ },
+ {
+  "sigma": 0.2,
+  "seed": 27,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 738
+ },
+ {
+  "sigma": 0.2,
+  "seed": 28,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 584,
+  "max_x_abs": 706
+ },
+ {
+  "sigma": 0.2,
+  "seed": 29,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 688
+ },
+ {
+  "sigma": 0.2,
+  "seed": 30,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 450,
+  "max_x_abs": 685
+ },
+ {
+  "sigma": 0.2,
+  "seed": 31,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 699
+ },
+ {
+  "sigma": 0.2,
+  "seed": 32,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 530,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.2,
+  "seed": 33,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1151
+ },
+ {
+  "sigma": 0.2,
+  "seed": 34,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 516,
+  "max_x_abs": 682
+ },
+ {
+  "sigma": 0.2,
+  "seed": 35,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 524,
+  "max_x_abs": 684
+ },
+ {
+  "sigma": 0.2,
+  "seed": 36,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 448,
+  "max_x_abs": 685
+ },
+ {
+  "sigma": 0.2,
+  "seed": 37,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 701
+ },
+ {
+  "sigma": 0.2,
+  "seed": 38,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 600,
+  "max_x_abs": 689
+ },
+ {
+  "sigma": 0.2,
+  "seed": 39,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 522,
+  "max_x_abs": 708
+ },
+ {
+  "sigma": 0.2,
+  "seed": 40,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 584,
+  "max_x_abs": 706
+ },
+ {
+  "sigma": 0.2,
+  "seed": 41,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 514,
+  "max_x_abs": 685
+ },
+ {
+  "sigma": 0.2,
+  "seed": 42,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 518,
+  "max_x_abs": 683
+ },
+ {
+  "sigma": 0.2,
+  "seed": 43,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 674,
+  "max_x_abs": 683
+ },
+ {
+  "sigma": 0.2,
+  "seed": 44,
+  "dnp01_commit_frame": 595,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1039
+ },
+ {
+  "sigma": 0.2,
+  "seed": 45,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 520,
+  "max_x_abs": 700
+ },
+ {
+  "sigma": 0.2,
+  "seed": 46,
+  "dnp01_commit_frame": 195,
+  "survived": false,
+  "n_frames": 516,
+  "max_x_abs": 687
+ },
+ {
+  "sigma": 0.2,
+  "seed": 47,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 745,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.2,
+  "seed": 48,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 594,
+  "max_x_abs": 706
+ },
+ {
+  "sigma": 0.2,
+  "seed": 49,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1483
+ },
+ {
+  "sigma": 0.035,
+  "seed": 0,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 1,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 2,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 3,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 604,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.035,
+  "seed": 4,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 5,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.035,
+  "seed": 6,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 604,
+  "max_x_abs": 707
+ },
+ {
+  "sigma": 0.035,
+  "seed": 7,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.035,
+  "seed": 8,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 9,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 686,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.035,
+  "seed": 10,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 11,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 12,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 13,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 14,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 15,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 16,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 17,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.035,
+  "seed": 18,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 19,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 20,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 21,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 22,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 23,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 24,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 25,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 26,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 27,
+  "dnp01_commit_frame": 151,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1364
+ },
+ {
+  "sigma": 0.035,
+  "seed": 28,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.035,
+  "seed": 29,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 30,
+  "dnp01_commit_frame": 151,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1364
+ },
+ {
+  "sigma": 0.035,
+  "seed": 31,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 32,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 672,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.035,
+  "seed": 33,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 34,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 35,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.035,
+  "seed": 36,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 37,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 38,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1437
+ },
+ {
+  "sigma": 0.035,
+  "seed": 39,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 40,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 41,
+  "dnp01_commit_frame": 147,
+  "survived": false,
+  "n_frames": 685,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.035,
+  "seed": 42,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 43,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.035,
+  "seed": 44,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 45,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.035,
+  "seed": 46,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 47,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.035,
+  "seed": 48,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.035,
+  "seed": 49,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 0,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 1,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 2,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 3,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 604,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.04,
+  "seed": 4,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 5,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.04,
+  "seed": 6,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 604,
+  "max_x_abs": 707
+ },
+ {
+  "sigma": 0.04,
+  "seed": 7,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.04,
+  "seed": 8,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 9,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 686,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.04,
+  "seed": 10,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 11,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1437
+ },
+ {
+  "sigma": 0.04,
+  "seed": 12,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 13,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1437
+ },
+ {
+  "sigma": 0.04,
+  "seed": 14,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 15,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 16,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 17,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.04,
+  "seed": 18,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 19,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 20,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 21,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 22,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 23,
+  "dnp01_commit_frame": 147,
+  "survived": false,
+  "n_frames": 685,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.04,
+  "seed": 24,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 25,
+  "dnp01_commit_frame": 152,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 658
+ },
+ {
+  "sigma": 0.04,
+  "seed": 26,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 27,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 668,
+  "max_x_abs": 701
+ },
+ {
+  "sigma": 0.04,
+  "seed": 28,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.04,
+  "seed": 29,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 30,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.04,
+  "seed": 31,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 32,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 672,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.04,
+  "seed": 33,
+  "dnp01_commit_frame": 151,
+  "survived": false,
+  "n_frames": 754,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.04,
+  "seed": 34,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 35,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.04,
+  "seed": 36,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 37,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 38,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1437
+ },
+ {
+  "sigma": 0.04,
+  "seed": 39,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 40,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.04,
+  "seed": 41,
+  "dnp01_commit_frame": 147,
+  "survived": false,
+  "n_frames": 685,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.04,
+  "seed": 42,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 43,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.04,
+  "seed": 44,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 45,
+  "dnp01_commit_frame": 152,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 608
+ },
+ {
+  "sigma": 0.04,
+  "seed": 46,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 47,
+  "dnp01_commit_frame": 150,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.04,
+  "seed": 48,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.04,
+  "seed": 49,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 0,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 1,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 2,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 686,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.045,
+  "seed": 3,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 604,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.045,
+  "seed": 4,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 5,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.045,
+  "seed": 6,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 604,
+  "max_x_abs": 707
+ },
+ {
+  "sigma": 0.045,
+  "seed": 7,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.045,
+  "seed": 8,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 686,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.045,
+  "seed": 9,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 686,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.045,
+  "seed": 10,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 11,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1437
+ },
+ {
+  "sigma": 0.045,
+  "seed": 12,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 13,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 14,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 15,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 16,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 17,
+  "dnp01_commit_frame": 147,
+  "survived": false,
+  "n_frames": 685,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.045,
+  "seed": 18,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 19,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 20,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 686,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.045,
+  "seed": 21,
+  "dnp01_commit_frame": 152,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 447
+ },
+ {
+  "sigma": 0.045,
+  "seed": 22,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 23,
+  "dnp01_commit_frame": 147,
+  "survived": false,
+  "n_frames": 685,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.045,
+  "seed": 24,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 25,
+  "dnp01_commit_frame": 150,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.045,
+  "seed": 26,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 27,
+  "dnp01_commit_frame": 152,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 446
+ },
+ {
+  "sigma": 0.045,
+  "seed": 28,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.045,
+  "seed": 29,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 30,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.045,
+  "seed": 31,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.045,
+  "seed": 32,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 672,
+  "max_x_abs": 702
+ },
+ {
+  "sigma": 0.045,
+  "seed": 33,
+  "dnp01_commit_frame": 151,
+  "survived": false,
+  "n_frames": 754,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.045,
+  "seed": 34,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 35,
+  "dnp01_commit_frame": 147,
+  "survived": false,
+  "n_frames": 685,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.045,
+  "seed": 36,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 37,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 38,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1437
+ },
+ {
+  "sigma": 0.045,
+  "seed": 39,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 40,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.045,
+  "seed": 41,
+  "dnp01_commit_frame": 147,
+  "survived": false,
+  "n_frames": 685,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.045,
+  "seed": 42,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 43,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.045,
+  "seed": 44,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 45,
+  "dnp01_commit_frame": 152,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 608
+ },
+ {
+  "sigma": 0.045,
+  "seed": 46,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 47,
+  "dnp01_commit_frame": 150,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.045,
+  "seed": 48,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.045,
+  "seed": 49,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 0,
+  "dnp01_commit_frame": 126,
+  "survived": false,
+  "n_frames": 172,
+  "max_x_abs": 285
+ },
+ {
+  "sigma": 0.06,
+  "seed": 1,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.06,
+  "seed": 2,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 168,
+  "max_x_abs": 286
+ },
+ {
+  "sigma": 0.06,
+  "seed": 3,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 981
+ },
+ {
+  "sigma": 0.06,
+  "seed": 4,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 5,
+  "dnp01_commit_frame": 150,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.06,
+  "seed": 6,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.06,
+  "seed": 7,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.06,
+  "seed": 8,
+  "dnp01_commit_frame": 131,
+  "survived": false,
+  "n_frames": 456,
+  "max_x_abs": 709
+ },
+ {
+  "sigma": 0.06,
+  "seed": 9,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 686,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.06,
+  "seed": 10,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 11,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1437
+ },
+ {
+  "sigma": 0.06,
+  "seed": 12,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 13,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.06,
+  "seed": 14,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 15,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 16,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 17,
+  "dnp01_commit_frame": 772,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 729
+ },
+ {
+  "sigma": 0.06,
+  "seed": 18,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 19,
+  "dnp01_commit_frame": 152,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 398
+ },
+ {
+  "sigma": 0.06,
+  "seed": 20,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 686,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.06,
+  "seed": 21,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.06,
+  "seed": 22,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 684,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.06,
+  "seed": 23,
+  "dnp01_commit_frame": 147,
+  "survived": false,
+  "n_frames": 685,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.06,
+  "seed": 24,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 25,
+  "dnp01_commit_frame": 150,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.06,
+  "seed": 26,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 166,
+  "max_x_abs": 285
+ },
+ {
+  "sigma": 0.06,
+  "seed": 27,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 688,
+  "max_x_abs": 681
+ },
+ {
+  "sigma": 0.06,
+  "seed": 28,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.06,
+  "seed": 29,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 170,
+  "max_x_abs": 285
+ },
+ {
+  "sigma": 0.06,
+  "seed": 30,
+  "dnp01_commit_frame": 150,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.06,
+  "seed": 31,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 552,
+  "max_x_abs": 705
+ },
+ {
+  "sigma": 0.06,
+  "seed": 32,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 33,
+  "dnp01_commit_frame": 147,
+  "survived": false,
+  "n_frames": 685,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.06,
+  "seed": 34,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 35,
+  "dnp01_commit_frame": 147,
+  "survived": false,
+  "n_frames": 685,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.06,
+  "seed": 36,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 37,
+  "dnp01_commit_frame": 146,
+  "survived": false,
+  "n_frames": 688,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 38,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.06,
+  "seed": 39,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 40,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 692,
+  "max_x_abs": 701
+ },
+ {
+  "sigma": 0.06,
+  "seed": 41,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.06,
+  "seed": 42,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.06,
+  "seed": 43,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 110,
+  "max_x_abs": 306
+ },
+ {
+  "sigma": 0.06,
+  "seed": 44,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 45,
+  "dnp01_commit_frame": 147,
+  "survived": false,
+  "n_frames": 685,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.06,
+  "seed": 46,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 47,
+  "dnp01_commit_frame": 149,
+  "survived": false,
+  "n_frames": 406,
+  "max_x_abs": 694
+ },
+ {
+  "sigma": 0.06,
+  "seed": 48,
+  "dnp01_commit_frame": 148,
+  "survived": false,
+  "n_frames": 689,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.06,
+  "seed": 49,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 616,
+  "max_x_abs": 698
+ },
+ {
+  "sigma": 0.07,
+  "seed": 0,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 713
+ },
+ {
+  "sigma": 0.07,
+  "seed": 1,
+  "dnp01_commit_frame": 182,
+  "survived": false,
+  "n_frames": 574,
+  "max_x_abs": 712
+ },
+ {
+  "sigma": 0.07,
+  "seed": 2,
+  "dnp01_commit_frame": 202,
+  "survived": false,
+  "n_frames": 570,
+  "max_x_abs": 707
+ },
+ {
+  "sigma": 0.07,
+  "seed": 3,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 596
+ },
+ {
+  "sigma": 0.07,
+  "seed": 4,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 770,
+  "max_x_abs": 706
+ },
+ {
+  "sigma": 0.07,
+  "seed": 5,
+  "dnp01_commit_frame": 150,
+  "survived": false,
+  "n_frames": 691,
+  "max_x_abs": 1436
+ },
+ {
+  "sigma": 0.07,
+  "seed": 6,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 168,
+  "max_x_abs": 285
+ },
+ {
+  "sigma": 0.07,
+  "seed": 7,
+  "dnp01_commit_frame": 196,
+  "survived": false,
+  "n_frames": 522,
+  "max_x_abs": 709
+ },
+ {
+  "sigma": 0.07,
+  "seed": 8,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 188,
+  "max_x_abs": 289
+ },
+ {
+  "sigma": 0.07,
+  "seed": 9,
+  "dnp01_commit_frame": 764,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 894
+ },
+ {
+  "sigma": 0.07,
+  "seed": 10,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 604,
+  "max_x_abs": 701
+ },
+ {
+  "sigma": 0.07,
+  "seed": 11,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 184,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.07,
+  "seed": 12,
+  "dnp01_commit_frame": 174,
+  "survived": false,
+  "n_frames": 562,
+  "max_x_abs": 705
+ },
+ {
+  "sigma": 0.07,
+  "seed": 13,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.07,
+  "seed": 14,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 110,
+  "max_x_abs": 306
+ },
+ {
+  "sigma": 0.07,
+  "seed": 15,
+  "dnp01_commit_frame": 152,
+  "survived": false,
+  "n_frames": 693,
+  "max_x_abs": 1432
+ },
+ {
+  "sigma": 0.07,
+  "seed": 16,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 112,
+  "max_x_abs": 309
+ },
+ {
+  "sigma": 0.07,
+  "seed": 17,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 982
+ },
+ {
+  "sigma": 0.07,
+  "seed": 18,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 608
+ },
+ {
+  "sigma": 0.07,
+  "seed": 19,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 602,
+  "max_x_abs": 705
+ },
+ {
+  "sigma": 0.07,
+  "seed": 20,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 524,
+  "max_x_abs": 704
+ },
+ {
+  "sigma": 0.07,
+  "seed": 21,
+  "dnp01_commit_frame": 147,
+  "survived": false,
+  "n_frames": 685,
+  "max_x_abs": 1430
+ },
+ {
+  "sigma": 0.07,
+  "seed": 22,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 578,
+  "max_x_abs": 704
+ },
+ {
+  "sigma": 0.07,
+  "seed": 23,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 596,
+  "max_x_abs": 699
+ },
+ {
+  "sigma": 0.07,
+  "seed": 24,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 112,
+  "max_x_abs": 308
+ },
+ {
+  "sigma": 0.07,
+  "seed": 25,
+  "dnp01_commit_frame": 518,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1427
+ },
+ {
+  "sigma": 0.07,
+  "seed": 26,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 701,
+  "max_x_abs": 1431
+ },
+ {
+  "sigma": 0.07,
+  "seed": 27,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 434
+ },
+ {
+  "sigma": 0.07,
+  "seed": 28,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 188,
+  "max_x_abs": 289
+ },
+ {
+  "sigma": 0.07,
+  "seed": 29,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 170,
+  "max_x_abs": 285
+ },
+ {
+  "sigma": 0.07,
+  "seed": 30,
+  "dnp01_commit_frame": 703,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 596
+ },
+ {
+  "sigma": 0.07,
+  "seed": 31,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 186,
+  "max_x_abs": 293
+ },
+ {
+  "sigma": 0.07,
+  "seed": 32,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.07,
+  "seed": 33,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 690,
+  "max_x_abs": 708
+ },
+ {
+  "sigma": 0.07,
+  "seed": 34,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 534,
+  "max_x_abs": 688
+ },
+ {
+  "sigma": 0.07,
+  "seed": 35,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 170,
+  "max_x_abs": 286
+ },
+ {
+  "sigma": 0.07,
+  "seed": 36,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 128,
+  "max_x_abs": 308
+ },
+ {
+  "sigma": 0.07,
+  "seed": 37,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 740,
+  "max_x_abs": 1431
+ },
+ {
+  "sigma": 0.07,
+  "seed": 38,
+  "dnp01_commit_frame": 148,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1313
+ },
+ {
+  "sigma": 0.07,
+  "seed": 39,
+  "dnp01_commit_frame": null,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 602
+ },
+ {
+  "sigma": 0.07,
+  "seed": 40,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 692,
+  "max_x_abs": 701
+ },
+ {
+  "sigma": 0.07,
+  "seed": 41,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.07,
+  "seed": 42,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 170,
+  "max_x_abs": 285
+ },
+ {
+  "sigma": 0.07,
+  "seed": 43,
+  "dnp01_commit_frame": 171,
+  "survived": false,
+  "n_frames": 562,
+  "max_x_abs": 707
+ },
+ {
+  "sigma": 0.07,
+  "seed": 44,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 542,
+  "max_x_abs": 706
+ },
+ {
+  "sigma": 0.07,
+  "seed": 45,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 420,
+  "max_x_abs": 695
+ },
+ {
+  "sigma": 0.07,
+  "seed": 46,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 534,
+  "max_x_abs": 696
+ },
+ {
+  "sigma": 0.07,
+  "seed": 47,
+  "dnp01_commit_frame": 531,
+  "survived": true,
+  "n_frames": 800,
+  "max_x_abs": 1398
+ },
+ {
+  "sigma": 0.07,
+  "seed": 48,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 126,
+  "max_x_abs": 307
+ },
+ {
+  "sigma": 0.07,
+  "seed": 49,
+  "dnp01_commit_frame": null,
+  "survived": false,
+  "n_frames": 168,
+  "max_x_abs": 285
+ }
+]

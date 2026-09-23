@@ -1648,6 +1648,129 @@ convention is still required to exist at all, and the far anchor
 (`hex1.max()`) is still a hand-picked edge, left unchanged and
 unjustified beyond "023 already used it." Retinotopy is closed.
 
+## 025 — membrane noise: calibrated, and the fly gets variable, not better (`runs/025a_noise_good.mp4`, `runs/025b_noise_bad.mp4`)
+
+**Setup.** One stochastic term, added once, in `dynamics.py`: `drive =
+g*(W@h) + I`, now `drive = g*(W@h) + I + eta`, `eta ~ N(0, sigma)`,
+resampled every substep, every neuron, in every circuit that calls
+`dynamics.step`/`HybridState.step` (jump, takeoff, DNp02, steering,
+speed, MDN — six call sites). W, I, thresholds, and every reward are
+untouched. `sigma` lives on a new `dynamics.NoiseConfig` object (not a
+module constant like `ALPHA`/`CLIP`) specifically so it has a settable
+attribute a future GUI slider can bind to. Seed discipline: `main()`
+takes `seed` (logged in `info["seed"]`, auto-drawn and printed if not
+given) and builds ONE `np.random.Generator` shared across every circuit
+for the whole episode — replaying the same seed at the same sigma
+reproduces an episode exactly (checked directly: two `main()` calls,
+same seed/sigma, produced byte-identical telemetry DataFrames;
+`sigma=0.0` draws no random numbers at all and reproduces every pre-025
+run bit-for-bit). Denormal flush kept as-is.
+
+**Calibration, before recording anything.** Swept sigma on level 1-1, no
+synthetic gap injection, `max_frames=800`, the SAME 50 seeds (0–49)
+reused at every sigma value, `Pool(8)`, `OMP_NUM_THREADS=1`. Measured
+per sigma: DNp01 commitment-frame median/IQR across episodes that ever
+committed, how many of the 50 episodes committed at all, survival rate,
+and median final distance (`max_x_abs`):
+
+| sigma | DNp01 committed | median frame | IQR | survival | median distance |
+|---|---|---|---|---|---|
+| 0.0 (baseline) | 50/50 | 148.0 | 0.0 | 0% | 1432 |
+| 0.01 | 50/50 | 148.0 | 0.0 | 0% | 1432 |
+| 0.02 | 50/50 | 148.0 | 0.0 | 0% | 1432 |
+| 0.03 | 50/50 | 148.0 | 0.0 | 0% | 1432 |
+| 0.035 | 50/50 | 148.0 | 0.8 | 4% | 1432 |
+| **0.04** | **50/50** | **148.0** | **1.0** | **4%** | **1432** |
+| 0.045 | 50/50 | 148.0 | 1.0 | 6% | 1432 |
+| 0.05 | 49/50 | 148.0 | 1.0 | 4% | 1430 |
+| 0.06 | 38/50 | 148.0 | 1.0 | 6% | 1430 |
+| 0.07 | 13/50 | 182.0 | 366.0 | 22% | 698 |
+| 0.08 | 9/50 | 171.0 | 48.0 | 22% | 597 |
+| 0.1 | 15/50 | 196.0 | 3.0 | 22% | 688 |
+| 0.15 | 13/50 | 195.0 | 1.0 | 18% | 702 |
+| 0.2 | 15/50 | 195.0 | 1.0 | 26% | 702 |
+
+`sigma=0.0`'s median (148, IQR=0.0 across all 50 different seeds) exactly
+reproduces 017's own deterministic commit frame — a real check that this
+sweep's slightly different configuration (no gap injection, `max_frames
+=800` vs 017's 1500) didn't change the reference point it's being
+compared against. There is a sharp transition, not a gradual one:
+0.0–0.03 show EXACTLY zero spread (every one of 50 different seeds lands
+on frame 148 — the pre-025 system really is that deterministic); 0.035–
+0.06 show real but small spread while DNp01 keeps firing in nearly every
+episode; 0.07 onward, DNp01 frequently fails to fire AT ALL within 800
+frames (9–15 of 50, down from 50/50) and survival jumps to 18–26% — a
+qualitatively different regime (the pathway breaking down, not "realistic
+jitter"), not explored further since it's well past what any rule below
+would select.
+
+**The stated rule, and the number it picked.** Smallest sigma producing
+a visible (whole-frame, not sub-frame) spread in DNp01 commitment frame,
+while DNp01 still commits in EVERY episode (50/50 — ruling out the regime
+where the pathway itself starts failing to fire) and survival stays a
+small, single-digit change rather than the double-digit jump seen once
+that regime starts. **sigma=0.04**: IQR=1.0 (0.035's 0.8 is a weaker,
+sub-frame signal — one or two outlier seeds, not a clean spread), 50/50
+commit rate preserved, survival 4% (2/50) vs baseline's 0%. Full
+per-seed distribution at 0.04: frame 147 (2 seeds), 148 (32, the
+baseline value), 149 (8), 150 (1), 151 (1), 152 (6) — a real 5-frame
+spread around the deterministic value, not noise in the measurement.
+
+**The two-episode deliverable, and what it actually shows.** Same seed
+set, sigma=0.04. `runs/025b_noise_bad.mp4`, **seed 5**: DNp01 commits at
+frame **149** (one frame later than 017's 148) — and dies at frame 406,
+reaching only x=694, versus the deterministic baseline's death at frame
+689 having reached x=1432. A one-frame delay in the FIRST commitment
+cascaded into a completely different, much shorter run — this is the
+"later commitment cost a life" case, real and clean. `runs/025a_noise_
+good.mp4`, **seed 25**: survived the full 800 frames (`died_or_flagged=
+False`) despite an EVEN LATER first commit (frame 152) — but checked
+the telemetry before calling this a win: `max_x_abs=658`, far short of
+baseline's 1432, and the DNp02 log shows commits recurring every ~65
+frames with `theta=0.000 d_px=None` (no real enemy) from frame 369
+onward — Mario is stuck oscillating in place, not making progress, and
+"survival" here means "never reached the threat that kills the
+deterministic run" rather than "escaped better." **Stated plainly, as
+pre-registered: neither seed matches the hypothesised "earlier
+commitment clears a Goomba the baseline hit" shape** — in this sweep,
+the baseline commits successfully at frame 148 against every seed's
+first encounter regardless of sigma (DNp01 never fails the FIRST
+encounter until sigma is well past 0.04), so there was no baseline
+failure for an earlier commitment to correct. The real divergence this
+sigma produces is a small commit-frame perturbation cascading into
+categorically different DOWNSTREAM trajectories (different later deaths,
+or a stuck loop) — reported as found, not reshaped to fit the
+hypothesis.
+
+**The suspicious case, stated separately, as instructed.** 2 of 50
+seeds "survived" at sigma=0.04 (4% vs baseline's 0%) — technically an
+improvement. Checked, per the pre-registered caution: both are the
+stuck-oscillation artifact described above (seed 25 and seed 45, both
+committing at frame 152, both plateauing around x=600–660 rather than
+genuinely escaping further than baseline). This is NOT "the deterministic
+run was sitting in a bad local corner that noise found a way out of" in
+the sense of better escape behaviour — it's noise occasionally nudging
+Mario into a different failure mode (stuck, not dead) rather than a
+better outcome. Worth a future sprint's attention (why does this
+particular stuck state recur at a fixed ~65-frame cadence), not
+resolved here.
+
+**What we learned.** The calibration rule worked exactly as designed:
+it found a real, sharp transition between "no measurable effect" (sigma
+<=0.03, confirmed against 50 different seeds each) and "the escape
+pathway itself starts failing" (sigma>=0.07), and picked the value just
+past the former. At that value, noise does what it was built to do —
+real, small, seed-dependent variability in exactly the metric this
+project has always reported as deterministic (DNp01 commitment frame)
+— and does NOT make the fly better: median survival moved from 0% to
+4%, a small change, and the mechanism behind that small change is a
+stuck loop, not improved escape, exactly the "different finding, stated
+separately" the pre-registration anticipated rather than a genuine
+survival improvement. **Scalars: +1 (`sigma`, stated plainly, as
+specified). Scaffolding: 0**, as expected — no RAM convention, no
+invented distance or edge, just a real Gaussian on a real quantity
+already in the model.
+
 ## Still open
 
 - **The 009 climb/long-jump livelock is understood, not just patched

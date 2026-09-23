@@ -1,12 +1,15 @@
 """
 dynamics.py — the leaky integrator from SPEC_jump.md section 3.
 
-    h(t+1) = (1 - alpha) * h(t) + alpha * phi( g * W @ h(t) + I(t) + b )
+    h(t+1) = (1 - alpha) * h(t) + alpha * phi( g * W @ h(t) + I(t) + b + eta )
 
 phi = ReLU, not tanh: these are firing-rate units, and a rate cannot go
 negative — inhibition already enters through the sign of w_ij, baked into W
 by circuit.py. An upper clip stops runaway when g pushes the recurrence past
-its stable point.
+its stable point. `b` has never been implemented (stays 0, as it always has
+— the spec's own bias term, untouched by sprint 025). `eta ~ N(0, sigma)`
+is sprint 025's one addition, `NoiseConfig` below — every other term in
+this equation, and every circuit's W/I, is unchanged.
 """
 
 from __future__ import annotations
@@ -22,10 +25,40 @@ def phi(x: np.ndarray) -> np.ndarray:
     return np.clip(x, 0.0, CLIP)
 
 
+class NoiseConfig:
+    """sprint 025: membrane noise, eta ~ N(0, sigma), added to every
+    neuron's drive before phi(), in every circuit that calls `step` or
+    `HybridState.step` below -- "one stochastic term in the membrane
+    update... on every neuron," not a per-circuit or per-population knob.
+    `sigma` lives on this object rather than as a module constant (like
+    ALPHA/CLIP above) because per claude/fly-mario-tool-vision.md this is
+    meant to become a live GUI slider -- a slider needs an object with a
+    settable attribute to bind to, not a module-level name to reassign.
+
+    `rng` is a single np.random.Generator, seeded ONCE per episode
+    (run_steering.py's own `seed` parameter) and shared across every
+    circuit's every substep -- reusing one generator, not one per circuit,
+    is what makes a whole EPISODE reproducible from one seed rather than
+    only each circuit in isolation. sigma=0.0 draws no random numbers at
+    all (returns a bare 0.0, not an all-zero array) -- exact bit-identical
+    output to every pre-025 caller that never passes `noise=`."""
+
+    def __init__(self, sigma: float, rng: np.random.Generator):
+        self.sigma = sigma
+        self.rng = rng
+
+    def sample(self, k: int):
+        if self.sigma == 0.0:
+            return 0.0
+        return self.rng.normal(0.0, self.sigma, size=k)
+
+
 def step(h: np.ndarray, W: np.ndarray, g: float, I: np.ndarray,
-         alpha: float = ALPHA) -> np.ndarray:
-    """One substep: h(t+1) = (1-alpha)*h(t) + alpha*phi(g*W@h(t) + I)."""
+         alpha: float = ALPHA, noise: NoiseConfig | None = None) -> np.ndarray:
+    """One substep: h(t+1) = (1-alpha)*h(t) + alpha*phi(g*W@h(t) + I + eta)."""
     drive = g * (W @ h) + I
+    if noise is not None:
+        drive = drive + noise.sample(len(h))
     return (1.0 - alpha) * h + alpha * phi(drive)
 
 
@@ -70,10 +103,19 @@ class HybridState:
         self.spike_amp = spike_amp
         self.just_spiked = np.zeros(len(dnp01_idx), dtype=bool)
 
-    def step(self, W: np.ndarray, g: float, I: np.ndarray, alpha: float = ALPHA):
+    def step(self, W: np.ndarray, g: float, I: np.ndarray, alpha: float = ALPHA,
+             noise: NoiseConfig | None = None):
         drive = g * (W @ self.h) + I
+        if noise is not None:
+            drive = drive + noise.sample(len(self.h))
         h_new = (1.0 - alpha) * self.h + alpha * phi(drive)
 
+        # sprint 025: eta enters `drive` itself, upstream of this split --
+        # so DNp01's own membrane accumulator (mem) inherits the SAME noise
+        # sample every other neuron's phi(drive) got this substep, not a
+        # second independent draw. That's what lets noise actually move
+        # DNp01's spike timing (the whole point of this sprint), not just
+        # the ordinary rate-coded population's h.
         dnp01_drive = np.maximum(drive[self.dnp01_idx], 0.0)
         self.mem = (1.0 - alpha) * self.mem + alpha * dnp01_drive
         spiking = self.mem >= self.spike_threshold
@@ -115,8 +157,11 @@ class AdaptiveHybridState(HybridState):
         self.adapt_mask = np.ones(K, dtype=bool)
         self.adapt_mask[self.dnp01_idx] = False
 
-    def step(self, W: np.ndarray, g: float, I: np.ndarray, alpha: float = ALPHA):
+    def step(self, W: np.ndarray, g: float, I: np.ndarray, alpha: float = ALPHA,
+             noise: NoiseConfig | None = None):
         drive = g * (W @ self.h) + I
+        if noise is not None:
+            drive = drive + noise.sample(len(self.h))
         drive[self.adapt_mask] -= self.beta * self.a[self.adapt_mask]
         h_new = (1.0 - alpha) * self.h + alpha * phi(drive)
 

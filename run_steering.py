@@ -557,7 +557,7 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
          force_mario_size=None, force_size_from_frame=None, record_video=True,
          inject_frame=None, frame_skip=1, savestate=None, mb_weights=None,
          mushroom_offset=None, inject_gap_frame=None, write_telemetry=True,
-         retinotopic=False):
+         retinotopic=False, sigma=0.0, seed=None):
     """`mb_weights`, if given, is the KC->MBON weight sub-matrix (SPEC_
     mushroom_body.md) carried over from a previous call -- the ONE piece
     of state that must persist across training episodes. `None` (default)
@@ -638,7 +638,27 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
     registered attempts, both failed on the same criteria; per 024's own
     hard-stop (docs/RUNS.md 024), this is closed. Kept in code (not
     deleted) as a real, working, negative-result artifact -- not a
-    starting point for a third mapping convention."""
+    starting point for a third mapping convention.
+
+    `sigma`, sprint 025: standard deviation of `eta ~ N(0, sigma)`, added
+    to every neuron's drive, every substep, in every circuit
+    (`dynamics.NoiseConfig`) -- W, I, and every reward/threshold are
+    untouched. 0.0 (default) draws no random numbers and is bit-identical
+    to every pre-025 run. `seed`, sprint 025: seeds the one
+    `np.random.Generator` this episode's noise is drawn from (`None`
+    draws a fresh OS-entropy seed and PRINTS it -- seed discipline is
+    non-negotiable here, since noise is the only thing that can make this
+    otherwise-deterministic emulator+circuit stack non-reproducible;
+    replaying the same seed at the same sigma must reproduce the episode
+    exactly). Returned in `info["seed"]`/`info["sigma"]` either way, so a
+    caller that didn't choose a seed can still recover and log the one
+    that was actually used."""
+    if seed is None:
+        seed = int(np.random.SeedSequence().entropy % (2**32))
+    rng = np.random.default_rng(seed)
+    noise = dynamics.NoiseConfig(sigma, rng)
+    if sigma > 0.0:
+        print(f"sprint 025: seed={seed} sigma={sigma}")
     if force_mario_size is not None and force_size_from_frame is None:
         assert inject_frame is not None, (
             "force_mario_size needs an explicit force_size_from_frame when "
@@ -981,10 +1001,10 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
             # level. The jump circuit's own code/state is untouched; this is
             # a one-directional read.
             for _ in range(dynamics.SUBSTEPS):
-                hj = jump_state.step(W_j, G, Ij)
+                hj = jump_state.step(W_j, G, Ij, noise=noise)
                 It = np.zeros(Kt)
                 It[takeoff_dnp01_mask] = hj[jump_dnp01_mask]
-                h_takeoff = dynamics.step(h_takeoff, W_t, G_TAKEOFF, It)
+                h_takeoff = dynamics.step(h_takeoff, W_t, G_TAKEOFF, It, noise=noise)
             h_takeoff[h_takeoff < 1e-30] = 0.0  # flush denormals, CLAUDE.md perf note
             ttmn_val = max(hj[j_msk["TTMn_L"]].mean(), hj[j_msk["TTMn_R"]].mean())
             dlmn_val = h_takeoff[dlmn_mask].mean()
@@ -1019,7 +1039,7 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
             # section 5.
             Idp[dnp02_idx] += mb_bias_dnp02
             for _ in range(dynamics.SUBSTEPS):
-                h_dnp02 = dnp02_state.step(W_dp, G_DNP02, Idp)
+                h_dnp02 = dnp02_state.step(W_dp, G_DNP02, Idp, noise=noise)
             h_dnp02[h_dnp02 < 1e-30] = 0.0  # flush denormals, CLAUDE.md perf note
             ttmn_val_dnp02 = max(h_dnp02[dnp02_ttmn_l].mean(), h_dnp02[dnp02_ttmn_r].mean())
 
@@ -1145,7 +1165,7 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
             Is[dna02_all & r_mask] += mb_bias_r
             Is[dna02_all & l_mask] += mb_bias_l
             for _ in range(dynamics.SUBSTEPS):
-                h_steer = dynamics.step(h_steer, W_s, G_STEER, Is)
+                h_steer = dynamics.step(h_steer, W_s, G_STEER, Is, noise=noise)
             h_steer[h_steer < 1e-30] = 0.0  # flush denormals, CLAUDE.md perf note
 
             r_team = h_steer[r_mask].mean()
@@ -1301,7 +1321,7 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
                 Im = np.zeros(Km)
                 Im[mdn_mask] = MDN_DRIVE if hab_escape.hab_level >= HAB_GIVE_UP else 0.0
                 for _ in range(dynamics.SUBSTEPS):
-                    h_mdn = dynamics.step(h_mdn, W_m, G_MDN, Im)
+                    h_mdn = dynamics.step(h_mdn, W_m, G_MDN, Im, noise=noise)
                 h_mdn[h_mdn < 1e-30] = 0.0  # flush denormals, CLAUDE.md perf note
                 mdn_val = h_mdn[mdn_mask].mean()
                 if mdn_val >= MDN_THRESHOLD:
@@ -1378,7 +1398,7 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
                 odor_brake = min(WALK_DRIVE, max(0.0, odor_l_eff + odor_r_eff - HOME_BIAS))
                 Ip[dnp09_mask] = WALK_DRIVE - (WALK_SUPPRESSION if busy else 0.0) - odor_brake
             for _ in range(dynamics.SUBSTEPS):
-                h_speed = dynamics.step(h_speed, W_p, G_SPEED, Ip)
+                h_speed = dynamics.step(h_speed, W_p, G_SPEED, Ip, noise=noise)
             h_speed[h_speed < 1e-30] = 0.0  # flush denormals, CLAUDE.md perf note
             dnp09_val = h_speed[dnp09_mask].mean()
             press_b = dnp09_val >= DNP09_SPEED_THRESHOLD
@@ -1504,7 +1524,8 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
                       n_conflicts=n_conflicts, n_frames=frame, died_or_flagged=done,
                       n_odor_avoids=n_odor_avoids, n_qblock_hits=n_qblock_hits,
                       n_refusals=n_refusals,
-                      mb_weights=W_kc_mbon, max_x_abs=max_x_abs)
+                      mb_weights=W_kc_mbon, max_x_abs=max_x_abs,
+                      seed=seed, sigma=sigma)
 
 
 LEVEL_RUNS = [
