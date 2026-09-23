@@ -103,7 +103,21 @@ A log that records only successes is a log that teaches nothing.
 If a change produces no watchable behaviour — a pure analysis sprint — say so
 and skip the video rather than recording a frozen screen.
 
-## Use the GPU where it pays — and measure before porting
+**Video is ephemeral. Telemetry CSVs and the `.md`/`RUNS.md` notes are the
+durable artifacts.** `.mp4`/`.png` have been `.gitignore`d since before this
+project's git history starts — "commit and push every sprint" has only ever
+protected the markdown, never the video, and the 38.9 MB now sitting in
+`projects/legacy/runs/` (REFACTOR_PLAN.md phase 1) carries the exact same
+exposure the original 001/008 video losses did. This is a deliberate
+decision, not an oversight discovered too late to fix: every finding in
+`docs/RUNS.md` has been argued from a telemetry CSV number, never from a
+frame of video, so the CSV is what actually needs to survive a lost laptop
+or a wiped drive, and it already does (git-tracked, small, diffable). Losing
+a video means re-running `render_run` against the still-durable CSV, which
+is cheap; losing a CSV means the run cannot be reproduced-and-checked at
+all. Do not add git-lfs on the strength of this alone — if video needs to
+outlive a single machine for some other reason (a demo, a review), decide
+that when it comes up, against that actual need.
 
 The machine has an NVIDIA GPU and it has been idle for this whole project.
 Consider it for every new compute-heavy step. But port on evidence, not reflex:

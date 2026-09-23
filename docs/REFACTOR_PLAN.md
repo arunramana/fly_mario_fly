@@ -55,9 +55,11 @@ guard test, not by discipline.**
 ```
 fly_mario/
   docs/
-    RUNS.md                 # moved, paths rewritten
-    MECHANISMS.md           # moved
-    SPEC_jump.md            # moved
+    RUNS.md                 # already here before this plan -- phase 1 found
+                             # this diagram wrong; only paths rewritten
+    MECHANISMS.md           # already here before this plan, same correction
+    SPEC_jump.md            # actually moved in phase 1 (from repo root)
+    REFACTOR_PLAN.md        # this file, also moved from repo root, phase 1
     ARCHITECTURE.md         # new — the map, and the import rule
     SCALARS.md              # new — the parameter registry
     ENTITIES.md             # new — every entity and its default profile
@@ -302,6 +304,14 @@ Assert byte-identical reproduction. Without this the refactor is unverifiable.
 Docs into `docs/`, runs and telemetry into `projects/legacy/`, RUNS.md paths
 rewritten, package skeleton created, imports fixed. Zero logic edits. Goldens
 must pass — this phase proves the harness works.
+
+**Warning, live until phase 5 lands:** every `out_mp4="runs/..."` default
+across `run_steering.py`/`compare_controllers.py`/etc. still points at the
+old top-level location — phase 1 deliberately left these untouched (a
+default-output redesign is phase 5's job, not a move). Any ad-hoc call to
+one of these functions before phase 5 silently recreates a stray top-level
+`runs/` directory next to `projects/legacy/runs/`. Not a bug; just don't be
+surprised by it.
 
 **Phase 2 — the `fly/` ÷ `mario/` split and the entity records.**
 Code to its side, `EntityRecord` + `KindRegistry` + profiles, `bridge/` stood
