@@ -3,10 +3,8 @@ adapt_sweep.py -- SPEC_jump.md section 3 task: "check whether a leak/
 adaptation term is the missing piece."
 
 Grid-searches (g, alpha_a, beta) for dynamics.AdaptiveHybridState against
-Diagnostic 4 (diag4.py). Plain g alone (diag4.py --sweep) is checked first;
-this is only worth running if that sweep comes back empty, since adaptation
-should not be adopted if a bare gain change already fixes it (SPEC's
-two-scalar budget, CLAUDE.md invariant 3).
+Diagnostic 4 (diag4.py). Run `diag4.py --sweep` first: adaptation adds two
+scalars, so it is only worth it if no plain g passes.
 
     .venv/Scripts/python.exe -m scripts.adapt_sweep
 """

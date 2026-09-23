@@ -1,5 +1,6 @@
-"""REFACTOR_PLAN.md phase 5: sim.telemetry.TelemetryObserver, tested in
-isolation before run_steering.py is rewired to use it."""
+"""
+sim.telemetry.TelemetryObserver in isolation.
+"""
 from __future__ import annotations
 
 from sim.telemetry import TelemetryObserver

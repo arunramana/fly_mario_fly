@@ -15,12 +15,10 @@ lists:
   3. Activity returns toward baseline in the gaps between approaches.
   4. TTMn crosses its press threshold on approaches and not in the gaps.
 
-A gentler single-hemisphere, cleanly-gapped trace (`sensory.theta_multi_
-approach`) does NOT reproduce the saturation the real run showed -- it was
-tried first here and passes condition 2/3 trivially because nothing ever
-overlaps. `sensory.sustained_bilateral_trace` is what actually catches it:
-overlapping approaches on both hemispheres are what the real level delivers,
-and what the single-ramp tuning in tune.py never exercised.
+A single-hemisphere, cleanly-gapped trace does NOT reproduce the real run's
+saturation: it passes conditions 2 and 3 trivially because nothing
+overlaps. `sensory.sustained_bilateral_trace` overlaps approaches on both
+hemispheres, as the real level does.
 
     .venv/Scripts/python.exe -m scripts.diag4                  # current run_mario.py config (expect FAIL)
     .venv/Scripts/python.exe -m scripts.diag4 --g 0.9          # test one g
@@ -37,9 +35,8 @@ from fly.network import dynamics
 from fly.connectome.load_cached import load
 from fly.sensing.sensory import masks, sustained_bilateral_trace
 
-# thresholds for what counts as "passes" -- these are diagnostic acceptance
-# criteria, not model parameters; they do not count against CLAUDE.md's
-# two-hand-set-scalar budget.
+# Diagnostic acceptance criteria, not model parameters, so not counted in
+# docs/SCALARS.md.
 CORR_MIN = 0.3            # LC4/LPLC2 mean vs theta correlation, "not near zero"
 CLIP_FRAC_MAX = 0.05      # fraction of substeps a non-DNp01 unit may sit at ceiling
 BASELINE_FRAC_MAX = 0.10  # end-of-gap activity, as a fraction of the preceding peak

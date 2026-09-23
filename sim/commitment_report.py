@@ -1,29 +1,13 @@
 """
-commitment_report.py -- sprint 023's own decisive measurement, factored out
-so the same code runs identically on the before/after telemetry. Sprint
-024 extended the correlation check to LPLC2 as well as LC4, after finding
-the LC4-only version was confounded (see below).
+commitment_report.py -- the retinotopy measurement (docs/RUNS.md 023-024),
+read from a run_steering.py telemetry DataFrame:
 
-Two questions, both readable straight from a run_steering.py telemetry
-DataFrame (023 added `dtheta`/`d_px`/`frames_to_contact` alongside the
-existing `theta`/`lc4`/`lplc2`/`pathway_fired`):
-
-1. Commitment timing: for each real escape-jump trigger (`pathway_fired`
-   non-empty, sprint 012's own attribution field), `frames_to_contact` is
-   the SAME estimate the live run already computes and prints (closing
-   speed from `d_history`, an existing 10-frame window, times `d_px` at
-   the commit frame) -- not re-derived here, just read back from telemetry.
-2. corr(pop, theta) vs corr(pop, dtheta), for BOTH LC4 and LPLC2 --
-   003/019's own read of LC4's corr(theta)=0.50 was "LC4 is velocity-
-   tuned"; it can't have been, since nothing moved across the population
-   before 023. 024 found (docs/RUNS.md) that this comparison, done on
-   LC4 alone, is confounded: LC4's own scalar drive is `abs(dtheta)`, not
-   `theta`, since long before 023 (`Ij[LC4_mask] = abs(dtheta)` --
-   unchanged by any retinotopy sprint) -- so corr(LC4,dtheta) > corr(
-   LC4,theta) is mechanically guaranteed regardless of whether retinotopy
-   does anything at all. LPLC2's own scalar drive is `theta`, the mirror
-   case -- reporting both pairs, for both populations, is what actually
-   tests for a population-level (not just scalar-input) motion signal.
+1. Commitment timing: for each escape-jump trigger (`pathway_fired`
+   non-empty), the `frames_to_contact` the live run already computed.
+2. corr(pop, theta) vs corr(pop, |dtheta|) for BOTH LC4 and LPLC2. LC4 is
+   driven by |dtheta| and LPLC2 by theta, so either pair alone is
+   mechanically biased toward its own input; only both together test for
+   a population-level motion signal.
 """
 from __future__ import annotations
 

@@ -1,32 +1,16 @@
-"""config/params.py -- REFACTOR_PLAN.md section 5.3/6, phase 4.
+"""config/params.py -- every hand-set scalar, one frozen dataclass per
+component (REFACTOR_PLAN.md section 5.3).
 
-One frozen dataclass per component, each field typed with a default that
-matches today's value EXACTLY (verified by tests/test_params_match_live.py
-against the actual live module constants, not just asserted here) plus a
-documented range or an explicit `None` where no range is known. Per this
-phase's own instruction: an invented bound is scaffolding that looks like
-data, so a field with `range=None` means genuinely unknown, not "the
-author didn't get to it."
+Each field carries its value, a range (None = genuinely unknown; an
+invented bound would be scaffolding that looks like data), a provenance
+whose first word is its category (invented / measured / connectome-
+derived), and its live home. docs/SCALARS.md is generated from this file.
 
-`ProjectConfig` (project_config.py) composes every dataclass below and
-exists ONLY to compose/serialise -- per section 5.3, no component here
-receives more than its own params.
-
-This phase does NOT rewire every call site in run_steering.py/run_mario.py
-to accept an injected params object -- that thread-the-config-through-the-
-whole-call-graph work is phase 5's "ProjectConfig drives a run" (section 7),
-not phase 4's "give every constant exactly one home." What this phase DOES
-do: each live module's own top-of-file constant becomes an alias to a field
-on the dataclass below (`G = JumpParams().g`, not a second, independent
-`G = 2.0`), so the dataclass is the actual source of the value, not just a
-document describing it. See docs/RUNS.md's phase 4 note for the modules
-deliberately NOT rewired this way (dynamics.py, tile_ram.py, mario/ram/
-addresses.py, mario/entities/registry.py's ENTITY_WIDTH_PX) and why:
-they're widely reused by diagnostic scripts outside the live path, and
-rewiring their own definition to import config/ would be a real, separate
-risk for a rename-only change. Their dataclasses below are the documented
-reference, checked equal to the live constant by the same test, without
-the live module importing config/.
+Most live modules alias their constants from here (`G = JumpParams().g`).
+A few (dynamics.py, reflex_habituation.py, registry.py, retinotopy.py) keep
+their own definitions because diagnostic scripts import them directly; the
+dataclasses marked "reference" below document those, and
+tests/test_params_match_live.py checks every value against the live one.
 """
 
 from __future__ import annotations
@@ -36,23 +20,17 @@ from dataclasses import dataclass, field, fields
 Range = tuple[float, float] | None
 
 
-def _f(default, range: Range, provenance: str, home: str, note: str | None = None):
+def _f(default, range: Range, provenance: str, home: str):
     return field(default=default, metadata={
-        "range": range, "provenance": provenance, "home": home, "note": note,
+        "range": range, "provenance": provenance, "home": home,
     })
 
 
-# ---------------------------------------------------------------------
-# fly/network/dynamics.py -- shared by all six unified circuits (phase 3)
-# ---------------------------------------------------------------------
+# ---- fly/network/dynamics.py, shared by every circuit --------------------
 
 @dataclass(frozen=True)
 class NetworkParams:
-    """Documents dynamics.py's own module constants. NOT the live source --
-    dynamics.py keeps defining these itself (see this file's own docstring
-    for why: it's reused by run_mario.py's frozen demo and every
-    scripts/tune_*.py / scripts/diag4.py, and importing config/ into it for a
-    rename-only change isn't worth that blast radius)."""
+    """Reference for dynamics.py's own module constants."""
     alpha: float = _f(0.3, None, "measured (spec-level, sprint 1: leak time constant ~= 1/alpha substeps)",
                        "fly/network/dynamics.py (ALPHA)")
     clip: float = _f(50.0, None, "invented (spec-level, sprint 1: arbitrary firing-rate ceiling)",
@@ -63,10 +41,8 @@ class NetworkParams:
 
 @dataclass(frozen=True)
 class NoiseParams:
-    """sigma is a per-call argument (run_steering.main(sigma=...)), not a
-    module constant -- documented here anyway since it is exactly as
-    "hand-set" as anything else in this file, and 025 gave it the most
-    precisely characterised range of any scalar in the project."""
+    """sigma is a per-call argument (run_steering.main(sigma=...)), but as
+    hand-set as anything else here."""
     sigma: float = _f(0.0, (0.04, 0.06),
                        "measured (025's calibration sweep: smallest sigma giving a whole-frame "
                        "commitment-time spread across 50 seeds while DNp01 still commits in "
@@ -74,9 +50,7 @@ class NoiseParams:
                        "run_steering.py main()'s sigma= default")
 
 
-# ---------------------------------------------------------------------
-# The six unified circuits (fly/network/network.py's Network instances)
-# ---------------------------------------------------------------------
+# ---- the six circuits (fly/network/network.py Network instances) ---------
 
 @dataclass(frozen=True)
 class JumpParams:
@@ -94,7 +68,7 @@ class JumpParams:
                             "run_mario.py (SPIKE_AMP)")
     jump_hold_frames: int = _f(25, None,
                                  "invented (mechanical output-interface constant, not part of the "
-                                 "neural model, per this project's own convention since sprint 006)",
+                                 "neural model)",
                                  "run_mario.py (JUMP_HOLD_FRAMES)")
     jump_cooldown_frames: int = _f(40, None,
                                      "invented (mechanical output-interface constant)",
@@ -111,8 +85,7 @@ class Dnp02Params:
     spike_threshold: float = _f(0.1, None, "measured", "run_steering.py (DNP02_SPIKE_THRESHOLD)")
     alpha: float = _f(0.1, None,
                         "invented (a slow EMA rate on DNp02's own input current, giving it "
-                        "\"longer integration\" without slowing HybridState's shared alpha -- "
-                        "sprint's own bug-fix choice, not connectome-derived)",
+                        "\"longer integration\" without slowing HybridState's shared alpha)",
                         "run_steering.py (DNP02_ALPHA)")
 
 
@@ -163,8 +136,7 @@ class SteeringParams:
                             "run_steering.py (HOME_BIAS)")
     climb_stall_frames: int = _f(20, None,
                                    "invented (mechanical: mario_x unchanged this long while "
-                                   "steering=R -> blocked; diagnosed via A/B, see docs/RUNS.md "
-                                   "sprint on habituation -- 15->40 was checked and changed nothing)",
+                                   "steering=R -> blocked)",
                                    "run_steering.py (CLIMB_STALL_FRAMES)")
     climb_hop_small_frames: int = _f(10, None, "invented (mechanical, small Mario's first-try hop)",
                                        "run_steering.py (CLIMB_HOP_SMALL_FRAMES)")
@@ -213,29 +185,19 @@ class MushroomBodyParams:
                               "KC->MBON synaptic-tag plasticity is significant at ISIs of "
                               "-1.2s/0s/+0.5s, a ~1-2s window, and negligible by 6s -- 60 "
                               "frames = 1s at 60Hz sits at that window's near edge, and the "
-                              "range is the window itself, 60-120 frames. REFACTOR_PLAN.md "
-                              "phase 6's own first measured-provenance scalar grounded in a "
-                              "citation to published fly biology rather than a sweep against "
-                              "this project's own connectome -- the value (60) is unchanged "
-                              "from before; what changed is that this is now a checked claim, "
-                              "not an uncited appeal to \"the real eligibility-trace timescale\"",
+                              "range is the window itself, 60-120 frames)",
                               "run_steering.py (TRACE_DECAY)")
     learning_rate: float = _f(0.001, None,
-                                "invented (chosen by direct isolated verification against a hand-"
-                                "computed dW on a real KC->MBON weight -- the first guess, 0.01, "
-                                "was rejected on that same test as too aggressive)",
+                                "invented (checked against a hand-computed dW on a real KC->MBON "
+                                "weight: one full punishment depresses an eligible synapse by 5%)",
                                 "run_steering.py (LEARNING_RATE)")
 
 
-# ---------------------------------------------------------------------
-# fly/state/ -- habituation
-# ---------------------------------------------------------------------
+# ---- fly/state/ habituation ----------------------------------------------
 
 @dataclass(frozen=True)
 class HabituationParams:
-    """SPEC_habituation.md section 1. NOT the live source -- fly/state/
-    reflex_habituation.py keeps defining these itself; documented here as
-    the reference, checked equal by the same test as NetworkParams."""
+    """SPEC_habituation.md section 1. Reference for reflex_habituation.py."""
     hab_progress_px: int = _f(16, None,
                                 "invented (one tile -- same \"did that actually help\" bar "
                                 "CLIMB_CLEAR_DISTANCE uses, deliberately smaller)",
@@ -246,15 +208,12 @@ class HabituationParams:
                             "fly/state/reflex_habituation.py (HAB_GIVE_UP)")
 
 
-# ---------------------------------------------------------------------
-# bridge/perception.py + fly/sensing/olfactory_adaptation.py -- odour
-# ---------------------------------------------------------------------
+# ---- odour: bridge/perception.py + fly/sensing/olfactory_adaptation.py ----
 
 @dataclass(frozen=True)
 class OdourParams:
-    """SPEC_odour.md. Split across two files in the live code (see `home`
-    per field) -- both are documented together here because they're one
-    conceptual pipeline: raw concentration -> gain/hunger -> adaptation."""
+    """SPEC_odour.md. One pipeline across two files: raw concentration ->
+    gain/hunger -> adaptation."""
     odour_gain: float = _f(16.0, None,
                              "invented (chosen by simulating the real steering circuit end to "
                              "end, scripts/tune_odour.py -- the smallest gain that makes a close (16px) "
@@ -273,9 +232,7 @@ class OdourParams:
                               "fly/sensing/olfactory_adaptation.py (ALPHA_ADAPT)")
 
 
-# ---------------------------------------------------------------------
-# Terrain / refusal
-# ---------------------------------------------------------------------
+# ---- terrain / refusal ---------------------------------------------------
 
 @dataclass(frozen=True)
 class TerrainParams:
@@ -287,15 +244,11 @@ class TerrainParams:
                                   "run_steering.py (REFUSAL_GAP_TILES)")
 
 
-# ---------------------------------------------------------------------
-# mario/entities/ -- the entity model's one flattening assumption
-# ---------------------------------------------------------------------
+# ---- mario/entities/ -----------------------------------------------------
 
 @dataclass(frozen=True)
 class EntityParams:
-    """NOT the live source -- mario/entities/registry.py keeps defining
-    this itself (documented here as the reference, per the same reasoning
-    as NetworkParams/HabituationParams above)."""
+    """Reference for mario/entities/registry.py."""
     entity_width_px: int = _f(16, None,
                                 "invented (every enemy-slot entity assumed this wide for the "
                                 "looming-angle calculation, real Goomba/Koopa/mushroom hitboxes "
@@ -303,47 +256,35 @@ class EntityParams:
                                 "mario/entities/registry.py (ENTITY_WIDTH_PX)")
 
 
-# ---------------------------------------------------------------------
-# fly/sensing/retinotopy.py -- DORMANT (sprints 023-024, closed negative
-# result; retinotopic=False reproduces pre-023 behaviour exactly and is
-# the only mode any golden run exercises by default)
-# ---------------------------------------------------------------------
+# ---- fly/sensing/retinotopy.py: dormant, closed negative result ----------
 
 @dataclass(frozen=True)
 class RetinotopyParams:
-    """NOT live in any default run -- retinotopic=False everywhere goldens
-    exercise it. Documented for completeness per this phase's own
-    instruction not to under-count. NOT the live source, same reasoning as
-    NetworkParams above."""
+    """Reference for retinotopy.py. Inactive in every default run
+    (retinotopic=False)."""
     azimuth_d_ref: float = _f(128.0, None,
-                                "invented (retinotopy.py's own docstring: \"the one invented "
-                                "numeric scaffold, stated plainly\" -- half the NES screen width, "
-                                "used only as an arbitrary but stated saturation point; no "
-                                "principled reference distance exists in hex coordinates)",
+                                "invented (half the NES screen width, an arbitrary but stated "
+                                "saturation point; no principled reference distance exists in "
+                                "hex coordinates)",
                                 "fly/sensing/retinotopy.py (AZIMUTH_D_REF)")
     hex1_spread_fallback: float = _f(3.0, None,
                                        "invented (fallback bandwidth for a cell with no measured "
-                                       "hex-carrying input -- verified empty case in practice; "
-                                       "NOT named as a module constant in the live code, only a "
-                                       "literal inside receptive_field_centers(), found while "
-                                       "building this file, not previously flagged anywhere)",
+                                       "hex-carrying input -- an empty case in practice; a bare "
+                                       "literal, not a named constant)",
                                        "fly/sensing/retinotopy.py (receptive_field_centers, literal)")
     hex1_spread_floor: float = _f(0.5, None,
                                     "invented (floor on a single-partner cell's measured spread, "
                                     "which would otherwise be exactly zero and make its tuning "
-                                    "curve a delta function; same as above, a bare literal, not a "
-                                    "named constant, found while building this file)",
+                                    "curve a delta function; a bare literal, not a named constant)",
                                     "fly/sensing/retinotopy.py (receptive_field_centers, literal)")
 
 
-# ---------------------------------------------------------------------
-# Test/demo-only -- never active in any default (golden-tested) run
-# ---------------------------------------------------------------------
+# ---- test/demo only: inactive in every default run -----------------------
 
 @dataclass(frozen=True)
 class DemoParams:
-    """mushroom_offset only matters when a caller explicitly passes
-    inject_frame= (opt-in only since sprint 011); no golden run does."""
+    """mushroom_offset only matters when a caller opts in with
+    inject_frame=; no golden run does."""
     mushroom_offset: int = _f(-40, None,
                                 "invented (spawn position for the synthetic mushroom-injection "
                                 "demo, behind Mario so it competes with HOME_BIAS's rightward pull)",
@@ -358,7 +299,5 @@ ALL_PARAM_CLASSES = (
 
 
 def scalar_count() -> int:
-    """The honest count this phase exists to produce -- every field on
-    every dataclass above, summed directly rather than recalled from
-    memory. See docs/SCALARS.md for the full table this generates."""
+    """Every field on every dataclass above (docs/SCALARS.md)."""
     return sum(len(fields(cls)) for cls in ALL_PARAM_CLASSES)

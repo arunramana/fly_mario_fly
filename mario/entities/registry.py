@@ -1,20 +1,7 @@
-"""mario/entities/registry.py -- REFACTOR_PLAN.md section 4: "A KindRegistry
-maps RAM type bytes to kinds and their intrinsic dimensions -- the single
-home for ROM facts, which today are scattered across enemy_thetas() and the
-tile decoder."
-
-Before this module, "is this enemy slot a powerup or a threat" was answered
-by an identical `ram[ADDR_ENEMY_TYPE + i] == POWERUP_ID` comparison written
-independently three times: run_mario.py's enemy_thetas, run_steering.py's
-mushroom_odor, run_steering.py's goomba_odor. All three now go through
-`enemy_records()` below. See docs/ENTITIES.md and docs/REFACTOR_PLAN.md's
-phase 2 report for the full duplication writeup, including the ROM facts
-this module does NOT yet unify (tile_ram.py's own tile-id constants stay
-tile_ram.py's, referenced here rather than redefined).
-
-Tile IDs are looked up on demand from mario.ram.tile_ram's own module-level
-constants rather than copied -- that module is already a correct single
-source of truth for them, just not one shaped like a registry.
+"""mario/entities/registry.py -- maps RAM type bytes to entity kinds, traits
+and dimensions. Every "is this enemy slot a powerup or a threat" question
+goes through `enemy_records()`. Tile IDs stay in mario.ram.tile_ram and are
+referenced, not copied.
 """
 
 from __future__ import annotations
@@ -27,20 +14,12 @@ from mario.ram.addresses import (
     N_ENEMY_SLOTS, POWERUP_ID,
 )
 
-# Every enemy-slot occupant this project has ever driven a looming or odour
-# calculation from is assumed exactly this wide -- run_mario.py's W_TILE and
-# sensory.py's W_TILE both already carried this same value independently.
-# A real Goomba/Koopa/Piranha/mushroom do not actually share one hitbox
-# width in SMB; this project has simply never modeled the difference. Kept
-# exactly as before -- giving it a home, not fixing it (docs/ENTITIES.md).
+# Every enemy-slot occupant is assumed 16px wide. Real SMB hitboxes differ
+# by species; that is not modelled (docs/ENTITIES.md).
 ENTITY_WIDTH_PX = 16
 
-# Phase 4: empirically confirmed by playing 1-1/1-2 (bot-driven, since the
-# real circuit dies before reaching much of either level) and screenshotting
-# the frame each new ADDR_ENEMY_TYPE byte first appeared -- same standard
-# tile_ram.py's own tile IDs were held to, not trusted from memory or a web
-# table. See docs/ENTITIES.md's phase 4 report for the full survey
-# (frame numbers, positions, and which byte was screenshotted where).
+# Confirmed by screenshotting the frame each type byte first appeared in a
+# bot-driven 1-1/1-2 playthrough (docs/ENTITIES.md has the survey).
 GOOMBA_TYPE_BYTE = 0x06
 KOOPA_TYPE_BYTE = 0x00
 _SPECIES_BY_TYPE_BYTE: dict[int, EntityKind] = {
@@ -63,18 +42,15 @@ _KIND_TRAITS: dict[EntityKind, frozenset[Trait]] = {
 
 
 class KindRegistry:
-    """Stateless -- every method takes the `ram` array it needs, matching
-    every RAM-reading function in this project. One instance is enough for
-    the whole process; DEFAULT below is that instance."""
+    """Stateless; methods take the `ram` array. DEFAULT is the shared
+    instance."""
 
     def traits_of(self, kind: EntityKind) -> frozenset[Trait]:
         return _KIND_TRAITS[kind]
 
     def enemy_kind(self, type_byte: int) -> EntityKind:
-        """Phase 4: real per-species decoding for the two kinds confirmed
-        present in 1-1/1-2 (GOOMBA/KOOPA, see docs/ENTITIES.md); any other
-        non-powerup byte falls back to generic ENEMY -- discrimination is
-        possible where it's been verified, not assumed where it hasn't."""
+        """GOOMBA/KOOPA where verified; any other non-powerup byte is
+        generic ENEMY."""
         if type_byte == POWERUP_ID:
             return EntityKind.POWERUP
         return _SPECIES_BY_TYPE_BYTE.get(type_byte, EntityKind.ENEMY)
@@ -96,14 +72,8 @@ class KindRegistry:
         return [self.enemy_record(ram, i) for i in range(N_ENEMY_SLOTS)]
 
     def tile_kind(self, tile_id: int) -> EntityKind:
-        """A real EntityKind view onto tile_ram.py's own already-correct
-        constants -- provided for anyone (a future GUI, bridge/perception.py)
-        that wants a named kind rather than a raw byte. tile_ram.py's own
-        four analysis functions (ground_ahead/gap_width/solid_ahead/
-        question_blocks_near) keep using their own constants directly and
-        are NOT rewritten to call this -- they are already a single,
-        correct home for these facts, just not one shaped like a registry.
-        See docs/ENTITIES.md for that scoping decision."""
+        """A named kind for a raw tile byte. tile_ram's own functions use
+        its constants directly, not this."""
         if tile_id == tile_ram.GROUND_ID:
             return EntityKind.GROUND
         if tile_id in tile_ram.QUESTION_IDS:
@@ -115,14 +85,9 @@ class KindRegistry:
         return EntityKind.SOLID_OTHER
 
     def pit_record(self, ram, mario_x) -> EntityRecord | None:
-        """SPEC_terrain.md's pit, given a first-class record per REFACTOR_
-        PLAN.md section 4: "Pit is synthesised from missing tiles... 004
-        established a looming detector structurally cannot see it -- which
-        is exactly why it needs a first-class record." `width` is in
-        pixels (tile_ram.gap_width's tile count * 16), matching every other
-        EntityRecord's units. Not yet a call site anywhere in main()'s
-        decision loop -- that integration is deferred, stated in
-        docs/ENTITIES.md rather than left to look finished when it isn't."""
+        """A pit, synthesised from missing ground tiles: a looming detector
+        cannot see one (docs/RUNS.md 004). `width` is in pixels. Not yet
+        used by the decision loop (docs/ENTITIES.md)."""
         width_tiles = tile_ram.gap_width(ram)
         if width_tiles == 0:
             return None

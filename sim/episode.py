@@ -1,22 +1,10 @@
-"""sim/episode.py -- REFACTOR_PLAN.md section 5.2: "Episode composes a
-Policy and an Environment and knows nothing else... Telemetry becomes an
-observer the episode notifies."
+"""sim/episode.py -- composes a Policy and an Environment and notifies
+observers each step. Imports nothing from fly/, mario/ or bridge/
+(tests/test_import_guard.py enforces it).
 
-Deliberately generic: this file imports nothing from fly/, mario/, or
-bridge/ -- tests/test_import_guard.py enforces that by AST, the same way
-it already enforces fly/ never importing mario/bridge. `Episode` doesn't
-know what a `theta` or a `press_a` is; it only knows it has a `Policy`, an
-`Environment`, and some observers to tell "a step happened."
-
-Not yet wired to run_steering.py's actual full system (jump/steering/
-terrain/mushroom-body/habituation/MDN) -- that migration is real,
-substantial work of its own and is deliberately deferred (docs/RUNS.md's
-phase 5 note has the scoping reasoning). `run_steering.main()` remains
-today's actual entry point for a full scenario; this class is real,
-tested, working infrastructure for whoever migrates a Policy onto it next,
-proven end-to-end with a real concrete Policy/Environment pair
-(bridge/policy.py's `JumpPolicy`, mario/emulator/environment.py's
-`MarioEnvironment`) rather than a toy.
+run_steering.main() drives FullPolicy from its own loop rather than
+through Episode; Episode is exercised with JumpPolicy in
+tests/test_episode.py.
 """
 
 from __future__ import annotations
@@ -46,11 +34,7 @@ class Episode:
             observation = self.environment.step(action)
             for observer in self.observers:
                 observer.on_step(step, observation, action)
-            # A soft, generic duck-type check, not a protocol requirement --
-            # Episode still imports nothing from any concrete Observation's
-            # own module. An Observation with no `.done` (or a falsy one)
-            # simply runs the full max_steps, exactly as before this check
-            # existed.
+            # Duck-typed: an Observation without `.done` runs to max_steps.
             if getattr(observation, "done", False):
                 break
         for observer in self.observers:

@@ -1,8 +1,6 @@
 """mario/actions/actions.py -- the button-press action space run_steering.py
-drives: 8-way, {left,right} x {A on/off} x {B on/off}. Moved verbatim from
-run_steering.py (REFACTOR_PLAN.md phase 2) -- run_mario.py's own, much
-older 2-action MOVES/RUN/JUMP (its self-contained sprint-001 demo, never
-imported by run_steering.py) is left where it is, unrelated to this."""
+drives: 8-way, {left,right} x {A on/off} x {B on/off}. run_mario.py has its
+own separate 2-action space."""
 
 from __future__ import annotations
 

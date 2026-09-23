@@ -1,9 +1,7 @@
-"""fly/state/reflex_habituation.py -- SPEC_habituation.md section 1, moved
-verbatim from run_steering.py (REFACTOR_PLAN.md phase 2). Real, documented
-Giant Fiber pathway habituation, not a timeout -- fits fly/state/ alongside
-hunger/arousal/satiety as a homeostatic process of the fly's own reflex
-circuitry, not of Mario or the emulator. Takes plain x-progress (a float
-the bridge/mario side hands it), never touches RAM directly.
+"""fly/state/reflex_habituation.py -- SPEC_habituation.md section 1. Giant
+Fiber pathway habituation, a documented property of the fly's reflex
+circuitry, not a timeout. Takes plain x-progress from the caller and never
+reads RAM.
 """
 
 from __future__ import annotations
@@ -25,20 +23,16 @@ class ReflexHabituation:
     def __init__(self, give_up=None, progress_px=None):
         self.last_check_x = None
         self.hab_level = 0
-        # read the module-level defaults at construction time, not class-
-        # definition time -- a mutable default here would silently ignore
-        # any later override of HAB_GIVE_UP/HAB_PROGRESS_PX (found this the
-        # hard way while building the baseline-vs-fix comparison for this
-        # sprint)
+        # Read the module defaults at construction, not definition, so a
+        # later override of HAB_GIVE_UP/HAB_PROGRESS_PX takes effect.
         self.give_up = HAB_GIVE_UP if give_up is None else give_up
         self.progress_px = HAB_PROGRESS_PX if progress_px is None else progress_px
 
     def check(self, x) -> bool:
         """Call exactly once per frame the reflex's OWN trigger condition
         is true. Returns whether the reflex should actually fire this time
-        (False once habituation has reached give_up). `x` is forward
-        progress in the same units the caller already tracks (pixels of
-        screen-relative position) -- a plain float, not a RAM read."""
+        (False once habituation has reached give_up). `x` is the caller's
+        forward position in pixels."""
         if self.last_check_x is not None:
             progress = x - self.last_check_x
             if progress < self.progress_px:

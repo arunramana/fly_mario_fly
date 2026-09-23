@@ -1,32 +1,17 @@
-"""REFACTOR_PLAN.md phase 6, step 4: the sign test.
-
-"Forward and backward pairing must produce opposite plasticity. Verify
-directly with a synthetic KC/DAN protocol at controlled ISIs before
-running a single episode. A generic delta rule passes a 'learning
-happened' test; only the fly's rule flips sign with order."
-
-This exercises fly.plasticity.three_factor's REAL depress()/
-update_eligibility() functions directly -- the same code
-bridge/full_policy.py calls -- at two synthetic ISI protocols:
+"""
+The sign test: does the rule flip sign with pairing order? Exercises the
+real fly.plasticity.three_factor depress()/update_eligibility():
 
   FORWARD:  KC fires, THEN dopamine arrives (a few frames later).
   BACKWARD: dopamine arrives, THEN KC fires (a few frames later).
 
-Handler et al. 2019 (docs/TRACE_BIOLOGY.md) found these two orderings
-produce OPPOSITE plasticity in the real animal -- forward pairing
-depresses, backward pairing potentiates, the same synapse, same
-magnitude class, opposite sign.
-
-**The result, reported honestly rather than adjusted to pass:** this
-project's rule (SPEC_mushroom_body.md section 4, "depression only, both
-directions") depresses on forward pairing and produces NO significant
-change on backward pairing -- not the opposite sign, no change at all.
-That is a real, documented, and DELIBERATE simplification from an earlier
-sprint (the fly's behavioural difference is modelled as depressing a
-DIFFERENT MBON population depending on valence, not as a sign flip on the
-same synapse) -- but it means this rule does not reproduce Handler et
-al.'s specific finding, and this test says so directly rather than
-quietly asserting the weaker claim to get a green check mark.
+In the real animal forward pairing depresses and backward pairing
+potentiates (Handler et al. 2019, docs/TRACE_BIOLOGY.md). This project's
+rule (SPEC_mushroom_body.md section 4, depression only) depresses on
+forward pairing and produces NO significant change on backward pairing. A
+deliberate simplification -- valence is modelled by depressing a different
+MBON population, not by flipping sign -- so this test asserts what the rule
+does and does not claim Handler et al.'s result.
 """
 from __future__ import annotations
 

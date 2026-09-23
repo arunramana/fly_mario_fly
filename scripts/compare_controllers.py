@@ -3,7 +3,7 @@ compare_controllers.py -- three controllers, same level, same env, compared
 button-press-trace by button-press-trace:
 
   A. The fly circuit as it stands (g=2.0, HybridState, the real W).
-  B. Shuffled connectome -- SPEC section 5's control, still owed: same
+  B. Shuffled connectome -- SPEC section 5's control: same
      neurons, same in/out degree distribution, same signs, edges rewired at
      random (circuit.build_shuffled). Same g/thresholds as A -- only the
      wiring changes.
@@ -26,7 +26,7 @@ controllers, not steering driven by any circuit.
 
 Also does the section-5 shuffle control properly (n=20, each tuned via
 Diagnostic 4 -- see shuffle_sweep.py, run that first), a 3-level x 3-seed
-battery, and the runs/004*.mp4 recordings CLAUDE.md requires.
+battery, and the runs/004*.mp4 recordings.
 
     .venv/Scripts/python.exe -m scripts.compare_controllers
 """
@@ -51,10 +51,9 @@ from fly.connectome import circuit
 from fly.network import dynamics
 from fly.connectome.load_cached import load
 from render.video import _ensure_ffmpeg_on_path
-from run_mario import (ADDR_MARIO_X, ADDR_ENEMY_X, ADDR_ENEMY_ACTIVE,
-                        N_ENEMY_SLOTS, W_TILE, enemy_thetas,
+from run_mario import (ADDR_MARIO_X, enemy_thetas,
                         JUMP_HOLD_FRAMES, JUMP_COOLDOWN_FRAMES,
-                        G, DNP01_SPIKE_THRESHOLD, SPIKE_AMP, TTMN_PRESS_THRESHOLD)
+                        DNP01_SPIKE_THRESHOLD, SPIKE_AMP, TTMN_PRESS_THRESHOLD)
 
 MOVES = [["right", "B"], ["right", "A", "B"], ["left"]]
 RUN, JUMP, LEFT = 0, 1, 2
@@ -76,8 +75,8 @@ def noop_frames_for_seed(seed, noop_max=NOOP_MAX):
     randomness enters. A fixed number of blind run-right frames before
     recording starts, seeded, shifts WHICH part of the level (which enemies,
     in what configuration) the comparison actually sees. Two jump events on
-    one fixed run can't separate three controllers (per your point 3); three
-    different start offsets per level can."""
+    one fixed run can't separate three controllers; three different start
+    offsets per level can."""
     return int(np.random.default_rng(seed).integers(0, noop_max))
 
 

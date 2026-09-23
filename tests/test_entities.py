@@ -1,8 +1,7 @@
-"""Unit coverage for mario/entities/ -- narrower and faster than the golden
-tests, which only exercise KindRegistry indirectly through a full episode.
-REFACTOR_PLAN.md phase 2's own deliverable list doesn't require this, but
-the golden tests alone wouldn't localise a break in, say, pit_record() to
-this module specifically."""
+"""
+Unit coverage for mario/entities/. The goldens only reach KindRegistry
+through a full episode and would not localise a break to this module.
+"""
 from __future__ import annotations
 
 import json
@@ -15,8 +14,7 @@ from mario.entities.registry import (
     DEFAULT as registry, ENTITY_WIDTH_PX, GOOMBA_TYPE_BYTE, KOOPA_TYPE_BYTE,
 )
 from mario.ram.addresses import (
-    ADDR_ENEMY_ACTIVE, ADDR_ENEMY_TYPE, ADDR_ENEMY_X, ADDR_ENEMY_Y,
-    N_ENEMY_SLOTS, POWERUP_ID,
+    ADDR_ENEMY_ACTIVE, ADDR_ENEMY_TYPE, ADDR_ENEMY_X, N_ENEMY_SLOTS, POWERUP_ID,
 )
 from mario.ram import tile_ram
 

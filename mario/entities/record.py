@@ -1,16 +1,10 @@
-"""mario/entities/record.py -- REFACTOR_PLAN.md section 4.
+"""mario/entities/record.py -- EntityRecord, a frozen value object rather
+than a class tree: nes-py simulates the game and we only read RAM, so an
+entity has no behaviour of its own. `kind` and `traits` carry all the
+variation.
 
-EntityRecord is a frozen value object, not a class tree: we do not simulate
-Goombas, Koopas or pits -- nes-py simulates the game, we only read RAM (or,
-for a pit, the absence of a tile), so an entity has no methods and no
-behaviour of its own. `kind` and `traits` carry all the variation; a new
-entity with an unusual trait mix needs no new class, just a new
-KindRegistry entry.
-
-`x`/`width` are in the same screen-relative pixel units ADDR_MARIO_X and
-ADDR_ENEMY_X already use -- `x - mario_x` reproduces exactly the distance
-every odour/looming function in bridge/perception.py was already computing
-before this record existed.
+`x`/`width` are screen-relative pixels, the units of ADDR_MARIO_X, so
+`x - mario_x` is the distance bridge/perception.py uses.
 """
 
 from __future__ import annotations

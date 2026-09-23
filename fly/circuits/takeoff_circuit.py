@@ -5,18 +5,11 @@ extended to recruit the wing motor neurons.
 Core = DNp01 (2, same 2 bodies as the jump circuit) + GFC1-4 (34: the "Giant
 Fiber Circuit" interneurons, named in this connectome, downstream of DNp01)
 + DLMn (10: 8 in type "DLMn c-f", 2 in type "DLMn a, b" -- wing downstroke
-motor neurons). Verified directly against the weights file before writing
-this: DNp01 has ZERO direct synapses onto DLMn, but real, substantial
-synapses onto GFC1-4 (144/112/107/97 synapses respectively), and GFC1-4
-synapse onto DLMn with 80 real edges. This is the documented disynaptic
-jump-to-flight relay in the Giant Fiber literature (GF -> PSI-class
-interneuron -> DLMn) -- not invented for this sprint, it's why GFC1-4 exist
-as a named class in this connectome at all.
-
-Same extraction/signs/weight-matrix pipeline as circuit.py and
-steering_circuit.py -- does not modify circuit.py, reuses its
-build_signs/build_weight_matrix/spectral_radius, which are generic over any
-(bodies, edges, signs).
+motor neurons). Checked against the weights file: DNp01 has ZERO direct
+synapses onto DLMn, but 144/112/107/97 synapses onto GFC1-4, and GFC1-4
+synapse onto DLMn with 80 edges. This is the documented disynaptic
+jump-to-flight relay (GF -> PSI-class interneuron -> DLMn). Built with
+circuit.py's pipeline.
 
     python takeoff_circuit.py
 """

@@ -1,14 +1,10 @@
-"""REFACTOR_PLAN.md phase 4: every config/params.py default must equal
-the value actually used by the live code, whether that live constant is
-now SOURCED from the dataclass (run_mario.py, run_steering.py,
-bridge/perception.py -- rewired this phase) or still independently defined
-and merely DOCUMENTED by the dataclass (fly/network/dynamics.py,
-fly/state/reflex_habituation.py, mario/entities/registry.py,
-fly/sensing/retinotopy.py -- deliberately not rewired, see
-docs/RUNS.md's phase 4 note for why). Either way, a value drifting out of
-sync with its documented home is exactly the kind of thing this test
-exists to catch -- it is not a test of behaviour, since goldens already
-cover that; it is a test that the documentation is still true.
+"""
+Every config/params.py default equals the value the live code uses,
+whether the live constant is sourced from the dataclass (run_mario.py,
+run_steering.py, bridge/perception.py) or still defined separately and
+only documented there (dynamics.py, reflex_habituation.py, registry.py,
+retinotopy.py). Checks the documentation is true; the goldens cover
+behaviour.
 """
 from __future__ import annotations
 

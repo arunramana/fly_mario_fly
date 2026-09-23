@@ -1,6 +1,7 @@
-"""REFACTOR_PLAN.md phase 5: Fitness is computed and recorded, never wired
-into a decision -- these tests check the object itself, not any live
-call site (there isn't one)."""
+"""
+Fitness is computed and recorded, never wired into a decision, so these
+tests check the object itself.
+"""
 from __future__ import annotations
 
 import pytest

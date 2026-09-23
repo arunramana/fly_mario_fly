@@ -1,11 +1,7 @@
-"""fly/plasticity/three_factor.py -- REFACTOR_PLAN.md phase 6 step 4: the
-three-factor, depression-only KC->MBON rule (SPEC_mushroom_body.md section
-4), extracted from bridge/full_policy.py's inline mushroom-body block into
-two standalone functions -- the same "move, don't duplicate" discipline
-phase 3 used for Network/Integrator, applied here so the sign test
-(docs/RUNS.md's phase 6 note) exercises the REAL update rule directly,
-rather than a hand-copied reimplementation of it that could silently drift
-from what the live circuit actually does.
+"""fly/plasticity/three_factor.py -- the three-factor, depression-only
+KC->MBON rule (SPEC_mushroom_body.md section 4). The live circuit and the
+sign test (tests/test_mb_sign_test.py) both call these functions, so the
+test exercises the real rule.
 """
 
 from __future__ import annotations
@@ -29,16 +25,12 @@ def depress(W: np.ndarray, dopamine: np.ndarray, elig: np.ndarray, learning_rate
     (already routed to PAM or PPL1/PPM by fly.plasticity.dopamine.
     event_dopamine before this is ever called).
 
-    Mutates `W` in place and returns it -- bridge/full_policy.py's own
-    call site relies on `self.W_kc_mbon` staying the same object across an
-    episode (main() aliases it once at setup, reading the final trained
-    result back out at the end, not re-read every frame).
+    Mutates `W` in place and returns it: run_steering.main() holds the
+    same object from setup and returns it as the trained matrix.
 
-    Always depresses when `dopamine` and `elig` are both nonzero,
-    REGARDLESS of which happened first -- there is no branch here that
-    could ever produce potentiation. See docs/RUNS.md's phase 6 sign-test
-    entry for what that means (and doesn't mean) about matching Handler et
-    al. 2019's bidirectional, ISI-order-dependent finding.
+    Depresses whenever dopamine and eligibility overlap, whichever came
+    first; it can never potentiate, unlike Handler et al. 2019's
+    order-dependent result (docs/RUNS.md 027).
     """
     W -= learning_rate * dopamine[:, None] * elig[None, :] * W
     return W

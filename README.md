@@ -86,7 +86,7 @@ correct behaviour: if a golden fails, diff it before re-baselining.
   from `config/params.py`.
 - [`docs/REFACTOR_PLAN.md`](docs/REFACTOR_PLAN.md): the package split and
   the SOLID decisions.
-- [`docs/CODE_AUDIT.md`](docs/CODE_AUDIT.md): the latest code audit.
+- [`docs/CODE_AUDIT.md`](docs/CODE_AUDIT.md): open code-audit findings (structure, hard-coded values).
 - [`docs/MECHANISMS.md`](docs/MECHANISMS.md),
   [`docs/ENTITIES.md`](docs/ENTITIES.md),
   [`docs/TRACE_BIOLOGY.md`](docs/TRACE_BIOLOGY.md): mechanism notes, the

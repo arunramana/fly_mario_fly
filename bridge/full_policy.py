@@ -1,33 +1,12 @@
-"""bridge/full_policy.py -- REFACTOR_PLAN.md phase 5b: the full jump/
-steering/terrain/mushroom-body/habituation/MDN system, moved (not
-rewritten) from run_steering.py's main() into one Policy implementation,
-so ProjectConfig drives the whole system rather than a subset (JumpPolicy,
-phase 5, was deliberately narrower -- see its own docstring).
+"""bridge/full_policy.py -- the full jump/steering/terrain/mushroom-body/
+habituation/MDN system as one Policy, driven by ProjectConfig. Each
+`act()` call is one emulator frame; only cross-frame state (hold/cooldown
+counters, prev_theta, mushroom-body weights and trace, habituation) lives
+on `self`.
 
-This is a verbatim transcription of main()'s per-frame loop body, not a
-redesign: within-one-frame local variables (theta, hj, mush, Is, ...) stay
-local variables inside `act()`, in the same order, computing the same
-expressions. Only genuinely CROSS-FRAME state (hold/cooldown counters,
-prev_theta, the mushroom body's weights/eligibility trace, habituation
-levels, ...) is promoted to `self.` attributes, because a single `act()`
-call is now what one loop iteration used to be, and that state has to
-survive between calls the way it survived between iterations.
-
-**A quirk found and preserved, not fixed:** the original `main()` stashed
-`_prev_avoid_odor`/`_last_x` as attributes ON THE FUNCTION OBJECT ITSELF
-(`main._prev_avoid_odor = ...`) -- module-level state that persisted
-across every call to `main()` in a process, not per-episode state.
-Reproduced here as CLASS attributes on `FullPolicy` (shared across every
-instance, exactly like the original function attribute was shared across
-every call), not instance attributes reset in `reset()` -- making it
-properly per-episode would be a real behaviour change, not a move, and
-this phase's mandate is zero behaviour change. Flagged here and in
-docs/RUNS.md's phase 5b note rather than silently corrected.
-
-Migrated one subsystem at a time against run_steering.py's own main()
-loop, each step verified byte-identical against tests/golden/ before the
-next -- docs/RUNS.md's phase 5b note has the per-commit breakdown, the
-same discipline phase 3 used for the six Integrator call sites.
+Known quirk, kept for golden parity: `_prev_avoid_odor` and `_last_x` are
+CLASS attributes, so they persist across episodes in one process. Making
+them per-episode would change behaviour (docs/RUNS.md, refactor phase 5b).
 """
 
 from __future__ import annotations
@@ -60,11 +39,7 @@ from mario.ram.addresses import (
 from fly.plasticity.dopamine import event_dopamine
 from fly.plasticity.three_factor import update_eligibility, depress
 
-# Private to this module -- NOT shared with run_steering.py's own
-# _circuit_cache. During the phase-5b migration both exist; once main()'s
-# own setup code is fully replaced by FullPolicy (this phase's last
-# commit), only this one is actually exercised in the live path. See
-# docs/RUNS.md's phase 5b note.
+# Loaded circuits are memoised per process: every episode reuses them.
 _circuit_cache: dict = {}
 
 
@@ -82,23 +57,17 @@ def _make_steering_masks(bodies):
 
 
 class FullPolicy:
-    _prev_avoid_odor = False  # class-level: see module docstring
-    _last_x = None            # class-level: see module docstring
+    _prev_avoid_odor = False  # class-level on purpose: see module docstring
+    _last_x = None
 
     def __init__(self, config: ProjectConfig | None = None, level: str = "1-1",
                  retinotopic: bool = False, frame_skip: int = 1, mb_weights=None,
                  event_proximal_dopamine: bool = False):
-        """`event_proximal_dopamine`, REFACTOR_PLAN.md phase 6 step 3:
-        False (default) keeps the pre-phase-6 reward trigger (any forward
-        pixel of progress, continuous, every frame) -- goldens are frozen
-        against this and must stay reproducible with it off. True switches
-        the appetitive (PAM) trigger to the two real discrete events
-        docs/TRACE_BIOLOGY.md's design consequence calls for (a `?` block
-        hit or a stomp), each landing within the real ~1-2s synaptic-tag
-        window instead of every frame regardless of what happened. A
-        structural mode flag, not a hand-set scalar -- same category as
-        `retinotopic` above, not tracked in config/params.py or
-        docs/SCALARS.md."""
+        """`event_proximal_dopamine`: False (default, what the goldens use)
+        rewards any forward progress, every frame. True rewards only a `?`
+        block hit or a stomp, each within the ~1-2s synaptic-tag window
+        (docs/TRACE_BIOLOGY.md). Like `retinotopic`, a mode flag, not a
+        scalar, so it is not in config/params.py."""
         self.config = config or ProjectConfig()
         self.level = level
         self.retinotopic = retinotopic
@@ -220,18 +189,8 @@ class FullPolicy:
         mb_pam_idx = np.where(mb_pam_mask)[0]
         mb_punish_idx = np.where(mb_punish_mask)[0]
         self.n_kc, self.n_mbon = len(self.mb_kc_idx), len(self.mb_mbon_idx)
-        # REFACTOR_PLAN.md phase 6, step 1: a passed-in `mb_weights` is
-        # copied, not aliased. Without this, `self.W_kc_mbon -= (...)`
-        # mutates the CALLER's own array in place (numpy `-=` is
-        # `__isub__`, same object) -- surfaced by phase 6's own
-        # persistence test, which passed a trained matrix into a second
-        # episode expecting to compare it against an untouched "before"
-        # snapshot, and found its own reference had been silently
-        # rewritten out from under it mid-episode. Pre-existing in
-        # run_steering.py's original `main()` before this move (same
-        # missing `.copy()`); no golden or existing caller ever passes
-        # `mb_weights` so this changes zero recorded behaviour -- verified
-        # via a golden re-run, not assumed.
+        # Copy a passed-in `mb_weights`: depress() mutates in place, and
+        # the caller's matrix must survive the episode unchanged.
         self.W_kc_mbon = (mb_weights.copy() if mb_weights is not None
                           else W_mb_full[np.ix_(self.mb_mbon_idx, self.mb_kc_idx)].copy())
         self.mb_pam_reach = W_mb_full[np.ix_(self.mb_mbon_idx, mb_pam_idx)].sum(axis=1)
@@ -255,11 +214,11 @@ class FullPolicy:
         self.jump_hold = self.jump_cooldown = 0
         self.climb_hold = self.climb_cooldown = 0
         self.climb_attempts = 0
-        self.last_reset_x = None       # lazily set from the first observation
+        self.last_reset_x = None
         self.stall_count = 0
         self.direction = "R"
         self.prev_qblock_cols = set()
-        self.prev_mario_size = None    # lazily set from the first observation
+        self.prev_mario_size = None
         self.n_escape_jumps = self.n_climb_hops = self.n_climb_jumps = self.n_conflicts = 0
         self.n_long_jumps = 0
         self.n_dnp01_fired = self.n_dnp02_fired = 0
@@ -306,15 +265,11 @@ class FullPolicy:
                   f"{sorted(self.prev_qblock_cols - cur_qblock_cols)} emptied)")
         self.prev_qblock_cols = cur_qblock_cols
 
-        # ---- stomp detection: docs/RUNS.md phase 5b's own correction ----
-        # A slot active, non-powerup, and within one tile (16px, matching
-        # this project's own "did that actually help" bar elsewhere) of
-        # Mario last frame, gone this frame -- a kill by landing on it, not
-        # a walk-off-screen despawn (which happens far off-screen instead).
-        # Verified against the false-positive concern before being trusted
-        # as a live signal (docs/RUNS.md's phase 5b correction entry): stomp
-        # frames don't cluster at the death frame, so this isn't counting
-        # Mario's own killing collision (which leaves the enemy active).
+        # ---- stomp detection ------------------------------------------
+        # An active non-powerup slot within 20px of Mario last frame and
+        # gone this frame is a stomp; despawns happen far off-screen. Stomp
+        # frames don't cluster at death frames, so this is not counting
+        # Mario's own fatal collision (docs/RUNS.md, phase 5b correction).
         now_active_enemy_slots = {
             i for i in range(N_ENEMY_SLOTS)
             if ram[ADDR_ENEMY_ACTIVE + i] != 0 and ram[ADDR_ENEMY_TYPE + i] != POWERUP_ID
@@ -351,8 +306,8 @@ class FullPolicy:
                 for t, mag in (("LC4", abs(dtheta[_side])), ("LPLC2", theta[_side])):
                     if mag == 0.0:
                         continue
-                    origin, far, mid = self.j_azimuth_ref[(t, _side)]
-                    az1 = rt.azimuth_target(d_out[_side], origin, far, mid)
+                    origin, far, _ = self.j_azimuth_ref[(t, _side)]
+                    az1 = rt.azimuth_target(d_out[_side], origin, far)
                     w = rt.tuning_weights(az1, self.j_rf[t])
                     Ij[self.j_msk[f"{t}_{_side}"]] = mag * w[self.j_msk[f"{t}_{_side}"]]
         else:
@@ -418,14 +373,7 @@ class FullPolicy:
         self.max_x_abs = mario_x_abs if self.max_x_abs is None else max(self.max_x_abs, mario_x_abs)
 
         self.mb_elig = update_eligibility(self.mb_elig, kc_active, c.mushroom_body.trace_decay)
-        # REFACTOR_PLAN.md phase 6 step 3: event-proximal dopamine is an
-        # opt-in replacement for the pre-phase-6 trigger (`reward =
-        # progress`, continuous, every frame with forward motion) -- see
-        # __init__'s own docstring for why this is a mode flag, not a
-        # scalar. Off by default so goldens (frozen against the legacy
-        # trigger) stay reproducible; on, PAM dopamine fires only at a
-        # qblock hit or a stomp, the two real discrete appetitive events
-        # docs/TRACE_BIOLOGY.md's design consequence calls for.
+        # See __init__ for event_proximal_dopamine; the goldens use progress.
         if self.event_proximal_dopamine:
             reward, _punish_unused = event_dopamine(qblock_hit, stomp, died=False)
         else:
@@ -604,9 +552,7 @@ class FullPolicy:
 
         action = action_index(self.direction, press_a, press_b)
 
-        # Everything the telemetry row (and the death-triggered punishment
-        # in on_step()) needs, stashed for the caller -- see this class's
-        # own `frame_info` property and `on_step()`.
+        # Read by the telemetry row and by on_step()'s death punishment.
         self.last_info = dict(
             mario_x=mario_x, theta=theta, dtheta=dtheta, d_px=d_out, gap_w=gap_w,
             hj=hj, h_takeoff=h_takeoff, h_dnp02=h_dnp02, h_steer=h_steer,
@@ -625,12 +571,9 @@ class FullPolicy:
         return action
 
     def on_step(self, step: int, observation, action) -> None:
-        """REFACTOR_PLAN.md phase 5's Episode/observer pattern: FullPolicy
-        is passed as BOTH the Policy and one of Episode's observers, so it
-        gets a hook for what happened AFTER its own action was applied --
-        specifically, the death-triggered mushroom-body punishment update,
-        which the original main() applied inside `if done:` right after
-        `env.step()`, one level below where `act()` itself runs."""
+        """FullPolicy is also registered as an Episode observer, so it sees
+        the result of its own action: on death, apply the mushroom-body
+        punishment."""
         if getattr(observation, "done", False):
             c = self.config
             _pam_unused, punish_magnitude = event_dopamine(qblock_hit=False, stomp=False, died=True)

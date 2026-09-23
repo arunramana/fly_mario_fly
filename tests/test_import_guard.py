@@ -1,12 +1,7 @@
-"""REFACTOR_PLAN.md section 2: "fly/ never imports mario/... Enforced by an
-import-guard test, not by discipline." This is that test.
-
-Static (reads source, parses the AST) rather than dynamic (importing fly.*
-and inspecting sys.modules) on purpose: a dynamic check only catches an
-import that actually executes on this run, and would miss one guarded by an
-`if` branch never taken. Parsing every `import`/`from` statement in every
-fly/ module catches the rule being violated in the source at all, not just
-on one code path.
+"""
+fly/ never imports mario/ or bridge/, and sim/episode.py imports none of
+them. Static (parses the AST) on purpose: a dynamic check would miss an
+import behind a branch not taken on this run.
 """
 from __future__ import annotations
 

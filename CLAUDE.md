@@ -7,7 +7,7 @@ contracts, Mario jumps. Nothing is trained.
 
 **Read `docs/SPEC_jump.md` before writing code.** It carries the verified neuron
 counts, connection weights, RAM addresses and the design decisions already
-settled. Work only on what that spec scopes.
+settled; later features have their own `docs/SPEC_*.md`.
 
 ## Repo context
 
@@ -34,22 +34,14 @@ working around it.
    Stream it in Arrow record batches — `mcns.py` already does this.
 
 3. **Every hand-set scalar gets flagged and counted — no fixed budget.**
-   This invariant used to say "exactly two: the global gain `g` and the
-   TTMn press threshold, everything else from the connectome, flag a
-   third in the README." That held for the first prototype and then
-   stopped being true for 26 sprints while still being asserted: by
-   REFACTOR_PLAN.md phase 4's honest count (`docs/SCALARS.md`, generated
-   from `config/params.py`, not recalled from memory), there are **49**
-   — 29 invented (placed currents, mechanical hold durations), 20
-   measured (simulated against the real connectome-derived weight matrix
-   and picked by a sweep), **0 connectome-derived**. Zero of the 49 is
-   the real content of this invariant now: the connectome determines
-   each circuit's weight matrix, never one of the scalars controlling
-   how hard a circuit pushes on it. The rule going forward is the
-   spirit invariant 3 always had, stated honestly: every hand-set
-   scalar gets a typed, ranged home in `config/params.py` and a row in
-   `docs/SCALARS.md`, flagged there rather than left to accumulate
-   unlogged.
+   Each one gets a typed, ranged home in `config/params.py` and a row in
+   `docs/SCALARS.md` (generated from it, never written by hand). There
+   are **49**: 29 invented (placed currents, mechanical hold durations),
+   20 measured (simulated against the real weight matrix and picked by a
+   sweep), **0 connectome-derived**. The connectome determines each
+   circuit's weight matrix, never a scalar controlling how hard a circuit
+   pushes on it. (This used to claim "exactly two"; that stopped being
+   true after the first prototype.)
 
 4. **The circuit is recurrent, not feedforward.** Lateral connection within the
    detector populations is 3–9.5x their drive onto the Giant Fiber. Model it as
@@ -63,22 +55,18 @@ working around it.
    Without it we cannot claim the fly's wiring is doing anything.
 
 7. **Profile before proposing a GPU port — including when the proposal is
-   yours.** Every real bottleneck found on this project so far has been I/O
-   or a cached-value miss (a TTF file, a weights file, a font, reloaded when
-   it didn't need to be), never arithmetic. Sprint 026 profiled
-   `render/brain_panel.py` expecting the 141,781-point soma scatter to be the cost
-   (see "Use the GPU" below) and found `_font()` reloading fonts from disk
-   every frame instead — the scatter itself was 2.6ms of an 8.4ms frame.
-   Measure the actual phases before reaching for CuPy, not just before this
-   file's own GPU section is updated.
+   yours.** Every real bottleneck so far has been I/O or a cached-value miss
+   (a weights file, a font, reloaded when it didn't need to be), never
+   arithmetic: run 026 expected the soma scatter to be the cost and found
+   `_font()` reloading from disk every frame instead (see "Use the GPU"
+   below). Measure the actual phases before reaching for CuPy.
 
 ## Every change ends with a video in `projects/<name>/runs/`
 
 Not optional, and not only when asked. Any sprint that changes what the agent
 does — a new gain, a new population, a new controller, a bug fix that alters
 behaviour — finishes by recording a run and writing it to the project's
-`runs/` folder (REFACTOR_PLAN.md phase 5: outputs live in
-`projects/<name>/runs/` and `projects/<name>/telemetry/`; there is no
+`runs/` folder (telemetry goes in `projects/<name>/telemetry/`; there is no
 top-level `runs/` any more, and it is gitignored).
 
 ```
@@ -121,20 +109,13 @@ If a change produces no watchable behaviour — a pure analysis sprint — say s
 and skip the video rather than recording a frozen screen.
 
 **Video is ephemeral. Telemetry CSVs and the `.md`/`RUNS.md` notes are the
-durable artifacts.** `.mp4`/`.png` have been `.gitignore`d since before this
-project's git history starts — "commit and push every sprint" has only ever
-protected the markdown, never the video, and the 38.9 MB now sitting in
-`projects/legacy/runs/` (REFACTOR_PLAN.md phase 1) carries the exact same
-exposure the original 001/008 video losses did. This is a deliberate
-decision, not an oversight discovered too late to fix: every finding in
-`docs/RUNS.md` has been argued from a telemetry CSV number, never from a
-frame of video, so the CSV is what actually needs to survive a lost laptop
-or a wiped drive, and it already does (git-tracked, small, diffable). Losing
-a video means re-running `render_run` against the still-durable CSV, which
-is cheap; losing a CSV means the run cannot be reproduced-and-checked at
-all. Do not add git-lfs on the strength of this alone — if video needs to
-outlive a single machine for some other reason (a demo, a review), decide
-that when it comes up, against that actual need.
+durable artifacts.** `.mp4`/`.png` are gitignored on purpose: every finding
+in `docs/RUNS.md` is argued from a CSV number, never a frame, and a lost
+video is cheap to re-render from its git-tracked CSV. Do not add git-lfs
+for this alone; if a video must outlive one machine (a demo, a review),
+decide then, against that need.
+
+## Use the GPU
 
 The machine has an NVIDIA GPU and it has been idle for this whole project.
 Consider it for every new compute-heavy step. But port on evidence, not reflex:
@@ -148,18 +129,10 @@ measured on this workload, a naive port makes things **slower**.
 - Anything batching hundreds of independent simulations as dense tensors.
 
 **Struck: "per-neuron rendering in `render/brain_panel.py` is genuinely
-GPU-shaped."** It wasn't. Sprint 026 profiled a real frame before porting
-anything (this section itself told it to): one `panel()` call was **8.4ms**
-against a **16.7ms** real-time budget — already under budget, GPU or not.
-Of that 8.4ms, the 141,781-point soma scatter this section predicted would
-be the cost was **2.6ms**. The actual waste was `_font()` reloading three
-TTF files from disk every single frame — a cached-value miss, not
-arithmetic — costing **2.7ms** for a value that never changes. Caching it
-(same fix class as the background-image cache already in `_build()`)
-dropped full `panel()` to **5.1ms** median, no GPU involved. This project's
-own invariant 7 exists because of this exact miss: the prediction here was
-plausible-sounding and wrong, caught only by measuring, not by reasoning
-about it harder.
+GPU-shaped."** It wasn't (run 026). One `panel()` call was **8.4ms** against
+a **16.7ms** real-time budget; the 141,781-point soma scatter was only
+**2.6ms** of it. `_font()` reloading TTF files every frame cost **2.7ms**;
+caching it brought `panel()` to **5.1ms** median with no GPU.
 
 **Where it loses — don't:**
 
@@ -178,23 +151,12 @@ Benchmark both before committing a port, and put the numbers in the commit.
 
 **Do these first — they beat a GPU port on this workload:**
 
-1. **Flush denormals**, `h[h < 1e-30] = 0.0` after each update — but the
-   **84× figure above is corrected, not confirmed, by REFACTOR_PLAN.md
-   phase 4's probe (`scripts/denormal_probe.py`, docs/RUNS.md's phase 4 note).**
-   `scripts/shuffle_sweep.py` in the current repo applies no flush at all, so
-   whatever produced the original 21-minutes-vs-45-seconds number either
-   ran from an uncommitted shell session or against code that no longer
-   exists in this form — docs/RUNS.md has no entry describing it. Measured
-   directly on the jump circuit's own real weight matrix instead (the one
-   circuit phase 3 found was never flushed): a real, non-negligible cost,
-   but **~3.2× under a realistic bursty trace and ~4.7× under worst-case
-   sustained silence — not 84×**. Genuine IEEE-754 denormals (down to
-   float64's smallest representable subnormal) do occur, so this isn't a
-   "no denormals present" case either; it is a real cost, honestly smaller
-   than claimed, same shape as the brain_panel GPU claim sprint 026
-   corrected. Not fixed on jump yet — doing so re-baselines every golden
-   and makes runs 001-026 non-reproducible, so it needs a deliberate,
-   dedicated sprint, not a drive-by fix inside a config-extraction phase.
+1. **Flush denormals**, `h[h < 1e-30] = 0.0` after each update. Measured on
+   the jump circuit (`scripts/denormal_probe.py`): **~3.2× under a realistic
+   bursty trace, ~4.7× under sustained silence**, not the 84× once claimed
+   (that number has no supporting code or RUNS.md entry). The jump circuit
+   still doesn't flush: adding it re-baselines every golden and makes runs
+   001-026 non-reproducible, so it needs its own dedicated sprint.
 2. **Multiprocess across networks/runs** (~8× on this box). The 21 sweep
    networks and the 27 battery runs are fully independent. Keep
    `OMP_NUM_THREADS=1` per worker.
@@ -209,7 +171,7 @@ connectome numbers at load time and fail loudly if the data changed underneath
 us. Comment the biology, not the syntax — a reader should learn why LPLC2
 exists, not what a for loop does.
 
-## Out of scope for now
+## Scope
 
-Steering, terrain, learning, the live brain overlay, training of any kind.
-Those are later steps and have their own specs. Build the jump.
+Scope is set per sprint by the relevant `docs/SPEC_*.md`. Build only what
+that spec covers.

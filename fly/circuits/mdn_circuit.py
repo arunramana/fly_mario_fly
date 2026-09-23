@@ -3,9 +3,8 @@ mdn_circuit.py — body-level MDN circuit: MDN (Moonwalker Descending
 Neurons, backward walking) core plus every presynaptic partner with >=60
 synapses onto the 4 MDN bodies.
 
-Same extraction/signs/weight-matrix pipeline as circuit.py's build_expanded
-and steering_circuit.py -- scoped to MDN instead of DNa01/DNa02. See
-SPEC_habituation.md section 2. No direct synapse from DNp01 or GFC1-4 onto
+Built with circuit.py's pipeline. See SPEC_habituation.md section 2. No
+direct synapse from DNp01 or GFC1-4 onto
 MDN in this connectome (checked) -- same situation DNp09 was in (007), so
 MDN's drive is an external current (MDN_DRIVE, run_steering.py), not
 something wired in from the escape circuit itself.

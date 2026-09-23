@@ -1,20 +1,14 @@
 # Scalars
 
-Every hand-set scalar in the live system, generated directly from
-`config/params.py` -- not recalled from memory, not re-derived by reading
-comments across a dozen files. Regenerate after any change to that file:
+Every hand-set scalar in the system, generated from `config/params.py`.
+Regenerate after any change to that file:
 
 ```
 .venv/Scripts/python.exe -m config.scalars_doc
 ```
 
-
 `tests/test_scalars_doc.py` fails if this file and `config/params.py`
 disagree.
-
-**The count phase 4 was asked to produce, without softening:** this
-project's own running comments had been tracking a "budget" of 3, then 5,
-then 8, then 9 hand-set neural/mechanical scalars across 26 sprints.
 
 ## NetworkParams
 
@@ -38,7 +32,7 @@ then 8, then 9 hand-set neural/mechanical scalars across 26 sprints.
 | `dnp01_spike_threshold` | `0.5` | unknown | measured (scripts/diag4.py sweep) | `run_mario.py (DNP01_SPIKE_THRESHOLD)` |
 | `ttmn_press_threshold` | `3.0` | unknown | measured (scripts/diag4.py sweep) | `run_mario.py (TTMN_PRESS_THRESHOLD)` |
 | `spike_amp` | `50.0` | unknown | measured (matched to CLIP -- a spike is a full-scale event) | `run_mario.py (SPIKE_AMP)` |
-| `jump_hold_frames` | `25` | unknown | invented (mechanical output-interface constant, not part of the neural model, per this project's own convention since sprint 006) | `run_mario.py (JUMP_HOLD_FRAMES)` |
+| `jump_hold_frames` | `25` | unknown | invented (mechanical output-interface constant, not part of the neural model) | `run_mario.py (JUMP_HOLD_FRAMES)` |
 | `jump_cooldown_frames` | `40` | unknown | invented (mechanical output-interface constant) | `run_mario.py (JUMP_COOLDOWN_FRAMES)` |
 
 ## Dnp02Params
@@ -47,7 +41,7 @@ then 8, then 9 hand-set neural/mechanical scalars across 26 sprints.
 |---|---|---|---|---|
 | `g` | `1.2` | unknown | measured (scripts/tune_dnp02.py/scripts/tune_dnp02_widen.py, kept <=0.85x the real spectral-radius boundary -- a per-matrix constraint, not a fixed numeric range) | `run_steering.py (G_DNP02)` |
 | `spike_threshold` | `0.1` | unknown | measured | `run_steering.py (DNP02_SPIKE_THRESHOLD)` |
-| `alpha` | `0.1` | unknown | invented (a slow EMA rate on DNp02's own input current, giving it "longer integration" without slowing HybridState's shared alpha -- sprint's own bug-fix choice, not connectome-derived) | `run_steering.py (DNP02_ALPHA)` |
+| `alpha` | `0.1` | unknown | invented (a slow EMA rate on DNp02's own input current, giving it "longer integration" without slowing HybridState's shared alpha) | `run_steering.py (DNP02_ALPHA)` |
 
 ## TakeoffParams
 
@@ -74,7 +68,7 @@ then 8, then 9 hand-set neural/mechanical scalars across 26 sprints.
 |---|---|---|---|---|
 | `g` | `1.2` | unknown | measured (scripts/tune_steering.py) | `run_steering.py (G_STEER)` |
 | `home_bias` | `1.0` | unknown | invented (constant "go home" current, R-hemisphere only; no real synapse carries it -- explicitly a placed bias, not a scaling error to fix by lowering it, per SPEC_odour.md section 0) | `run_steering.py (HOME_BIAS)` |
-| `climb_stall_frames` | `20` | unknown | invented (mechanical: mario_x unchanged this long while steering=R -> blocked; diagnosed via A/B, see docs/RUNS.md sprint on habituation -- 15->40 was checked and changed nothing) | `run_steering.py (CLIMB_STALL_FRAMES)` |
+| `climb_stall_frames` | `20` | unknown | invented (mechanical: mario_x unchanged this long while steering=R -> blocked) | `run_steering.py (CLIMB_STALL_FRAMES)` |
 | `climb_hop_small_frames` | `10` | unknown | invented (mechanical, small Mario's first-try hop) | `run_steering.py (CLIMB_HOP_SMALL_FRAMES)` |
 | `climb_hop_big_frames` | `14` | unknown | invented (mechanical, big Mario's taller hitbox) | `run_steering.py (CLIMB_HOP_BIG_FRAMES)` |
 | `climb_jump_frames` | `25` | unknown | invented (mechanical, same magnitude as the escape jump hold) | `run_steering.py (CLIMB_JUMP_FRAMES)` |
@@ -95,8 +89,8 @@ then 8, then 9 hand-set neural/mechanical scalars across 26 sprints.
 | field | value | range | provenance | home |
 |---|---|---|---|---|
 | `kc_sparsity` | `0.05` | unknown | measured (matches the real fly's ~5% concurrently-active KC fraction, enforced structurally via top-k rather than simulating the real APL feedback-inhibition neuron) | `run_steering.py (KC_SPARSITY)` |
-| `trace_decay` | `60.0` | 60.0-120.0 | measured (docs/TRACE_BIOLOGY.md, Handler et al. 2019, Cell: KC->MBON synaptic-tag plasticity is significant at ISIs of -1.2s/0s/+0.5s, a ~1-2s window, and negligible by 6s -- 60 frames = 1s at 60Hz sits at that window's near edge, and the range is the window itself, 60-120 frames. REFACTOR_PLAN.md phase 6's own first measured-provenance scalar grounded in a citation to published fly biology rather than a sweep against this project's own connectome -- the value (60) is unchanged from before; what changed is that this is now a checked claim, not an uncited appeal to "the real eligibility-trace timescale" | `run_steering.py (TRACE_DECAY)` |
-| `learning_rate` | `0.001` | unknown | invented (chosen by direct isolated verification against a hand-computed dW on a real KC->MBON weight -- the first guess, 0.01, was rejected on that same test as too aggressive) | `run_steering.py (LEARNING_RATE)` |
+| `trace_decay` | `60.0` | 60.0-120.0 | measured (docs/TRACE_BIOLOGY.md, Handler et al. 2019, Cell: KC->MBON synaptic-tag plasticity is significant at ISIs of -1.2s/0s/+0.5s, a ~1-2s window, and negligible by 6s -- 60 frames = 1s at 60Hz sits at that window's near edge, and the range is the window itself, 60-120 frames) | `run_steering.py (TRACE_DECAY)` |
+| `learning_rate` | `0.001` | unknown | invented (checked against a hand-computed dW on a real KC->MBON weight: one full punishment depresses an eligible synapse by 5%) | `run_steering.py (LEARNING_RATE)` |
 
 ## HabituationParams
 
@@ -130,9 +124,9 @@ then 8, then 9 hand-set neural/mechanical scalars across 26 sprints.
 
 | field | value | range | provenance | home |
 |---|---|---|---|---|
-| `azimuth_d_ref` | `128.0` | unknown | invented (retinotopy.py's own docstring: "the one invented numeric scaffold, stated plainly" -- half the NES screen width, used only as an arbitrary but stated saturation point; no principled reference distance exists in hex coordinates) | `fly/sensing/retinotopy.py (AZIMUTH_D_REF)` |
-| `hex1_spread_fallback` | `3.0` | unknown | invented (fallback bandwidth for a cell with no measured hex-carrying input -- verified empty case in practice; NOT named as a module constant in the live code, only a literal inside receptive_field_centers(), found while building this file, not previously flagged anywhere) | `fly/sensing/retinotopy.py (receptive_field_centers, literal)` |
-| `hex1_spread_floor` | `0.5` | unknown | invented (floor on a single-partner cell's measured spread, which would otherwise be exactly zero and make its tuning curve a delta function; same as above, a bare literal, not a named constant, found while building this file) | `fly/sensing/retinotopy.py (receptive_field_centers, literal)` |
+| `azimuth_d_ref` | `128.0` | unknown | invented (half the NES screen width, an arbitrary but stated saturation point; no principled reference distance exists in hex coordinates) | `fly/sensing/retinotopy.py (AZIMUTH_D_REF)` |
+| `hex1_spread_fallback` | `3.0` | unknown | invented (fallback bandwidth for a cell with no measured hex-carrying input -- an empty case in practice; a bare literal, not a named constant) | `fly/sensing/retinotopy.py (receptive_field_centers, literal)` |
+| `hex1_spread_floor` | `0.5` | unknown | invented (floor on a single-partner cell's measured spread, which would otherwise be exactly zero and make its tuning curve a delta function; a bare literal, not a named constant) | `fly/sensing/retinotopy.py (receptive_field_centers, literal)` |
 
 ## DemoParams
 
@@ -141,43 +135,20 @@ then 8, then 9 hand-set neural/mechanical scalars across 26 sprints.
 | `mushroom_offset` | `-40` | unknown | invented (spawn position for the synthetic mushroom-injection demo, behind Mario so it competes with HOME_BIAS's rightward pull) | `run_steering.py (MUSHROOM_OFFSET)` |
 
 
-## What this doc is not
+## Totals
 
-A range of `unknown` means genuinely unknown -- not measured, not
-documented anywhere in this project's own sprint history, and not invented
-here to fill the cell. Per this phase's own instruction: an invented bound
-is scaffolding that looks like data. Most fields in this table are
-`unknown` for exactly that reason; the two with a real documented range
-(`JumpParams.g`, `NoiseParams.sigma`) have one because a specific sprint
-(diag4.py's Diagnostic-4 sweep; 025's calibration sweep) actually
-characterised it.
+**49 hand-set scalars.** Three (`RetinotopyParams`) are dormant and one
+(`DemoParams.mushroom_offset`) only matters in the opt-in injection demo;
+the other 45 are live in every default run.
 
-**Total: 49 hand-set scalars** -- larger than either "8" or "9", the
-two numbers this project's own comments had been citing. Three of the
-49 (`RetinotopyParams`'s fields) are dormant: no golden-tested run
-exercises `retinotopic=True`. One (`DemoParams.mushroom_offset`) only
-matters when a caller explicitly opts into the synthetic-injection demo.
-The other 45 are live in every default run.
+A range of `unknown` means genuinely unknown, not left blank: an invented
+bound would be scaffolding that looks like data. Only `JumpParams.g` and
+`NoiseParams.sigma` have a characterised range.
 
-## Invented / measured / connectome-derived
+By category (the first word of each provenance): **29 invented**, **20 measured**, **0 connectome-derived** (of 49).
 
-Split by the first word of each field's own `provenance` text above, not a
-second hand-maintained tally: **29 invented**, **20 measured**, **0 connectome-derived** (of 49).
-
-**Zero are connectome-derived**, and that's the real finding, not an
-artifact of the split: the connectome determines the WEIGHT MATRIX each
-circuit steps (`W`, one per circuit, streamed from the real synapse data --
-CLAUDE.md invariant 2), but every one of these 49 numbers sits outside
-that matrix -- a gain multiplying it, a threshold compared against its
-output, or a mechanical hold duration with no neural meaning at all. The
-connectome constrains what these circuits CAN compute; it has never
-supplied a single one of the scalars controlling how hard they push on
-that computation. "Measured" means simulated against the real W and
-picked by a sweep (`tune_*.py`/`diag4.py`) or matched to a real biological
-timescale/fraction -- a real number, but still chosen, not read off the
-data the way `W` itself is. **Invented outnumbers measured (29 vs 20)**:
-most of what this project calls "the model" is mechanical scaffolding
-(hold durations, cooldowns, body-scaled thresholds) and placed external
-currents (`HOME_BIAS`, `GAP_GAIN`, `WALK_DRIVE`, `MDN_DRIVE` and others --
-explicitly flagged throughout this project's own comments as currents no
-real synapse carries), not calibrated circuit dynamics.
+None are connectome-derived. The connectome determines each circuit's
+weight matrix `W`; every scalar here sits outside it, as a gain on it, a
+threshold on its output, or a mechanical hold with no neural meaning.
+"Measured" means simulated against the real `W` and picked by a sweep, or
+matched to a published biological timescale.

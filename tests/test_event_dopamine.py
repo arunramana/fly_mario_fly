@@ -1,11 +1,8 @@
-"""REFACTOR_PLAN.md phase 6, step 3: event-proximal dopamine.
-
-Two levels: a pure unit test of fly.plasticity.dopamine.event_dopamine's
-routing/magnitude, and an integration check that FullPolicy's
-`event_proximal_dopamine=True` mode actually changes what drives learning
-(stomps get detected live, PAM fires only on qblock_hit/stomp, and the
-resulting weight trajectory differs from the legacy continuous-progress
-trigger) -- not just that the flag exists and doesn't crash.
+"""
+Event-proximal dopamine: a unit test of event_dopamine's routing and
+magnitude, and an integration check that FullPolicy's
+`event_proximal_dopamine=True` detects stomps live, fires PAM only on
+qblock_hit/stomp, and changes the weight trajectory.
 """
 from __future__ import annotations
 

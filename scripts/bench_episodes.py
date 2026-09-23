@@ -3,28 +3,15 @@ bench_episodes.py -- SPEC_throughput.md: measure the actual episodes/minute
 before and after making episodes cheap. No new circuits; this only changes
 how fast the existing ones run.
 
-Levers, in the order they actually mattered (measured, not assumed):
-  1. Circuit-load memoization (bridge.full_policy._memo_load) -- ~6.8s of
-     the ~7-8s a single episode used to cost was just re-reading the same
-     6 cached circuits from disk every call. This alone is the single
-     biggest win and needed no new infrastructure, just not throwing away
-     work already done. Live copy is in FullPolicy; run_steering no longer
-     owns a duplicate.
-  2. Headless (record_video=False) -- already existed, just needs using.
-  3. multiprocessing.Pool(8), OMP_NUM_THREADS=1 per worker (same pattern
-     compare_controllers.py already established) -- each worker pays the
-     ~6.8s circuit load ONCE (via the pool initializer) and reuses it for
-     every episode that worker runs after.
-  4. Frame skip (main()'s frame_skip param) -- included, reported
-     separately, NOT recommended as a default: SPEC_throughput.md's own
-     verification found its effect on a single deterministic trajectory is
-     chaotic (1-1 got much worse, 1-2 got much better, 1-3 unaffected,
-     across 3 tested values), not reliably "unchanged" the way frame_skip=1
-     is by construction. It measurably helps raw throughput; it does not
-     reliably preserve behaviour on any single seed.
-  5. Savestates (main()'s savestate param, nes-py's own _backup/_restore)
-     -- eliminates warm-up replay cost per episode. Reported as its own
-     lever since it's orthogonal to the Pool/memoization win.
+Levers, in the order they mattered:
+  1. Circuit-load memoisation (bridge.full_policy._memo_load): ~6.8s of a
+     ~7-8s episode was re-reading the six cached circuits from disk.
+  2. Headless (record_video=False).
+  3. multiprocessing.Pool(8), OMP_NUM_THREADS=1 per worker; each worker
+     pays the circuit load once in its initializer.
+  4. Frame skip -- reported, NOT a default: its effect on one trajectory
+     is chaotic (1-1 much worse, 1-2 much better, 1-3 unchanged).
+  5. Savestates (nes-py _backup/_restore): no warm-up replay per episode.
 
     .venv/Scripts/python.exe -m scripts.bench_episodes
 """

@@ -1,20 +1,13 @@
-"""REFACTOR_PLAN.md phase 6, step 1: "verify KC->MBON weight persistence...
-This has been on the open list since sprint 014 and never checked. It is
-now a hard prerequisite, not a loose end: death is the only aversive event,
-it happens once, and it is terminal -- there is no subsequent behaviour in
-that episode for it to modify. Punishment learning exists only across
-episodes. Without persistence the appetitive side will work and the
-aversive side will be a silent no-op, and we would read that as a
-plasticity-rule failure."
+"""
+KC->MBON weight persistence. Death is the only aversive event and it ends
+the episode, so punishment learning exists only across episodes: without
+persistence the aversive side is a silent no-op.
 
-Two checks, both required:
-  1. A save/np.load round trip of a real, plasticity-modified matrix is
-     exactly lossless -- the mechanical half.
-  2. A genuinely NEW Python process, not just a second in-process call,
-     reloads a saved matrix and continues training IDENTICALLY to an
-     uninterrupted in-process continuation -- the actual prerequisite,
-     since a subtle bug (module-global state, a re-seeded RNG that should
-     have stayed put) could pass check 1 while still breaking this one.
+Two checks:
+  1. A save/np.load round trip of a trained matrix is lossless.
+  2. A NEW Python process reloads it and continues training identically to
+     an uninterrupted in-process run (catches module-global state or a
+     re-seeded RNG that check 1 would miss).
 """
 from __future__ import annotations
 

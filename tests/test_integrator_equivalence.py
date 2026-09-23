@@ -1,10 +1,7 @@
-"""REFACTOR_PLAN.md phase 3: proves fly.network.integrator.Integrator is
-bit-exact against the two things it replaces -- fly.network.dynamics.step()
-(the four non-spiking circuits) and fly.network.dynamics.HybridState (the
-two spiking ones, jump/dnp02) -- BEFORE any of run_steering.py's six call
-sites are touched. Written and run first, on purpose: swapping a call site
-and only then finding out via the (much slower, much less localised)
-golden tests would tell you THAT something drifted, not why.
+"""
+fly.network.integrator.Integrator is bit-exact against
+fly.network.dynamics.step() (no spike index) and dynamics.HybridState
+(with one). A drift shows up here, localised, before the slower goldens.
 """
 from __future__ import annotations
 

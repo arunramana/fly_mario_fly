@@ -1,5 +1,4 @@
-"""mario/emulator/env.py -- nes-py/gym-super-mario-bros env construction,
-moved verbatim from run_steering.py (REFACTOR_PLAN.md phase 2)."""
+"""mario/emulator/env.py -- nes-py/gym-super-mario-bros env construction."""
 
 from __future__ import annotations
 

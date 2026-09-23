@@ -20,7 +20,7 @@ import numpy as np
 
 from fly.network import dynamics
 from fly.circuits.load_steering_cached import load as load_steering
-from fly.sensing.olfactory_adaptation import OlfactoryAdaptation, ALPHA_ADAPT
+from fly.sensing.olfactory_adaptation import OlfactoryAdaptation
 from run_steering import ODOUR_GAIN, HOME_BIAS, G_STEER
 
 N_FRAMES = 600

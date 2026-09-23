@@ -8,10 +8,7 @@ target within reach, not just upstream partners -- TTMn isn't found by the
 presynaptic-threshold rule (it's downstream of DNp02, not upstream), so it
 is added the same way SPEC_jump.md's pooling exception adds neurons that
 don't clear a threshold but are structurally load-bearing: explicitly,
-stated here as a judgement call.
-
-Same extraction/signs/weight-matrix pipeline as every other circuit in
-this project. See SPEC_second_escape.md section 2.
+stated here as a judgement call. See SPEC_second_escape.md section 2.
 
     python dnp02_circuit.py
 """

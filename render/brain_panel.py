@@ -26,30 +26,14 @@ NOTE: brightness is currently a POPULATION MEAN, not per-neuron activity — all
 dynamics step and pass `per_neuron={'LC4': array, ...}`; the drawing code
 already accepts per-soma alpha.
 
--- sprint 026: layout, 1536x1080 --
-Left column (512px): brain silhouette in the upper 2/3 (BRAIN_W x BRAIN_H =
-512x720) with NOTHING overlaid on it -- spikes/glow are the point of the
-panel and text was fighting them for the same pixels. A dedicated telemetry
-strip (512x360) sits below it and carries every piece of text that used to
-be drawn over the brain: legend, numeric values, steer R_team/L_team, every
-banner (SPIKE/CLIMB/CONFLICT/PIT/LONG JUMP/REFUSING/ODOUR OVERRIDE). Right
-column (1024px): the emulator frame at integer 4x (256x240 -> 1024x960),
-nearest-neighbour (`Image.NEAREST` -- it's pixel art, any interpolation
-invents colours the NES never drew), vertically centred in the 1080-tall
-canvas (a 60px letterbox top and bottom, native emulator aspect differs
-from the panel's).
+Layout, 1536x1080. Left column (512px): the brain in the upper 720px with
+nothing overlaid, since text competed with the glow; below it a 360px
+strip with the legend, readouts and banners. Right column (1024px): the
+emulator frame at integer 4x with NEAREST resampling (pixel art; any
+filter invents colours the NES never drew), letterboxed vertically.
 
-Profiled first (sprint 026's `profile_brain_panel.py`, since removed; see
-git history), per sprint instructions: one
-full panel() call was 8.4ms median (worst case, every banner active,
-10.2ms) against a 16.7ms real-time budget -- already under budget before
-any of this sprint's changes. The one real waste `_font()` reloading TTF
-files from disk every frame, ~2.7ms/frame for zero reason (fixed at the
-top of this file, same fix class as the background cache below) -- that
-alone took full panel() to 5.1ms median. Per the sprint's own stated rule
-("if this lands under budget, stop"), no GPU port was attempted; nes-py
-is a sequential CPU emulator and sets a floor regardless, per CLAUDE.md's
-own GPU section.
+One panel() call is ~5.1ms median against a 16.7ms real-time budget
+(docs/RUNS.md 026), so no GPU port.
 """
 
 from __future__ import annotations
@@ -68,7 +52,6 @@ ROOT = Path(__file__).resolve().parent.parent
 ANN = ROOT / ".." / "data" / "malecns_v1.0" / \
     "body-annotations-male-cns-v1.0-minconf-0.5.feather"
 
-# sprint 026 layout -- see module docstring
 LEFT_W = 512
 BRAIN_H = 720       # upper 2/3 of the 1080-tall canvas
 STRIP_H = 360       # lower 1/3: telemetry text, nothing else
@@ -80,9 +63,7 @@ EMU_SCALE = 4
 EMU_W_SCALED, EMU_H_SCALED = EMU_W * EMU_SCALE, EMU_H * EMU_SCALE  # 1024x960
 EMU_Y_OFFSET = (CANVAS_H - EMU_H_SCALED) // 2  # vertical centring, letterbox
 
-# kept as the brain silhouette's own projection target -- old module-level
-# W/H (now BRAIN_W/BRAIN_H) is what `_build()` projects real soma
-# coordinates into, unrelated to the emulator's own resolution above.
+# What `_build()` projects soma coordinates into.
 BRAIN_W = LEFT_W
 SURFACE = (13, 13, 13)
 
@@ -98,12 +79,9 @@ LABEL = {"LC4": "LC4  looming", "LPLC2": "LPLC2  looming",
          "DNa01": "DNa01  steering", "DNa02": "DNa02  steering",
          "DNp09": "DNp09  forward walking", "DLMn": "DLMn  wing downstroke"}
 ORDER = ["LC4", "LPLC2", "DNp01", "TTMn"]
-# DNa01/DNa02/DNp09/DLMn are drawn only when a run's telemetry actually
-# carries them (run_steering.py) -- see render_run's `populations` handling
-# below. Their real somas are VNC/central-complex-adjacent, not optic lobe,
-# but they come from the same _build() soma-position cache since it's keyed
-# off COL. DLMn spans two connectome type strings ("DLMn c-f", "DLMn a, b")
-# -- POP_TYPES maps the single panel key to both.
+# DNa01/DNa02/DNp09/DLMn are drawn only when the telemetry carries them
+# (run_steering.py). DLMn spans two connectome types; POP_TYPES maps the
+# one panel key to both.
 STEERING_ORDER = ["DNa01", "DNa02"]
 TERRAIN_ORDER = ["DNp09", "DLMn"]
 POP_TYPES = {"DLMn": ["DLMn c-f", "DLMn a, b"]}
@@ -115,11 +93,7 @@ _font_cache: dict = {}
 
 
 def _font(size, bold=False):
-    # sprint 026 profiling: this was reloading the TTF from disk on every
-    # single call (3 calls/frame, ~0.9ms each = ~2.7ms/frame, a third of
-    # the whole panel() budget) -- a fixed cost with zero reason to redo
-    # per frame, same class of waste `_build()`'s bg cache already fixed
-    # for the soma cloud. Cached here the same way.
+    # Cached: loading the TTF from disk cost ~2.7ms of each frame.
     key = (size, bold)
     if key in _font_cache:
         return _font_cache[key]
@@ -169,9 +143,7 @@ def _build():
 
 
 def _draw_brain(act: dict, norm: dict, pops: list) -> Image.Image:
-    """The silhouette + live glow ONLY -- sprint 026: nothing overlaid on
-    the brain any more, so every pixel here is either real soma density
-    or real per-population activity, nothing else competing with it."""
+    """The silhouette and live glow only; all text goes in the strip."""
     c = _build()
     im = c["bg"].copy()
     d = ImageDraw.Draw(im, "RGBA")
@@ -196,11 +168,8 @@ def _draw_strip(act: dict, norm: dict, pops: list, spike: bool, caption: str,
                  odor_l, odor_r, hungry, steer_left: bool,
                  orn_a_l, orn_a_r, avers_l, avers_r, refusing: bool,
                  r_team, l_team) -> Image.Image:
-    """sprint 026: every piece of text that used to sit on top of the
-    brain, now in its own LEFT_W x STRIP_H strip below it -- header,
-    banners (as a compact wrapped row of tags, not one fixed line each --
-    they're rare events, per 017's own count, so a wide fixed stack was
-    wasted space most frames), readouts, then the population legend."""
+    """The LEFT_W x STRIP_H text strip below the brain: header, banners
+    (a wrapped row of tags, since they are rare), readouts, legend."""
     c = _build()
     im = Image.new("RGB", (LEFT_W, STRIP_H), SURFACE)
     d = ImageDraw.Draw(im, "RGBA")
@@ -227,10 +196,8 @@ def _draw_strip(act: dict, norm: dict, pops: list, spike: bool, caption: str,
     if refusing:
         banners.append(("REFUSING (gap too wide)", (214, 120, 100)))
     if steer_left:
-        # HOME_BIAS only ever adds to the R team (run_steering.py) -- so the
-        # WTA ever picking L is proof odour actually overcame it, not a
-        # tie-break or noise. Worth flagging distinctly from the ordinary
-        # per-frame direction readout.
+        # HOME_BIAS only adds to the R team, so the WTA picking L means
+        # odour overcame it.
         banners.append(("ODOUR OVERRIDE (steering L)", (230, 200, 60)))
     bx, by = 16, 64
     for text, col in banners:
@@ -242,46 +209,32 @@ def _draw_strip(act: dict, norm: dict, pops: list, spike: bool, caption: str,
 
     y = by + 26 if banners else 64
     if odor_l is not None and odor_r is not None:
-        # Not a neuron population -- odour is an external RAM-derived signal,
-        # not a soma, so it gets a text readout rather than a spot on the
-        # brain (SPEC_odour.md: don't invent a fictitious neuron for it).
+        # Odour is a RAM-derived signal, not a soma, so it is text rather
+        # than a spot on the brain (SPEC_odour.md). Same for the next two.
         d.text((16, y), f"odour  L={odor_l:.3f}  R={odor_r:.3f}"
                + (f"   Mario: {'HUNGRY' if hungry else 'sated'}" if hungry is not None else ""),
                font=fs, fill=(195, 194, 183))
         y += 16
     if avers_l is not None and avers_r is not None:
-        # Aversive odour (sprint 016) -- same text-readout treatment, not a
-        # soma: it's a second RAM-derived channel through the same steering
-        # circuit, not a distinct neuron population.
         d.text((16, y), f"aversive odour  L={avers_l:.3f}  R={avers_r:.3f}",
                font=fs, fill=(214, 120, 100))
         y += 16
     if orn_a_l is not None and orn_a_r is not None:
-        # ORN adaptation state -- also not a soma, a receptor property, same
-        # text-readout treatment as odour itself.
         d.text((16, y), f"ORN adapt  a_L={orn_a_l:.3f}  a_R={orn_a_r:.3f}",
                font=fs, fill=(137, 135, 129))
         y += 16
     if r_team is not None and l_team is not None:
-        # sprint 017: the "DNa01" / "DNa02" bars below are means BY TYPE
-        # (each already averaging its own L+R bodies together) -- they are
-        # NOT what the WTA decides on, and will read as nearly identical to
-        # EACH OTHER almost every frame by construction (DNa01/DNa02 receive
-        # the same per-side current). r_team/l_team, by HEMISPHERE, is the
-        # actual decision signal and the one place a steering asymmetry is
-        # visible -- diagnosed the hard way in 017 after 016's own video had
-        # to be read back via OCR with no r_team/l_team column to check.
+        # The DNa01/DNa02 legend bars are means by TYPE over both sides and
+        # look nearly identical by construction. The WTA decides on
+        # r_team/l_team, by HEMISPHERE -- the only place steering
+        # asymmetry is visible (docs/RUNS.md 017).
         d.text((16, y), f"steer  R_team={r_team:.3f}  L_team={l_team:.3f}",
                font=fs, fill=(120, 200, 160))
         y += 16
 
-    # Legend is bottom-anchored, ALWAYS, regardless of how much banner/
-    # readout text sits above it -- climb/conflict/long_jump are each a
-    # single frame in 017's own 807, so all-of-the-above-at-once (this
-    # docstring's own worst-case test) is a synthetic ceiling, not a real
-    # frame; a fixed bottom position means the legend (the thing you read
-    # every single frame) never gets clipped by the strip's own bottom edge,
-    # even if it does mean rare, real overlap is possible in that ceiling.
+    # Legend is always bottom-anchored so it is never clipped. It can
+    # overlap the readouts only when every banner fires at once, which no
+    # real frame has done.
     y = STRIP_H - (20 * len(pops) + 8)
     for t in pops:
         r, g, b = COL[t]
@@ -306,8 +259,7 @@ def panel(act: dict, norm: dict, spike: bool = False, caption: str = "",
           avers_r: float | None = None, refusing: bool = False,
           r_team: float | None = None, l_team: float | None = None) -> Image.Image:
     """One frame of the LEFT column (LEFT_W x CANVAS_H): the brain
-    silhouette (upper 2/3, no text) stacked on the telemetry strip (lower
-    1/3, all the text) -- sprint 026 layout. act/norm are {population:
+    silhouette stacked on the telemetry strip. act/norm are {population:
     value}. `populations` defaults to the original jump-circuit four;
     pass ORDER + STEERING_ORDER to also draw DNa01/DNa02 (run_steering.py).
     `render_run` pastes this beside the 4x-scaled emulator frame to build
@@ -396,12 +348,7 @@ def render_run(tel: pd.DataFrame, frames_dir, out_path, fps: int = 60,
                   refusing=bool(row.refusing) if has_refuse else False,
                   r_team=float(row.r_team) if has_teams else None,
                   l_team=float(row.l_team) if has_teams else None)
-        # show the real membrane value in the readout, not the held flash
-        # sprint 026: emulator frame at integer 4x, NEAREST (no
-        # interpolation -- it's pixel art, any resampling filter invents
-        # colours the NES never drew), vertically centred in the
-        # CANVAS_H-tall right column since the native 256x240 frame at 4x
-        # (1024x960) is shorter than the 1080-tall panel.
+        # NEAREST: pixel art, any filter invents colours (module docstring).
         game = Image.open(frames[i]).resize((EMU_W_SCALED, EMU_H_SCALED), Image.NEAREST)
         out = Image.new("RGB", (CANVAS_W, CANVAS_H), SURFACE)
         out.paste(p, (0, 0))

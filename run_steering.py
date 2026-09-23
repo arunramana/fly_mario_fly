@@ -4,11 +4,12 @@ home bias, competing with a mushroom-odour signal read from RAM, plus a
 contact-based climbing reflex. SPEC_terrain.md adds two more layers on top:
 a pit-triggered graded long jump (DNp01's own output recruiting DLMn via
 the real GFC1-4 relay) and a DNp09 speed circuit that finally lets Mario
-stop holding B unconditionally. The jump circuit (DNp01/TTMn) itself is
-untouched -- imported from run_mario.py and stepped exactly as
-scripts/compare_controllers.py's make_circuit_decider does.
+stop holding B unconditionally. The circuits and the per-frame decision
+live in bridge/full_policy.py; this module drives the emulator, the
+test-harness injections and telemetry.
 
-    .venv/Scripts/python.exe run_steering.py
+    .venv/Scripts/python.exe run_steering.py 008|016|023|024   # reproduce a run
+    run_steering.main(out_mp4=...)                             # from Python
 """
 from __future__ import annotations
 
@@ -26,7 +27,6 @@ import numpy as np
 from PIL import Image
 
 from sim.telemetry import TelemetryObserver
-from fly.network import dynamics
 from mario.ram import tile_ram
 from mario.ram.addresses import (
     ADDR_MARIO_X, ADDR_MARIO_Y, ADDR_MARIO_SIZE,
@@ -41,63 +41,26 @@ from config.params import (
     SteeringParams, TakeoffParams, TerrainParams, DemoParams,
 )
 
-# Circuit-load memoization lives in bridge.full_policy (_circuit_cache /
-# _memo_load). This module only orchestrates main(); FullPolicy owns the
-# six cached load_*() calls.
-
-# Jump scalars (G, DNP01_SPIKE_THRESHOLD, SPIKE_AMP, TTMN_PRESS_THRESHOLD,
-# JUMP_HOLD_FRAMES, JUMP_COOLDOWN_FRAMES) stay defined in run_mario.py.
-# This module does not re-import them: FullPolicy reads JumpParams, and
-# the diagnostic scripts import run_mario directly.
 from render.video import _ensure_ffmpeg_on_path
 
-# ---- hand-set scalars, SPEC_odour.md section 0 ---------------------------
-# Run 006's finding: 1/40=0.025 vs HOME_BIAS=1.0 is a 40x gap BY
-# CONSTRUCTION -- odour and home bias were never in comparable units, which
-# is why odour never won, not a wiring bug. ODOUR_GAIN=16 chosen by
-# simulating the real steering circuit end to end (tune_odour.py), not by
-# comparing raw currents: it's the smallest gain that makes a close (16px)
-# encounter cross HOME_BIAS's settled R_team output in the ACTUAL recurrent
-# network. HUNGER_MULT_HUNGRY=3.0 / HUNGER_MULT_SATED=1.0 chosen the same
-# way -- tune_odour.py's sweep shows hunger_mult=3.0 is the smallest value
-# that still flips at d=40px (the existing MUSHROOM_OFFSET distance,
-# unchanged from 006/008), while hunger_mult=1.0 (sated, unboosted) does
-# not flip at that same distance -- see tune_odour.py's printed sweep for
-# the full table. HOME_BIAS itself is untouched (SPEC section 0: fixing
-# this is a scaling fix to two competing DIRECTION signals, not a reason to
-# lower it -- that would just make Mario permanently distractible).
+# Every scalar below is sourced from config/params.py (docs/SCALARS.md has
+# the value, category and provenance of each). The jump scalars stay in
+# run_mario.py; FullPolicy reads them from JumpParams.
+
+# ---- SPEC_odour.md section 0 ---------------------------------------------
+# Odour and HOME_BIAS are competing direction signals in different units;
+# ODOUR_GAIN puts them on one scale. HOME_BIAS itself is not lowered -- that
+# would make Mario permanently distractible.
 _odour_params = OdourParams()
 ODOUR_GAIN = _odour_params.odour_gain
-# HUNGER_MULT_HUNGRY/SATED moved to bridge/perception.py with
-# hunger_multiplier() itself, phase 2 -- imported above. Values unchanged
-# (3.0/1.0); tune_odour.py's own sweep, referenced above, is what picked them.
 
-# ---- ORN adaptation, sprint after SPEC_odour.md -------------------------
-# A real olfactory receptor neuron's response to a SUSTAINED concentration
-# decays over ~1-2 seconds and recovers once the stimulus is gone -- this is
-# receptor physiology, not a steering rule, so it is applied entirely
-# within the sensory layer (OlfactoryAdaptation, moved to
-# fly/sensing/olfactory_adaptation.py in phase 2), and the WTA code
-# downstream never needs to know it exists. Applied to the
-# ODOUR_GAIN/hunger-scaled signal rather than the bare 1/distance
-# concentration: ODOUR_GAIN and hunger already represent the receptor's own
-# state-dependent sensitivity (hunger-modulated olfactory gain is itself a
-# real, documented phenomenon, not unique to the decision layer), and
-# adaptation has to act somewhere in the same units HOME_BIAS lives in to
-# mean anything -- dividing a raw concentration of ~0.04 by (1+0.04) barely
-# moves it, so a receptor-physiology fix implemented on the wrong side of
-# the gain would silently do nothing (found by actually testing it against
-# the real circuit in tune_orn_adapt.py before trusting the arithmetic).
-# It is also the general anti-stuck mechanism asked for: a place Mario has
-# sat near for a while stops smelling, so the still-fresh, never-adapted
-# HOME_BIAS takes back over. ALPHA_ADAPT=1/90 (fly/sensing/
-# olfactory_adaptation.py) gives a ~1.5s time constant at 60fps -- this runs
-# once per EMULATOR frame, same cadence as the odour reading itself, so 90
-# FRAMES really is ~1.5s of wall-clock game time.
+# ORN adaptation (fly/sensing/olfactory_adaptation.py) is receptor
+# physiology, applied inside the sensory layer to the gain- and
+# hunger-scaled signal: adapting the raw ~0.04 concentration would do
+# nothing. It also stops a place Mario has lingered near from smelling,
+# letting the unadapted HOME_BIAS take back over.
 
-# ---- hand-set scalars, SPEC_steering.md section 5 -----------------------
-# REFACTOR_PLAN.md phase 4: sourced from config.params.SteeringParams
-# (docs/SCALARS.md), not redefined here.
+# ---- SPEC_steering.md section 5 ------------------------------------------
 _steering_params = SteeringParams()
 G_STEER = _steering_params.g                              # tune_steering.py
 HOME_BIAS = _steering_params.home_bias                     # constant "go home" current, R-hemisphere only
@@ -108,20 +71,10 @@ CLIMB_JUMP_FRAMES = _steering_params.climb_jump_frames     # escalated full jump
 CLIMB_COOLDOWN_FRAMES = _steering_params.climb_cooldown_frames
 CLIMB_CLEAR_DISTANCE = _steering_params.climb_clear_distance  # px of forward progress that resets the attempt counter
 
-# ---- hand-set scalars, SPEC_terrain.md sections 2-3 ----------------------
-# GAP_GAIN/DLMN_RECRUIT_THRESHOLD/LONG_JUMP_HOLD_FRAMES picked by directly
-# simulating the real jump + takeoff circuits together at gap widths
-# 0/1/2/3/4/6/8 tiles (see the shell history for this sprint, or re-derive
-# with tune_terrain.py's calibration pattern): GAP_GAIN=0.6 is the smallest
-# value that reliably crosses DNp01's spike threshold even for a 1-tile
-# gap (so no pit goes un-jumped); at that gain, one frame's worth of
-# substeps gives DLMn end-of-frame means of ~0.28 (width 1), ~1.18 (width
-# 2), ~2.14 (width 3), ~2.79 (width 4) -- a clean, monotonic, graded curve.
-# DLMN_RECRUIT_THRESHOLD=1.0 sits between the width-1 and width-2 values,
-# so a single-tile gap gets a normal hop and anything wider gets the long
-# jump.
-# REFACTOR_PLAN.md phase 4: sourced from config.params.TakeoffParams/
-# SpeedParams (docs/SCALARS.md), not redefined here.
+# ---- SPEC_terrain.md sections 2-3 ----------------------------------------
+# DLMn's end-of-frame mean grows monotonically with gap width (~0.28 at one
+# tile, ~1.18 at two); DLMN_RECRUIT_THRESHOLD sits between those, so a
+# one-tile gap gets a normal hop and anything wider gets the long jump.
 _takeoff_params = TakeoffParams()
 G_TAKEOFF = _takeoff_params.g                                    # tune_terrain.py
 GAP_GAIN = _takeoff_params.gap_gain                              # external current per non-ground tile ahead, onto DNp01
@@ -135,207 +88,62 @@ WALK_DRIVE = _speed_params.walk_drive                        # constant "walk" c
 WALK_SUPPRESSION = _speed_params.walk_suppression            # cancels WALK_DRIVE while jumping/stalled
 DNP09_SPEED_THRESHOLD = _speed_params.dnp09_speed_threshold  # DNp09 mean activation -> press B
 
-# ---- hand-set scalars, SPEC_habituation.md -------------------------------
-# Diagnosed, not assumed: CLIMB_COOLDOWN_FRAMES 15->40 changed nothing
-# (byte-identical run); CLIMB_STALL_FRAMES 20->60 revealed the real clock
-# governing the stuck loop was the escape/takeoff pathway's own
-# LONG_JUMP_HOLD_FRAMES(35)+JUMP_COOLDOWN_FRAMES(40)=75-frame hold-then-
-# cooldown cycle, not climb's state machine at all. Real GF habituation to
-# repeated stimulation is documented biology -- modeled here as: any reflex
-# that fires without HAB_PROGRESS_PX of net x-progress since the last time
-# its trigger condition was checked increments its own habituation level;
-# HAB_PROGRESS_PX=16 (one tile) is the same "did that actually help" bar
-# CLIMB_CLEAR_DISTANCE already uses, just smaller (a single tile is a much
-# lower bar than 24px, deliberately -- habituation should engage before a
-# reflex has failed enough times to also blow through CLIMB_CLEAR_DISTANCE).
-# HAB_PROGRESS_PX/HAB_GIVE_UP live in fly/state/reflex_habituation.py with
-# ReflexHabituation. FullPolicy reads the module defaults (and imports
-# HAB_GIVE_UP itself for the MDN trigger). Values unchanged (16px / 3 firings).
+# ---- SPEC_habituation.md -------------------------------------------------
+# Giant Fiber habituation: a reflex that fires without HAB_PROGRESS_PX of
+# net x-progress raises its own habituation level. HAB_PROGRESS_PX and
+# HAB_GIVE_UP live with ReflexHabituation in fly/state/reflex_habituation.py.
 
-# MDN (backward walking, 4 bodies, confirmed) has no direct synapse from
-# DNp01/GFC1-4 in this connectome (checked) -- same situation DNp09 was in
-# (007), so its drive is an external current, same category as
-# HOME_BIAS/WALK_DRIVE/GAP_GAIN, not a new kind of thing. Picked by
-# simulating the real MDN circuit directly (tune_mdn.py): G_MDN=1.2 keeps
-# the real spectral radius (0.7345) comfortably under its ~1.36 linear
-# boundary; MDN_DRIVE=2.0 settles to a clean MDN_mean=1.986, non-clipped;
-# MDN_THRESHOLD=1.0 sits comfortably between that and the zero-drive
-# baseline (which settles to exactly 0 -- no runaway, no spontaneous
-# backing up). MDN_BACKUP_FRAMES=30 is a fixed mechanical hold, same
-# pattern as every other reflex's hold duration -- backing up is a discrete
-# corrective action, not an open-ended state.
-# REFACTOR_PLAN.md phase 4: sourced from config.params.MdnParams
-# (docs/SCALARS.md), not redefined here.
+# MDN (backward walking) gets no direct synapse from DNp01/GFC1-4 in this
+# connectome, so its drive is a placed external current, like
+# HOME_BIAS/WALK_DRIVE/GAP_GAIN. Backing up is a discrete corrective action,
+# hence the fixed MDN_BACKUP_FRAMES hold.
 _mdn_params = MdnParams()
 G_MDN = _mdn_params.g
 MDN_DRIVE = _mdn_params.mdn_drive
 MDN_THRESHOLD = _mdn_params.mdn_threshold
 MDN_BACKUP_FRAMES = _mdn_params.mdn_backup_frames
 
-# ---- hand-set scalars, SPEC_second_escape.md -----------------------------
-# The scalar budget was 3 (g, dnp01_spike_threshold, ttmn_press_threshold);
-# these are TWO MORE, taking it to 5 -- flagged here and in the README per
-# CLAUDE.md invariant 3, on purpose, not buried. DNp02 (confirmed: 2 bodies,
-# LC4->DNp02 4209 synapses/125 pairs -- essentially all of LC4; LPLC2->DNp02
-# is 5 synapses/4 pairs, noise, the same bar that excluded LPLC1 from the
-# original circuit) is a real, direct, ipsilateral second path to TTMn
-# (21 syn R, 5 syn L) -- a genuine parallel pathway, not an invented one.
-#
-# THE NULL RESULT, kept honest rather than tuned away: a first calibration
-# pass found DNp02 clearly out-committing DNp01 on a slow synthetic ramp --
-# it was a bug. Passing a custom alpha to the whole HybridState.step() call
-# also slows TTMn's own decay (TTMn sits in this subgraph too, for the real
-# synapse), pinning it near the clip ceiling for dozens of frames after one
-# spike and firing on stale state with no enemy present. Fixed by moving
-# "longer integration" to a slow EMA on the INPUT current instead, leaving
-# HybridState's own step at the normal, fast alpha. With that fixed, and
-# after widening DNp02's own N threshold (60 -> 30 -> 15 -> 5, capturing
-# 8 -> 77 -> 109 -> 124 of DNp02's 126 real LC4 partners -- tune_dnp02_
-# widen.py, restricted throughout to g <= 0.85x each circuit's own real
-# spectral-radius boundary, no fragile parameters): DNp02 never produces a
-# clean win. N=60/N=5 found no stable combo where it out-commits DNp01 on
-# the slow ramp AT ALL; N=30/N=15 found only a marginal 1-4 frame lead, and
-# in both of those cases DNp02 ALSO won the fast case by more (4-5 frames)
-# -- failing the actual requirement, not just falling short of it. DNp02
-# lacks any real LPLC2 (expansion) input, so once it has enough drive to
-# fire, angular velocity alone gets it there regardless of ramp speed --
-# there is no real gap in its wiring to exploit that separates "slow" from
-# "fast" the way the recruitment was hoped to. This is the finding, not a
-# tuning failure to fix with a fragile g or an invented third scalar (e.g.
-# a postural-preparation delay). N=60 is what ships (widening didn't help,
-# so there's no reason to carry the much larger N=5 circuit); G_DNP02=1.2
-# and DNP02_ALPHA=0.1 are safe, unremarkable values -- DNp02 remains a
-# real, connectome-verified, independently-firing pathway that CAN spike
-# under strong enough sustained input, it just essentially never wins the
-# race against DNp01 in practice, which the real-game validation (below)
-# confirms rather than contradicts.
-# REFACTOR_PLAN.md phase 4: sourced from config.params.Dnp02Params
-# (docs/SCALARS.md), not redefined here.
+# ---- SPEC_second_escape.md -----------------------------------------------
+# DNp02 is a real, direct, ipsilateral second path to TTMn, driven by
+# essentially all of LC4 (4209 synapses) and almost no LPLC2 (5). Without
+# expansion input it cannot tell a slow approach from a fast one, so it
+# essentially never beats DNp01 to commitment -- a connectome result, not a
+# tuning failure (docs/RUNS.md 012). Its "longer integration" is a slow EMA
+# on the input current: a slower alpha on the whole step would also slow
+# TTMn's decay and fire it on stale state.
 _dnp02_params = Dnp02Params()
 G_DNP02 = _dnp02_params.g
 DNP02_SPIKE_THRESHOLD = _dnp02_params.spike_threshold
 DNP02_ALPHA = _dnp02_params.alpha
 
-# ---- hand-set scalars, SPEC_mushroom_body.md -----------------------------
-# Budget was 5 (g, dnp01_spike_threshold, ttmn_press_threshold, plus the
-# DNp02 pair counted in SPEC_second_escape.md); these THREE are new,
-# taking it to 8 -- flagged here and in the README per CLAUDE.md invariant
-# 3. Real counts verified against this connectome (NOT the "4,554 KC ->
-# 104 MBON" figure this project's own "Still open" notes had been
-# repeating unchecked since sprint 006): 4,064 KC, 97 MBON, 354 real
-# dopaminergic neurons (PAM/PPL/PPM). KC_SPARSITY=0.05 matches the real
-# fly's ~5% concurrently-active KC fraction (enforced structurally via
-# top-k, not by simulating the real APL feedback-inhibition neuron that
-# actually produces it -- a stated simplification, same spirit as skipping
-# the EPG ring in SPEC_steering.md). TRACE_DECAY=60 frames is ~1s at 60Hz,
-# the real eligibility-trace timescale asked for. LEARNING_RATE=0.001 was
-# chosen by direct isolated verification (not the naive first guess of
-# 0.01, which gave a single punishment event a 50% one-shot depression on
-# eligible synapses -- confirmed by hand-computing dW on a real KC->MBON
-# weight before touching the training loop -- too aggressive for a
-# 500-episode curve, since eligible synapses would floor toward zero
-# within a handful of deaths). At 0.001, one full-magnitude punishment
-# (dopamine=CLIP=50) depresses an eligible synapse by 5%; one frame of
-# typical reward (a few px of progress) depresses by a fraction of a
-# percent -- gradual, not a single-event wipeout.
-# REFACTOR_PLAN.md phase 4: sourced from config.params.MushroomBodyParams
-# (docs/SCALARS.md), not redefined here.
+# ---- SPEC_mushroom_body.md -----------------------------------------------
+# 4,064 KC, 97 MBON, 354 dopaminergic neurons (PAM/PPL/PPM) in this
+# connectome. KC_SPARSITY matches the fly's ~5% active-KC fraction, enforced
+# by top-k rather than by simulating the APL inhibitory neuron. At
+# LEARNING_RATE, one full-magnitude punishment (dopamine=CLIP) depresses an
+# eligible synapse by 5%.
 _mb_params = MushroomBodyParams()
 KC_SPARSITY = _mb_params.kc_sparsity
 TRACE_DECAY = _mb_params.trace_decay
 LEARNING_RATE = _mb_params.learning_rate
 
-# ---- hand-set scalars/design notes, SPEC_odour.md sprint 016 (smell) -----
-# CONNECTOME CHECK, DONE BEFORE ANY OF THIS WAS BUILT (docs/MECHANISMS.md
-# section 1's own warning -- LPLC1 in 007 and DNp02-races-DNp01 in 012 both
-# had the literature on their side and the anatomy said no):
-#
-#   a. Aversive pathway (Or56a->glomerulus DA2, 48 ORN_DA2 bodies; Gr21a/
-#      Gr63a->glomerulus V, 55 ORN_V bodies) -> their real PNs (DA2_lPN: 10,
-#      V_ilPN+V_l2PN: 4) -> lateral horn (422 LH-prefixed types in this
-#      connectome, real and large) -> DNa01/DNa02: NO. Direct PN->DNa01/02
-#      synapses: ZERO. Direct LH->DNa01/02 synapses (queried against DNa01/
-#      02's FULL real presynaptic population, whole connectome, not just
-#      this project's subgraph): 2 LH bodies, 3 synapses total -- against
-#      DNa01/02's real total input of 76,248 synapses. Noise, the same bar
-#      that excluded LPLC1 (1 synapse/1 pair).
-#   b. Attractive food-odour pathway (Or42b->glomerulus DM1, 74 ORN_DM1
-#      bodies -> DM1_lPN, 2 bodies) -> DNa01/DNa02: also NO -- zero direct
-#      PN synapses. The ONLY real olfactory-adjacent input onto DNa01/DNa02
-#      anywhere in the whole connectome is 259 synapses (0.34% of DNa01/02's
-#      total real input), and 237 of those 259 are MBON31/MBON32 -- the
-#      mushroom body's LEARNED-valence pathway, already built in
-#      SPEC_mushroom_body.md/run 014, not an innate ORN/PN/LH pathway. No
-#      single ALPN (projection neuron) type contributes more than 1 synapse.
-#   c. Either pathway -> DNp09 (the section-5 brake): NO. Zero synapses,
-#      full stop -- not one edge anywhere in the whole connectome from ANY
-#      olfactory-class neuron (ORN/ALPN/ALLN/ALIN/ALON/Kenyon_Cell/DAN/MBON)
-#      onto DNp09, out of DNp09's 15,940 total real synaptic input.
-#
-# So: a third real "anatomy says no" result (after LPLC1 and the DNp02
-# race), and the honest response is the same one this project already used
-# for DNp02's MBON bias (SPEC_mushroom_body.md section 5, no real MBON->
-# DNp02 synapse either) -- model it as a PLACED external current, flagged
-# as such, not a fabricated neuron population dressed up as "the real ORN
-# pathway." Concretely, this means goomba_odor/the DNp09 brake/the refusal
-# rule's steering push are external currents onto DNa01/DNa02/DNp09 (the
-# SAME modelling category HOME_BIAS/GAP_GAIN/WALK_DRIVE/MDN_DRIVE already
-# are), exactly like mushroom_odor/question_block_odor already were before
-# this sprint -- nothing about HOW odour reaches steering changes; this
-# sprint only adds a second (aversive, opposite-sign) channel through that
-# same already-established mechanism, plus two more placed terms on DNp09.
-#
-# Per this sprint's own instruction ("prefer deriving from synapse counts
-# over adding a constant"): since there ARE no real synapse counts to
-# derive a magnitude from (checked, zero), the alternative taken is to
-# REUSE the existing, already-calibrated ODOUR_GAIN/GAP_GAIN scalars for
-# every new channel below rather than invent fresh ones. The aversive
-# channel reuses ODOUR_GAIN (opposite-sign routing, no hunger term --
-# fleeing isn't gated by hunger the way foraging is). The DNp09 brake
-# reuses the same odor_l_eff/odor_r_eff the steering WTA already computes
-# (so "rising odour inhibits DNp09" costs nothing new -- it's already in
-# HOME_BIAS-comparable units). The refusal rule's steering push reuses
-# GAP_GAIN (already "current per non-ground tile ahead"). The ONE genuinely
-# new number is REFUSAL_GAP_TILES=5 -- and that's a body-scaled mechanical
-# threshold (same non-neural category as CLIMB_STALL_FRAMES/
-# CLIMB_CLEAR_DISTANCE), not a circuit gain or spike threshold. Derived
-# from existing calibration, not guessed: SPEC_terrain.md's GAP_GAIN sweep
-# (007) was clean and monotonic through gap widths 0-4 tiles; 008/011 found
-# an 8-tile gap makes the long jump fire and fail anyway. 5 is the first
-# width past the validated-safe range, i.e. "refuse anything not already
-# shown to work." Small/big Mario aren't given separate reach values here
-# (no real calibration data differentiates them for the long jump the way
-# CLIMB_HOP_SMALL/BIG_FRAMES differentiates the climb hop) -- noted as a
-# scoping decision, not an oversight, same pattern as 007's own
-# "continuous hold-duration scaling... not done here."
-#
-# Budget was 8. This sprint adds ZERO new neural-circuit gains/thresholds
-# (it reuses ODOUR_GAIN and GAP_GAIN throughout) and ONE new mechanical
-# threshold (REFUSAL_GAP_TILES) -- stated both ways rather than picking
-# whichever makes the number look better: still 8 if only circuit-dynamics
-# scalars count (matching how JUMP_HOLD_FRAMES/CLIMB_*/HAB_* were never
-# added to that running total either), 9 if every hand-set number of any
-# kind is counted. Flagged here either way, per CLAUDE.md invariant 3.
-# REFACTOR_PLAN.md phase 4: sourced from config.params.TerrainParams
-# (docs/SCALARS.md), not redefined here.
+# ---- SPEC_odour.md sprint 016: aversive odour, DNp09 brake, refusal -------
+# The anatomy says no: this connectome has no innate olfactory path onto
+# DNa01/DNa02 (3 lateral-horn synapses out of 76,248 inputs; the 259
+# olfactory-adjacent ones are almost all MBON31/32, the learned pathway) and
+# none at all onto DNp09. So every odour channel is a placed external
+# current onto DNa01/DNa02/DNp09, the same category as HOME_BIAS/GAP_GAIN,
+# and each reuses an already-calibrated gain rather than a new one: the
+# aversive channel reuses ODOUR_GAIN (no hunger term), the DNp09 brake reuses
+# the steering WTA's own odour signal, and the refusal push reuses GAP_GAIN.
+# REFUSAL_GAP_TILES is the first gap width past the range the long jump was
+# validated on (0-4 tiles).
 REFUSAL_GAP_TILES = TerrainParams().refusal_gap_tiles
 
-# ADDR_MARIO_SIZE/ADDR_ENEMY_TYPE/POWERUP_ID now live in
-# mario/ram/addresses.py (imported above), phase 2 -- enemy_thetas() needed
-# some of them too, to fix the contamination bug SPEC_habituation.md's
-# investigation found.
-
-# 8-way action space (was: hold B unconditionally) -- {left,right} x
-# {A on/off} x {B on/off}. Index = direction_base + 2*press_a + press_b.
-# MOVES/action_index moved to mario/actions/actions.py, phase 2 (imported
-# above), make_env moved to mario/emulator/env.py, same phase.
+# 8-way action space: {left,right} x {A on/off} x {B on/off}
+# (mario/actions/actions.py).
 
 MAX_FRAMES = 1200
-# No default injection frame any more (sprint 011: opt-in only, see main()'s
-# `inject_frame` docstring) -- callers that want the odour demo pass their
-# own frame number explicitly, e.g. run_008()'s inject_frame=60.
-# REFACTOR_PLAN.md phase 4: sourced from config.params.DemoParams
-# (docs/SCALARS.md), not redefined here.
 MUSHROOM_OFFSET = DemoParams().mushroom_offset  # spawn BEHIND Mario so it competes with HOME_BIAS's rightward pull
 
 
@@ -347,14 +155,11 @@ def find_inactive_slot(ram):
 
 
 def inject_mushroom(ram, mario_x, mario_y, offset=None):
-    """SPEC section 2: a synthetic RAM injection for the demo, the same
-    move as tune.py driving the jump circuit with a synthetic theta(t)
-    ramp before ever touching the emulator. Not a ?-block mechanic, not
-    tile RAM -- a direct poke of the same enemy-slot arrays run_mario.py
-    already reads for Goombas. `offset` overrides MUSHROOM_OFFSET (still
-    the default, -40/behind, for the WTA-competition demo 006/008 use) --
-    sprint 016's "eats the mushroom" success criterion needs one actually
-    reachable, so its own runner passes a positive (ahead) offset instead."""
+    """SPEC_steering.md section 2: a synthetic odour source for the demo, poked
+    straight into the enemy-slot arrays. The game never populates its
+    collision state, so Mario cannot actually eat it. `offset` overrides
+    MUSHROOM_OFFSET (behind Mario, so it competes with HOME_BIAS); a
+    positive offset places it ahead."""
     off = MUSHROOM_OFFSET if offset is None else offset
     slot = find_inactive_slot(ram)
     if slot is None:
@@ -382,21 +187,12 @@ def wide_gap_target_col(ram, mario_x, lead_tiles=10) -> int:
 
 
 def poke_wide_gap(ram, target_col: int, width_tiles=REFUSAL_GAP_TILES + 2):
-    """SPEC_odour.md sprint 016, item 4's success criterion: 1-1's own real
-    pits (007/011: confirmed 2-tile) never exceed REFUSAL_GAP_TILES, so
-    there is no REAL wide pit on this level to demonstrate refusal against.
-    Same category of controlled test stimulus as inject_mushroom -- not a
-    tile-RAM mechanic, a direct poke of the collision-tile buffer
-    tile_ram.py already decodes, `width_tiles` chosen comfortably above
-    REFUSAL_GAP_TILES so refusal is unambiguous. MUST be called every frame
-    at the SAME `target_col` (from `wide_gap_target_col`, called once) --
-    empirically confirmed (see the sprint's own connectome-check writeup)
-    that a one-shot poke of a not-yet-drawn column can get silently
-    reclaimed by the game's own level-streaming routine before Mario
-    arrives (007's "doesn't force a redraw" finding was about ALREADY-drawn
-    columns; a not-yet-loaded one has a second, different way to get
-    overwritten). Re-asserting it every frame makes the synthetic gap
-    unconditionally persistent regardless of engine timing."""
+    """A synthetic wide pit for the refusal demo: 1-1's real pits are only
+    2 tiles, well under REFUSAL_GAP_TILES. Pokes the collision-tile buffer
+    that tile_ram.py decodes. Must be called every frame at the same
+    `target_col` (from `wide_gap_target_col`, called once): the game's
+    level streaming can overwrite a not-yet-drawn column before Mario
+    arrives."""
     for k in range(width_tiles):
         col = target_col + k
         buf_addr = tile_ram.BUF1_ADDR if (col // 16) % 2 == 0 else tile_ram.BUF2_ADDR
@@ -409,125 +205,43 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
          mushroom_offset=None, inject_gap_frame=None, write_telemetry=True,
          retinotopic=False, sigma=0.0, seed=None, telemetry_path=None,
          event_proximal_dopamine=False):
-    """REFACTOR_PLAN.md phase 5: `out_mp4` has no default any more. It used
-    to be `"runs/008_run.mp4"` -- a silent, stray, top-level fallback that
-    every actual caller already overrode (checked: none of run_008/016/023/
-    024, nor tests/golden/, ever relied on it). "Make a run without a named
-    project fail loudly" means exactly that: pass an explicit `out_mp4`
-    (as every real caller already does), or build one from a ProjectConfig
-    via `sim/output_routing.py`'s `resolve_run_path`/`resolve_telemetry_path`
-    and `sim/project_runner.py`'s `run_from_config`.
+    """Run one episode of the full system and return (telemetry, info).
 
-    `telemetry_path`, if given, overrides the telemetry CSV's location
-    instead of deriving it from `out_mp4`'s own stem (the pre-phase-5
-    behaviour, unchanged when this is left `None`) -- `sim/output_routing.py`
-    uses this to put telemetry in `projects/<name>/telemetry/`, separate
-    from `projects/<name>/runs/`.
-
-    `mb_weights`, if given, is the KC->MBON weight sub-matrix (SPEC_
-    mushroom_body.md) carried over from a previous call -- the ONE piece
-    of state that must persist across training episodes. `None` (default)
-    starts from the real, unmodified connectome weights. The (possibly
-    now-depressed) matrix is returned in the info dict as `mb_weights` so
-    a training loop can pass it straight into the next call."""
-    """SPEC_throughput.md: `frame_skip` makes a decision once every
-    `frame_skip` real NES frames instead of every frame (the standard RL
-    action-repeat pattern -- the emulator still runs at 60Hz, only the
-    circuit's decision cadence drops), repeating the same button state for
-    the frames in between. No circuit internals change -- SUBSTEPS, alpha,
-    thresholds are all untouched, since those ARE the neural model. What
-    does change: the MECHANICAL hold-duration constants (JUMP_HOLD_FRAMES
-    and its siblings -- already documented, since sprint 006, as "output-
-    interface, not part of the neural model") are counted in DECISION TICKS
-    here, not real frames, so they're divided by frame_skip (rounded, floor
-    1) to keep real-world hold durations approximately unchanged. Verify
-    this actually holds before trusting it -- that's an empirical claim,
-    not a proof, which is exactly why SPEC_throughput.md's sprint checked
-    it on 1-1 before keeping frame_skip>1 anywhere.
-
-    `savestate`, if given (from `make_savestate()`), restores the emulator
-    to that exact backed-up state on reset instead of the ROM's power-on
-    state -- nes-py's own native `_backup`/`_restore` (a single slot),
-    not something built here. Every episode then starts from an identical
-    point with no warm-up to replay.
-
-    `inject_frame`: EXPLICIT OPT-IN ONLY. `None` (the default) means no
-    synthetic mushroom is ever placed in RAM -- sprint 011 found the
-    injected mushroom was a static, permanent, unresolvable RAM object that
-    `enemy_thetas()` (before its own fix, run_mario.py) was reading as a
-    threat, contaminating three sprints (006/008/009) of "real" runs with
-    fake escape-jump activity. `enemy_thetas()` itself is fixed now, but the
-    injection stays opt-in regardless -- a clean baseline should never carry
-    it by accident, and nothing in the normal run path should require it.
-    Pass an explicit frame number only for a deliberate, clearly-labeled
-    odour demonstration (as 008's `run_008()` still does, on purpose).
-
-    `force_mario_size`, if given, pokes RAM 0x0756 (small=0, big=1) from
-    `force_size_from_frame` onward -- used only by hunger-flip checks that
-    need a SATED Mario at the moment of the test. Forcing it from frame 0
-    is a confound, not a control: it changes Mario's hitbox against every
-    earlier Goomba too, which affects whether he survives to the test at
-    all for reasons that have nothing to do with odour (found this the
-    hard way -- a force-small run died at frame 108, well before any
-    injection, while force-big survived past it). Forcing only from just
-    before the test isolates the actual variable of interest. Since
-    injection is no longer the default, `force_size_from_frame` must be
-    given explicitly if `force_mario_size` is used without `inject_frame`.
-    `record_video=False` skips per-frame PNG capture and the brain_panel
-    render entirely, for a fast telemetry-only check.
-
-    `mushroom_offset`, sprint 016: overrides MUSHROOM_OFFSET for
-    `inject_mushroom` -- pass a positive value to place it ahead of Mario
-    (reachable, for the "eats it" demo) instead of the original behind-Mario
-    competition test. `inject_gap_frame`, sprint 016, same opt-in-only
-    convention as `inject_frame`: `None` means no synthetic wide gap is ever
-    poked into the tile buffer; an explicit frame number picks a fixed
-    target column (`wide_gap_target_col`, `lead_tiles` ahead of wherever
-    Mario is at that frame) and re-pokes it every frame from then on
-    (`poke_wide_gap`) to demonstrate the refusal rule, since 1-1 has no
-    real pit wide enough to need it.
-
-    `retinotopic`, sprints 023-024, CLOSED: True drives LC4/LPLC2
-    per-cell, weighted by each real cell's own receptive-field alignment
-    to the approaching enemy's actual position (`retinotopy.py`). False
-    (default) reproduces the exact pre-023 behaviour -- the same theta/
-    dtheta scalar broadcast identically to every cell in a hemisphere.
-    Default is False, permanently: 023 found the per-cell weighting
-    starves DNp01/TTMn of drive at the moment escape needs it most
-    because its foveal origin sat at the sparsest edge of each real RF
-    distribution; 024 fixed exactly that (origin moved to the real
-    measured density mode, a real 4.4x weight improvement, confirmed) and
-    still got 0 commitments and the SAME frame-170 death as 023 -- the
-    recurrent circuit needs something close to the old uniform population
-    engagement to reach threshold, which no single-target Gaussian tuning
-    curve supplies regardless of where its centre sits. Two pre-
-    registered attempts, both failed on the same criteria; per 024's own
-    hard-stop (docs/RUNS.md 024), this is closed. Kept in code (not
-    deleted) as a real, working, negative-result artifact -- not a
-    starting point for a third mapping convention.
-
-    `sigma`, sprint 025: standard deviation of `eta ~ N(0, sigma)`, added
-    to every neuron's drive, every substep, in every circuit
-    (`dynamics.NoiseConfig`) -- W, I, and every reward/threshold are
-    untouched. 0.0 (default) draws no random numbers and is bit-identical
-    to every pre-025 run. `seed`, sprint 025: seeds the one
-    `np.random.Generator` this episode's noise is drawn from (`None`
-    draws a fresh OS-entropy seed and PRINTS it -- seed discipline is
-    non-negotiable here, since noise is the only thing that can make this
-    otherwise-deterministic emulator+circuit stack non-reproducible;
-    replaying the same seed at the same sigma must reproduce the episode
-    exactly). Returned in `info["seed"]`/`info["sigma"]` either way, so a
-    caller that didn't choose a seed can still recover and log the one
-    that was actually used.
-
-    `event_proximal_dopamine`, REFACTOR_PLAN.md phase 6: False (default)
-    keeps the pre-phase-6 mushroom-body reward trigger (continuous, any
-    forward pixel of progress every frame) -- goldens are frozen against
-    this and stay reproducible with it off. True switches PAM dopamine to
-    fire only on the two real discrete appetitive events (a `?` block hit
-    or a stomp), per docs/TRACE_BIOLOGY.md's design consequence. See
-    bridge.full_policy.FullPolicy.__init__'s own docstring for the full
-    reasoning."""
+    out_mp4: required. Build it from a ProjectConfig with
+        config.output_routing.resolve_run_path, or use
+        sim.project_runner.run_from_config.
+    telemetry_path: overrides the CSV location, which otherwise sits next
+        to out_mp4 as `<stem>_telemetry.csv`.
+    record_video: False skips frame capture and the brain panel, for a
+        fast telemetry-only run.
+    mb_weights: the KC->MBON matrix from a previous episode, the one piece
+        of state that persists across training. None starts from the
+        connectome's weights. The updated matrix is returned in
+        info["mb_weights"].
+    frame_skip: decide once every `frame_skip` frames and repeat the
+        buttons in between (SPEC_throughput.md). Circuit dynamics are
+        unchanged; the mechanical hold durations are divided by frame_skip.
+    savestate: dict with an optional "env" (reused and left open) and
+        "warmup_frames" (run once, then backed up with nes-py's _backup);
+        every reset then restores that state instead of power-on.
+    inject_frame: opt-in only. Places a synthetic mushroom odour source at
+        this frame; None never does, so a clean baseline can't carry it.
+    mushroom_offset: overrides MUSHROOM_OFFSET for that injection.
+    inject_gap_frame: opt-in only. From this frame, holds a synthetic wide
+        pit at a fixed column ahead of Mario, to exercise the refusal rule.
+    force_mario_size: pokes Mario's size (small=0, big=1) from
+        force_size_from_frame onward. Forcing it from frame 0 would change
+        his hitbox against every earlier Goomba too, so the start frame
+        must be explicit when inject_frame is None.
+    retinotopic: per-cell LC4/LPLC2 drive from receptive fields
+        (fly/sensing/retinotopy.py). Closed negative result (docs/RUNS.md
+        023-024); keep False.
+    sigma, seed: membrane noise eta ~ N(0, sigma) on every neuron. sigma=0
+        draws nothing and is bit-identical to no noise. seed=None draws an
+        OS-entropy seed and prints it; both are returned in info.
+    event_proximal_dopamine: False (the goldens' setting) rewards any
+        forward progress; True fires PAM dopamine only on a `?`-block hit
+        or a stomp (docs/TRACE_BIOLOGY.md)."""
     if out_mp4 is None:
         raise ValueError(
             "main() needs an explicit out_mp4 -- there is no default any "
@@ -539,8 +253,6 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
         )
     if seed is None:
         seed = int(np.random.SeedSequence().entropy % (2**32))
-    rng = np.random.default_rng(seed)
-    noise = dynamics.NoiseConfig(sigma, rng)
     if sigma > 0.0:
         print(f"sprint 025: seed={seed} sigma={sigma}")
     if force_mario_size is not None and force_size_from_frame is None:
@@ -550,16 +262,8 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
             "to silently default to.")
         force_size_from_frame = inject_frame
 
-    # REFACTOR_PLAN.md phase 5b: circuit setup and all per-episode decision
-    # state now live in bridge.full_policy.FullPolicy -- the same code,
-    # moved (see that module's own docstring: a verbatim transcription,
-    # not a redesign). This block only constructs it and unpacks its
-    # public attributes back into the same local names the frame loop
-    # below already uses, so the loop's own text is untouched by this
-    # commit -- a golden mismatch here can only mean FullPolicy's
-    # constructed/reset state itself diverged from main()'s own setup,
-    # not a loop-logic bug (the loop body is migrated onto `policy.act()`
-    # directly in the next commit).
+    # FullPolicy owns the circuits and all per-episode decision state; main()
+    # only drives the emulator, the test-harness injections and telemetry.
     from bridge.full_policy import FullPolicy
     import dataclasses as _dataclasses
     from config.project_config import ProjectConfig as _ProjectConfig
@@ -570,47 +274,16 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
                          event_proximal_dopamine=event_proximal_dopamine)
     policy.reset(seed)
 
-    Kj, j_msk = policy.Kj, policy.j_msk
-    jump_dnp01_mask, jump_network = policy.jump_dnp01_mask, policy.jump_network
-    if retinotopic:
-        j_rf, j_azimuth_ref, rt = policy.j_rf, policy.j_azimuth_ref, policy._rt
-    Ks, r_mask, l_mask = policy.Ks, policy.r_mask, policy.l_mask
+    # Live sub-objects and masks the telemetry row reads.
+    j_msk, jump_network = policy.j_msk, policy.jump_network
+    r_mask, l_mask = policy.r_mask, policy.l_mask
     dna01_all, dna02_all = policy.dna01_all, policy.dna02_all
     dna01_l_mask, dna01_r_mask = policy.dna01_l_mask, policy.dna01_r_mask
     dna02_l_mask, dna02_r_mask = policy.dna02_l_mask, policy.dna02_r_mask
-    steering_network = policy.steering_network
-    h_steer = steering_network.h
-    orn_adapt, orn_adapt_avers = policy.orn_adapt, policy.orn_adapt_avers
-
-    Kt = policy.Kt
-    takeoff_dnp01_mask, dlmn_mask = policy.takeoff_dnp01_mask, policy.dlmn_mask
-    takeoff_network = policy.takeoff_network
-    h_takeoff = takeoff_network.h
-
-    Kp, dnp09_mask = policy.Kp, policy.dnp09_mask
-    speed_network = policy.speed_network
-
-    Km, mdn_mask = policy.Km, policy.mdn_mask
-    mdn_network = policy.mdn_network
-    h_mdn = mdn_network.h  # read in the `else` branch below on frames MDN isn't stepped
+    orn_adapt = policy.orn_adapt
     hab_escape, hab_climb = policy.hab_escape, policy.hab_climb
-    mdn_backup_hold = policy.mdn_backup_hold
-
-    Kdp = policy.Kdp
-    dnp02_lc4_r, dnp02_lc4_l = policy.dnp02_lc4_r, policy.dnp02_lc4_l
-    dnp02_l_mask, dnp02_r_mask = policy.dnp02_l_mask, policy.dnp02_r_mask
-    dnp02_idx = policy.dnp02_idx
-    dnp02_ttmn_l, dnp02_ttmn_r = policy.dnp02_ttmn_l, policy.dnp02_ttmn_r
     dnp02_network = policy.dnp02_network
-
-    n_kc, n_mbon = policy.n_kc, policy.n_mbon
     W_kc_mbon = policy.W_kc_mbon
-    mb_pam_reach, mb_punish_reach = policy.mb_pam_reach, policy.mb_punish_reach
-    mb_proj = policy.mb_proj
-    mb_elig, mb_prev_dnp09 = policy.mb_elig, policy.mb_prev_dnp09
-    mb_bias_dnp02, h_mbon = policy.mb_bias_dnp02, policy.h_mbon
-    prev_mario_x_abs, max_x_abs = policy.prev_mario_x_abs, policy.max_x_abs
-    MBON_DNA02_FRAC = policy.MBON_DNA02_FRAC
 
     owns_env = savestate is None or "env" not in savestate
     if owns_env:
@@ -628,23 +301,12 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
         env.unwrapped._backup()
         obs = env.reset()  # land on the just-made backup, not the tail of warmup
 
-    # REFACTOR_PLAN.md phase 5b: every other piece of per-episode decision
-    # state (prev_theta, d_history, dnp02_ema, jump_hold/climb_hold,
-    # last_reset_x, stall_count, direction, prev_qblock_cols,
-    # prev_mario_size, every n_* counter) now lives on `policy`, set by
-    # `policy.reset(seed)` above -- only the two remaining test-harness
-    # flags below (not part of the decision system) are still main()'s own.
     injected = False
-    gap_target_col = None       # sprint 016: fixed once, on inject_gap_frame
+    gap_target_col = None       # fixed once, on inject_gap_frame
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
-        # REFACTOR_PLAN.md phase 5, section 5.2: "Telemetry becomes an
-        # observer the episode notifies, so adding a recorded field never
-        # edits the loop." Column order fixed here, once, exactly as the
-        # old `log = {k: [] for k in (...)}` dict comprehension fixed it --
-        # sim.telemetry.TelemetryObserver doesn't know what any of these
-        # mean, it just preserves this order in the CSV it writes.
+        # Column order is the CSV's column order; the goldens depend on it.
         observer = TelemetryObserver((
             "frame", "mario_x", "theta", "dtheta", "d_px", "frames_to_contact",
             "lc4", "lplc2", "mem", "spike",
@@ -665,11 +327,8 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
         done = False
         while frame < max_frames and not done:
             # ---- frame skip: repeat the last decision, no new circuit work -
-            # Standard RL action-repeat. `action` always exists here once
-            # frame>0, since frame 0 (0 % anything == 0) always takes the
-            # full decision path below at least once. A telemetry row is
-            # still appended (repeating the last decision's values, frame/
-            # mario_x updated) so recorded video stays 1:1 with brain_panel.
+            # Frame 0 always decides, so `action` exists here. The repeated
+            # telemetry row keeps the video 1:1 with the brain panel.
             if frame_skip > 1 and frame % frame_skip != 0:
                 mario_x = int(ram[ADDR_MARIO_X])
                 row = dict(observer.last_row) if observer.last_row is not None else observer.new_row()
@@ -699,19 +358,7 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
                           f"abs_col={gap_target_col} (mario_x={mario_x})")
                 poke_wide_gap(ram, gap_target_col)
 
-            # ---- decision loop: bridge.full_policy.FullPolicy -------------
-            # REFACTOR_PLAN.md phase 5b: terrain sensing through the final
-            # action_index() call all now live in FullPolicy.act() -- the
-            # same code (see that module's own docstring: a verbatim
-            # transcription, not a redesign), moved so the mushroom body's
-            # KC/MBON plasticity update exists in exactly one place before
-            # phase 6's trace attaches to it. `policy` (constructed above)
-            # carries every persistent piece of state (jump_hold, hab_escape,
-            # W_kc_mbon, ...) that main()'s own locals used to hold directly;
-            # this block reads back only what the telemetry row below needs,
-            # via `policy.last_info` and the live sub-objects already
-            # aliased above (h_steer's own mask lookups, jump_network.mem,
-            # orn_adapt.a, ...).
+            # ---- decision: FullPolicy.act(); read back what telemetry needs -
             action = policy.act(SimpleNamespace(ram=ram))
             info_f = policy.last_info
             mario_x = info_f["mario_x"]
@@ -737,24 +384,14 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
             row["frame"] = frame
             row["mario_x"] = mario_x
             row["theta"] = max(theta["L"], theta["R"])
-            # sprint 023: dtheta on whichever side theta itself is dominant
-            # this frame -- same side-selection convention as "theta" above,
-            # not a new one -- needed to test corr(LC4_mean, dtheta) against
-            # corr(LC4_mean, theta), the sprint's own decisive signature.
+            # dtheta and d_px come from the same dominant side as theta.
             row["dtheta"] = dtheta["L"] if theta["L"] >= theta["R"] else dtheta["R"]
-            # sprint 023: raw signed d_px on the same dominant side, so
-            # commitment distance (003/011's "d_px ~= 0") is readable
-            # straight from telemetry instead of back-solved from theta.
             _dom_side = "L" if theta["L"] >= theta["R"] else "R"
             row["d_px"] = d_out[_dom_side] if d_out[_dom_side] is not None else np.nan
             row["lc4"] = hj[j_msk["LC4_all"]].mean()
             row["lplc2"] = hj[j_msk["LPLC2_all"]].mean()
-            # sprint 017 overlay audit: "lc4"/"lplc2" above blend both
-            # hemispheres into one number, same failure-mode class as the
-            # dna01/dna02 bug -- lower stakes here since TTMn (the actual
-            # jump decision) already reads max(L,R) internally, not this
-            # blended mean, but a one-sided Goomba's real drive still gets
-            # diluted by the quiet far side in what gets displayed/logged.
+            # "lc4"/"lplc2" blend both hemispheres and dilute a one-sided
+            # threat; the per-side columns show it undiluted.
             row["lc4_l"] = hj[j_msk["LC4_L"]].mean()
             row["lc4_r"] = hj[j_msk["LC4_R"]].mean()
             row["lplc2_l"] = hj[j_msk["LPLC2_L"]].mean()
@@ -808,23 +445,11 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
 
             obs, reward, done, info = env.step(action)
             frame += 1
-            # REFACTOR_PLAN.md phase 5b: the death-triggered punishment
-            # update (SPEC_mushroom_body.md section 3, dynamics.CLIP routed
-            # through real PPL+PPM->MBON weights, same depression-only rule
-            # as reward) now lives on FullPolicy.on_step(), the ONE place
-            # the mushroom body's plasticity runs -- this used to read
-            # main()'s own `mb_elig` local directly, which went stale the
-            # moment policy.act() started reassigning `self.mb_elig` every
-            # frame instead of mutating it in place; on_step() reads
-            # `self.mb_elig` fresh, so there's no staleness to have.
+            # Death-triggered punishment (SPEC_mushroom_body.md section 3).
             policy.on_step(frame, SimpleNamespace(done=done), action)
 
         if owns_env:
             env.close()  # a caller-supplied env (savestate reuse across episodes) stays open
-        # REFACTOR_PLAN.md phase 5b: every one of these counters is now
-        # incremented inside FullPolicy.act(), not main()'s own locals
-        # (which stayed frozen at their commit-2 initial 0/None once the
-        # per-frame decision loop moved onto `policy` -- read fresh here).
         n_escape_jumps, n_long_jumps = policy.n_escape_jumps, policy.n_long_jumps
         n_dnp01_fired, n_dnp02_fired = policy.n_dnp01_fired, policy.n_dnp02_fired
         n_climb_hops, n_climb_jumps = policy.n_climb_hops, policy.n_climb_jumps
@@ -842,21 +467,8 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
 
         tel = observer.to_dataframe()
         if write_telemetry:
-            # sprint 017: 006-012 always wrote one of these; 016 quietly
-            # didn't, and the diagnosis had to be done by OCR-ing the video
-            # instead of reading real numbers. Every column in `observer` --
-            # the full overlay, not a curated subset -- same
-            # `{stem}_telemetry.csv` naming `runs/006_steering_telemetry.csv`
-            # etc. already established. Independent of record_video: a fast,
-            # headless (record_video=False) run is exactly where this
-            # matters most for diagnosis.
-            #
-            # REFACTOR_PLAN.md phase 5: `telemetry_path`, if given, overrides
-            # the colocated-with-video default -- sim/output_routing.py uses
-            # this to route telemetry into projects/<name>/telemetry/,
-            # separate from projects/<name>/runs/. Every existing caller
-            # leaves telemetry_path unset and gets byte-identical behaviour
-            # to before this parameter existed.
+            # Written whether or not video is recorded: the CSV, not the
+            # video, is the durable record of a run.
             csv_path = (Path(telemetry_path) if telemetry_path is not None
                         else Path(out_mp4).with_name(Path(out_mp4).stem + "_telemetry.csv"))
             observer.write(csv_path)
@@ -885,13 +497,7 @@ LEVEL_RUNS = [
 
 
 def run_008():
-    """SPEC_odour.md section 3: does the long jump generalise? One hero
-    video per level, MAX_FRAMES raised to give 1-2/1-3 a real chance at
-    reaching a pit (1-1's pits sit well within 1200 frames; the others'
-    don't necessarily). inject_frame=60 for all three -- moved earlier than
-    the original MUSHROOM_INJECT_FRAME=220 after finding 220 sometimes lands
-    after an already-fatal encounter near 1-1's first ?-block wobble (see
-    the writeup) -- 60 is safely before that on every level tried."""
+    """Reproduce run 008: does the long jump generalise across 1-1/1-2/1-3."""
     from sim.pit_report import find_pit_events, summarize, print_table
 
     print("=" * 70)
@@ -911,42 +517,8 @@ def run_008():
 def run_016(out_mp4="runs/016_smell.mp4", max_frames=1500,
             mushroom_frame=None, mushroom_offset=50, gap_frame=600,
             record_video=True):
-    """SPEC_odour.md sprint 016 ("make it a smell problem"), level 1-1 only.
-    Success = four observable events in one run: avoids a Goomba (aversive
-    odour steers away before DNp01 ever needs to), hits a real `?` block,
-    eats the mushroom, refuses a wide pit.
-
-    Tried the mushroom as a synthetic injection first (the established
-    006-precedent test stimulus) and found something new: it doesn't
-    actually work for THIS purpose. Confirmed empirically (not assumed) --
-    walked Mario's real hitbox straight through/around an injected object
-    for 100+ frames and its Active flag never clears, while an identical
-    poke using a real enemy's own ID collides and kills Mario immediately.
-    inject_mushroom only ever needed to produce an ODOUR value before this
-    sprint (006/008/009 tested WTA competition and adaptation, never actual
-    pickup) -- most likely explanation: the real game's own spawn routine
-    caches per-object state (e.g. hitbox dimensions) that a raw RAM poke of
-    just Active/ID/X/Y never populates, so collision has nothing to check
-    against. Left `inject_mushroom`/`mushroom_offset` in place (still used
-    by 006/008's own competition tests, and still useful as a pure odour
-    source), but this sprint's own default run does NOT use it --
-    `mushroom_frame=None` -- because it turned out to be unnecessary: with
-    aversive odour + attractive odour + hunger all live, Mario organically
-    survives long enough to hit a REAL power-up `?` block from below (an
-    incidental climb-reflex/escape-jump arc, not a dedicated hit-blocks-
-    from-below mechanism -- this project still doesn't have one) and the
-    GAME's own spawn routine produces a real, properly-collidable mushroom
-    that the existing odour pathway then pulls him into. All the more
-    honest for being unscripted.
-
-    The wide pit stays synthetic (`poke_wide_gap`) for the reason stated in
-    the connectome-check comment block: 1-1's only real pits are 2 tiles,
-    comfortably inside the validated-safe range, so there is no real pit
-    on this level that SHOULD be refused. `gap_frame=600` is chosen
-    empirically, from a first no-injection run of this exact configuration,
-    to land after the real `?`-block hits/mushroom (frames 226/356/400 in
-    that run) so it doesn't disturb them, and before the Goomba encounter
-    that eventually ends the run."""
+    """Reproduce run 016: avoid a Goomba, hit a `?` block, eat the mushroom,
+    refuse a (synthetic) wide pit, all in one 1-1 run."""
     tel, info = main(out_mp4=out_mp4, level="1-1", max_frames=max_frames,
                       record_video=record_video,
                       inject_frame=mushroom_frame, mushroom_offset=mushroom_offset,
@@ -988,24 +560,7 @@ def run_016(out_mp4="runs/016_smell.mp4", max_frames=1500,
 
 
 def run_023(max_frames=1500, gap_frame=600):
-    """sprint 023: the paired before/after that decides whether per-cell
-    retinotopy (retinotopy.py) moves commitment earlier. Same level (1-1),
-    same max_frames/gap_frame as 016/017's own default configuration --
-    NOT a fresh scenario, so any difference is attributable to the one
-    thing that changed (`retinotopic`), not to a different run of Mario's
-    own organic encounters. Both conditions run from the SAME code, same
-    frame, so this is a true paired comparison, not "compare against 017's
-    old CSV" (017 predates the `dtheta`/`d_px` telemetry columns this
-    measurement needs, and predates the DNp09-brake fix landing in the
-    same working tree -- rerunning `retinotopic=False` here controls for
-    both, isolating the one real variable).
-
-    `retinotopic=False` gets no video (identical visible behaviour to
-    017 by construction -- the whole point of this sprint is that only
-    the INPUT MAP to LC4/LPLC2 changes, not the WTA/threshold/output
-    machinery), `retinotopic=True` gets `runs/023_retinotopy.mp4` -- the
-    first video since 017 because this is the first sprint since then
-    that changes what Mario does."""
+    """Reproduce run 023: paired retinotopic=False/True comparison on 1-1."""
     from sim.commitment_report import report
 
     print("=" * 70)
@@ -1048,25 +603,8 @@ def run_023(max_frames=1500, gap_frame=600):
 
 
 def run_024(max_frames=1500, gap_frame=600):
-    """sprint 024, second and final retinotopy attempt. 023 failed because
-    d_px=0 mapped to hex1.min(), the sparsest edge of each population's
-    real RF-centre distribution -- the ONE thing this sprint changes is
-    that origin, now `retinotopy.density_mode()` (the real density peak),
-    computed inside `main()` itself when `retinotopic=True` (see
-    run_steering.py's own j_azimuth_ref block). Everything else identical
-    to 023: same level (1-1), same max_frames/gap_frame, same
-    TTMN_PRESS_THRESHOLD, same AZIMUTH_D_REF, same per-cell tuning
-    bandwidth (each cell's own measured hex1_spread). Same pre-registered
-    criteria as 023, decided before this function ran, not after seeing
-    results: (1) frames_to_contact at commitment vs 017's own 32-frame
-    baseline median -- earlier is the win; (2) whether corr(pop,dtheta)
-    exceeds corr(pop,theta) for LC4 AND LPLC2 (023 found the LC4-only
-    version of this check was confounded by LC4's own scalar drive
-    already being dtheta -- see sim/commitment_report.py); (3) survival and
-    commitment count vs the 807-frame / 10-commit baseline. Hard stop,
-    stated before running: if this fails, retinotopy is closed
-    permanently -- `retinotopic` stays default False and no third mapping
-    convention gets proposed."""
+    """Reproduce run 024: retinotopy with the fovea at the RF density mode,
+    against its three pre-registered criteria."""
     from sim.commitment_report import report
 
     print("=" * 70)
@@ -1097,7 +635,7 @@ def run_024(max_frames=1500, gap_frame=600):
               f"({'EARLIER than 017 baseline' if after['median_frames_to_contact'] > 32 else 'not earlier than 017 baseline (32)'})")
     else:
         print("(1) frames_to_contact: no commitments in one or both runs -- see (3)")
-    c_before = before["corr"]; c_after = after["corr"]
+    c_after = after["corr"]
     for pop in ("lc4", "lplc2"):
         exceeds = c_after[f"corr_{pop}_dtheta"] > c_after[f"corr_{pop}_theta"]
         print(f"(2) {pop.upper()}: corr(theta)={c_after[f'corr_{pop}_theta']:.4f}  "

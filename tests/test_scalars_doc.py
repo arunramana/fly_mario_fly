@@ -1,7 +1,7 @@
-"""REFACTOR_PLAN.md phase 4: docs/SCALARS.md must be exactly what
-config/scalars_doc.generate() produces -- if this fails, someone edited
-config/params.py without regenerating the doc (or vice versa). Same
-discipline as tests/golden/, applied to a document instead of a CSV."""
+"""
+docs/SCALARS.md must equal config/scalars_doc.generate(). If this fails,
+config/params.py changed without regenerating the doc.
+"""
 from __future__ import annotations
 
 from config.scalars_doc import SCALARS_MD_PATH, generate

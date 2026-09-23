@@ -4,22 +4,17 @@ record video. Must run under fly_mario/.venv (numpy<2, gym==0.23.1 pins;
 see requirements.txt / SPEC section 6).
 
 Population dynamics: SPEC section 3, over the expanded ~1255-neuron
-subgraph from section 1b. DNp01 spiking fallback (SPEC 1b sweep found no g
-gives a stable-and-sharp band -- see README): DNp01 is a leaky
-integrate-and-fire unit, everyone else is the plain ReLU rate model.
+subgraph from section 1b. No g gives the rate model a stable-and-sharp
+band on its own, so DNp01 is a leaky integrate-and-fire unit and everyone
+else is the plain ReLU rate model.
 
-Three hand-set scalars total, all logged below and in the README:
-  g                    -- global recurrent gain
-  dnp01_spike_threshold -- DNp01 membrane potential to fire (the fallback)
-  ttmn_press_threshold  -- TTMn activation to press A
+Its scalars (g, the DNp01 spike threshold, the TTMn press threshold and
+the hold durations) come from config.params.JumpParams.
 
     fly_mario/.venv/Scripts/python.exe run_mario.py
 """
 
 from __future__ import annotations
-
-import sys
-import time
 
 import setuptools  # noqa: F401  -- must import before gym on py3.12 (distutils shim)
 import numpy as np
@@ -29,21 +24,16 @@ from nes_py.wrappers import JoypadSpace
 
 from fly.network import dynamics
 from fly.connectome.load_cached import load
-from mario.ram.addresses import (
-    ADDR_MARIO_X, ADDR_MARIO_PAGE, ADDR_ENEMY_X, ADDR_ENEMY_ACTIVE,
-    ADDR_ENEMY_TYPE, N_ENEMY_SLOTS, POWERUP_ID,
-)
+from mario.ram.addresses import ADDR_MARIO_X
+# Re-exported: scripts/tune_climb_height.py imports these from here.
+from mario.ram.addresses import ADDR_ENEMY_X, ADDR_ENEMY_ACTIVE, N_ENEMY_SLOTS  # noqa: F401
 from bridge.perception import enemy_thetas
 from config.params import JumpParams
 
-# ---- hand-set scalars, REFACTOR_PLAN.md phase 4: sourced from
-# config.params.JumpParams (docs/SCALARS.md), not redefined here ---------
-# G was 3.5 -- passed the single-ramp diagnostics in tune.py but failed
-# Diagnostic 4 (diag4.py, SPEC section 3): under sustained bilateral input
-# the network never returned to baseline and pinned at the clip ceiling,
-# so the 9 jumps in the first recorded video were not caused by looming.
-# g=2.0 is the middle of the band [1.12, 3.35] that passes Diagnostic 4
-# (checked robust across 5 random trace seeds) -- see diag4.py.
+# ---- hand-set scalars (config.params.JumpParams, docs/SCALARS.md) -------
+# g sits mid-band of the range that passes Diagnostic 4 (scripts/diag4.py):
+# a higher g pins the network at the clip ceiling under sustained input,
+# so its jumps stop being caused by looming.
 _jump_params = JumpParams()
 G = _jump_params.g
 DNP01_SPIKE_THRESHOLD = _jump_params.dnp01_spike_threshold
@@ -56,12 +46,6 @@ JUMP_COOLDOWN_FRAMES = _jump_params.jump_cooldown_frames
 
 W_TILE = 16.0
 MAX_FRAMES = 300
-
-# RAM addresses (ADDR_MARIO_X/PAGE/ENEMY_X/ACTIVE/TYPE, N_ENEMY_SLOTS,
-# POWERUP_ID) and enemy_thetas() itself moved to mario/ram/addresses.py and
-# bridge/perception.py in REFACTOR_PLAN.md phase 2 -- both imported above.
-# run_steering.py imports the same two names from here as it always did;
-# they now come from this module's own imports, not a fresh definition.
 
 MOVES = [["right", "B"], ["right", "A", "B"]]
 RUN, JUMP = 0, 1
@@ -127,8 +111,7 @@ def main(out_path="mario_jump.mp4"):
         "LC4_all": (bodies["type"] == "LC4").to_numpy(),
         "LPLC2_all": (bodies["type"] == "LPLC2").to_numpy(),
     }
-    dnp01_idx = np.where(msk_all["DNp01_L"] | msk_all["DNp01_R"])[0]  # [L, R] order? verify below
-    # keep explicit L/R order for HybridState indexing
+    # explicit L/R order for HybridState indexing
     dnp01_L_idx = np.where(msk_all["DNp01_L"])[0]
     dnp01_R_idx = np.where(msk_all["DNp01_R"])[0]
     dnp01_idx = np.concatenate([dnp01_L_idx, dnp01_R_idx])

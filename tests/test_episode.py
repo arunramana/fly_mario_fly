@@ -1,12 +1,7 @@
-"""REFACTOR_PLAN.md phase 5: proves sim.episode.Episode actually works
-end-to-end with a real Policy (bridge.policy.JumpPolicy) and a real
-Environment (mario.emulator.environment.MarioEnvironment) -- not a toy
-pair. Not claiming to reproduce any golden run: JumpPolicy is genuinely
-narrower than run_steering.main()'s full system (no steering, terrain,
-mushroom body, habituation, or MDN) -- see bridge/policy.py's own
-docstring for the scoping. This test is about the LOOP composing
-correctly (Policy/Environment/observers wired together, seeded reset,
-early stop on death), not about matching a specific trajectory.
+"""
+sim.episode.Episode end-to-end with a real Policy (bridge.policy.JumpPolicy)
+and a real MarioEnvironment. Tests the loop -- wiring, seeded reset, early
+stop on death -- not a golden trajectory: JumpPolicy is jump-only.
 """
 from __future__ import annotations
 

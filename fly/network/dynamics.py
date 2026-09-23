@@ -6,10 +6,8 @@ dynamics.py — the leaky integrator from SPEC_jump.md section 3.
 phi = ReLU, not tanh: these are firing-rate units, and a rate cannot go
 negative — inhibition already enters through the sign of w_ij, baked into W
 by circuit.py. An upper clip stops runaway when g pushes the recurrence past
-its stable point. `b` has never been implemented (stays 0, as it always has
-— the spec's own bias term, untouched by sprint 025). `eta ~ N(0, sigma)`
-is sprint 025's one addition, `NoiseConfig` below — every other term in
-this equation, and every circuit's W/I, is unchanged.
+its stable point. The bias `b` is not implemented (always 0). `eta ~ N(0,
+sigma)` is membrane noise, `NoiseConfig` below.
 """
 
 from __future__ import annotations
@@ -26,22 +24,14 @@ def phi(x: np.ndarray) -> np.ndarray:
 
 
 class NoiseConfig:
-    """sprint 025: membrane noise, eta ~ N(0, sigma), added to every
-    neuron's drive before phi(), in every circuit that calls `step` or
-    `HybridState.step` below -- "one stochastic term in the membrane
-    update... on every neuron," not a per-circuit or per-population knob.
-    `sigma` lives on this object rather than as a module constant (like
-    ALPHA/CLIP above) because per claude/fly-mario-tool-vision.md this is
-    meant to become a live GUI slider -- a slider needs an object with a
-    settable attribute to bind to, not a module-level name to reassign.
+    """Membrane noise eta ~ N(0, sigma), added to every neuron's drive
+    before phi() in every circuit: one stochastic term, not a per-circuit
+    knob. `sigma` is an attribute rather than a module constant so a GUI
+    slider can bind to it.
 
-    `rng` is a single np.random.Generator, seeded ONCE per episode
-    (run_steering.py's own `seed` parameter) and shared across every
-    circuit's every substep -- reusing one generator, not one per circuit,
-    is what makes a whole EPISODE reproducible from one seed rather than
-    only each circuit in isolation. sigma=0.0 draws no random numbers at
-    all (returns a bare 0.0, not an all-zero array) -- exact bit-identical
-    output to every pre-025 caller that never passes `noise=`."""
+    One `rng` per episode, shared by every circuit and substep, so a whole
+    episode is reproducible from one seed. sigma=0.0 draws nothing and
+    returns a bare 0.0, bit-identical to passing no noise at all."""
 
     def __init__(self, sigma: float, rng: np.random.Generator):
         self.sigma = sigma
@@ -82,16 +72,13 @@ def simulate(W: np.ndarray, g: float, I_trace: np.ndarray, h0: np.ndarray | None
 
 
 class HybridState:
-    """DNp01 spiking fallback (SPEC section 1b sweep found no g that makes the
-    POPULATION dynamics sharp -- linear leak/gain vs. balanced E/I damping,
-    never a bistable middle). Rather than fake sharpness with a saturating
-    phi we didn't verify, every OTHER neuron keeps the plain ReLU leaky rate
-    dynamics from section 3, verbatim. Only the two DNp01 bodies are swapped
-    for a leaky integrate-and-fire unit: accumulate, and once membrane
-    potential crosses `spike_threshold`, emit one frame of `spike_amp` and
-    reset to zero. This is a THIRD hand-set scalar beyond g and the TTMn
-    press threshold -- flagged here and in the README per CLAUDE.md invariant
-    3, forced by the section-3 negative result, not chosen for convenience.
+    """DNp01 spiking fallback. No g makes the population dynamics sharp
+    (SPEC_jump.md section 1b: linear leak/gain or balanced E/I damping,
+    never a bistable middle), so rather than fake sharpness with an
+    unverified saturating phi, only the two DNp01 bodies become leaky
+    integrate-and-fire units: once membrane potential crosses
+    `spike_threshold`, emit one step of `spike_amp` and reset. Every other
+    neuron keeps the plain ReLU rate dynamics.
     """
 
     def __init__(self, K: int, dnp01_idx: np.ndarray, spike_threshold: float,
@@ -110,12 +97,9 @@ class HybridState:
             drive = drive + noise.sample(len(self.h))
         h_new = (1.0 - alpha) * self.h + alpha * phi(drive)
 
-        # sprint 025: eta enters `drive` itself, upstream of this split --
-        # so DNp01's own membrane accumulator (mem) inherits the SAME noise
-        # sample every other neuron's phi(drive) got this substep, not a
-        # second independent draw. That's what lets noise actually move
-        # DNp01's spike timing (the whole point of this sprint), not just
-        # the ordinary rate-coded population's h.
+        # eta is already in `drive`, so DNp01's membrane sees the same noise
+        # sample as everyone else this substep -- that is what lets noise
+        # move its spike timing.
         dnp01_drive = np.maximum(drive[self.dnp01_idx], 0.0)
         self.mem = (1.0 - alpha) * self.mem + alpha * dnp01_drive
         spiking = self.mem >= self.spike_threshold
@@ -141,11 +125,8 @@ class AdaptiveHybridState(HybridState):
         a(t+1) = (1 - alpha_a) * a(t) + alpha_a * h(t)
         h(t+1) = (1 - alpha) * h(t) + alpha * phi(g*W@h(t) + I(t) - beta*a(t))
 
-    This is exploratory (SPEC section 3, "check whether a leak/adaptation
-    term is the missing piece") and adds TWO more hand-set scalars
-    (`alpha_a`, `beta`) on top of the three already flagged in the README --
-    only adopt it, and say so plainly, if it actually earns its place by
-    making Diagnostic 4 pass at a workable g.
+    Diagnostic only (scripts/adapt_sweep.py), not used by the live system.
+    Adopting it would add two hand-set scalars, `alpha_a` and `beta`.
     """
 
     def __init__(self, K: int, dnp01_idx: np.ndarray, spike_threshold: float,

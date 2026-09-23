@@ -5,11 +5,8 @@ existing make_env). Generic to any policy -- takes an integer action index
 MarioObservation carrying the raw RAM array plus whether the episode has
 ended. No fly/bridge dependency.
 
-Not yet used by run_steering.py's own main() -- that keeps driving nes-py
-directly, unchanged, for the full jump/steering/terrain/mushroom-body
-system (docs/RUNS.md's phase 5 note has the scoping reasoning). This class
-is real, tested infrastructure (tests/test_episode.py runs a real episode
-against it), not a decorative stub.
+run_steering.main() drives nes-py directly; this class is used by
+tests/test_episode.py.
 """
 
 from __future__ import annotations
@@ -33,11 +30,8 @@ class MarioEnvironment:
         self._env = None
 
     def reset(self, seed: int) -> MarioObservation:
-        """`seed` is accepted to satisfy the Environment protocol (and
-        gym's own reset(seed=...) convention) -- SMB itself has no
-        seedable RNG this project has ever found a use for (SPEC_jump.md
-        never plumbed one in); accepting and ignoring it here is honest
-        about that, not a placeholder for something unbuilt."""
+        """`seed` is ignored: the protocol requires it, but SMB has no
+        seedable RNG we use."""
         if self._env is None:
             self._env = make_env(self.level)
         self._env.reset()

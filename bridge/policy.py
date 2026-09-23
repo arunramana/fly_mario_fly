@@ -1,20 +1,10 @@
-"""bridge/policy.py -- REFACTOR_PLAN.md section 5.2: "bridge supplies the
-concrete fly-backed policy." `JumpPolicy` is a real, tested `sim.protocols.
-Policy` implementation wrapping the escape/jump circuit (`fly.network.
-Network` + `bridge.perception.enemy_thetas`) -- the one circuit phase 3
-already made self-contained via `Network`/`Integrator`. It reproduces the
-jump-only decision: hold right and B, press A once TTMn crosses its real
+"""bridge/policy.py -- `JumpPolicy`, a `sim.protocols.Policy` over the
+escape/jump circuit alone: hold right and B, press A once TTMn crosses its
 press threshold, hold the jump for `jump_hold_frames`.
 
-**Not the full run_steering.py system.** Steering, terrain, the mushroom
-body, habituation and MDN are not part of this Policy -- migrating the
-whole system onto the Policy/Environment interface is real, separate,
-substantial future work, not this phase's (docs/RUNS.md's phase 5 note has
-the scoping reasoning: run_steering.main() remains today's actual entry
-point for a full scenario like 017). `JumpPolicy` is genuinely narrower
-than what ships in main() today, proven honestly end-to-end via a real
-Episode + a real MarioEnvironment (tests/test_episode.py) -- not claimed
-to reproduce any golden run, since it doesn't drive the same decision.
+Jump only. The full system is bridge/full_policy.py. tests/test_episode.py
+runs this through a real Episode and MarioEnvironment; it reproduces no
+golden run.
 """
 
 from __future__ import annotations
@@ -51,10 +41,7 @@ class JumpPolicy:
         self.reset(seed=0)
 
     def reset(self, seed: int) -> None:
-        # The jump circuit has no seeded randomness of its own at sigma=0
-        # (dynamics.NoiseConfig, unused here) -- `seed` is accepted to
-        # satisfy the Policy protocol, matching Environment.reset's own
-        # convention, not because this policy draws from it.
+        # No noise here, so `seed` is unused; the Policy protocol requires it.
         integrator = Integrator(spike_idx=self._dnp01_idx,
                                  spike_threshold=self.params.dnp01_spike_threshold,
                                  spike_amp=self.params.spike_amp)

@@ -1,32 +1,14 @@
-"""species_survey.py -- REFACTOR_PLAN.md phase 4: what ADDR_ENEMY_TYPE
-byte values actually appear in 1-1 and 1-2? Checked empirically, not
-assumed from memory or a web table -- same standard mario/ram/tile_ram.py's
-own tile IDs were held to (cross-check against a captured screenshot).
+"""species_survey.py -- which ADDR_ENEMY_TYPE bytes appear in 1-1 and 1-2?
+The real circuit dies early (1-1 x=1432, 1-2 x=184, at sigma=0), so this
+bypasses it: hold right and mash jump on a random duty cycle. A species
+census; the bot's trajectory means nothing.
 
-The real circuit (run_steering.main()) dies too early to see much of
-either level -- deterministically, at sigma=0, every seed reaches exactly
-the same point (1-1: frame 689/x=1432; 1-2: frame 84/x=184). This script
-bypasses the circuit entirely: hold right, mash jump on a randomised duty
-cycle, so Mario physically clears most ground obstacles and reaches much
-further before dying. This is a species census, not a circuit-behaviour
-test -- the bot's own trajectory means nothing.
-
-Confirmed by this script, screenshot-verified, docs/ENTITIES.md's phase 4
-section has the full report:
+Screenshot-verified results (docs/ENTITIES.md):
   0x06 = Goomba  (1-1 frame ~60, 1-2 frame ~0)
-  0x00 = Koopa   (1-2 underground section, abs_x~709; corroborates
-                  sprint 010's own independent manual RAM-inspection ID)
-
-A third type byte, 0x0D, appeared further into 1-2 (abs_x~1400) but could
-NOT be visually confirmed within a screenshot before it scrolled off --
-correctly left classified as generic ENEMY rather than guessed. Same
-standard as tile_ram.py: a real, checked byte value without independent
-visual corroboration is reported as "found, not yet identified," not
-silently named from memory.
-
-1-1, surveyed to abs_x=1522 (beyond the real circuit's own x=1432 death
-point), is entirely Goombas. Not exhaustive -- a species this survey
-didn't reach may still exist further into either level.
+  0x00 = Koopa   (1-2 underground, abs_x~709)
+0x0D appeared in 1-2 (abs_x~1400) but scrolled off before it could be
+confirmed, so it stays generic ENEMY. 1-1 to abs_x=1522 is all Goombas.
+Not exhaustive.
 
     .venv/Scripts/python.exe -m scripts.species_survey
 """

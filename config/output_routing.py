@@ -1,13 +1,6 @@
-"""config/output_routing.py -- REFACTOR_PLAN.md phase 5: "Route all
-outputs through ProjectConfig into projects/<name>/runs/ and
-projects/<name>/telemetry/, and make a run without a named project fail
-loudly rather than silently writing to a stray top-level folder."
-
-`run_steering.main()`'s own `out_mp4` default was exactly that stray
-top-level folder (`"runs/008_run.mp4"`) until this phase -- `out_mp4` now
-has no default at all (a bare `main()` call raises). This module is the
-one place that turns a `ProjectConfig` into the two paths a run actually
-needs; `sim/project_runner.py` is the one place that calls it.
+"""config/output_routing.py -- turns a ProjectConfig into a run's output
+paths, projects/<name>/runs/ and projects/<name>/telemetry/. A config with
+no project name fails loudly instead of writing to a stray folder.
 """
 
 from __future__ import annotations

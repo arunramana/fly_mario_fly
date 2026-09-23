@@ -3,13 +3,10 @@ mushroom_body_circuit.py -- KC + MBON + PAM/PPL/PPM dopaminergic core.
 See SPEC_mushroom_body.md. Core = the three real populations themselves
 (no presynaptic-threshold expansion -- unlike every other circuit here,
 this one's whole point is the connectivity AMONG these three groups, not
-what drives them from outside). Same build_signs/build_weight_matrix
-pipeline as everywhere else in this project.
+what drives them from outside).
 
-Real counts, asserted at load time (SPEC section 0 -- these do NOT match
-the "4,554 KC -> 104 MBON" figure repeated in docs/RUNS.md's earlier
-"Still open" notes; that figure was never checked against this connectome
-file, this one is):
+Real counts, asserted at load time (SPEC section 0; the "4,554 KC -> 104
+MBON" figure elsewhere was never checked against this file):
     KC   (class == 'Kenyon_Cell'): 4064
     MBON (class == 'MBON'):          97
     DAN  (type matches ^PAM|^PPL|^PPM): 354, 32 distinct types

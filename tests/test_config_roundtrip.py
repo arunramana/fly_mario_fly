@@ -1,18 +1,10 @@
-"""REFACTOR_PLAN.md phase 5: "Prove the config round-trip: load
-projects/legacy/config.json, run the 017 scenario from it alone, and
-assert byte-identical telemetry. That is the first moment a project is
-reproducible from one file."
+"""
+Run the 017 scenario from projects/legacy/config.json alone and assert
+byte-identical telemetry: a project reproducible from one file.
 
-Deliberately writes to the REAL projects/legacy/telemetry/ (resolved via
-config.output.project_name="legacy", not a pytest tmp_path) -- the whole
-point is proving output routing lands in the right place, not just that
-main() itself is byte-identical (tests/test_golden.py already covers
-that). Re-running this test overwrites the same bytes each time (the
-scenario is byte-identical by construction), which is idempotent, not the
-"lost a video to a blanket delete" hazard CLAUDE.md warns about (different
-content silently replacing different content) -- distinctly named
-(`017_reprise_config_roundtrip`) so it's never confused with an actual
-sprint run.
+Writes to the real projects/legacy/telemetry/ on purpose, to prove output
+routing, under the distinct name `017_reprise_config_roundtrip`. Re-running
+rewrites identical bytes.
 """
 from __future__ import annotations
 

@@ -1,35 +1,15 @@
-"""bridge/perception.py -- REFACTOR_PLAN.md section 2: the first of bridge/'s
-two questions, "what does this entity smell and look like to the fly?"
-This is the only module that reads mario/'s RAM AND produces fly-relevant
-stimuli (theta/dtheta, odour concentrations) -- fly/ itself never sees a
-RAM array or an enemy slot, only the numbers this module hands it.
+"""bridge/perception.py -- what each entity looks and smells like to the
+fly. The only module that reads mario/'s RAM and produces fly stimuli
+(theta/dtheta, odour concentrations); fly/ never sees RAM.
 
-`enemy_thetas`, `mushroom_odor` and `goomba_odor` are moved here (from
-run_mario.py and run_steering.py respectively) and rewritten to classify
-each enemy slot through mario.entities.registry.DEFAULT.enemy_records()
-instead of each reimplementing `ram[ADDR_ENEMY_TYPE+i] == POWERUP_ID`
-independently -- see docs/ENTITIES.md and docs/REFACTOR_PLAN.md's phase 2
-report for that duplication. The arithmetic is unchanged: same distance,
-same 1/px concentration, same theta formula: EntityRecord.width is
-ENTITY_WIDTH_PX (16), the exact value W_TILE already was at every one of
-these call sites.
+Enemy slots are classified through mario.entities.registry, so each
+function doesn't re-check POWERUP_ID itself. `question_block_odor` scans
+tiles instead, a different data source (docs/ENTITIES.md).
 
-`question_block_odor` reads tile_ram directly rather than going through an
-EntityRecord -- a genuinely different data source (a tile scan, not an
-enemy slot), and unifying it is a deliberate phase-2 scoping decision left
-for later, not an oversight (docs/ENTITIES.md says so explicitly).
-
-Odour as a labelled channel, per REFACTOR_PLAN.md section 4 ("Odour must be
-a list of labelled channels, not a scalar"): bridge/profiles/default.json
-documents each EntityKind's channel(s) -- POWERUP and QUESTION_BLOCK both
-emit the hunger-gated "food" channel, ENEMY emits the un-gated "threat"
-channel -- matching exactly what mushroom_odor/question_block_odor (food)
-and goomba_odor (threat) already computed. The profile is documentation
-this phase, read by tests and docs/ENTITIES.md, not yet the live source of
-the gain numbers themselves -- ODOUR_GAIN/HUNGER_MULT_* stay hand-set
-scalars in run_steering.py (CLAUDE.md invariant 3); making the profile the
-actual runtime source of those numbers is per-component config extraction,
-REFACTOR_PLAN.md phase 4, not this one.
+bridge/profiles/default.json labels the odour channels: POWERUP and
+QUESTION_BLOCK emit the hunger-gated "food" channel, ENEMY the un-gated
+"threat" channel. The profile is documentation; the gains come from
+config.params.OdourParams.
 """
 
 from __future__ import annotations
@@ -42,8 +22,6 @@ from mario.ram import tile_ram
 from mario.ram.addresses import ADDR_MARIO_SIZE
 from config.params import OdourParams
 
-# REFACTOR_PLAN.md phase 4: sourced from config.params.OdourParams
-# (docs/SCALARS.md), not redefined here.
 _odour_params = OdourParams()
 HUNGER_MULT_HUNGRY = _odour_params.hunger_mult_hungry  # RAM 0x0756==0 (small Mario)
 HUNGER_MULT_SATED = _odour_params.hunger_mult_sated    # RAM 0x0756>=1 (big/fiery) -- unboosted, not zeroed
@@ -96,14 +74,9 @@ def question_block_odor(ram):
     question_blocks_near returns signed TILE-COLUMN offsets relative to
     Mario, not pixels -- convert (*16) before applying the same
     concentration formula and gain as the mushroom, so one gain constant
-    covers both. Limitation, stated here per spec, not discovered later:
-    this is a horizontal-only signal -- it can pull Mario to stand under a
-    block, nothing more. Actually hitting it from below is the existing
-    contact-based climb reflex's job, and that reflex's tile_ram.solid_ahead
-    check explicitly excludes question tiles from counting as a climb
-    target (they float overhead, not underfoot) -- so whether stage two
-    ever actually fires is an open question this sprint answers empirically,
-    not by assumption. See the writeup for what was actually observed."""
+    covers both. Horizontal-only: it can pull Mario under a block, nothing
+    more. Hitting it is left to the climb reflex, whose solid_ahead check
+    excludes question tiles (they float overhead)."""
     odor = {"L": 0.0, "R": 0.0}
     for offset_tiles in tile_ram.question_blocks_near(ram):
         d = offset_tiles * 16
@@ -114,16 +87,11 @@ def question_block_odor(ram):
 
 
 def goomba_odor(ram, mario_x, registry=DEFAULT_REGISTRY):
-    """docs/MECHANISMS.md section 1 / SPEC_odour.md sprint 016: every real
-    (non-powerup) active enemy slot is an AVERSIVE odour source, same
-    concentration ~ 1/distance formula as mushroom_odor/question_block_odor
-    -- reuses enemy_thetas' own exclusion of powerup slots so a powerup
-    never doubles as a threat. Returned by THE SIDE THE THREAT IS ON (R if
-    d>=0, matching enemy_thetas' own convention) -- opposite-sign ROUTING
-    into DNa01/DNa02 happens at the call site, not here, exactly mirroring
-    how mushroom/qblock keep raw concentration separate from gain/routing.
-    No gain, no hunger term applied here (this sprint's ODOUR_GAIN is reused
-    at the call site; fleeing isn't hunger-gated the way foraging is)."""
+    """docs/MECHANISMS.md section 1: every active non-powerup enemy is an
+    AVERSIVE odour source, concentration ~ 1/distance. Returned by the side
+    the threat is on (R if d>=0); the opposite-side routing into DNa01/DNa02
+    and the gain are applied at the call site. No hunger term: fleeing is
+    not hunger-gated the way foraging is."""
     odor = {"L": 0.0, "R": 0.0}
     for rec in registry.enemy_records(ram):
         if not rec.active or rec.kind == EntityKind.POWERUP:

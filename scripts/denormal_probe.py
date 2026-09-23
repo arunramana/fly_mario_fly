@@ -1,23 +1,11 @@
-"""denormal_probe.py -- REFACTOR_PLAN.md phase 4: read-only measurement,
-no fix applied anywhere. Phase 3 found the jump circuit's state has never
-been denormal-flushed, unlike the other five circuits. CLAUDE.md's own
-"Use the GPU" section attributes an 84x speedup to `h[h < 1e-30] = 0.0`,
-measured "on affected runs" and specifically the shuffle sweep (21 minutes
-vs 45 seconds). This script checks that claim against the actual jump
-circuit's own real weight matrix, rather than trusting either the 84x
-number or the assumption that adding the flush is free.
+"""denormal_probe.py -- read-only: what does `h[h < 1e-30] = 0.0` buy on the
+jump circuit, the one circuit that never flushes? Measures it on the real
+weight matrix; applies no fix.
 
-Findings this run produced (see docs/RUNS.md's phase 4 note for the full
-report): the 1e-30 threshold is ~4.5e277x larger than float64's actual
-denormal boundary (2.225e-308) -- "denormal flush" is a slight misnomer for
-what it does, though genuine IEEE-754 denormals (down to the smallest
-representable subnormal, 5e-324) DO occur in this circuit under realistic
-conditions. The measured speedup on jump's own real circuit is real but
-far short of 84x: ~3.2x under a realistic bursty trace, ~4.7x under a
-worst-case sustained-silence decay. `shuffle_sweep.py` in the current repo
-applies no flush at all, so the original 84x measurement's supporting code
-either no longer exists in this form or was run from an uncommitted shell
-session -- docs/RUNS.md has no entry describing it.
+Result (docs/RUNS.md, refactor phase 4): ~3.2x under a realistic bursty
+trace, ~4.7x under sustained silence -- not the 84x once claimed. Genuine
+float64 subnormals do occur. The 1e-30 threshold is far above float64's
+denormal boundary (2.2e-308), so it flushes more than denormals.
 
     .venv/Scripts/python.exe -m scripts.denormal_probe
 """

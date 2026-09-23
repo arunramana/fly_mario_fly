@@ -2,12 +2,9 @@
 steering_circuit.py — body-level steering circuit: DNa01/DNa02 core plus
 every presynaptic partner with >=60 synapses onto DNa01 UNION DNa02.
 
-Same extraction/signs/weight-matrix pipeline as circuit.py's build_expanded
-(SPEC_jump section 1b's sign-agnostic threshold rule), scoped to a different
-4-body core -- DNa01/DNa02, the steering descending neurons, instead of
-LC4/LPLC2/DNp01. See SPEC_steering.md section 1. Does not modify circuit.py;
-reuses its build_signs/build_weight_matrix/spectral_radius, which are
-generic over any (bodies, edges, signs) and don't care what the core is.
+Built with circuit.py's pipeline (SPEC_jump section 1b's sign-agnostic
+threshold rule) around the steering descending neurons. See
+SPEC_steering.md section 1.
 
     python steering_circuit.py
 """

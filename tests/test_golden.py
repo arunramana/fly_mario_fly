@@ -1,14 +1,9 @@
-"""Phase 0 of REFACTOR_PLAN.md: characterisation tests.
+"""
+Characterisation tests: a fresh `run_steering.main()` must reproduce three
+frozen telemetry runs byte-for-byte. Every refactor relies on this.
 
-Freezes telemetry from three runs and asserts a fresh `run_steering.main()`
-call reproduces each one byte-for-byte. This is the only thing that makes
-the restructure in REFACTOR_PLAN.md safe to attempt: if the system is not
-this deterministic, every later phase's "goldens still pass" check is
-worthless.
-
-Comparison is against the on-disk CSV bytes (CRLF, as `DataFrame.to_csv`
-writes them on Windows in text mode), not an in-memory DataFrame diff --
-"byte-identical" is the literal claim being tested.
+Compares the on-disk CSV bytes (CRLF, as `DataFrame.to_csv` writes them on
+Windows), not an in-memory DataFrame diff.
 """
 from __future__ import annotations
 

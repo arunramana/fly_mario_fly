@@ -17,7 +17,6 @@ import os
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 
 import setuptools  # noqa: F401
-import numpy as np
 import gym_super_mario_bros
 from nes_py.wrappers import JoypadSpace
 

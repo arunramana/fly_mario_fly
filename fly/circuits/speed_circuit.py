@@ -4,10 +4,7 @@ neurons) plus every presynaptic partner with >=60 synapses onto DNp01...
 onto DNp09. Checked directly against the weights file: DNa01/DNa02 (the
 steering circuit) have NO direct synapse onto DNp09, so this needs its own
 small subgraph rather than reusing steering's output -- 23 partners, 25
-neurons total.
-
-Same extraction/signs/weight-matrix pipeline as circuit.py/
-steering_circuit.py. Does not modify either.
+neurons total. Built with circuit.py's pipeline.
 
     python speed_circuit.py
 """
