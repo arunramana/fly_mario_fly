@@ -9,8 +9,8 @@ sigma=0.04: first clean whole-frame spread (IQR=1.0, range 147-152
 around the deterministic 148) while DNp01 still fires in every episode
 and survival only ticks up 0%->4%.
 
-runs/025b_noise_bad.mp4 (seed 5): commit one frame late (149) cascades
-into dying at frame 406 instead of 689. runs/025a_noise_good.mp4 (seed
+projects/legacy/runs/025b_noise_bad.mp4 (seed 5): commit one frame late (149) cascades
+into dying at frame 406 instead of 689. projects/legacy/runs/025a_noise_good.mp4 (seed
 25): "survives" 800 frames despite an even later commit (152) -- but
 it's a stuck-oscillation artifact (max_x_abs=658 vs baseline's 1432),
 not better escape, flagged as the separate finding the pre-registration

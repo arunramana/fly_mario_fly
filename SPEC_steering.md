@@ -3,7 +3,7 @@
 Goal: one video showing Mario **steering** — choosing left/right, not holding
 right unconditionally — plus a second, contact-based pathway for climbing
 obstacles. Both ride on top of the untouched jump circuit from
-`SPEC_jump.md`; nothing there changes.
+`docs/SPEC_jump.md`; nothing there changes.
 
 Scope of this step: replace the hardcoded right-hold with a real decision
 made by DNa01/DNa02 under a constant "go home" bias, competing with a

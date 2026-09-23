@@ -12,4 +12,4 @@ centred. Re-profiled after: 5.8ms/frame, still well under budget.
 
 This video reproduces 017's exact scenario (same seed/level/params,
 807 frames, event-for-event identical) with the new panel, so it's
-directly comparable to runs/017_step1_fixes.mp4. See docs/RUNS.md 026.
+directly comparable to projects/legacy/runs/017_step1_fixes.mp4. See docs/RUNS.md 026.

@@ -5,11 +5,13 @@ Append after every behaviour-changing sprint — never edit an old entry to make
 it look better, including the ones that failed. The failures are why the later
 runs work.
 
-Videos and per-run notes live in `runs/`.
+Videos and per-run notes for runs 001-026 live in `projects/legacy/runs/`,
+their telemetry CSVs in `projects/legacy/telemetry/` (REFACTOR_PLAN.md
+phase 1 — moved, paths below rewritten, nothing else changed).
 
 ---
 
-## 001 — first jump (`runs/mario_jump.mp4`)
+## 001 — first jump (`projects/legacy/runs/mario_jump.mp4`)
 
 **Setup.** 313 neurons: LC4 (126) + LPLC2 (185) → DNp01 (Giant Fiber, 2) →
 TTMn (jump muscle, 2). Enemy positions from RAM `0x0087–008B`, converted to
@@ -30,7 +32,7 @@ Diagnostic 4.
 
 ---
 
-## 002 — the brain overlay (`runs/mario_with_brain.mp4`)
+## 002 — the brain overlay (`projects/legacy/runs/mario_with_brain.mp4`)
 
 **Setup.** Same run as 001, re-rendered with a live-brain panel: 141,781 real
 soma positions from `somaLocation`, projected x (left–right) against z
@@ -70,7 +72,7 @@ threat is imminent, which is correct for a fly and too late for Mario.
 
 ---
 
-## 004 — three controllers, g = 1.5 (`runs/004a,b,c`)
+## 004 — three controllers, g = 1.5 (`projects/legacy/runs/004a,b,c`)
 
 **Setup.** A = real circuit at g=1.5 (chosen by a Diagnostic-4 sweep),
 B = best of 20 degree-preserving shuffles at its own tuned g=3.0,
@@ -95,7 +97,7 @@ Degree-preserving rewiring collapses recurrent gain ~2.7×.
 
 ---
 
-## 005 — the 2×2 and the rerun at g = 2.0 (`runs/005a,b,c`)
+## 005 — the 2×2 and the rerun at g = 2.0 (`projects/legacy/runs/005a,b,c`)
 
 **Setup.** 2×2 first: A at g=1.5 and g=2.0, each with and without the warm-up,
 to separate "the gain is wrong" from "the warm-up drops Mario on a Goomba."
@@ -122,7 +124,7 @@ can compute it where most random wiring can't is the actual finding.**
 
 ---
 
-## 006 — steering (`runs/006_steering.mp4`)
+## 006 — steering (`projects/legacy/runs/006_steering.mp4`)
 
 **Setup.** New 329-neuron circuit: DNa01/DNa02 plus their N≥60 inputs,
 winner-take-all between hemispheres picking left/right every frame. Replaces
@@ -149,7 +151,7 @@ mistakes it previously couldn't make.
 
 ---
 
-## 007 — terrain: pits, graded takeoff, and speed (`runs/007_terrain.mp4`)
+## 007 — terrain: pits, graded takeoff, and speed (`projects/legacy/runs/007_terrain.mp4`)
 
 **Setup.** Tile RAM decoder (`tile_ram.py`) for `Block_Buffer_1`/`_2`
 (`0x0500-0x069F`, 13x16 row-major each). Tile IDs were NOT taken from a web
@@ -203,7 +205,7 @@ works for tiles not yet drawn — a real organic pit encounter was needed for
 a visually honest test, unlike 006's mushroom (a live sprite object, which
 *does* redraw every frame).
 
-## 008 — odour that can win, and does the long jump generalise (`runs/008a,b,c`)
+## 008 — odour that can win, and does the long jump generalise (`projects/legacy/runs/008a,b,c`)
 
 **Setup.** Fixed the actual bug behind 006's "odour never wins": a mushroom
 at 40px gave `concentration=1/40=0.025` against `HOME_BIAS=1.0` — a 40x
@@ -263,7 +265,7 @@ explicitly) or a finding to keep (a sufficiently threatened fly might
 genuinely recruit flight muscle regardless of *why* it's threatened) is a
 real design question for the next sprint, not a call to make quietly here.
 
-## 009 — the used-block bug and ORN adaptation (`runs/009_orn_adapt.mp4`)
+## 009 — the used-block bug and ORN adaptation (`projects/legacy/runs/009_orn_adapt.mp4`)
 
 **Setup.** Two fixes. First, a real decoder bug: an already-hit `?` block
 reads back as `USED_BLOCK_ID=0xC4` in the tile buffer, not `0xC0`/`0xC1` —
@@ -311,7 +313,7 @@ found a second, unrelated one (a motor reflex that won't stop retrying) in
 the same 1500-frame run. Both are real. Neither should be quietly folded
 into the other's fix.
 
-## 010 — habituation, MDN, and the bug that was driving the whole investigation (`runs/010_enemy_thetas_fix.mp4`)
+## 010 — habituation, MDN, and the bug that was driving the whole investigation (`projects/legacy/runs/010_enemy_thetas_fix.mp4`)
 
 **Setup.** Built generalised habituation (`ReflexHabituation`, one instance
 per reflex: any escape or climb trigger that fires without `HAB_PROGRESS_PX`
@@ -392,10 +394,10 @@ exactly. Frame 178's divergence (hungry flips, sated doesn't) is real.
 008's check, a background job was launched with `record_video` left at its
 default (`True`) instead of explicitly set to `False` for what was meant
 to be a numbers-only check — it began overwriting the already-shipped
-`runs/008a_1-1.mp4` before being caught and killed. The original bytes are
-gone; there was no backup. `runs/008b_1-2.mp4` and `runs/008c_1-3.mp4` are
+`projects/legacy/runs/008a_1-1.mp4` before being caught and killed. The original bytes are
+gone; there was no backup. `projects/legacy/runs/008b_1-2.mp4` and `projects/legacy/runs/008c_1-3.mp4` are
 untouched. The accidentally-created content was moved to
-`runs/_recovered_postfix_1-1_accidental_overwrite.mp4` rather than
+`projects/legacy/runs/_recovered_postfix_1-1_accidental_overwrite.mp4` rather than
 discarded, since it's real (if mislabeled) data. This violates CLAUDE.md's
 "never overwrite an earlier run" rule; recorded here in full per the same
 rule's spirit rather than quietly patched over.
@@ -411,7 +413,7 @@ found the actual bug in about the time it would have taken to tune
 untouched function silently feeding decorative RAM objects to a threat
 detector was.
 
-## 011 — the first uncontaminated baseline (`runs/011a,b,c`)
+## 011 — the first uncontaminated baseline (`projects/legacy/runs/011a,b,c`)
 
 **Setup.** Made the synthetic mushroom injection explicit opt-in
 (`inject_frame=None` by default, `main()`) rather than a standing default —
@@ -461,7 +463,7 @@ replace 006-009's as the real baseline** — anything measured against the
 old contaminated runs should be re-checked against this table, not the
 old one.
 
-## 012 — the second escape pathway, and a null result that survived widening (`runs/012a,b,c`)
+## 012 — the second escape pathway, and a null result that survived widening (`projects/legacy/runs/012a,b,c`)
 
 **Setup.** 011's baseline showed DNp01 committing only 2-3 frames before
 contact — correct GF biology, but late. Real flies also have a slower,
@@ -647,7 +649,7 @@ better than a "does it survive as long" comparison ever could). No video
 this sprint — nothing about what Mario does changed, only how fast the
 existing behaviour can be reproduced.
 
-## 014 — the mushroom body: it learns, and it doesn't matter, and both are real (`runs/014a,b`)
+## 014 — the mushroom body: it learns, and it doesn't matter, and both are real (`projects/legacy/runs/014a,b`)
 
 **Setup.** The learning sprint. Real counts checked against this
 connectome before building anything, not assumed: **4,064 KC** (not the
@@ -733,7 +735,7 @@ introduce an `MB_OUTPUT_GAIN` scalar (the ninth) to close this specific,
 now-measured 4,000x gap would be doing so with the actual number in hand,
 not a guess.
 
-## 016 — make it a smell problem (`runs/016_smell.mp4`)
+## 016 — make it a smell problem (`projects/legacy/runs/016_smell.mp4`)
 
 **Setup.** docs/MECHANISMS.md sections 1/5/6, level 1-1 only, no vision.
 Connectome check BEFORE any code, per instruction, since LPLC1 (007) and
@@ -824,7 +826,7 @@ test: `inject_mushroom`-style RAM pokes produce a visible, odour-active,
 but **not collidable** object — real pickups need to go through the game's
 own spawn path.
 
-## 017 — the steering bug that wasn't, and two things not built (`runs/017_step1_fixes.mp4`)
+## 017 — the steering bug that wasn't, and two things not built (`projects/legacy/runs/017_step1_fixes.mp4`)
 
 **Setup.** Three ordered steps; only the first shipped code. 016 shipped
 no telemetry CSV (fixed first: `main()` now writes `{stem}_telemetry.csv`
@@ -906,7 +908,7 @@ pull whose overall strength varies. Not fixed this sprint (a real
 redesign of the KC→MBON→steering wiring, not a telemetry fix) — flagged
 for `docs/MECHANISMS.md`'s queue.
 
-**What happened.** `runs/017_step1_fixes.mp4`, 807 frames, level 1-1,
+**What happened.** `projects/legacy/runs/017_step1_fixes.mp4`, 807 frames, level 1-1,
 same conditions as 016 (organic `?`-block/Goomba encounters, synthetic
 wide gap at frame 600): B-press fraction 48.7% (vs 016's un-audited,
 much lower true rate), first odour avoidance at frame 160
@@ -1428,7 +1430,7 @@ entries individually, and it reproduces the same ranking (steering's own
 real partners ≫ MBON ≫ LC10a's chain) that the individual investigations
 already found. **Scalars: 0. Scaffolding: 0.**
 
-## 023 — retinotopy: a finer input map, and escape collapses instead of improving (`runs/023_retinotopy.mp4`)
+## 023 — retinotopy: a finer input map, and escape collapses instead of improving (`projects/legacy/runs/023_retinotopy.mp4`)
 
 **Setup.** The prize was never "which hemisphere" (one bit, invisible at
 the jump circuit's single-button output) — it's angular velocity. Every
@@ -1529,7 +1531,7 @@ the existing hemisphere-routing invention). Scaffolding: the hex-to-RAM
 azimuth convention itself, named in `retinotopy.py`'s own docstring
 before this run, not discovered after.**
 
-## 024 — retinotopy, second and final attempt: the fovea moved, the result didn't (`runs/024_retinotopy_fovea.mp4`)
+## 024 — retinotopy, second and final attempt: the fovea moved, the result didn't (`projects/legacy/runs/024_retinotopy_fovea.mp4`)
 
 **Setup.** Two things, in the order they were done. First, the question
 023 left open: is 023's own correlation check even valid? Recomputed
@@ -1648,7 +1650,7 @@ convention is still required to exist at all, and the far anchor
 (`hex1.max()`) is still a hand-picked edge, left unchanged and
 unjustified beyond "023 already used it." Retinotopy is closed.
 
-## 025 — membrane noise: calibrated, and the fly gets variable, not better (`runs/025a_noise_good.mp4`, `runs/025b_noise_bad.mp4`)
+## 025 — membrane noise: calibrated, and the fly gets variable, not better (`projects/legacy/runs/025a_noise_good.mp4`, `projects/legacy/runs/025b_noise_bad.mp4`)
 
 **Setup.** One stochastic term, added once, in `dynamics.py`: `drive =
 g*(W@h) + I`, now `drive = g*(W@h) + I + eta`, `eta ~ N(0, sigma)`,
@@ -1717,12 +1719,12 @@ baseline value), 149 (8), 150 (1), 151 (1), 152 (6) — a real 5-frame
 spread around the deterministic value, not noise in the measurement.
 
 **The two-episode deliverable, and what it actually shows.** Same seed
-set, sigma=0.04. `runs/025b_noise_bad.mp4`, **seed 5**: DNp01 commits at
+set, sigma=0.04. `projects/legacy/runs/025b_noise_bad.mp4`, **seed 5**: DNp01 commits at
 frame **149** (one frame later than 017's 148) — and dies at frame 406,
 reaching only x=694, versus the deterministic baseline's death at frame
 689 having reached x=1432. A one-frame delay in the FIRST commitment
 cascaded into a completely different, much shorter run — this is the
-"later commitment cost a life" case, real and clean. `runs/025a_noise_
+"later commitment cost a life" case, real and clean. `projects/legacy/runs/025a_noise_
 good.mp4`, **seed 25**: survived the full 800 frames (`died_or_flagged=
 False`) despite an EVEN LATER first commit (frame 152) — but checked
 the telemetry before calling this a win: `max_x_abs=658`, far short of
@@ -1771,7 +1773,7 @@ specified). Scaffolding: 0**, as expected — no RAM convention, no
 invented distance or edge, just a real Gaussian on a real quantity
 already in the model.
 
-## 026 — brain panel: speed and layout, a rendering note (`runs/026_panel_017_reprise.mp4`)
+## 026 — brain panel: speed and layout, a rendering note (`projects/legacy/runs/026_panel_017_reprise.mp4`)
 
 No behaviour changed (nes-py/circuits/telemetry untouched) — a brief
 note, not a four-field entry, as specified for a pure rendering sprint.
@@ -1805,6 +1807,38 @@ than inventing a new one, so the layout is comparable to something
 already watched — reproduced 017 event-for-event (807 frames, same
 commit/odour/`?`-block/long-jump frames down to the integer). Only the
 rendering changed.
+
+## Refactor phase 0-1 — characterisation tests and file moves
+
+No behaviour changed (no circuit, telemetry column, or default touched) — a
+short note, not a four-field entry, per `docs/REFACTOR_PLAN.md`'s own
+instruction for a pure infrastructure step.
+
+**Phase 0.** Froze telemetry for three runs -- 026's reprise of 017 (1-1,
+gap injection at frame 600, sigma=0), 025b (seed=5, sigma=0.04), and a new
+sigma=0 baseline at 025's own sweep config (1-1, `max_frames=800`, no
+injection) -- into `tests/golden/`, with `tests/test_golden.py` asserting a
+fresh `run_steering.main()` call reproduces each byte-for-byte. All three
+were deterministic: green twice in a row (separate processes), ~27s total
+per pass, and (017/025b) byte-identical to the CSVs already shipped in
+`runs/` from weeks-old runs -- confirming 025's determinism claim still
+holds today, not just at the time it was measured.
+
+**Phase 1.** Moved `SPEC_jump.md` and `REFACTOR_PLAN.md` into `docs/`
+(`MECHANISMS.md`/`RUNS.md` were already there, a surprise the plan's own
+directory diagram didn't anticipate); migrated all 59 files under the old
+`runs/` (26 sprints' worth of videos, notes, telemetry CSVs, one raw JSON
+sweep) into `projects/legacy/runs/` and `projects/legacy/telemetry/` --
+copy, verify count and byte-for-byte MD5 against the originals, remove,
+never bulk `mv`, per CLAUDE.md's own rule; created the empty `fly/`,
+`mario/`, `bridge/`, `sim/`, `render/`, `config/` package skeleton with
+nothing but `__init__.py` in each, no code moved yet; rewrote every
+`runs/NNN_*` path this log itself references, plus the handful of other
+places (`CLAUDE.md`, `README.md`, `SPEC_steering.md`,
+`profile_brain_panel.py`, two migrated per-run notes) whose pointers to
+`SPEC_jump.md` or a specific migrated file would otherwise have gone stale.
+Zero logic edits. Goldens re-run and green after the move, proving the
+harness catches a real regression before phase 2 touches anything risky.
 
 ## Still open
 

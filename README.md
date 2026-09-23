@@ -2,7 +2,7 @@
 
 A Goomba approaches Mario, the real fruit-fly escape circuit (Janelia
 MaleCNS v1.0) fires, and TTMn's threshold-crossing presses A. See
-`SPEC_jump.md` for the full design; this file states what came from the
+`docs/SPEC_jump.md` for the full design; this file states what came from the
 connectome versus what was hand-set, per section 5.
 
 `mario_jump.mp4` is the recorded deliverable: 300 frames (~5s), 1 jump

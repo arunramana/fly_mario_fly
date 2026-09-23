@@ -5,7 +5,7 @@ from the Janelia FlyEM MaleCNS v1.0 connectome. A Goomba approaches, 311 real
 looming-detector neurons fire, the Giant Fiber commits, the jump muscle
 contracts, Mario jumps. Nothing is trained.
 
-**Read `SPEC_jump.md` before writing code.** It carries the verified neuron
+**Read `docs/SPEC_jump.md` before writing code.** It carries the verified neuron
 counts, connection weights, RAM addresses and the design decisions already
 settled. Work only on what that spec scopes.
 

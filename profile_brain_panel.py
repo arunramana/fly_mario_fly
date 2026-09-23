@@ -27,7 +27,7 @@ N = 100  # iterations per phase, median reported
 
 
 def build_frame_inputs():
-    tel = pd.read_csv("runs/017_step1_fixes_telemetry.csv")
+    tel = pd.read_csv("projects/legacy/telemetry/017_step1_fixes_telemetry.csv")
     row = tel[tel["frame"] == 148].iloc[0]  # the DNp01 commit frame -- real glow, not idle
     act = {"LC4": row.lc4, "LPLC2": row.lplc2, "DNp01": 1.0, "TTMn": row.ttmn,
            "DNa01": row.dna01, "DNa02": row.dna02, "DNp09": row.dnp09, "DLMn": row.dlmn}
