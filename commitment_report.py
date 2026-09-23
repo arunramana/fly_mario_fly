@@ -1,21 +1,29 @@
 """
 commitment_report.py -- sprint 023's own decisive measurement, factored out
-so the same code runs identically on the before/after telemetry.
+so the same code runs identically on the before/after telemetry. Sprint
+024 extended the correlation check to LPLC2 as well as LC4, after finding
+the LC4-only version was confounded (see below).
 
 Two questions, both readable straight from a run_steering.py telemetry
 DataFrame (023 added `dtheta`/`d_px`/`frames_to_contact` alongside the
-existing `theta`/`lc4`/`pathway_fired`):
+existing `theta`/`lc4`/`lplc2`/`pathway_fired`):
 
 1. Commitment timing: for each real escape-jump trigger (`pathway_fired`
    non-empty, sprint 012's own attribution field), `frames_to_contact` is
    the SAME estimate the live run already computes and prints (closing
    speed from `d_history`, an existing 10-frame window, times `d_px` at
    the commit frame) -- not re-derived here, just read back from telemetry.
-2. corr(LC4_mean, theta) vs corr(LC4_mean, dtheta) over the whole run --
-   003/019's own read of the first was "LC4 is velocity-tuned"; it can't
-   have been, since nothing moved across the population before this
-   sprint. If retinotopy makes LC4 genuinely velocity-tuned, the second
-   correlation should now exceed the first.
+2. corr(pop, theta) vs corr(pop, dtheta), for BOTH LC4 and LPLC2 --
+   003/019's own read of LC4's corr(theta)=0.50 was "LC4 is velocity-
+   tuned"; it can't have been, since nothing moved across the population
+   before 023. 024 found (docs/RUNS.md) that this comparison, done on
+   LC4 alone, is confounded: LC4's own scalar drive is `abs(dtheta)`, not
+   `theta`, since long before 023 (`Ij[LC4_mask] = abs(dtheta)` --
+   unchanged by any retinotopy sprint) -- so corr(LC4,dtheta) > corr(
+   LC4,theta) is mechanically guaranteed regardless of whether retinotopy
+   does anything at all. LPLC2's own scalar drive is `theta`, the mirror
+   case -- reporting both pairs, for both populations, is what actually
+   tests for a population-level (not just scalar-input) motion signal.
 """
 from __future__ import annotations
 
@@ -39,22 +47,23 @@ def find_commitments(tel: pd.DataFrame) -> list[dict]:
     return events
 
 
+def safe_corr(a, b):
+    # constant-column guard: a run with ~zero variance in a population or
+    # theta (e.g. no enemy ever seen) makes corrcoef return nan, not an error
+    if np.std(a) < 1e-12 or np.std(b) < 1e-12:
+        return float("nan")
+    return float(np.corrcoef(a, b)[0, 1])
+
+
 def correlation_signature(tel: pd.DataFrame) -> dict:
-    lc4 = tel["lc4"].to_numpy()
     theta = tel["theta"].to_numpy()
     dtheta_abs = tel["dtheta"].abs().to_numpy()
-
-    def safe_corr(a, b):
-        # constant-column guard: a run with ~zero variance in lc4 or theta
-        # (e.g. no enemy ever seen) makes corrcoef return nan, not an error
-        if np.std(a) < 1e-12 or np.std(b) < 1e-12:
-            return float("nan")
-        return float(np.corrcoef(a, b)[0, 1])
-
-    return {
-        "corr_lc4_theta": safe_corr(lc4, theta),
-        "corr_lc4_dtheta": safe_corr(lc4, dtheta_abs),
-    }
+    out = {}
+    for pop in ("lc4", "lplc2"):
+        v = tel[pop].to_numpy()
+        out[f"corr_{pop}_theta"] = safe_corr(v, theta)
+        out[f"corr_{pop}_dtheta"] = safe_corr(v, dtheta_abs)
+    return out
 
 
 def report(tel: pd.DataFrame, label: str) -> dict:
@@ -68,7 +77,8 @@ def report(tel: pd.DataFrame, label: str) -> dict:
               f"frames_to_contact={e['frames_to_contact']}")
     if ftc:
         print(f"  median frames_to_contact at commit: {np.median(ftc):.1f}  mean: {np.mean(ftc):.1f}")
-    print(f"  corr(LC4_mean, theta)  = {corr['corr_lc4_theta']:.4f}")
-    print(f"  corr(LC4_mean, dtheta) = {corr['corr_lc4_dtheta']:.4f}")
+    for pop in ("lc4", "lplc2"):
+        print(f"  corr({pop.upper()}, theta)  = {corr[f'corr_{pop}_theta']:.4f}   "
+              f"corr({pop.upper()}, dtheta) = {corr[f'corr_{pop}_dtheta']:.4f}")
     return {"events": events, "corr": corr,
             "median_frames_to_contact": float(np.median(ftc)) if ftc else None}

@@ -621,16 +621,24 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
     (`poke_wide_gap`) to demonstrate the refusal rule, since 1-1 has no
     real pit wide enough to need it.
 
-    `retinotopic`, sprint 023: True drives LC4/LPLC2 per-cell, weighted by
-    each real cell's own receptive-field alignment to the approaching
-    enemy's actual position (`retinotopy.py`). False (default) reproduces
-    the exact pre-023 behaviour -- the same theta/dtheta scalar broadcast
-    identically to every cell in a hemisphere. Default is False, not
-    True: 023's own paired comparison found the per-cell weighting
-    starves DNp01/TTMn of drive at exactly the moment escape needs it
-    most (see docs/RUNS.md 023) -- a documented negative result, not a
-    shipped improvement. Kept available (not deleted) for whatever fixes
-    the azimuth-to-edge convention in a future sprint."""
+    `retinotopic`, sprints 023-024, CLOSED: True drives LC4/LPLC2
+    per-cell, weighted by each real cell's own receptive-field alignment
+    to the approaching enemy's actual position (`retinotopy.py`). False
+    (default) reproduces the exact pre-023 behaviour -- the same theta/
+    dtheta scalar broadcast identically to every cell in a hemisphere.
+    Default is False, permanently: 023 found the per-cell weighting
+    starves DNp01/TTMn of drive at the moment escape needs it most
+    because its foveal origin sat at the sparsest edge of each real RF
+    distribution; 024 fixed exactly that (origin moved to the real
+    measured density mode, a real 4.4x weight improvement, confirmed) and
+    still got 0 commitments and the SAME frame-170 death as 023 -- the
+    recurrent circuit needs something close to the old uniform population
+    engagement to reach threshold, which no single-target Gaussian tuning
+    curve supplies regardless of where its centre sits. Two pre-
+    registered attempts, both failed on the same criteria; per 024's own
+    hard-stop (docs/RUNS.md 024), this is closed. Kept in code (not
+    deleted) as a real, working, negative-result artifact -- not a
+    starting point for a third mapping convention."""
     if force_mario_size is not None and force_size_from_frame is None:
         assert inject_frame is not None, (
             "force_mario_size needs an explicit force_size_from_frame when "
@@ -677,8 +685,10 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
         import retinotopy as rt
         j_rf = {"LC4": rt.receptive_field_centers("LC4", j_bodies),
                 "LPLC2": rt.receptive_field_centers("LPLC2", j_bodies)}
-        # HEX1_LO/HI: the REAL, measured extent of that type+side's own
-        # per-cell RF centres (not invented -- see receptive_field_centers).
+        # sprint 024: ORIGIN is now the real density mode of that type+
+        # side's own per-cell RF centres (rt.density_mode -- data-derived,
+        # not chosen), replacing 023's hex1.min(), the fix this sprint
+        # exists to test. FAR is still hex1.max(), unchanged from 023.
         # HEX2_MID: that population's own real median hex2 ("eye level"),
         # since this game has no elevation signal to drive that axis with.
         j_azimuth_ref = {}
@@ -686,7 +696,9 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
             for side in ("L", "R"):
                 m = j_msk[f"{t}_{side}"]
                 h1 = j_rf[t]["hex1"][m]; h2 = j_rf[t]["hex2"][m]
-                j_azimuth_ref[(t, side)] = (h1.min(), h1.max(), float(np.median(h2)))
+                spread = j_rf[t]["hex1_spread"][m]
+                origin = rt.density_mode(h1, spread)
+                j_azimuth_ref[(t, side)] = (origin, h1.max(), float(np.median(h2)))
 
     print("Loading the steering circuit (DNa01/DNa02, N=60, cached)...")
     s_bodies, _, _, _, W_s, _, _ = _memo_load("steering", load_steering)
@@ -944,8 +956,8 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
                     for t, mag in (("LC4", abs(dtheta[_side])), ("LPLC2", theta[_side])):
                         if mag == 0.0:
                             continue
-                        lo, hi, mid = j_azimuth_ref[(t, _side)]
-                        az1 = rt.azimuth_target(d_out[_side], lo, hi, mid)
+                        origin, far, mid = j_azimuth_ref[(t, _side)]
+                        az1 = rt.azimuth_target(d_out[_side], origin, far, mid)
                         w = rt.tuning_weights(az1, j_rf[t])
                         Ij[j_msk[f"{t}_{_side}"]] = mag * w[j_msk[f"{t}_{_side}"]]
             else:
@@ -1665,6 +1677,73 @@ def run_023(max_frames=1500, gap_frame=600):
                 before=before, after=after)
 
 
+def run_024(max_frames=1500, gap_frame=600):
+    """sprint 024, second and final retinotopy attempt. 023 failed because
+    d_px=0 mapped to hex1.min(), the sparsest edge of each population's
+    real RF-centre distribution -- the ONE thing this sprint changes is
+    that origin, now `retinotopy.density_mode()` (the real density peak),
+    computed inside `main()` itself when `retinotopic=True` (see
+    run_steering.py's own j_azimuth_ref block). Everything else identical
+    to 023: same level (1-1), same max_frames/gap_frame, same
+    TTMN_PRESS_THRESHOLD, same AZIMUTH_D_REF, same per-cell tuning
+    bandwidth (each cell's own measured hex1_spread). Same pre-registered
+    criteria as 023, decided before this function ran, not after seeing
+    results: (1) frames_to_contact at commitment vs 017's own 32-frame
+    baseline median -- earlier is the win; (2) whether corr(pop,dtheta)
+    exceeds corr(pop,theta) for LC4 AND LPLC2 (023 found the LC4-only
+    version of this check was confounded by LC4's own scalar drive
+    already being dtheta -- see commitment_report.py); (3) survival and
+    commitment count vs the 807-frame / 10-commit baseline. Hard stop,
+    stated before running: if this fails, retinotopy is closed
+    permanently -- `retinotopic` stays default False and no third mapping
+    convention gets proposed."""
+    from commitment_report import report
+
+    print("=" * 70)
+    print("sprint 024: retinotopy, fovea-at-density-mode, second and final attempt")
+    print("=" * 70)
+
+    print("\n[before] retinotopic=False (identical to 017/023's own baseline)...")
+    tel_before, info_before = main(
+        out_mp4="runs/024_retinotopy_fovea_before.mp4", level="1-1",
+        max_frames=max_frames, record_video=False,
+        inject_gap_frame=gap_frame, retinotopic=False)
+
+    print("\n[after] retinotopic=True, origin=density_mode()...")
+    tel_after, info_after = main(
+        out_mp4="runs/024_retinotopy_fovea.mp4", level="1-1",
+        max_frames=max_frames, record_video=True,
+        inject_gap_frame=gap_frame, retinotopic=True)
+
+    before = report(tel_before, "BEFORE (retinotopic=False)")
+    after = report(tel_after, "AFTER (retinotopic=True, fovea=density_mode)")
+
+    print("\n" + "=" * 70)
+    print("sprint 024: verdict against the three pre-registered criteria")
+    print("=" * 70)
+    if before["median_frames_to_contact"] is not None and after["median_frames_to_contact"] is not None:
+        print(f"(1) median frames_to_contact at commit: {before['median_frames_to_contact']:.2f} -> "
+              f"{after['median_frames_to_contact']:.2f} "
+              f"({'EARLIER than 017 baseline' if after['median_frames_to_contact'] > 32 else 'not earlier than 017 baseline (32)'})")
+    else:
+        print("(1) frames_to_contact: no commitments in one or both runs -- see (3)")
+    c_before = before["corr"]; c_after = after["corr"]
+    for pop in ("lc4", "lplc2"):
+        exceeds = c_after[f"corr_{pop}_dtheta"] > c_after[f"corr_{pop}_theta"]
+        print(f"(2) {pop.upper()}: corr(theta)={c_after[f'corr_{pop}_theta']:.4f}  "
+              f"corr(dtheta)={c_after[f'corr_{pop}_dtheta']:.4f}  "
+              f"velocity exceeds size: {exceeds}")
+    print(f"(3) commitments: before={len(before['events'])} (baseline=10)  "
+          f"after={len(after['events'])}  "
+          f"survival: before={'died' if info_before['died_or_flagged'] else 'survived'} "
+          f"({info_before['n_frames']} frames)  "
+          f"after={'died' if info_after['died_or_flagged'] else 'survived'} ({info_after['n_frames']} frames)")
+
+    return dict(tel_before=tel_before, tel_after=tel_after,
+                info_before=info_before, info_after=info_after,
+                before=before, after=after)
+
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == "008":
@@ -1673,5 +1752,7 @@ if __name__ == "__main__":
         run_016()
     elif len(sys.argv) > 1 and sys.argv[1] == "023":
         run_023()
+    elif len(sys.argv) > 1 and sys.argv[1] == "024":
+        run_024()
     else:
         main()

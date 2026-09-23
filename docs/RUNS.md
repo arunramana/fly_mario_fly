@@ -1529,6 +1529,125 @@ the existing hemisphere-routing invention). Scaffolding: the hex-to-RAM
 azimuth convention itself, named in `retinotopy.py`'s own docstring
 before this run, not discovered after.**
 
+## 024 — retinotopy, second and final attempt: the fovea moved, the result didn't (`runs/024_retinotopy_fovea.mp4`)
+
+**Setup.** Two things, in the order they were done. First, the question
+023 left open: is 023's own correlation check even valid? Recomputed
+corr(pop, θ) vs corr(pop, θ̇) for BOTH LC4 and LPLC2 on 023's own
+telemetry (the 170-frame retinotopic run, measurable with zero
+commitments, and the 807-frame baseline). LC4: corr(θ)=0.58,
+corr(θ̇)=0.92 (baseline); LPLC2: corr(θ)=0.92, corr(θ̇)=0.57 (baseline) —
+θ̇ already dominant for LC4 and θ already dominant for LPLC2, in the
+PRE-retinotopy code. That's not a coincidence needing a mechanism: LC4's
+scalar drive has been `abs(dtheta)` and LPLC2's has been `theta` since
+before any retinotopy sprint (`Ij[LC4_mask] = abs(dtheta)`,
+`Ij[LPLC2_mask] = theta`, unchanged code). Each population's own
+correlation with its own literal drive signal was always going to be
+high; this was never evidence of population-level motion coding, and
+023's single-population version of this check couldn't have shown
+anything else. Second, the actual fix: 023's failure traced to
+`hex1.min()` — an arbitrary edge of each population's real RF range —
+being the SPARSEST part of the real density, not the densest, so
+mapping "imminent collision" there starved the population exactly when
+it mattered. `retinotopy.density_mode()` (new): sum of one Gaussian per
+real cell (mean=that cell's own hex1, bandwidth=that cell's own already-
+measured `hex1_spread`, no new constant) over the population's own real
+range, reporting the peak. Measured, not assumed:
+
+| population | side | n | hex1 range | density mode | mode as frac of range |
+|---|---|---|---|---|---|
+| LC4 | L | 71 | 4.36–33.86 | 16.34 | 0.41 |
+| LC4 | R | 55 | 4.29–33.14 | 18.07 | 0.48 |
+| LPLC2 | L | 94 | 3.86–34.20 | 17.15 | 0.44 |
+| LPLC2 | R | 91 | 3.63–34.01 | 16.61 | 0.43 |
+
+All four modes land near the middle of their own range, not at either
+edge — a real, roughly-unimodal, roughly-centred distribution. The ONE
+change: `azimuth_target`'s near/foveal anchor is now this per-population
+density mode instead of `hex1.min()`. Far anchor stays `hex1.max()`,
+unchanged from 023. Same level (1-1), same `max_frames`/`gap_frame` as
+016/017/023, same `TTMN_PRESS_THRESHOLD`, same `AZIMUTH_D_REF`, same
+per-cell tuning bandwidth. Three criteria pre-registered before this ran,
+carried over from 023 unchanged: (1) frames_to_contact at commitment vs
+017's 32-frame median — earlier is the win; (2) whether corr(pop,θ̇)
+exceeds corr(pop,θ), now checked for both populations, not just LC4; (3)
+survival and commitment count vs the 807-frame/10-commit baseline.
+
+**What happened.** Confirmed the origin actually moved: mean per-cell
+weight at `d_px=0` rose from 023's 0.05 to **0.22** (LC4-L) — a real
+4.4x increase in engaged population mass at the moment that matters
+most, exactly the predicted effect of anchoring at the density peak
+instead of the sparse edge. At matched `d_px=23` (the frame the
+baseline commits on), `lc4` activation rose from 023's 0.0053 to
+**0.0094** — better, but still ~4x below the pre-retinotopy baseline's
+0.039 at the same distance, and `ttmn` stayed at 1.2e-148 — as
+numerically inert as 023, nowhere near `TTMN_PRESS_THRESHOLD=3.0`. The
+retinotopic run **died at frame 170, the EXACT same frame as 023** (the
+two runs are frame-for-frame identical up to that point — neither ever
+fires a press, so nothing in the deterministic emulator diverges) — 0
+escape commitments, 0 of either pathway, same as 023. Criterion (1):
+unmeasurable, no commitment occurred. Criterion (2): LC4 θ̇ still exceeds
+θ (0.94 vs 0.73) — but this was ALREADY true pre-retinotopy (see Setup),
+so it is not a new signature; LPLC2 θ still exceeds θ̇ (0.99 vs 0.47) —
+also unchanged in kind from baseline. Neither population's correlation
+ordering flipped. Criterion (3): commitments 10 → 0, survival unchanged
+(died both times), the same catastrophic result as 023, not a smaller
+or partial one.
+
+**Why a real, measured 4.4x weight improvement didn't reach threshold.**
+The circuit is recurrent (CLAUDE.md invariant 4: lateral connections
+3–9.5x drive onto the Giant Fiber). That amplification compounds
+multiplicatively across substeps — a population that's 4.4x better
+engaged at the input doesn't propagate to a 4.4x stronger DNp01 drive,
+it propagates to whatever a 4.4x-larger seed becomes after many rounds
+of recurrent self-reinforcement starting from a much smaller base than
+the old uniform broadcast ever had. The gap between "4.4x more weight at
+the origin" and "still 140 orders of magnitude short of threshold"
+(1.2e-148 vs a threshold of 3.0) says the recurrent dynamics need
+something close to the OLD uniform population engagement to bootstrap
+at all — a Gaussian tuning curve over any single target point, however
+well-centred, doesn't supply that, because most of the population is
+still far from any one target by construction of a narrow, localised
+receptive field.
+
+**Hard stop, as pre-registered.** This was specified as the second and
+final attempt before running it, not after seeing the result: if this
+failed, retinotopy is closed permanently. It failed, on the same three
+criteria as 023, decisively (0 commitments both times, identical death
+frame). `retinotopic` stays default `False`. No third mapping
+convention will be proposed — the failure mode this sprint found
+(recurrent amplification needs population-wide engagement that no
+single-target Gaussian tuning curve can supply, regardless of where its
+centre sits) is a property of pairing THIS dynamical system with ANY
+narrow per-cell weighting scheme, not a property of which point was
+chosen as foveal. Moving the origin fixed the thing that was actually
+wrong with 023's convention (checked: weight-at-origin really did rise
+4.4x, exactly as predicted) and it still wasn't enough, which is a
+stronger, more informative closure than 023's result alone — it rules
+out "023 just picked the wrong point" as an explanation, not merely
+"023 didn't move the needle."
+
+**What we learned.** Two separable findings, kept separate. (1) The
+correlation-based "is LC4/LPLC2 velocity-tuned" check, as specified in
+both 023 and this sprint's own pre-registration, cannot discriminate
+retinotopy's effect at all, for a reason that has nothing to do with
+retinotopy: each population's correlation with its own historical scalar
+drive was mechanically guaranteed before either sprint ran. This
+criterion should not be reused in this form in any future sprint on this
+circuit. (2) Retinotopy — real per-cell receptive fields, correctly
+measured, correctly wired, with an honestly-invented convention replaced
+by a data-derived one on the one axis that was actually wrong — still
+cannot deliver enough population drive to move the escape circuit's
+threshold-crossing behaviour, because this circuit's recurrence was
+tuned around near-uniform population engagement. That is now a closed,
+two-shot question, not an open one. **Scalars: 0 new** (`density_mode`
+uses only already-measured per-cell data, `AZIMUTH_D_REF` unchanged from
+023). **Scaffolding: relocated, not removed** — the near/foveal anchor
+is now data-derived instead of an arbitrary edge, but an azimuth-to-hex
+convention is still required to exist at all, and the far anchor
+(`hex1.max()`) is still a hand-picked edge, left unchanged and
+unjustified beyond "023 already used it." Retinotopy is closed.
+
 ## Still open
 
 - **The 009 climb/long-jump livelock is understood, not just patched
