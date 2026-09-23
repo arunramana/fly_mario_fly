@@ -40,9 +40,13 @@ from mario.entities.kinds import EntityKind
 from mario.entities.registry import DEFAULT as DEFAULT_REGISTRY
 from mario.ram import tile_ram
 from mario.ram.addresses import ADDR_MARIO_SIZE
+from config.params import OdourParams
 
-HUNGER_MULT_HUNGRY = 3.0      # RAM 0x0756==0 (small Mario)
-HUNGER_MULT_SATED = 1.0       # RAM 0x0756>=1 (big/fiery Mario) -- unboosted, not zeroed
+# REFACTOR_PLAN.md phase 4: sourced from config.params.OdourParams
+# (docs/SCALARS.md), not redefined here.
+_odour_params = OdourParams()
+HUNGER_MULT_HUNGRY = _odour_params.hunger_mult_hungry  # RAM 0x0756==0 (small Mario)
+HUNGER_MULT_SATED = _odour_params.hunger_mult_sated    # RAM 0x0756>=1 (big/fiery) -- unboosted, not zeroed
 
 
 def enemy_thetas(ram, mario_x, prev_theta, registry=DEFAULT_REGISTRY):

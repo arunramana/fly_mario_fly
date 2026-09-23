@@ -49,6 +49,10 @@ from fly.circuits.load_speed_cached import load as load_speed
 from fly.circuits.load_mdn_cached import load as load_mdn
 from fly.circuits.load_dnp02_cached import load as load_dnp02
 from fly.circuits.load_mushroom_body_cached import load as load_mushroom_body
+from config.params import (
+    Dnp02Params, MdnParams, MushroomBodyParams, OdourParams, SpeedParams,
+    SteeringParams, TakeoffParams, TerrainParams, DemoParams,
+)
 
 # SPEC_throughput.md: loading all 6 circuits from their on-disk parquet
 # cache takes ~6.8s -- measured, not assumed -- versus well under a second
@@ -92,7 +96,8 @@ from compare_controllers import _ensure_ffmpeg_on_path
 # the full table. HOME_BIAS itself is untouched (SPEC section 0: fixing
 # this is a scaling fix to two competing DIRECTION signals, not a reason to
 # lower it -- that would just make Mario permanently distractible).
-ODOUR_GAIN = 16.0
+_odour_params = OdourParams()
+ODOUR_GAIN = _odour_params.odour_gain
 # HUNGER_MULT_HUNGRY/SATED moved to bridge/perception.py with
 # hunger_multiplier() itself, phase 2 -- imported above. Values unchanged
 # (3.0/1.0); tune_odour.py's own sweep, referenced above, is what picked them.
@@ -121,14 +126,17 @@ ODOUR_GAIN = 16.0
 # FRAMES really is ~1.5s of wall-clock game time.
 
 # ---- hand-set scalars, SPEC_steering.md section 5 -----------------------
-G_STEER = 1.2                # steering circuit gain -- tune_steering.py
-HOME_BIAS = 1.0               # constant "go home" current, R-hemisphere only
-CLIMB_STALL_FRAMES = 20       # mario_x unchanged this long while steering=R -> blocked
-CLIMB_HOP_SMALL_FRAMES = 10   # small Mario's first-try hop hold
-CLIMB_HOP_BIG_FRAMES = 14     # big/fiery Mario's first-try hop hold (taller hitbox)
-CLIMB_JUMP_FRAMES = 25        # escalated full jump hold, same magnitude as the escape jump
-CLIMB_COOLDOWN_FRAMES = 15
-CLIMB_CLEAR_DISTANCE = 24     # px of forward progress that resets the attempt counter
+# REFACTOR_PLAN.md phase 4: sourced from config.params.SteeringParams
+# (docs/SCALARS.md), not redefined here.
+_steering_params = SteeringParams()
+G_STEER = _steering_params.g                              # tune_steering.py
+HOME_BIAS = _steering_params.home_bias                     # constant "go home" current, R-hemisphere only
+CLIMB_STALL_FRAMES = _steering_params.climb_stall_frames   # mario_x unchanged this long while steering=R -> blocked
+CLIMB_HOP_SMALL_FRAMES = _steering_params.climb_hop_small_frames  # small Mario's first-try hop hold
+CLIMB_HOP_BIG_FRAMES = _steering_params.climb_hop_big_frames      # big/fiery Mario's first-try hop hold (taller hitbox)
+CLIMB_JUMP_FRAMES = _steering_params.climb_jump_frames     # escalated full jump hold, same magnitude as the escape jump
+CLIMB_COOLDOWN_FRAMES = _steering_params.climb_cooldown_frames
+CLIMB_CLEAR_DISTANCE = _steering_params.climb_clear_distance  # px of forward progress that resets the attempt counter
 
 # ---- hand-set scalars, SPEC_terrain.md sections 2-3 ----------------------
 # GAP_GAIN/DLMN_RECRUIT_THRESHOLD/LONG_JUMP_HOLD_FRAMES picked by directly
@@ -142,16 +150,20 @@ CLIMB_CLEAR_DISTANCE = 24     # px of forward progress that resets the attempt c
 # DLMN_RECRUIT_THRESHOLD=1.0 sits between the width-1 and width-2 values,
 # so a single-tile gap gets a normal hop and anything wider gets the long
 # jump.
-G_TAKEOFF = 0.8                    # takeoff circuit gain -- tune_terrain.py
-GAP_GAIN = 0.6                      # external current per non-ground tile ahead, onto DNp01
-DLMN_RECRUIT_THRESHOLD = 1.0        # DLMn mean activation -> recruit the long jump
-LONG_JUMP_HOLD_FRAMES = 35           # vs the escape jump's JUMP_HOLD_FRAMES=25
-GAP_LOOKAHEAD_TILES = 8
+# REFACTOR_PLAN.md phase 4: sourced from config.params.TakeoffParams/
+# SpeedParams (docs/SCALARS.md), not redefined here.
+_takeoff_params = TakeoffParams()
+G_TAKEOFF = _takeoff_params.g                                    # tune_terrain.py
+GAP_GAIN = _takeoff_params.gap_gain                              # external current per non-ground tile ahead, onto DNp01
+DLMN_RECRUIT_THRESHOLD = _takeoff_params.dlmn_recruit_threshold  # DLMn mean activation -> recruit the long jump
+LONG_JUMP_HOLD_FRAMES = _takeoff_params.long_jump_hold_frames    # vs the escape jump's JUMP_HOLD_FRAMES=25
+GAP_LOOKAHEAD_TILES = _takeoff_params.gap_lookahead_tiles
 
-G_SPEED = 1.2                       # speed circuit gain -- tune_terrain.py
-WALK_DRIVE = 1.0                    # constant "walk" current onto DNp09
-WALK_SUPPRESSION = 1.0              # cancels WALK_DRIVE while jumping/stalled
-DNP09_SPEED_THRESHOLD = 0.5          # DNp09 mean activation -> press B
+_speed_params = SpeedParams()
+G_SPEED = _speed_params.g                                    # tune_terrain.py
+WALK_DRIVE = _speed_params.walk_drive                        # constant "walk" current onto DNp09
+WALK_SUPPRESSION = _speed_params.walk_suppression            # cancels WALK_DRIVE while jumping/stalled
+DNP09_SPEED_THRESHOLD = _speed_params.dnp09_speed_threshold  # DNp09 mean activation -> press B
 
 # ---- hand-set scalars, SPEC_habituation.md -------------------------------
 # Diagnosed, not assumed: CLIMB_COOLDOWN_FRAMES 15->40 changed nothing
@@ -183,10 +195,13 @@ DNP09_SPEED_THRESHOLD = 0.5          # DNp09 mean activation -> press B
 # backing up). MDN_BACKUP_FRAMES=30 is a fixed mechanical hold, same
 # pattern as every other reflex's hold duration -- backing up is a discrete
 # corrective action, not an open-ended state.
-G_MDN = 1.2
-MDN_DRIVE = 2.0
-MDN_THRESHOLD = 1.0
-MDN_BACKUP_FRAMES = 30
+# REFACTOR_PLAN.md phase 4: sourced from config.params.MdnParams
+# (docs/SCALARS.md), not redefined here.
+_mdn_params = MdnParams()
+G_MDN = _mdn_params.g
+MDN_DRIVE = _mdn_params.mdn_drive
+MDN_THRESHOLD = _mdn_params.mdn_threshold
+MDN_BACKUP_FRAMES = _mdn_params.mdn_backup_frames
 
 # ---- hand-set scalars, SPEC_second_escape.md -----------------------------
 # The scalar budget was 3 (g, dnp01_spike_threshold, ttmn_press_threshold);
@@ -225,9 +240,12 @@ MDN_BACKUP_FRAMES = 30
 # under strong enough sustained input, it just essentially never wins the
 # race against DNp01 in practice, which the real-game validation (below)
 # confirms rather than contradicts.
-G_DNP02 = 1.2
-DNP02_SPIKE_THRESHOLD = 0.1
-DNP02_ALPHA = 0.1
+# REFACTOR_PLAN.md phase 4: sourced from config.params.Dnp02Params
+# (docs/SCALARS.md), not redefined here.
+_dnp02_params = Dnp02Params()
+G_DNP02 = _dnp02_params.g
+DNP02_SPIKE_THRESHOLD = _dnp02_params.spike_threshold
+DNP02_ALPHA = _dnp02_params.alpha
 
 # ---- hand-set scalars, SPEC_mushroom_body.md -----------------------------
 # Budget was 5 (g, dnp01_spike_threshold, ttmn_press_threshold, plus the
@@ -251,9 +269,12 @@ DNP02_ALPHA = 0.1
 # (dopamine=CLIP=50) depresses an eligible synapse by 5%; one frame of
 # typical reward (a few px of progress) depresses by a fraction of a
 # percent -- gradual, not a single-event wipeout.
-KC_SPARSITY = 0.05
-TRACE_DECAY = 60.0
-LEARNING_RATE = 0.001
+# REFACTOR_PLAN.md phase 4: sourced from config.params.MushroomBodyParams
+# (docs/SCALARS.md), not redefined here.
+_mb_params = MushroomBodyParams()
+KC_SPARSITY = _mb_params.kc_sparsity
+TRACE_DECAY = _mb_params.trace_decay
+LEARNING_RATE = _mb_params.learning_rate
 
 # ---- hand-set scalars/design notes, SPEC_odour.md sprint 016 (smell) -----
 # CONNECTOME CHECK, DONE BEFORE ANY OF THIS WAS BUILT (docs/MECHANISMS.md
@@ -326,7 +347,9 @@ LEARNING_RATE = 0.001
 # scalars count (matching how JUMP_HOLD_FRAMES/CLIMB_*/HAB_* were never
 # added to that running total either), 9 if every hand-set number of any
 # kind is counted. Flagged here either way, per CLAUDE.md invariant 3.
-REFUSAL_GAP_TILES = 5
+# REFACTOR_PLAN.md phase 4: sourced from config.params.TerrainParams
+# (docs/SCALARS.md), not redefined here.
+REFUSAL_GAP_TILES = TerrainParams().refusal_gap_tiles
 
 # ADDR_MARIO_SIZE/ADDR_ENEMY_TYPE/POWERUP_ID now live in
 # mario/ram/addresses.py (imported above), phase 2 -- enemy_thetas() needed
@@ -342,7 +365,9 @@ MAX_FRAMES = 1200
 # No default injection frame any more (sprint 011: opt-in only, see main()'s
 # `inject_frame` docstring) -- callers that want the odour demo pass their
 # own frame number explicitly, e.g. run_008()'s inject_frame=60.
-MUSHROOM_OFFSET = -40  # spawn BEHIND Mario so it competes with HOME_BIAS's rightward pull
+# REFACTOR_PLAN.md phase 4: sourced from config.params.DemoParams
+# (docs/SCALARS.md), not redefined here.
+MUSHROOM_OFFSET = DemoParams().mushroom_offset  # spawn BEHIND Mario so it competes with HOME_BIAS's rightward pull
 
 
 def find_inactive_slot(ram):

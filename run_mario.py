@@ -34,22 +34,25 @@ from mario.ram.addresses import (
     ADDR_ENEMY_TYPE, N_ENEMY_SLOTS, POWERUP_ID,
 )
 from bridge.perception import enemy_thetas
+from config.params import JumpParams
 
-# ---- hand-set scalars -------------------------------------------------
+# ---- hand-set scalars, REFACTOR_PLAN.md phase 4: sourced from
+# config.params.JumpParams (docs/SCALARS.md), not redefined here ---------
 # G was 3.5 -- passed the single-ramp diagnostics in tune.py but failed
 # Diagnostic 4 (diag4.py, SPEC section 3): under sustained bilateral input
 # the network never returned to baseline and pinned at the clip ceiling,
 # so the 9 jumps in the first recorded video were not caused by looming.
 # g=2.0 is the middle of the band [1.12, 3.35] that passes Diagnostic 4
 # (checked robust across 5 random trace seeds) -- see diag4.py.
-G = 2.0
-DNP01_SPIKE_THRESHOLD = 0.5
-TTMN_PRESS_THRESHOLD = 3.0
-SPIKE_AMP = 50.0
+_jump_params = JumpParams()
+G = _jump_params.g
+DNP01_SPIKE_THRESHOLD = _jump_params.dnp01_spike_threshold
+TTMN_PRESS_THRESHOLD = _jump_params.ttmn_press_threshold
+SPIKE_AMP = _jump_params.spike_amp
 # ---- mechanical output-interface parameters (not part of the neural
 # model -- how long to hold the button once the decision is made) -------
-JUMP_HOLD_FRAMES = 25
-JUMP_COOLDOWN_FRAMES = 40
+JUMP_HOLD_FRAMES = _jump_params.jump_hold_frames
+JUMP_COOLDOWN_FRAMES = _jump_params.jump_cooldown_frames
 
 W_TILE = 16.0
 MAX_FRAMES = 300
