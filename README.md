@@ -99,6 +99,8 @@ correct behaviour: if a golden fails, diff it before re-baselining.
 - [`docs/REFACTOR_PLAN.md`](docs/REFACTOR_PLAN.md): the package split and
   the SOLID decisions.
 - [`docs/CODE_AUDIT.md`](docs/CODE_AUDIT.md): open code-audit findings (structure, hard-coded values).
+- [`docs/CHANGES_2026-09.md`](docs/CHANGES_2026-09.md): what the September
+  2026 cleanup changed, how to call the code from a tool, and what's still open.
 - [`docs/MECHANISMS.md`](docs/MECHANISMS.md),
   [`docs/ENTITIES.md`](docs/ENTITIES.md),
   [`docs/TRACE_BIOLOGY.md`](docs/TRACE_BIOLOGY.md): mechanism notes, the
