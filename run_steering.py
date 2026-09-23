@@ -556,7 +556,7 @@ def make_steering_masks(bodies):
 def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
          force_mario_size=None, force_size_from_frame=None, record_video=True,
          inject_frame=None, frame_skip=1, savestate=None, mb_weights=None,
-         mushroom_offset=None, inject_gap_frame=None):
+         mushroom_offset=None, inject_gap_frame=None, write_telemetry=True):
     """`mb_weights`, if given, is the KC->MBON weight sub-matrix (SPEC_
     mushroom_body.md) carried over from a previous call -- the ONE piece
     of state that must persist across training episodes. `None` (default)
@@ -662,6 +662,14 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
     r_mask, l_mask = make_steering_masks(s_bodies)
     dna01_all = (s_bodies["type"] == "DNa01").to_numpy()
     dna02_all = (s_bodies["type"] == "DNa02").to_numpy()
+    # sprint 017: by-TYPE means (dna01_all/dna02_all above) collapse L+R
+    # together and are NOT what the WTA decides on -- r_team/l_team (by
+    # HEMISPHERE, mixing DNa01+DNa02 on that side) are. Logging the by-side
+    # split explicitly so a real asymmetry (or its absence) is visible
+    # without having to re-derive it from the aggregate-by-type columns.
+    sm = lambda t, s: ((s_bodies["type"] == t) & (s_bodies["somaSide"] == s)).to_numpy()
+    dna01_l_mask, dna01_r_mask = sm("DNa01", "L"), sm("DNa01", "R")
+    dna02_l_mask, dna02_r_mask = sm("DNa02", "L"), sm("DNa02", "R")
     h_steer = np.zeros(Ks)
     orn_adapt = OlfactoryAdaptation()
     orn_adapt_avers = OlfactoryAdaptation()  # separate receptor identity/glomerulus, sprint 016
@@ -798,7 +806,10 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
                                 "hab_escape", "hab_climb", "mdn", "mdn_backing_up",
                                 "ttmn_dnp02", "spike_dnp02", "pathway_fired",
                                 "avers_l", "avers_r", "avoid_odor", "refusing",
-                                "qblock_hit", "mario_size")}
+                                "qblock_hit", "mario_size",
+                                "r_team", "l_team", "dna01_l", "dna01_r",
+                                "dna02_l", "dna02_r", "is_r_mask_sum", "is_l_mask_sum",
+                                "press_a", "lc4_l", "lc4_r", "lplc2_l", "lplc2_r")}
 
         frame = 0
         done = False
@@ -1019,10 +1030,37 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
                 W_kc_mbon -= (LEARNING_RATE * dopamine_reward[:, None] * mb_elig[None, :]
                               * W_kc_mbon)
 
+            # sprint 020 FIX: this was `+MBON_DNA02_FRAC * mbon_agg` (an
+            # unconditional POSITIVE/excitatory bias) until a direct check
+            # of every real edge onto DNa02 within a proper KC/MBON/DNa02
+            # network found 243 of 295 real synapses inhibitory -- MBON31/
+            # MBON32 (the two bodies MBON_DNA02_FRAC was actually measured
+            # from) are BOTH GABAergic, confirmed against consensus_nt.
+            # `MBON_DNA02_FRAC` itself is still the right real magnitude
+            # (014's synapse-count fraction, unaffected by this) -- only
+            # the SIGN was wrong. Real biology this now matches, not
+            # invented for the occasion: mushroom-body appetitive learning
+            # in the fly is understood as depression RELEASING a baseline
+            # inhibitory MBON tone, not adding an attractive pull (Aso et
+            # al. and the broader MB literature) -- exactly the shape
+            # `SPEC_mushroom_body.md`'s own depression-only plasticity
+            # rule already implements: dopamine depresses W_kc_mbon, which
+            # lowers mbon_agg, which now correctly SHRINKS an inhibitory
+            # term rather than shrinking a (wrongly-signed) excitatory
+            # one. Naive (undepressed) MBON tone suppresses movement
+            # toward a source; learning a source is rewarding depresses
+            # that tone and disinhibits approach. No new scalar --
+            # MBON_DNA02_FRAC unchanged, only its sign in the expression.
             mbon_agg = float(h_mbon.mean())
-            mb_bias_r = MBON_DNA02_FRAC["R"] * mbon_agg
-            mb_bias_l = MBON_DNA02_FRAC["L"] * mbon_agg
-            mb_bias_dnp02 = MBON_DNA02_FRAC["R"] * mbon_agg  # placed bias, no real synapse -- see loading block
+            mb_bias_r = -MBON_DNA02_FRAC["R"] * mbon_agg
+            mb_bias_l = -MBON_DNA02_FRAC["L"] * mbon_agg
+            # DNp02's own bias has no real synapse to take a sign from
+            # (checked, zero -- SPEC_mushroom_body.md section 5); kept
+            # structurally parallel to the now-fixed real DNa02 term
+            # (same magnitude, same inhibitory-released-by-depression
+            # shape) rather than left as the one asymmetric case, a
+            # judgement call stated here, not a second real finding.
+            mb_bias_dnp02 = -MBON_DNA02_FRAC["R"] * mbon_agg
 
             Is = np.zeros(Ks)
             # avers_r_eff (threat ahead/right) excites the L team -- flee;
@@ -1248,12 +1286,31 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
                 # docs/MECHANISMS.md #5: rising ATTRACTIVE odour brakes
                 # DNp09 (the aversive channel doesn't -- fleeing calls for
                 # speed, not caution, and MECHANISMS.md #5 frames this as an
-                # approach-to-food behaviour specifically). Reuses the SAME
-                # odor_l_eff/odor_r_eff the steering WTA already computed
-                # (already HOME_BIAS-comparable units via ODOUR_GAIN) --
-                # capped at WALK_DRIVE so it can only bring the drive to
-                # zero, never negative, no new scalar.
-                odor_brake = min(WALK_DRIVE, odor_l_eff + odor_r_eff)
+                # approach-to-food behaviour specifically).
+                #
+                # sprint 017 FIX: 016 shipped this using the raw odor_l_eff+
+                # odor_r_eff (already HOME_BIAS-comparable via ODOUR_GAIN),
+                # reasoning "no new scalar needed, it's already in the right
+                # units." That reasoning was wrong -- confirmed by an A/B on
+                # the real run, not assumed: with the original formula,
+                # dnp09's median over 300 frames was 0.0 and B was pressed
+                # 9.3% of the time; with odor forced to 0 (same run,
+                # otherwise identical), median was 0.94 and B was pressed
+                # 67.7% of the time. ODOUR_GAIN=16 was deliberately sized so
+                # odor ALONE could out-compete a constant HOME_BIAS=1.0 at
+                # long range (SPEC_odour.md section 0) -- reusing that same
+                # inflated magnitude as a braking signal meant "close to a
+                # block" and "merely aware of one 100px away, hunger-boosted"
+                # produced comparable brake strength, near-fully cancelling
+                # WALK_DRIVE across most of a `?`-block-dense stretch, not
+                # just on final approach. Fixed the same way SPEC_odour.md's
+                # OWN section-0 bug was fixed -- not by inventing a new
+                # braking-specific scalar, but by finding the right existing
+                # reference point: odor only brakes AFTER it has already
+                # overpowered HOME_BIAS (i.e. Mario has actually committed to
+                # approaching, not merely detected something) -- reuses
+                # HOME_BIAS itself as the free allowance, no new scalar.
+                odor_brake = min(WALK_DRIVE, max(0.0, odor_l_eff + odor_r_eff - HOME_BIAS))
                 Ip[dnp09_mask] = WALK_DRIVE - (WALK_SUPPRESSION if busy else 0.0) - odor_brake
             for _ in range(dynamics.SUBSTEPS):
                 h_speed = dynamics.step(h_speed, W_p, G_SPEED, Ip)
@@ -1269,6 +1326,16 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
             log["theta"].append(max(theta["L"], theta["R"]))
             log["lc4"].append(hj[j_msk["LC4_all"]].mean())
             log["lplc2"].append(hj[j_msk["LPLC2_all"]].mean())
+            # sprint 017 overlay audit: "lc4"/"lplc2" above blend both
+            # hemispheres into one number, same failure-mode class as the
+            # dna01/dna02 bug -- lower stakes here since TTMn (the actual
+            # jump decision) already reads max(L,R) internally, not this
+            # blended mean, but a one-sided Goomba's real drive still gets
+            # diluted by the quiet far side in what gets displayed/logged.
+            log["lc4_l"].append(hj[j_msk["LC4_L"]].mean())
+            log["lc4_r"].append(hj[j_msk["LC4_R"]].mean())
+            log["lplc2_l"].append(hj[j_msk["LPLC2_L"]].mean())
+            log["lplc2_r"].append(hj[j_msk["LPLC2_R"]].mean())
             log["mem"].append(float(jump_state.mem.max()))
             log["spike"].append(bool(jump_state.just_spiked.any()))
             log["ttmn"].append(ttmn_val)
@@ -1279,6 +1346,15 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
             log["press_b"].append(bool(press_b))
             log["dna01"].append(h_steer[dna01_all].mean())
             log["dna02"].append(h_steer[dna02_all].mean())
+            log["r_team"].append(r_team)
+            log["l_team"].append(l_team)
+            log["dna01_l"].append(h_steer[dna01_l_mask].mean())
+            log["dna01_r"].append(h_steer[dna01_r_mask].mean())
+            log["dna02_l"].append(h_steer[dna02_l_mask].mean())
+            log["dna02_r"].append(h_steer[dna02_r_mask].mean())
+            log["is_r_mask_sum"].append(float(Is[r_mask].sum()))
+            log["is_l_mask_sum"].append(float(Is[l_mask].sum()))
+            log["press_a"].append(bool(press_a))
             log["direction"].append(direction)
             log["climb"].append(bool(climb_trigger))
             log["conflict"].append(bool(conflict))
@@ -1326,6 +1402,19 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
               f"ended={'died/flagged' if done else 'hit max_frames'}")
 
         tel = pd.DataFrame(log)
+        if write_telemetry:
+            # sprint 017: 006-012 always wrote one of these; 016 quietly
+            # didn't, and the diagnosis had to be done by OCR-ing the video
+            # instead of reading real numbers. Every column in `log` --
+            # the full overlay, not a curated subset -- same
+            # `{stem}_telemetry.csv` naming `runs/006_steering_telemetry.csv`
+            # etc. already established. Independent of record_video: a fast,
+            # headless (record_video=False) run is exactly where this
+            # matters most for diagnosis.
+            csv_path = Path(out_mp4).with_name(Path(out_mp4).stem + "_telemetry.csv")
+            csv_path.parent.mkdir(parents=True, exist_ok=True)
+            tel.to_csv(csv_path, index=False)
+            print(f"wrote {csv_path}")
         if record_video:
             _ensure_ffmpeg_on_path()
             import brain_panel

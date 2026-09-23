@@ -824,6 +824,610 @@ test: `inject_mushroom`-style RAM pokes produce a visible, odour-active,
 but **not collidable** object — real pickups need to go through the game's
 own spawn path.
 
+## 017 — the steering bug that wasn't, and two things not built (`runs/017_step1_fixes.mp4`)
+
+**Setup.** Three ordered steps; only the first shipped code. 016 shipped
+no telemetry CSV (fixed first: `main()` now writes `{stem}_telemetry.csv`
+unconditionally, every column, independent of `record_video`).
+
+**Step 1 diagnosis.** The reported "0.016-unit, bimodal DNa01-vs-DNa02"
+asymmetry was never the axis the WTA runs on. `dna01`/`dna02` are means
+BY TYPE (each already blending its own L+R bodies), and DNa01/DNa02
+receive the *identical* per-hemisphere current — so `dna01≈dna02` on
+every frame **by construction**, regardless of whether steering works.
+Pulled the real per-hemisphere numbers at frame 189: `dna01_L=11.008`,
+`dna01_R=1.126`, `dna02_L=11.008`, `dna02_R=1.159`, `r_team=1.142`,
+`l_team=11.008` — a genuine ~10x asymmetry, and exactly why `direction`
+correctly flipped to `L` that frame. The circuit was never broken; the
+telemetry/overlay just never exposed the axis that mattered. Added
+`r_team`/`l_team` and per-hemisphere `dnaXX_l/r` to telemetry, and a
+`steer R_team=… L_team=…` line to the overlay itself.
+
+Separately, real bug, found while checking why "DNp09 sits at exactly
+zero 25/51 frames yet Mario runs constantly": `MOVES`/`action_index`
+gating is correct (`press_b == (dnp09>=threshold)` on 100% of frames,
+checked directly). But 016's own DNp09 odour-brake reused
+`odor_l_eff+odor_r_eff` — already scaled by `ODOUR_GAIN=16` so odour
+alone could out-compete a *constant* `HOME_BIAS` at long range
+(`SPEC_odour.md` section 0's whole point) — as a braking signal, where
+"merely detecting a `?` block ~100px away, hunger-boosted" braked about
+as hard as standing next to it. A/B on the same run: brake active →
+`dnp09` median 0.0, B pressed 9.3% of frames; forced off → median 0.94,
+B pressed 67.7%. Fixed the same way `SPEC_odour.md`'s own section-0 bug
+was fixed once already — not a new scalar, but the right existing
+reference point: braking only engages on the excess over `HOME_BIAS`,
+i.e. after odour has already won the steering competition, not merely
+been detected. Re-run of the same conditions: B-press fraction 24.7%→
+48.7%. **Zero new scalars in this fix — both reuse existing constants.**
+
+**Step 2, re-justified and declined.** The original premise for mutual
+inhibition ("DNa01≈DNa02 almost always") is dead per the finding above.
+Counted actual contradictory-command frames across 1-1/1-2/1-3 (~5,000
+frames total, current fixed code): escape+steering(L)+climb same frame
+= **0** on every level; climb-and-escape both wanting A = **≤1** per
+level; aversive-vs-home near-tie (`|r_team-l_team|<0.1`) = **≤1** per
+level. 006's own "2 harmless conflicts" was the only prior evidence and
+it was thin; this is thinner. Declined to build arbitration for a
+problem this rare — scaffolding for nothing, exactly as specced.
+
+**Step 3, checked and declined.** pC1 is real: **156 bodies** (78L/78R),
+not the ~85 `docs/MECHANISMS.md` had guessed — corrected, same pattern
+as the mushroom body's 4,554→4,064 correction in 014. **DNp37 does not
+exist anywhere in this connectome** — the `DNp*` series runs
+...DNp35, DNp36, **DNp38**, DNp39... — an actual gap, not a naming
+mismatch (checked `type`, `hemibrainType`, `flywireType`, `instance`,
+all empty). **pC1→TTMn: 0 synapses, direct or otherwise checked** — a
+*stronger* negative than DNp02's 012 case, which at least had a real
+21R/5L direct TTMn synapse to justify building on. pC1's real output
+(793,019 synapses total) is dominated by other pC1 subtypes and central-
+brain arousal-adjacent neuropil (SIP/AVLP/mAL/aIPg) — consistent with
+pC1's known role as a P1-like arousal integrator, not a dedicated
+action-selection hub with descending authority. Its largest link to
+anything already built in this project is real but modest: **DNa01,
+115 synapses/20 pairs** (steering) — bigger than its link to the
+literature-suggested DNa11 (27/12) — but that's steering, not an attack
+effector. "Small flees, big jumps over" already exist (odour avoidance,
+size-gated climb hop); "fiery attacks" has no real connectome path to
+stand on, matching and exceeding the standard `docs/MECHANISMS.md`'s
+own "Not building: ranged attack" section already set. Declined.
+
+**Overlay audit** (requested directly): found one more instance of the
+same failure mode, and one that isn't display-only. `lc4`/`lplc2` in the
+overlay blend both hemispheres (lower stakes — `TTMn` itself already
+reads `max(L,R)` for the actual jump decision — but a one-sided Goomba's
+real drive still gets diluted in what's shown); added `lc4_l/r`,
+`lplc2_l/r` to telemetry. More significant: the mushroom body's
+`mbon_agg = h_mbon.mean()` blends **all 97 MBON bodies with no L/R split
+at all**, then `mb_bias_l`/`mb_bias_r` are that SAME scalar times two
+different *fixed* anatomical constants (0.00379 vs 0.00632) — meaning
+the mushroom body cannot currently express a genuinely lateralized
+learned preference under any circumstance, only a uniformly-R-biased
+pull whose overall strength varies. Not fixed this sprint (a real
+redesign of the KC→MBON→steering wiring, not a telemetry fix) — flagged
+for `docs/MECHANISMS.md`'s queue.
+
+**What happened.** `runs/017_step1_fixes.mp4`, 807 frames, level 1-1,
+same conditions as 016 (organic `?`-block/Goomba encounters, synthetic
+wide gap at frame 600): B-press fraction 48.7% (vs 016's un-audited,
+much lower true rate), first odour avoidance at frame 160
+(`r_team=1.12` vs `l_team=3.21`, a real, now-visible asymmetry), 7 real
+`?`-block hits, 60 refusal frames. Trajectory diverges from 016's own
+recording past the first few hundred frames (expected — the DNp09 fix
+changes exactly how fast Mario covers ground, so he meets each Goomba at
+a different frame; same determinism, different path, per 013's own
+finding about single-trajectory comparisons). No mushroom pickup this
+specific run — a property of this trajectory, not a regression.
+
+**What we learned.** Three real, separate findings, not one muddled
+sprint: (1) a genuine circuit can look completely broken through a
+telemetry axis that was never the right one — the 016 diagnosis was
+sound investigative instinct, wrong target column, and the circuit
+itself needed zero repair, only better visibility. (2) The right
+response to "should we build arbitration/an attack pathway" is sometimes
+counting first — both step 2 and step 3 looked plausible from the
+literature and both failed on real numbers, exactly the pattern LPLC1
+(007) and the DNp02 race (012) already established for this connectome.
+(3) **Scalar count: unchanged** (both step-1 fixes reuse existing
+constants — `HOME_BIAS`, no new number). **Scaffolding count: zero new**
+— this is the first sprint in the project's history to net-decrease
+planned complexity, by declining two builds on evidence rather than
+shipping them because they were asked for.
+
+## 018 — LC10a azimuth pursuit: checked, and the test that would decide it can't run on this data (no video — pure connectome analysis, nothing built)
+
+**Setup.** Before any code: does LC10a exist, does the literature's
+LC10a→AOTU→PFL3→DNa02 chain hold up hop by hop in real synapse counts,
+and — the decisive test — does LC10a's arborization in AOTU order
+cleanly along a principal axis (the geometric precondition for "azimuth
+falls out of anatomy" the way looming θ falls out of LC4/LPLC2's real
+wiring in `SPEC_jump.md`)?
+
+**1. LC10 is real.** 960 bodies total across seven annotated subtypes:
+**LC10a 275** (140R/135L), LC10d 214, LC10c-1 130, LC10c-2 125, LC10e
+110, LC10b 95, LC10_unclear 11. LC10a is genuinely the largest subtype,
+consistent with the literature's pursuit-specific framing — confirmed,
+not assumed.
+
+**2. The chain, traced hop by hop by real heaviest edges, not assumed
+names.** LC10a's own real top targets (`AOTU008` 16,114 syn/1,489
+pairs, `AOTU041` 14,304/564, `AOTU019` 14,210/206, plus dense LC10a/
+LC10d self-recurrence) are **NOT** the neurons actually driving TuBu
+(the literature bulb relay). Queried TuBu's own real total input
+directly: dominated by `MeTu1-4` types (13,585/1,111 for the single
+largest, `MeTu3c`) — a different medulla-derived visual stream
+entirely. **LC10a→TuBu (any of the 10 subtypes, summed): 461 synapses/
+172 pairs** — real, but thin next to MeTu's contribution, and thinner
+still per-subtype (largest single link `TuBu01` 169/47). TuBu→ring
+neurons is real (`ExR1` 6,105/508, `ER5` 1,737/58, spread across ~20
+ER/ExR subtypes). Ring/compass input reaching PFL3 is real but a minor
+fraction of PFL3's own total input (60,811 synapses) — `EPG` (the
+actual compass signal) contributes 1,182/113, dwarfed by `Delta7`
+(5,617/278), `hDeltaA/I/M/H`, and the `FC2` family (fan-shaped-body
+columnar neurons carrying non-visual, internal-state-adjacent signals).
+**So: five real hops (LC10a→AOTU→TuBu→ExR/ER→PFL3→DNa02), each real,
+each correctly signed (below), and thin at exactly the two hops between
+LC10a and the compass system** — the visual signal gets diluted by
+non-visual central-complex inputs well before it reaches steering.
+Consensus_nt at every hop, unanimous within type, no split votes:
+LC10a ACh, AOTU008 ACh / AOTU041+AOTU019 GABA, TuBu ACh, ExR5 glutamate
+/ ExR1 ACh, EPG ACh, Delta7 glutamate, PFL3 ACh.
+
+**3. PFL2/PFL3 → DNa01/DNa02 — the one genuinely strong hop.** `PFL1
+→ DNa01/DNa02`: **0** synapses (absent). `PFL2 → DNa01/DNa02`: **5
+synapses/4 pairs** — noise, the same bar that excluded LPLC1 (1/1).
+**`PFL3 → DNa02`: 736 synapses across all 24 PFL3 bodies, zero to
+DNa01.** This is real and substantial — stronger, in fact, than any
+other real link onto DNa02 found in this project so far, including the
+mushroom body's MBON→DNa02 (250 synapses, run 014). If this project
+ever builds a PFL3→DNa02 pathway on its own merits, the anatomy
+supports it cleanly. The problem is entirely upstream of PFL3.
+
+**4. The decisive test — cannot be run, not "didn't order cleanly."**
+Checked every column in all three MaleCNS flat files before attempting
+it: `body-annotations` has exactly one spatial field per body
+(`somaLocation`, the cell-body position — already used by
+`brain_panel.py`) and `tosomaLocation`; `body-neurotransmitters` has
+none; `connectome-weights` has only `body_pre`/`body_post`/`weight` —
+**no per-synapse or per-ROI coordinates anywhere in this data export.**
+"Compute each LC10a cell's presynaptic-site centroid along the AOTU
+principal axis" requires exactly that data, and it does not exist here.
+Substituting soma location (a single point per neuron, typically distant
+from the actual arbor for a neuron whose cell body sits outside the
+neuropil it arborizes in — true of essentially every central-brain
+neuron in this dataset, including LC10a) would answer a different,
+much weaker question and call it the same thing — exactly the kind of
+invented substitute the instruction warned against. Said so and stopped,
+per instruction, rather than run a proxy test and report it as decisive.
+
+**What happened.** No code changed. No video — a pure analysis sprint,
+per CLAUDE.md's own rule for this case.
+
+**What we learned.** A sixth "anatomy says no" in this project's
+history (LPLC1 007, the DNp02 race 012, the aversive/attractive
+olfactory pathway 016, pC1→attack 017, and now this), and the clearest
+yet about *why* the pattern keeps recurring: this connectome captures
+which neurons talk to which and how much, at body-level resolution —
+it does not capture *where within a neuropil* they talk, and a real
+fraction of every literature circuit's mechanism (retinotopy, azimuth
+maps, receptive-field tiling) lives specifically in that missing spatial
+layer. `SPEC_jump.md` already hit this once (LC4/LPLC2's `assignedOlHex`
+is 0% populated, "skip retinotopy in v1") and it was treated as local to
+those two types; it is not local — no neuron in this dataset has
+synapse-level spatial data, which forecloses this whole class of test
+for any future sprint, not just this one. **Scalars: 0 added, 0
+removed** (nothing was built, so "net negative" doesn't apply — stated
+plainly rather than forced). **Scaffolding: 0 added.** Third sprint
+running at zero net new complexity.
+
+**Correction, appended 019 — the "no spatial data" claim above is
+wrong.** `assignedOlHex1`/`assignedOlHex2` ARE present in
+`body-annotations`, for 23,720 bodies across 15 medulla columnar types
+(L1/L2/L3/L5, C2/C3, Mi1/Mi4/Mi9, T1, Tm1/Tm2/Tm4/Tm9/Tm20) — checked and
+missed in this entry's own investigation, which stopped at `somaLocation`/
+`tosomaLocation` and the weights file's three columns without checking
+the annotation column list against `assignedOlHex*` specifically, despite
+that exact column name having already been printed to this same session
+once before (the full 36-column dump done for an unrelated check).
+**`SPEC_jump.md`'s own framing was closer to correct than this entry's
+restatement of it** — it said the coordinates "exist only for columnar
+optic lobe cells," which is exactly what's true; this entry generalised
+that into "no neuron... has synapse-level spatial data," which overshot
+the real finding into a false one. See `## 019` below for what the data
+actually supports once checked properly, including a claim in the
+correction request that turned out to also be wrong in an interesting
+way (TmY3, cited as carrying hex data, carries none — it just happens to
+receive heavily FROM cells that do). Not editing the paragraphs above;
+this stands as the record of getting it wrong before getting it right.
+
+## 019 — LC10a really does tile azimuth; the pathway to steer with it doesn't survive its own thinness (no video — connectome analysis + one calibration check, nothing wired into the live system)
+
+**Setup.** Corrected 018 first (above). `assignedOlHex1`/`assignedOlHex2`
+exist for 23,720 bodies across 15 medulla columnar types (L1/L2/L3/L5,
+C2/C3, Mi1/Mi4/Mi9, T1, Tm1/Tm2/Tm4/Tm9/Tm20) — checked directly, unique
+per (hex1,hex2) pair within a type (0 duplicates in 1,767 L1 bodies), and
+per-EYE, not global: L and R both independently span the same 1-36 x
+1-39 range. The occupied footprint is a hexagon inscribed in that
+rectangle (corr(hex1,hex2)=0.57, occupancy narrowing toward both hex1
+extremes) — the standard oblique axial hex-lattice signature, not an
+orthogonal azimuth/elevation grid. Converting to true visual-angle
+degrees needs an external hex-to-Cartesian shear and an inter-ommatidial
+angle constant, neither of which lives in this data — so the ordering
+test below is run in native hex-coordinate space, which is a linear
+transform away from degrees and just as valid for asking "does the
+population tile or pile up."
+
+**TmY3 does not carry hex data — the specific claim was wrong, but the
+mechanism behind it is real.** Checked directly: 0 of TmY3's 824 bodies
+have `assignedOlHex1`/`2`. But TmY3 *receives* very heavily from
+hex-carrying cells (Mi4/L5/Tm2/Mi9/Mi1/Tm4/L2/Tm20: 286,681 of 623,162
+total real input, 46.0%, all 824 bodies reached) — a real, derivable
+receptive field, just not the one the request named.
+
+**LC10a's real one-hop hex-carrying input.** Checked LC10a's full real
+presynaptic population, not assumed: dominated by non-hex types (LC9,
+Tm5Y, TuTuA_2, AOTU042, other LC10 subtypes). Among the 15 hex-carrying
+types, only `Tm1` (9 syn/6 pairs, noise), `Tm2` (77/20, thin), `Tm20`
+(1,402/684), and `Tm4` (2,657/994) connect at all — **4,145 of 258,112
+total real input, 1.61%** — but real, one hop, not two, per the rule set
+before looking: two hops would have meant inherited coordinates smeared
+across an unknown receptive field, and the answer would have been no
+before the test even ran. It's one hop, so the test proceeds.
+
+**The decisive test, LC10a: passes, with a real side asymmetry.** For
+each LC10a body, computed its receptive-field centre as the synapse-
+weighted mean hex position of its real Tm1/Tm2/Tm20/Tm4 partners (248/275
+bodies reached, 90%), then compared each body's OWN input spread against
+the nearest-neighbour distance between different bodies' centres:
+
+| side | bodies w/ input | within-body spread (med) | nearest-neighbour dist (med) | "indistinguishable" (NN < own spread) | hex1 span | hex2 span |
+|---|---|---|---|---|---|---|
+| L | 112/135 | 0.68 | 1.42 | 6/112 (5%) | 3.0–34.7 | 1.0–38.0 |
+| R | 136/140 | 1.37 | 1.60 | 47/136 (35%) | 4.4–34.0 | 1.2–36.4 |
+
+Both sides cover nearly the full grid — this is tiling, not pile-up, on
+either side. The left side is clean (95% of cells clearly separated from
+their nearest neighbour); the right is noisier (65%) — a real,
+unexplained asymmetry, reported as found rather than averaged away.
+**Verdict: clean ordering, not degenerate. The population really does
+carry a graded position signal, derived from real synapses, not invented
+by binning.**
+
+**The bigger prize, checked in the same pass: LC4/LPLC2, direct, not via
+TmY3.** TmY3 being a dead end for its OWN hex identity doesn't block
+this — LC4 and LPLC2 receive hex-carrying input DIRECTLY, one hop, no
+relay needed: **LC4 16.47%** of total real input (Tm4 31,134/5,006 + Tm2
+20,560/4,149, all 126 bodies reached), **LPLC2 5.84%** (Tm20 13,367/3,183
++ Tm4 7,758/2,401, all 185 bodies reached) — both an order of magnitude
+denser than LC10a's 1.61%. Ran the same tiling test anyway, out of
+curiosity about whether density alone would make it cleaner: it doesn't.
+LC4 is markedly noisier than LC10a (58-62% "indistinguishable" on both
+sides, vs LC10a-L's 5%), LPLC2 intermediate (28-34%). Both still span the
+full hex grid, so this isn't pile-up either — it reads as real, broad,
+overlapping receptive fields, which is what a wide-field looming detector
+is *supposed* to have, unlike LC10a's narrow pursuit tuning. Denser
+input does not automatically mean cleaner tiling; the two are answering
+different questions. Confirmed present and worth a future sprint;
+**not built here, as specified.**
+
+**The pre-commit check that stopped the build.** Extracted the real,
+named-population traced path as its own body-level circuit
+(`lc10a_pursuit_circuit.py`: LC10a 275 + TuBu 156 (10 subtypes) + ring
+ER/ExR 296 (29 subtypes) + PFL3 24 + DNa02 2 = 753 bodies, real edges/
+signs/weight matrix via the same reused helpers every other circuit here
+uses). Coverage matches 018's own warning: LC10a 11.6%, PFL3 3.9%, DNa02
+1.5% (of each type's real total input — the rest is Delta7/hDelta/FC2/
+PFNp and friends, entirely outside this subgraph, per 018). Spectral
+radius scales exactly linearly with g (ρ=g, an unusually clean result —
+the ring-neuron cluster's own near-total self-coverage, 0.6-0.95, forms
+a near-closed recurrent loop dominating the top eigenvalue), so g<1 is
+required for stability; tested g up to 0.95, safely under.
+
+Drove LC10a with a synthetic azimuth stimulus (Gaussian tuning around a
+target hex position, using each body's own measured spread as its
+bandwidth — no invented constant) at g=0.5-0.95: **PFL3 and DNa02 output
+stayed at 0.00000-0.00048, against HOME_BIAS's own scale of 1.0** — six
+orders of magnitude down. Not a calibration miss: stress-tested by
+driving ALL 275 LC10a bodies at the network's own clip ceiling (50.0,
+full saturation) at g=0.95 — **DNa02 still only reaches 0.00072.**
+Maximum possible drive through this real, correctly-signed, real-gain-
+bounded circuit does not move DNa02 by an amount that could ever compete
+with HOME_BIAS, odour, or anything else already in the steering WTA.
+**Thinness is fatal at every realistic gain. Did not commit to the
+build.**
+
+**What happened.** No code changed in the live system.
+`lc10a_pursuit_circuit.py`/`load_lc10a_cached.py` exist as real, cached,
+reusable investigation artifacts (same category as `query_input_pools.py`
+or `tune_dnp02.py`) — built, tested, and correctly report a negative
+result; not imported by `run_steering.py`. No video: nothing about
+Mario's behaviour changed.
+
+**What we learned.** Three separate, real findings. (1) 018's "no
+spatial data" claim was a genuine mistake, corrected above — the data
+partially supports exactly what was asked for, and getting it wrong once
+before getting it right is worth keeping on the record rather than
+quietly fixing forward. (2) The decisive test itself is a good filter,
+independent of its outcome here: LC10a's real one-hop hex input, thin as
+a *fraction* of its total drive (1.61%), still produces genuinely clean
+retinotopic tiling — thinness of input fraction and cleanness of spatial
+order are different properties, and conflating them would have thrown
+out a real result. (3) But a clean map at the *front* of a pathway
+doesn't guarantee the *pathway* survives — this is the same shape of
+finding as the mushroom body's real-but-4,000x-too-weak MBON→DNa02 bias
+(014), here compounded across five hops and roughly three orders of
+magnitude worse (six, not four). The chain LC10a→AOTU→TuBu→ring→PFL3→
+DNa02 is real at every hop (018) and the input end of it is real and
+spatially organised (this entry) — and none of that is sufficient, once
+actually simulated, because each hop's real coverage inside a 753-body
+subgraph compounds multiplicatively against everything real that hop
+also does that this subgraph can't capture (Delta7/hDelta/FC2/PFNp at
+PFL3 alone dwarf the ring input this pathway carries). **Invariant
+restated, not left to imply more than it is:** this was never going to
+give Mario pixels, and still isn't — RAM supplies a target's distance
+and side exactly as it always has, synthesised into the SAME kind of
+scalar `theta`/`d` already feeds LC4/LPLC2. What the hex data would have
+added, had the pathway carried it, is which *specific* real LC10a cell
+should receive that scalar — a real population map instead of one blanket
+value per hemisphere — not vision, a better-targeted version of the same
+compromise SPEC_jump.md made from the start.
+
+## 020 — two checks on 019's methodology: it wasn't chained, and MBON isn't usable either (no video — pure verification, nothing built)
+
+**Setup.** Two checks requested against 019's "fatal" verdict, explicitly
+no building either way: (1) drive DNa02 through MBON and through PFL3
+under an identical pipeline and compare magnitudes; (2) rebuild the
+LC10a→DNa02 path as one single-normalisation network rather than
+(assumed) five chained subgraphs, and re-measure with per-hop
+attenuation reported.
+
+**Check 2 first, because it turned out to be a non-issue: 019 was
+already a single network.** Checked `lc10a_pursuit_circuit.py` directly
+— one `mcns.body_subgraph` call over all 753 bodies, one
+`circuit.build_weight_matrix` call, one resulting `W`. There was never a
+second normalisation pass to introduce; "five hops" in 019's writeup
+meant graph distance through that single sparse `W`, not five separately
+row-normalised stages someone forgot to merge. Re-measured anyway, this
+time reading out every intermediate population from the SAME settled `h`
+(g=0.95, all 275 LC10a driven to the clip ceiling, 50.0, matching 019's
+own maximal stress test):
+
+| stage | n | mean activation | attenuation from previous hop |
+|---|---|---|---|
+| LC10a (driven) | 275 | 50.000 | — |
+| TuBu | 156 | 5.978 | 8.4x |
+| ring ER/ExR | 296 | 0.222 | 26.9x |
+| **PFL3** | 24 | 0.00108 | **206x** |
+| DNa02 | 2 | 0.000719 | 1.5x |
+
+The loss is not spread evenly across hops (a uniform-per-hop artifact
+from chained normalisation would look roughly equal at each step) — it
+concentrates almost entirely at ring→PFL3, the exact hop 018 already
+flagged as thin (PFL3's real input is 3.9% covered by this subgraph;
+the rest is Delta7/hDelta/FC2/PFNp, entirely outside it). The 8.4x
+TuBu loss roughly tracks TuBu's own ~11.6% LC10a-specific coverage too.
+**The attenuation pattern matches the anatomy's own real coverage gaps,
+hop by hop — the signature of a genuinely thin pathway, not a pipeline
+artifact.**
+
+**Check 1: built PFL3's exact comparison, KC→MBON→DNa02 as ONE network
+(4,517 bodies: 4,064 KC + 354 DAN + 97 MBON + 2 DNa02, one
+`body_subgraph` call, one weight matrix — same pipeline as the LC10a
+circuit, not 014's original separate-fraction method). Drove 5% of KC
+(203 bodies, matching `KC_SPARSITY`) to the clip ceiling, same style as
+PFL3's own stress test. **Result: DNa02 = 0.000000. Exactly zero, not
+small — MBON is not usable either, under a fair pipeline.**
+
+**Why, and it's a real bug, found only because this comparison was done
+properly.** Checked every real edge onto DNa02 within this subgraph:
+295 synapses total, but **243 of them are inhibitory and only 52
+excitatory** (net signed sum: −191). The two dominant real partners —
+`MBON31` (133/3 pairs) and `MBON32` (104/2 pairs), together the same
+population 014 built the mushroom-body bias on — are **both GABAergic**,
+confirmed against `consensus_nt` directly. `ReLU` correctly clips a
+net-inhibitory drive with no excitatory floor to zero; that's not a bug
+in the test, it's the real fixed point.
+
+**The bug is in the shipped code.** `run_steering.py`'s
+`MBON_DNA02_FRAC = {"L": 0.00379, "R": 0.00632}` was computed in 014 as
+a raw synapse-COUNT fraction, with no sign attached, and is applied as
+`mb_bias_r/l = MBON_DNA02_FRAC * mbon_agg`, added UNCONDITIONALLY
+POSITIVE onto `Is[dna02_all & r/l_mask]` — treating the mushroom body's
+real influence on steering as attractive, when its dominant real
+synapses are inhibitory. 014's own finding that this bias is "~4,000x
+too small to matter" means the sign error hasn't changed any observed
+behaviour to date — but it is a real correctness bug, independent of
+everything else in this entry, sitting in currently-shipped code.
+**Not fixed this sprint — no building was in scope — flagged below.**
+
+**What we learned.** Both of the user's two possible outcomes were
+partially right, in a way neither branch anticipated. The pathway
+genuinely is too thin (019's verdict stands, now on a hop-by-hop basis
+instead of an end-to-end one) — but the *reason* the MBON comparison
+looked suspicious wasn't chained normalisation (there wasn't any) or a
+pipeline bug in the PFL3 test. It was that the ORIGINAL MBON test (014)
+and the new PFL3 test (019) were never actually comparable — 014 never
+built DNa02 into a real weight-matrix node at all, it multiplied by a
+hand-carried unsigned fraction, which cannot represent inhibition and so
+silently reported a small positive number for a connection that's
+really a hard-inhibited zero. Once both pathways are tested the same
+honest way, **neither is usable**, for two completely different real
+reasons (PFL3: genuinely thin coverage, multiplicatively compounded;
+MBON: real, substantial, and inhibitory, previously mis-signed as
+excitatory). No negatives elsewhere in this project need revisiting on
+the "chained normalisation" theory specifically — nothing else here was
+built as a multi-hop simulated network the way `lc10a_pursuit_circuit.py`
+was; the other null results (LPLC1, the DNp02 race, the aversive
+olfactory pathway, pC1) were direct single- or two-hop synapse-count
+checks against a noise bar, not chained simulations, so this specific
+failure mode doesn't apply to them. **Scalars: 0. Scaffolding: 0** —
+still pure verification, as asked.
+
+## 021 — the sign fix, and MBON really does modulate a live baseline (barely) (no video — a one-line behavioural sign flip plus a corrected re-test, nothing new to watch)
+
+**Setup.** Two asks: fix the real bug 020 found (`MBON_DNA02_FRAC` applied
+as an unconditional positive bias when the dominant real synapses are
+inhibitory), and re-run 020's check 1 with DNa02 given a REAL excitatory
+environment instead of none — 020's KC-rooted subgraph gave DNa02 no
+possible positive baseline to inhibit, so its "exactly zero" result
+couldn't distinguish "the effect is negligible" from "the test structurally
+cannot show any effect at all." Both are real questions; only the second
+one got a clean answer in 020.
+
+**The fix.** `run_steering.py`: `mb_bias_r/l` is now
+`-MBON_DNA02_FRAC * mbon_agg` (subtracted, not added), and `mb_bias_dnp02`
+kept structurally parallel (same sign, same "no real synapse, judgement
+call" status it already had). `MBON_DNA02_FRAC` itself is untouched —
+014's magnitude was never wrong, only its sign. This matches real MB
+physiology, not invented for the occasion: naive MBON tone is understood
+to suppress approach, and appetitive depression releases it — exactly the
+shape the existing depression-only plasticity rule already implements,
+now finally pointed the right direction. No new scalar.
+
+**The corrected test.** Built ONE combined network: `steering_circuit.py`'s
+own real extraction (DNa01/DNa02 core + all 325 real N≥60 threshold
+partners, 329 bodies — the *escape-circuit's own criterion*, not a
+KC-rooted one, per instruction) UNION `mushroom_body_circuit.py`'s core
+(KC 4,064 + MBON 97 + DAN 354) = 4,843 bodies, one real edge extraction,
+one weight matrix (ρ(g=1)=0.983, same safe-gain shape as 020's). Drove
+`HOME_BIAS` onto the real R-side DNa01/DNa02 units exactly as the live
+game does — this is the piece 020 skipped — and let the network settle:
+**DNa02_R = 0.9978, a genuine live baseline**, not the flat zero a
+KC-only subgraph is structurally stuck at.
+
+**MBON can modulate it. The direction is now right. The size is still
+close to nothing.** Adding a 5%-KC odour drive (undepressed, full real
+weight) pulls DNa02_R down to 0.99685 — a real, measurable,
+correctly-signed **decrease** of 0.096% of baseline. Sweeping this
+pattern's own KC→MBON depression from 0% (naive) to 100% (that pattern's
+MBON drive fully eliminated) recovers DNa02_R to 0.99690 — the full
+depression range moves the effect by about 5% of itself. **Realistic
+depression levels (5–20%, matching what `LEARNING_RATE=0.001` actually
+produces per reward event) move it by roughly 0.2% of the already-tiny
+effect** — undetectable against `HOME_BIAS`'s own scale of 1.0 or
+odour's typical 1–10 (sprint 016/017 telemetry).
+
+**What we learned.** Not a repeat of 020's "exactly zero," and not a
+reversal of it either — a sharper version of the same practical
+conclusion, now honestly earned. MBON's real synapse onto DNa02 is
+substantial (295 synapses, 243 inhibitory), correctly signed after this
+fix, and genuinely, measurably responsive to learning — every part of
+this circuit does real work. None of that changes what 014 already
+found: at realistic anatomical strength, the effect is roughly three
+orders of magnitude too small to move a decision already dominated by
+`HOME_BIAS` and odour. **014's magnitude estimate (≈0.00026) turns out
+to have been in the right ballpark all along** — what was wrong was only
+its sign, not its size. `MBON_DNA02_FRAC`'s wrongness was behaviourally
+silent for the same reason both before and after this fix: not because
+the bias was zero, but because it was always going to be too small to
+matter, and fixing the sign of a negligible number keeps it negligible,
+correctly. **Scalars: 0 added, 0 removed** (only a sign flip on an
+existing one). **Scaffolding: 0 added** — the combined test network is
+an investigation artifact (matching `lc10a_pursuit_circuit.py`'s own
+category), not wired into the live system.
+
+## 022 — HOME_BIAS's natural range, and whether it's been drowning the connectome (no video — one measurement, nothing built)
+
+**Setup.** A direct challenge to 019-021's methodology: `HOME_BIAS=1.0`
+is injected DIRECTLY onto DNa01/DNa02 themselves, with zero synaptic
+attenuation — a fundamentally different, and possibly unfairly
+advantaged, mechanism compared to MBON/LC10a's signals, which both had
+to survive real, normalised synaptic transmission to reach the same
+target. If DNa02's own natural range (driven fairly, through real
+synapses, not direct injection) turns out to be ~10⁻³ rather than ~1,
+then HOME_BIAS's 1.0 was never a fair reference point and 019-021's
+"too small to matter" verdicts were measured against the wrong ruler.
+
+**The zero case, reported and set aside.** `HOME_BIAS=0` with literally
+no other drive anywhere gives DNa02 = 0 exactly — mechanically
+unavoidable for this leaky-ReLU rate model (no input, `h(0)=0`, stays 0
+forever; there's no spontaneous/tonic firing in this framework). Not
+informative on its own, so the real test is DNa02's range under a FAIR
+real reference current instead of no current — matching exactly how
+MBON's and LC10a's own external drives were tested, i.e. injected at the
+network's real boundary, not directly on the target.
+
+**The fair reference: `steering_circuit.py`'s own real N≥60 threshold
+partners (325 bodies, 158 on the R side) — DNa01/DNa02's actual,
+verified real input population, the escape circuit's own extraction
+criterion, already in hand from 021.** Drove them exactly the way KC and
+LC10a were driven (never DNa02 directly), same combined 4,843-body
+network, same `g=0.8`:
+
+| drive | fraction active | DNa02_R |
+|---|---|---|
+| HOME_BIAS=1.0, **direct** on DNa01/DNa02 (current mechanism) | — | **0.998** |
+| unit(1.0) on real threshold partners, **boundary**-injected | 100% (325) | 0.197 |
+| unit(1.0) on real threshold partners, boundary-injected | 5% (8) | 0.027 |
+| clip-ceiling(50) on real threshold partners, boundary-injected | 100% (325) | **8.826** |
+
+**So: direct injection really is unfair, but only by ~5x, not by orders
+of magnitude.** Comparing the two boundary-injected rows at matched
+methodology to HOME_BIAS's own direct-injected 0.998: a fully-driven
+real population gives 0.197 (≈5x smaller) at the same unit magnitude,
+and 8.8 (≈9x *larger*) at the clip ceiling. DNa02's real natural range,
+fairly measured, spans roughly **0.03 to 8.8** depending on how much of
+its real input population is active — landing solidly in the same
+order of magnitude as 1.0, not three orders below it. **The premise
+doesn't hold: the natural range is not ~10⁻³.**
+
+**Re-running PFL3 and MBON in this now-established range — the nulls
+get sharper, not weaker.** Testing LC10a and KC the IDENTICAL way
+(boundary-injected, matched fractions, same network):
+
+| pathway | 5% active, drive=1.0 | 100% active, drive=50 |
+|---|---|---|
+| **steering's own real partners** | 0.027 | 8.826 |
+| MBON (via KC) | 0.000000* | 0.000000* |
+| LC10a (019) | — | 0.00072 |
+
+\* MBON's real dominant synapse is inhibitory (020/021) — a driveless
+DNa02 has no positive activation to inhibit, so this reads as an
+artifact of testing sign-only modulation without 021's live baseline,
+not a magnitude finding on its own; 021's own baseline-included test is
+the fair one for MBON specifically (~0.1% modulation of a 0.998
+baseline). LC10a is purely excitatory, so its own boundary-injected
+number is directly comparable here.
+
+The gap between the real, working reference (steering's own N≥60
+partners) and LC10a's real chain is **~12,000x at matched maximal
+drive** (8.826 vs 0.00072) — both tested with the exact same mechanism,
+same magnitude, same "drive everything to the ceiling" convention,
+neither one direct-injected. **This is the decisive result: the
+pipeline itself discriminates correctly between anatomically strong and
+weak real pathways** (a >4-order-of-magnitude spread between two
+populations tested identically) **— it does not uniformly crush every
+real signal, which is what a genuine "chained normalisation is silently
+attenuating everything" or "HOME_BIAS is drowning everything by
+mechanism alone" bug would have to look like.** MBON, tested fairly with
+a live baseline (021), and LC10a, tested fairly at matched maximal drive
+(this entry), are each real, anatomically thin pathways on their own
+terms — not victims of an unfair comparison to an inflated HOME_BIAS.
+
+**Same units question: yes, roughly.** Drove the real jump circuit
+(`load_cached`, `g=2.0`, the shipped gain) with realistic-to-near-
+collision θ/θ̇ (1.5/0.3 through 2.9/0.6, matching sprint 016/017
+telemetry ranges): DNp01 settles to 0.64-1.25, TTMn to 1.07-2.08 —
+`TTMN_PRESS_THRESHOLD=3.0` sits just above that natural range, the same
+relationship `HOME_BIAS=1.0` has to DNa02's own ~0.2-8.8 fair range.
+Both circuits operate on the same O(0.1-10) scale, with their
+respective hand-set thresholds/biases landing inside that same range,
+not off by orders of magnitude in either direction. Different circuits,
+same rough units — `g`, `alpha`, `CLIP=50` are shared machinery, not
+independently calibrated per circuit, so this is expected rather than a
+coincidence, but it was asked and worth confirming rather than assuming.
+
+**What we learned.** The hypothesis was well-posed and worth testing
+directly rather than dismissing — a genuinely different outcome
+(natural range ~10⁻³) would have meant re-reading three sprints. It
+came back ~1, with a real but modest (~5x) direct-injection advantage
+for `HOME_BIAS` noted and left alone (no building, as instructed) rather
+than either overstated or ignored. **019, 020, and 021 stand, and stand
+on firmer ground than before**: the fair, matched-methodology comparison
+this entry ran is a strictly stronger test than anything in those three
+entries individually, and it reproduces the same ranking (steering's own
+real partners ≫ MBON ≫ LC10a's chain) that the individual investigations
+already found. **Scalars: 0. Scaffolding: 0.**
+
 ## Still open
 
 - **The 009 climb/long-jump livelock is understood, not just patched
@@ -867,3 +1471,47 @@ own spawn path.
   never populates. Undiscovered until now because 006/008/009 only ever
   needed an odour value from it. Worth root-causing if a future sprint
   needs a synthetic OBJECT (not just a synthetic RAM value) to be pickable.
+- **The mushroom body cannot express a lateralized learned preference**
+  (017): `mbon_agg` blends all 97 MBON bodies into one scalar before
+  `mb_bias_l`/`mb_bias_r` split it back out by a FIXED anatomical ratio
+  (0.00379 vs 0.00632) -- so whatever KC pattern was actually learned on
+  each side individually never reaches the decision as a real left/right
+  difference, only as a uniformly-R-biased pull of varying strength. A
+  real fix needs an actual per-hemisphere KC->MBON readout, not a
+  telemetry change -- bigger than an audit fix, queued here.
+- **pC1's real output mostly isn't identifiable** (017): of 793,019 real
+  outgoing synapses, 530,215 (66.8%) land on bodies with no `type`
+  annotation in this connectome. The characterization here ("dominated by
+  other pC1 subtypes and arousal-adjacent neuropil") is necessarily about
+  the identified third only.
+- **No synapse-level spatial data exists anywhere in this dataset** (018):
+  confirmed across all three MaleCNS flat files, not assumed from the
+  LC4/LPLC2 case alone. Forecloses any future "does this population order
+  along a spatial axis" test (retinotopy, azimuth, receptive fields) --
+  those need a different data export (e.g. per-ROI or per-synapse
+  coordinates), not a cleverer query against this one.
+- **LC4/LPLC2 have real, denser (than LC10a) hex-carrying input, not yet
+  used** (019): LC4 16.47% of real input, LPLC2 5.84%, both one hop, both
+  reaching 100% of bodies -- but with noisier receptive-field tiling than
+  LC10a (58-62%/28-34% "indistinguishable" vs LC10a-L's 5%), consistent
+  with these being wide-field detectors rather than narrowly tuned ones.
+  Explicitly out of scope for 019; would need its own pre-commit
+  thinness check (`lc10a_pursuit_circuit.py`'s own result argues for
+  running that check before writing any wiring code, not after).
+- ~~The mushroom body's DNa02 bias has the wrong sign (020)~~ **FIXED in
+  021** -- `mb_bias_r/l`/`mb_bias_dnp02` now subtract rather than add.
+  Re-tested with a live excitatory baseline (021): the corrected,
+  inhibitory bias is real and measurably responsive to depression, but
+  stays ~0.1% of baseline -- 014's original magnitude estimate was right,
+  only its sign was wrong. The still-open lateralisation issue
+  (`mbon_agg` blending L+R, 017) is untouched by this fix and remains
+  open.
+- **HOME_BIAS has a real, modest (~5x) direct-injection advantage over a
+  fairly boundary-injected equivalent** (022): not the order-of-magnitude
+  effect that would have invalidated 019-021, but real and measured --
+  `HOME_BIAS=1.0` direct on DNa01/DNa02 settles DNa02_R to 0.998; the
+  same magnitude applied fairly (boundary-injected on the real N>=60
+  threshold partners instead) settles it to 0.197. Not fixed here (no
+  building was in scope) -- worth considering whether HOME_BIAS should
+  eventually enter the same way a real sensory population would, the
+  next time the steering circuit's own wiring is touched.

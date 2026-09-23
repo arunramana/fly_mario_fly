@@ -121,7 +121,8 @@ def panel(act: dict, norm: dict, spike: bool = False, caption: str = "",
           odor_r: float | None = None, hungry: bool | None = None,
           steer_left: bool = False, orn_a_l: float | None = None,
           orn_a_r: float | None = None, avers_l: float | None = None,
-          avers_r: float | None = None, refusing: bool = False) -> Image.Image:
+          avers_r: float | None = None, refusing: bool = False,
+          r_team: float | None = None, l_team: float | None = None) -> Image.Image:
     """One frame of the brain panel. act/norm are {population: value}.
     `populations` defaults to the original jump-circuit four; pass ORDER +
     STEERING_ORDER to also draw DNa01/DNa02 (run_steering.py)."""
@@ -174,6 +175,17 @@ def panel(act: dict, norm: dict, spike: bool = False, caption: str = "",
         # text-readout treatment as odour itself, right below it.
         d.text((18, 104), f"ORN adapt  a_L={orn_a_l:.3f}  a_R={orn_a_r:.3f}",
                font=fs, fill=(137, 135, 129))
+    if r_team is not None and l_team is not None:
+        # sprint 017: the "DNa01" / "DNa02" bars below are means BY TYPE
+        # (each already averaging its own L+R bodies together) -- they are
+        # NOT what the WTA decides on, and will read as nearly identical to
+        # EACH OTHER almost every frame by construction (DNa01/DNa02 receive
+        # the same per-side current). r_team/l_team, by HEMISPHERE, is the
+        # actual decision signal and the one place a steering asymmetry is
+        # visible -- diagnosed the hard way in 017 after 016's own video had
+        # to be read back via OCR with no r_team/l_team column to check.
+        d.text((18, 136), f"steer  R_team={r_team:.3f}  L_team={l_team:.3f}",
+               font=fs, fill=(120, 200, 160))
     if avers_l is not None and avers_r is not None:
         # Aversive odour (sprint 016) -- same text-readout treatment, not a
         # soma: it's a second RAM-derived channel through the same steering
@@ -246,6 +258,7 @@ def render_run(tel: pd.DataFrame, frames_dir, out_path, fps: int = 60,
     has_orn_adapt = "orn_a_l" in tel.columns and "orn_a_r" in tel.columns
     has_aversive = "avers_l" in tel.columns and "avers_r" in tel.columns
     has_refuse = "refusing" in tel.columns
+    has_teams = "r_team" in tel.columns and "l_team" in tel.columns
 
     tmp = Path(out_path).parent / "_composite_tmp"
     tmp.mkdir(parents=True, exist_ok=True)
@@ -272,7 +285,9 @@ def render_run(tel: pd.DataFrame, frames_dir, out_path, fps: int = 60,
                   orn_a_r=float(row.orn_a_r) if has_orn_adapt else None,
                   avers_l=float(row.avers_l) if has_aversive else None,
                   avers_r=float(row.avers_r) if has_aversive else None,
-                  refusing=bool(row.refusing) if has_refuse else False)
+                  refusing=bool(row.refusing) if has_refuse else False,
+                  r_team=float(row.r_team) if has_teams else None,
+                  l_team=float(row.l_team) if has_teams else None)
         # show the real membrane value in the readout, not the held flash
         game = Image.open(frames[i])
         out = Image.new("RGB", (p.width + game.width, max(p.height, game.height)),
