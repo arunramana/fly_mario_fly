@@ -2033,6 +2033,78 @@ aversive signal. Verified byte-identical against goldens both before and
 after this change, confirming the `!=`/`==` comparisons never depended on
 which specific non-powerup kind something is.
 
+## Refactor phase 5 -- Episode, protocols, fitness, output routing
+
+No behaviour changed -- verified byte-identical against `tests/golden/`
+after every piece, checked separately. Short note, not a four-field entry,
+same convention as phases 0-4.
+
+**Carry-over, done first:** CLAUDE.md invariant 3 still said "exactly two
+hand-set scalars" against `docs/SCALARS.md`'s own generated 49 -- fixed as
+this sprint's first commit, per its own instruction.
+
+**Episode/Policy/Environment**, per section 5.2's own snippet verbatim
+(`sim/protocols.py`). `sim/episode.py`'s `Episode` composes one of each and
+notifies observers, importing nothing from `fly/`/`mario/`/`bridge/` --
+enforced by a new import-guard test, checked to actually fail on a real
+violation before being kept, same discipline as the original fly-vs-mario
+guard. Proven end-to-end with REAL implementations, not a toy pair:
+`mario/emulator/environment.py`'s `MarioEnvironment` (nes-py wrapped
+directly) and `bridge/policy.py`'s `JumpPolicy` (the escape/jump circuit,
+self-contained since phase 3). **Scoping decision, stated plainly:**
+`JumpPolicy` is genuinely narrower than `run_steering.main()`'s full
+system -- no steering, terrain, mushroom body, habituation, or MDN.
+Migrating that whole system onto this interface is real, separate,
+substantial work -- large enough that attempting it inside this same
+sprint would have repeated phase 3's own lesson (a rewrite this size needs
+its own dedicated, one-thing-at-a-time verification, not a bolt-on to
+three other deliverables). `run_steering.main()` remains today's actual
+entry point for a full scenario; whoever migrates it next has real,
+tested scaffolding to migrate onto, not a stub.
+
+**Telemetry is a live observer today, not deferred.** The old
+`log = {k: [] for k in (...)}` + ~53 individual `log[col].append(value)`
+calls + `pd.DataFrame(log)` -- the exact pattern sprints 017-022 kept
+touching to add one field -- is now `sim/telemetry.py`'s
+`TelemetryObserver`: `row = observer.new_row()`, `row[col] = value` per
+frame, `observer.record(row)`, `observer.to_dataframe()`/`.write()` at the
+end. Column order fixed once, at construction, exactly as the old dict
+comprehension fixed it. Wired into `run_steering.py`'s actual `main()`,
+verified byte-identical including the `frame_skip` repeat-last-row path.
+
+**Fitness**, per section 6: `distance` defaults to 1.0 and rejects zero or
+negative -- 025's finding (an episode "survived" 800 frames oscillating at
+x=658 against a baseline that reached x=1432) made structural, not just
+documented. Computed and recorded only, per this phase's own instruction
+-- no live call site reads it, and none should yet.
+
+**Output routing.** `run_steering.main()`'s `out_mp4` has no default any
+more (was `"runs/008_run.mp4"`, a silent stray top-level fallback -- every
+caller in this repo already passed an explicit one; checked before
+removing it). A bare `main()` call now raises. `config/output_routing.py`
+turns a `ProjectConfig` into `projects/<name>/runs/...` /
+`projects/<name>/telemetry/...`, raising when `project_name` is unset.
+`sim/project_runner.py` ties a `ProjectConfig` to `run_steering.main()`
+directly -- not through `Episode`, which must never import fly/mario/
+bridge; this is glue for today's real system, not a smaller stand-in.
+
+**The config round-trip, proven:** `projects/legacy/config.json` (every
+component param at its phase-4 default, scenario set to 017's own level/
+max_frames/inject_gap_frame) loads, runs, and produces
+`projects/legacy/telemetry/017_reprise_config_roundtrip_telemetry.csv`
+byte-identical to `tests/golden/017_reprise_telemetry.csv`. First moment a
+project is reproducible from one file, per this phase's own instruction.
+
+Also checked and left alone: CLAUDE.md's own "every change ends with a
+video in `runs/`" convention doesn't actually contradict the `out_mp4`
+default's removal -- every sprint has always passed an explicit path
+matching that convention already; only the *silent, unrequested* fallback
+was the problem, and only main()'s own bare-call default did that.
+
+Full 47-test suite (goldens, both import guards, integrator equivalence,
+params-match-live, scalars-doc, entities, episode, fitness, telemetry
+observer, config round-trip) green twice, two separate processes.
+
 ## Still open
 
 - **The 009 climb/long-jump livelock is understood, not just patched
