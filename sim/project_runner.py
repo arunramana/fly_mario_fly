@@ -22,13 +22,14 @@ __all__ = ["load_project_config", "run_from_config"]
 
 
 def run_from_config(config: ProjectConfig, out_filename: str, **overrides):
-    """Runs `run_steering.main()` with the scenario (level, frames, sigma,
-    seed) and output paths from `config`; keyword arguments override them
-    (e.g. `record_video=True`). Circuit scalars are not passed: each module
-    reads its own from config/params.py at import time.
+    """Runs `run_steering.main()` with `config` itself (its 49 circuit
+    scalars, not just the scenario -- tool/PLAN.md's C1) plus the scenario
+    (level, frames, sigma, seed) and output paths derived from it; keyword
+    arguments override any of these (e.g. `record_video=True`).
     """
     sc = config.scenario
     kwargs = dict(
+        config=config,
         level=sc.level,
         max_frames=sc.max_frames,
         sigma=config.noise.sigma,

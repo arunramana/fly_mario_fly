@@ -216,7 +216,7 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
          inject_frame=None, frame_skip=1, savestate=None, mb_weights=None,
          mushroom_offset=None, inject_gap_frame=None, write_telemetry=True,
          retinotopic=False, sigma=0.0, seed=None, telemetry_path=None,
-         event_proximal_dopamine=False):
+         event_proximal_dopamine=False, config=None):
     """Run one episode of the full system and return (telemetry, info).
 
     out_mp4: required. Build it from a ProjectConfig with
@@ -253,7 +253,14 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
         OS-entropy seed and prints it; both are returned in info.
     event_proximal_dopamine: False (the goldens' setting) rewards any
         forward progress; True fires PAM dopamine only on a `?`-block hit
-        or a stomp (docs/TRACE_BIOLOGY.md)."""
+        or a stomp (docs/TRACE_BIOLOGY.md).
+    config: a ProjectConfig to build FullPolicy from (its 49 circuit
+        scalars, not just the scenario). None (default) builds a fresh
+        default ProjectConfig, today's behaviour. sigma always overrides
+        whatever config.noise.sigma was, same as with the default config
+        -- a caller that wants config's own sigma to win passes
+        sigma=config.noise.sigma explicitly (sim.project_runner.
+        run_from_config already does)."""
     if out_mp4 is None:
         raise ValueError(
             "main() needs an explicit out_mp4 -- there is no default any "
@@ -280,7 +287,7 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
     from bridge.full_policy import FullPolicy
     import dataclasses as _dataclasses
     from config.project_config import ProjectConfig as _ProjectConfig
-    _pc = _ProjectConfig()
+    _pc = config if config is not None else _ProjectConfig()
     _pc = _dataclasses.replace(_pc, noise=_dataclasses.replace(_pc.noise, sigma=sigma))
     policy = FullPolicy(config=_pc, level=level, retinotopic=retinotopic,
                          frame_skip=frame_skip, mb_weights=mb_weights,
