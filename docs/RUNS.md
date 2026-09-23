@@ -1880,6 +1880,95 @@ environment before `run_steering.py`'s own thread-count `setdefault` could
 run. `tests/conftest.py` now sets it before pytest imports any test module
 at all. Full suite green twice, two separate processes, after the fix.
 
+## Refactor phase 3 -- one Network, one Integrator, six sites unified
+
+No behaviour changed -- verified byte-identical against `tests/golden/`
+after every single one of the six sites, not just once at the end, plus a
+dedicated equivalence test (`tests/test_integrator_equivalence.py`) written
+and run BEFORE any live call site was touched. Short note, not a
+four-field entry, same convention as phases 0-2.
+
+Before touching anything, re-verified phase 2's BLAS thread-latching fix
+(`tests/conftest.py`) was still holding: full suite green twice, plus the
+specific ordering (`test_entities.py` before `test_golden.py`) that
+exposed it originally, still passing on its own. It was.
+
+`fly/network/integrator.py`'s `Integrator` and `fly/network/network.py`'s
+`Network` replace `dynamics.step()`/`dynamics.HybridState.step()` at all
+six of `run_steering.py`'s live call sites (jump, takeoff, dnp02, steering,
+mdn, speed). The unification rests on one identity, checked directly
+before relying on it: `HybridState` with an EMPTY spike index reduces
+exactly to plain `dynamics.step()`, because `h_new[np.array([])] =
+spike_out` is a no-op. So one `Integrator` class serves both shapes --
+the four non-spiking circuits simply never get a spike index.
+`fly/network/dynamics.py` itself is untouched (`run_mario.py`'s own
+sprint-001 demo and every `tune_*.py`/`diag4.py` script still use it
+directly).
+
+**The six sites, what was asked to be reported: were they identical?**
+Mostly, but not entirely -- one real, previously-undocumented
+inconsistency was found, not just refactoring detail:
+
+- **alpha** (leak rate): identical across all six -- the module default
+  (0.3), never overridden at any site.
+- **clip ceiling**: identical -- the module default (50.0) via `phi()`,
+  including both spiking circuits' `spike_amp`, which also equals 50.0.
+- **noise**: identical -- all six read from the SAME shared `NoiseConfig`
+  instance (one `rng`, seeded once per episode).
+- **SUBSTEPS** (10 per frame): identical at all six. MDN additionally
+  skips its own substep loop entirely on frames it's already mid-backup
+  (a mechanical hold-state gate, not a numeric difference between sites).
+- **denormal flush -- DIFFERED.** Five of six (takeoff, dnp02, steering,
+  mdn, speed) flush `h[h < 1e-30] = 0.0` once per frame, right after their
+  own SUBSTEPS loop. **The jump circuit's own state has never been
+  flushed, anywhere, since the flush was introduced** -- confirmed by
+  reading every line touching `hj`/`jump_state` before writing a single
+  line of the new code, not discovered by the goldens failing. This is
+  preserved exactly as found: `jump_network` is the one of the six
+  `Network` instances whose caller never calls `flush_denormals()`. Fixing
+  it would change jump's numeric output (a denormal value survives into
+  the next `W @ h` instead of being hard-zeroed first) -- a real behaviour
+  change, not this phase's to make silently. Flagged here for whoever
+  decides it next, with the exact fix (`jump_network.flush_denormals()`
+  added after its SUBSTEPS loop, matching every other site) sitting one
+  line away.
+- **spiking sub-population**: jump and dnp02 use the leaky-integrate-and-
+  fire override on DNp01/DNp02 respectively; the other four are plain
+  rate-coded populations. This is a real structural difference, but by
+  design, not inconsistency -- matches the connectome fact that only
+  DNp01/DNp02 have a documented spiking role in this project (SPEC_jump.md
+  section 1b, SPEC_second_escape.md).
+
+**A seventh candidate, checked and excluded.** The mushroom body's own
+`h_mbon` update (`mbon_drive = W_kc_mbon @ kc_active`, one line) reuses
+`dynamics.ALPHA`/`dynamics.phi` but is not one of the six: no SUBSTEPS
+loop (steps once per frame, not ten times), no noise term, no `g` gain,
+and feedforward rather than recurrent (`kc_active` is an input, not
+`h_mbon` itself, unlike every one of the six). REFACTOR_PLAN.md section 6
+already separates this out ("the mushroom body's plasticity is an
+injected collaborator, present only where it applies") -- confirmed here
+that its underlying update shape is different enough that forcing it onto
+`Network`/`Integrator` this phase would be a redesign of a genuinely
+different computation, not a move. Left untouched.
+
+**Scoping decisions from REFACTOR_PLAN.md's own sketch, stated plainly:**
+`Network.populations` stores named boolean masks, not `dict[str, slice]`
+-- every one of the six circuits already selects by mask
+(`bodies["type"]==...`), and reordering six real connectome-derived weight
+matrices into contiguous slices is a separate, higher-risk change than
+unifying the update math. `Network.weights` stays a dense `ndarray`, not
+`scipy.sparse` -- a real optimisation with its own profiling obligation
+(CLAUDE.md's GPU section), not a rename. Existing mask-based indexing at
+every call site is unchanged; `populations` is real and populated, but
+nothing yet reads through it instead of the same masks constructed
+alongside it.
+
+Also, per this phase's own instruction: a plan amendment (separate commit)
+schedules enemy-species decoding as an explicit phase-4 item, and
+docs/ENTITIES.md now notes that every earlier "avoided the Goomba" result
+is really "avoided the enemy" -- see that commit for the reasoning
+(phase 6's eligibility trace needs at least two discriminable stimuli).
+
 ## Still open
 
 - **The 009 climb/long-jump livelock is understood, not just patched

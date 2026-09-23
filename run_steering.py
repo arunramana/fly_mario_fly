@@ -26,6 +26,8 @@ import pandas as pd
 from PIL import Image
 
 from fly.network import dynamics
+from fly.network.integrator import Integrator
+from fly.network.network import Network
 from fly.sensing.olfactory_adaptation import OlfactoryAdaptation
 from fly.state.reflex_habituation import ReflexHabituation, HAB_GIVE_UP
 from mario.ram import tile_ram
@@ -554,8 +556,10 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
     }
     dnp01_idx = np.concatenate([np.where(j_msk["DNp01_L"])[0], np.where(j_msk["DNp01_R"])[0]])
     jump_dnp01_mask = j_msk["DNp01_L"] | j_msk["DNp01_R"]
-    jump_state = dynamics.HybridState(Kj, dnp01_idx, spike_threshold=DNP01_SPIKE_THRESHOLD,
-                                       spike_amp=SPIKE_AMP)
+    jump_network = Network(W_j, Integrator(spike_idx=dnp01_idx,
+                                            spike_threshold=DNP01_SPIKE_THRESHOLD,
+                                            spike_amp=SPIKE_AMP),
+                            g=G, populations=j_msk)
 
     # sprint 023: per-cell receptive fields for LC4/LPLC2 (retinotopy.py),
     # replacing the uniform-theta injection below with a per-cell weighted
@@ -595,7 +599,8 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
     sm = lambda t, s: ((s_bodies["type"] == t) & (s_bodies["somaSide"] == s)).to_numpy()
     dna01_l_mask, dna01_r_mask = sm("DNa01", "L"), sm("DNa01", "R")
     dna02_l_mask, dna02_r_mask = sm("DNa02", "L"), sm("DNa02", "R")
-    h_steer = np.zeros(Ks)
+    steering_network = Network(W_s, Integrator(), g=G_STEER, populations={"R": r_mask, "L": l_mask})
+    h_steer = steering_network.h
     orn_adapt = OlfactoryAdaptation()
     orn_adapt_avers = OlfactoryAdaptation()  # separate receptor identity/glomerulus, sprint 016
 
@@ -604,19 +609,24 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
     Kt = W_t.shape[0]
     takeoff_dnp01_mask = (t_bodies["type"] == "DNp01").to_numpy()
     dlmn_mask = t_bodies["type"].isin(["DLMn c-f", "DLMn a, b"]).to_numpy()
-    h_takeoff = np.zeros(Kt)
+    takeoff_network = Network(W_t, Integrator(), g=G_TAKEOFF,
+                               populations={"DNp01": takeoff_dnp01_mask, "DLMn": dlmn_mask})
+    h_takeoff = takeoff_network.h
 
     print("Loading the speed circuit (DNp09, N=60, cached)...")
     p_bodies, _, _, _, W_p, _, _ = _memo_load("speed", load_speed)
     Kp = W_p.shape[0]
     dnp09_mask = (p_bodies["type"] == "DNp09").to_numpy()
-    h_speed = np.zeros(Kp)
+    # REFACTOR_PLAN.md phase 3: Network/Integrator replace this circuit's own
+    # standalone `h_speed = np.zeros(Kp)` + `dynamics.step(...)` call site.
+    speed_network = Network(W_p, Integrator(), g=G_SPEED, populations={"DNp09": dnp09_mask})
 
     print("Loading the MDN circuit (backward walking, N=60, cached)...")
     m_bodies, _, _, _, W_m, _, _ = _memo_load("mdn", load_mdn)
     Km = W_m.shape[0]
     mdn_mask = (m_bodies["type"] == "MDN").to_numpy()
-    h_mdn = np.zeros(Km)
+    mdn_network = Network(W_m, Integrator(), g=G_MDN, populations={"MDN": mdn_mask})
+    h_mdn = mdn_network.h  # read in the `else` branch below on frames MDN isn't stepped
     hab_escape = ReflexHabituation()
     hab_climb = ReflexHabituation()
     mdn_backup_hold = 0
@@ -632,8 +642,12 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
     dnp02_pos = {"L": 0, "R": 1}
     dnp02_ttmn_l = ((dp_bodies["type"] == "TTMn") & (dp_bodies["somaSide"] == "L")).to_numpy()
     dnp02_ttmn_r = ((dp_bodies["type"] == "TTMn") & (dp_bodies["somaSide"] == "R")).to_numpy()
-    dnp02_state = dynamics.HybridState(Kdp, dnp02_idx, spike_threshold=DNP02_SPIKE_THRESHOLD,
-                                        spike_amp=SPIKE_AMP)
+    dnp02_network = Network(W_dp, Integrator(spike_idx=dnp02_idx,
+                                              spike_threshold=DNP02_SPIKE_THRESHOLD,
+                                              spike_amp=SPIKE_AMP),
+                             g=G_DNP02,
+                             populations={"L": dnp02_l_mask, "R": dnp02_r_mask,
+                                          "TTMn_L": dnp02_ttmn_l, "TTMn_R": dnp02_ttmn_r})
 
     print("Loading the mushroom body circuit (KC/MBON/DAN, cached)...")
     mb_bodies, _, _, _, W_mb_full, _, _ = _memo_load("mushroom_body", load_mushroom_body)
@@ -862,11 +876,11 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
             # level. The jump circuit's own code/state is untouched; this is
             # a one-directional read.
             for _ in range(dynamics.SUBSTEPS):
-                hj = jump_state.step(W_j, G, Ij, noise=noise)
+                hj = jump_network.step(Ij, noise=noise)
                 It = np.zeros(Kt)
                 It[takeoff_dnp01_mask] = hj[jump_dnp01_mask]
-                h_takeoff = dynamics.step(h_takeoff, W_t, G_TAKEOFF, It, noise=noise)
-            h_takeoff[h_takeoff < 1e-30] = 0.0  # flush denormals, CLAUDE.md perf note
+                h_takeoff = takeoff_network.step(It, noise=noise)
+            takeoff_network.flush_denormals()  # CLAUDE.md perf note
             ttmn_val = max(hj[j_msk["TTMn_L"]].mean(), hj[j_msk["TTMn_R"]].mean())
             dlmn_val = h_takeoff[dlmn_mask].mean()
 
@@ -900,8 +914,8 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
             # section 5.
             Idp[dnp02_idx] += mb_bias_dnp02
             for _ in range(dynamics.SUBSTEPS):
-                h_dnp02 = dnp02_state.step(W_dp, G_DNP02, Idp, noise=noise)
-            h_dnp02[h_dnp02 < 1e-30] = 0.0  # flush denormals, CLAUDE.md perf note
+                h_dnp02 = dnp02_network.step(Idp, noise=noise)
+            dnp02_network.flush_denormals()  # CLAUDE.md perf note
             ttmn_val_dnp02 = max(h_dnp02[dnp02_ttmn_l].mean(), h_dnp02[dnp02_ttmn_r].mean())
 
             # ---- steering: home bias + odour (mushroom + ?-blocks), WTA --
@@ -1026,8 +1040,8 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
             Is[dna02_all & r_mask] += mb_bias_r
             Is[dna02_all & l_mask] += mb_bias_l
             for _ in range(dynamics.SUBSTEPS):
-                h_steer = dynamics.step(h_steer, W_s, G_STEER, Is, noise=noise)
-            h_steer[h_steer < 1e-30] = 0.0  # flush denormals, CLAUDE.md perf note
+                h_steer = steering_network.step(Is, noise=noise)
+            steering_network.flush_denormals()  # CLAUDE.md perf note
 
             r_team = h_steer[r_mask].mean()
             l_team = h_steer[l_mask].mean()
@@ -1128,8 +1142,8 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
                 dnp02_ready = ttmn_val_dnp02 >= TTMN_PRESS_THRESHOLD
                 if dnp01_ready or dnp02_ready:
                     if dnp01_ready and dnp02_ready:
-                        pathway_fired = "DNp01" if jump_state.just_spiked.any() else (
-                            "DNp02" if dnp02_state.just_spiked.any() else "DNp01")
+                        pathway_fired = "DNp01" if jump_network.just_spiked.any() else (
+                            "DNp02" if dnp02_network.just_spiked.any() else "DNp01")
                     else:
                         pathway_fired = "DNp01" if dnp01_ready else "DNp02"
                     if hab_escape.check(mario_x):
@@ -1139,10 +1153,10 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
                         n_escape_jumps += 1
                         if pathway_fired == "DNp01":
                             n_dnp01_fired += 1
-                            dnp02_state.h[:] = 0.0; dnp02_state.mem[:] = 0.0  # loser resets
+                            dnp02_network.h[:] = 0.0; dnp02_network.mem[:] = 0.0  # loser resets
                         else:
                             n_dnp02_fired += 1
-                            jump_state.h[:] = 0.0; jump_state.mem[:] = 0.0  # loser resets
+                            jump_network.h[:] = 0.0; jump_network.mem[:] = 0.0  # loser resets
                         side = "R" if theta["R"] >= theta["L"] else "L"
                         hist = d_history[side]
                         closing_px_per_frame = ((hist[0] - hist[-1]) / (len(hist) - 1)
@@ -1182,8 +1196,8 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
                 Im = np.zeros(Km)
                 Im[mdn_mask] = MDN_DRIVE if hab_escape.hab_level >= HAB_GIVE_UP else 0.0
                 for _ in range(dynamics.SUBSTEPS):
-                    h_mdn = dynamics.step(h_mdn, W_m, G_MDN, Im, noise=noise)
-                h_mdn[h_mdn < 1e-30] = 0.0  # flush denormals, CLAUDE.md perf note
+                    h_mdn = mdn_network.step(Im, noise=noise)
+                mdn_network.flush_denormals()  # CLAUDE.md perf note
                 mdn_val = h_mdn[mdn_mask].mean()
                 if mdn_val >= MDN_THRESHOLD:
                     mdn_backup_hold = mdn_backup_frames
@@ -1259,8 +1273,8 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
                 odor_brake = min(WALK_DRIVE, max(0.0, odor_l_eff + odor_r_eff - HOME_BIAS))
                 Ip[dnp09_mask] = WALK_DRIVE - (WALK_SUPPRESSION if busy else 0.0) - odor_brake
             for _ in range(dynamics.SUBSTEPS):
-                h_speed = dynamics.step(h_speed, W_p, G_SPEED, Ip, noise=noise)
-            h_speed[h_speed < 1e-30] = 0.0  # flush denormals, CLAUDE.md perf note
+                h_speed = speed_network.step(Ip, noise=noise)
+            speed_network.flush_denormals()  # CLAUDE.md perf note
             dnp09_val = h_speed[dnp09_mask].mean()
             press_b = dnp09_val >= DNP09_SPEED_THRESHOLD
             mb_prev_dnp09 = dnp09_val  # for next frame's KC input -- see mushroom-body block
@@ -1292,8 +1306,8 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
             log["lc4_r"].append(hj[j_msk["LC4_R"]].mean())
             log["lplc2_l"].append(hj[j_msk["LPLC2_L"]].mean())
             log["lplc2_r"].append(hj[j_msk["LPLC2_R"]].mean())
-            log["mem"].append(float(jump_state.mem.max()))
-            log["spike"].append(bool(jump_state.just_spiked.any()))
+            log["mem"].append(float(jump_network.mem.max()))
+            log["spike"].append(bool(jump_network.just_spiked.any()))
             log["ttmn"].append(ttmn_val)
             log["dnp09"].append(dnp09_val)
             log["dlmn"].append(dlmn_val)
@@ -1326,7 +1340,7 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
             log["mdn"].append(float(mdn_val))
             log["mdn_backing_up"].append(bool(mdn_backing_up))
             log["ttmn_dnp02"].append(ttmn_val_dnp02)
-            log["spike_dnp02"].append(bool(dnp02_state.just_spiked.any()))
+            log["spike_dnp02"].append(bool(dnp02_network.just_spiked.any()))
             log["pathway_fired"].append(pathway_fired if pathway_fired else "")
             log["frames_to_contact"].append(frames_to_contact if frames_to_contact is not None else np.nan)
             log["avers_l"].append(avers_l_eff)
