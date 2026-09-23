@@ -356,6 +356,7 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
 
         frame = 0
         done = False
+        info = {}  # gym's per-step info dict, in case max_frames=0 skips the loop entirely
         while frame < max_frames and not done:
             # ---- frame skip: repeat the last decision, no new circuit work -
             # Frame 0 always decides, so `action` exists here. The repeated
@@ -525,7 +526,9 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
                       n_odor_avoids=n_odor_avoids, n_qblock_hits=n_qblock_hits,
                       n_stomps=n_stomps, n_refusals=n_refusals,
                       mb_weights=W_kc_mbon, max_x_abs=max_x_abs,
-                      seed=seed, sigma=sigma)
+                      seed=seed, sigma=sigma,
+                      score=info.get("score"), coins=info.get("coins"),
+                      time=info.get("time"), flag_get=info.get("flag_get"))
 
 
 LEVEL_RUNS = [

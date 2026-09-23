@@ -115,3 +115,25 @@ shape, and a `row` whose own `"frame"` key matches; `should_stop`
 returning `True` at frame 50 ends the episode at exactly 50 frames;
 passing harmless (no-op) callbacks produces byte-identical telemetry to
 not passing them at all.
+
+## C4 — score/coins/time/flag into the summary `info`
+
+**What.** The returned summary dict gains `score`, `coins`, `time`,
+`flag_get` -- read from the gym wrapper's own per-step `info` dict (`env.
+step()`'s fourth return value), specifically its state after the LAST
+step of the episode. `info = {}` before the loop guards the (never
+actually reachable today) `max_frames=0` case, so reading `.get(...)`
+after the loop can never raise.
+
+**Why.** Fitness's "points" weight (tool/PLAN.md tab 5) had nothing to
+read -- the gym wrapper already tracks score/coins/time/flag every step,
+but none of it left `main()`.
+
+**Default that keeps behaviour.** Additive only: the telemetry CSV's
+column set is untouched (these never went into `TelemetryObserver`, only
+the returned summary dict), and no existing summary key changes meaning.
+
+**Proof.** `tests/test_golden.py` (3/3) unaffected. `tests/
+test_summary_info_keys.py` (new): the four keys are present with the
+expected types; two separate runs of the same scenario still produce
+byte-identical telemetry CSVs (the new keys never reached the CSV).
