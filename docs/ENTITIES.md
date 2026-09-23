@@ -44,7 +44,17 @@ project has ever looked past that one bit. REFACTOR_PLAN.md section 4's own
 worked example (`GOOMBA`, `KOOPA`, `PIPE` as separate kinds with "Koopa has
 shell state, Piranha is not stompable") describes a richer model than the
 one that exists to move. Building that richer model is new behaviour, not a
-move, and is out of phase-2's "zero logic edits" scope.
+move, and is out of phase-2's "zero logic edits" scope -- now scheduled
+explicitly as a phase-4 item, REFACTOR_PLAN.md section 7, because phase 6's
+eligibility trace needs at least two discriminable stimuli to learn
+anything from.
+
+**Every earlier "avoided the Goomba" result in this log is really "avoided
+the enemy."** Every recorded avoidance (006/008/016 and onward) was tested
+against whatever RAM put in an enemy slot, never specifically a Goomba --
+harmless on 1-1, which is mostly Goombas anyway, but the record should not
+be read as claiming species-specific behaviour that was never actually
+possible to produce.
 
 **Every entity is 16px wide, always.** `ENTITY_WIDTH_PX` is a single
 constant applied to every enemy-slot kind. Real Goombas, Koopas and

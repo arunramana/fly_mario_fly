@@ -321,9 +321,26 @@ up. **Add the import-guard test.**
 One `Network` and one `Integrator` replacing six update sites. Highest risk of
 silent numerical drift; goldens are the check.
 
-**Phase 4 — config extraction.**
+**Phase 4 — config extraction, and enemy species decoding.**
 Now that each constant has exactly one home, extract once into per-component
 params. Produces `docs/SCALARS.md`, the first honest count we will have had.
+
+**Added after phase 2's finding, not in the original draft:** phase 2 found
+that nothing anywhere in this codebase reads `ADDR_ENEMY_TYPE` for anything
+except the one powerup check -- a Goomba and a Koopa are the same stimulus,
+today, everywhere. This phase should also decode real enemy species from
+that byte into distinct `EntityKind`s (`mario/entities/`), each with its
+own odour channel. Two reasons this can't wait for someone to notice it's
+missing: **phase 6's eligibility trace needs at least two discriminable
+aversive stimuli to have anything to learn a difference between** -- with
+one undifferentiated `ENEMY` channel, a flat or null learning result in
+phase 6 would look exactly like "the trace's time constant is wrong" when
+the real cause is "there was only ever one thing to discriminate," and
+nothing before this note would have said so. And **the tool's own
+per-character smell knobs (docs/TOOL_VISION.md's enemy-attribute panel)
+have no real enemy identity to bind to without it.** Neither phase 4 nor
+phase 6 said this before; recorded here once rather than left for phase 6
+to rediscover as a confusing negative result.
 
 **Phase 5 — `Episode`, protocols, fitness, telemetry observers, render.**
 `ProjectConfig` drives a run; outputs land in `projects/<name>/`.
