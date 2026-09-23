@@ -58,6 +58,7 @@ from mario.ram.addresses import (
     ADDR_ENEMY_ACTIVE, ADDR_ENEMY_TYPE, N_ENEMY_SLOTS, POWERUP_ID,
 )
 from fly.plasticity.dopamine import event_dopamine
+from fly.plasticity.three_factor import update_eligibility, depress
 
 # Private to this module -- NOT shared with run_steering.py's own
 # _circuit_cache. During the phase-5b migration both exist; once main()'s
@@ -416,8 +417,7 @@ class FullPolicy:
         self.prev_mario_x_abs = mario_x_abs
         self.max_x_abs = mario_x_abs if self.max_x_abs is None else max(self.max_x_abs, mario_x_abs)
 
-        self.mb_elig = (1.0 - 1.0 / c.mushroom_body.trace_decay) * self.mb_elig + \
-                       (1.0 / c.mushroom_body.trace_decay) * kc_active
+        self.mb_elig = update_eligibility(self.mb_elig, kc_active, c.mushroom_body.trace_decay)
         # REFACTOR_PLAN.md phase 6 step 3: event-proximal dopamine is an
         # opt-in replacement for the pre-phase-6 trigger (`reward =
         # progress`, continuous, every frame with forward motion) -- see
@@ -432,8 +432,8 @@ class FullPolicy:
             reward = progress
         if reward > 0:
             dopamine_reward = reward * self.mb_pam_reach
-            self.W_kc_mbon -= (c.mushroom_body.learning_rate * dopamine_reward[:, None]
-                               * self.mb_elig[None, :] * self.W_kc_mbon)
+            self.W_kc_mbon = depress(self.W_kc_mbon, dopamine_reward, self.mb_elig,
+                                      c.mushroom_body.learning_rate)
 
         mbon_agg = float(self.h_mbon.mean())
         mb_bias_r = -self.MBON_DNA02_FRAC["R"] * mbon_agg
@@ -635,8 +635,8 @@ class FullPolicy:
             c = self.config
             _pam_unused, punish_magnitude = event_dopamine(qblock_hit=False, stomp=False, died=True)
             dopamine_punish = punish_magnitude * self.mb_punish_reach
-            self.W_kc_mbon -= (c.mushroom_body.learning_rate * dopamine_punish[:, None]
-                               * self.mb_elig[None, :] * self.W_kc_mbon)
+            self.W_kc_mbon = depress(self.W_kc_mbon, dopamine_punish, self.mb_elig,
+                                      c.mushroom_body.learning_rate)
 
     def on_episode_end(self, steps: int) -> None:
         pass
