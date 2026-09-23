@@ -1,8 +1,9 @@
 # fly_mario tool — build plan
 
-Status: P0 done 2026-09-23 (results in section 6), awaiting review before P1.
-Written 2026-09-23, after the September cleanup (`docs/CHANGES_2026-09.md`,
-HEAD `f55396e`).
+Status: P0 and P1 done 2026-09-23 (P0 results in section 6; P1 -- C1-C4 --
+in `tool/CODEBASE_CHANGES.md`, golden gate green after each), awaiting
+review before P2. Written 2026-09-23, after the September cleanup
+(`docs/CHANGES_2026-09.md`, HEAD `f55396e`).
 
 The goal (from the project doc `fly-mario-tool-vision.md`): a tool that feels like a game. Pick a character, tune the world and the
 brain, press Play, watch the fly perform, and compare outcomes across runs.
