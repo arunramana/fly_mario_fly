@@ -592,164 +592,66 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
     climb_stall_frames = max(1, round(CLIMB_STALL_FRAMES / frame_skip))
     mdn_backup_frames = max(1, round(MDN_BACKUP_FRAMES / frame_skip))
 
-    print("Loading the jump circuit (unchanged, cached)...")
-    j_bodies, _, _, _, W_j, _, _ = _memo_load("jump", load_jump, N=60)
-    Kj = W_j.shape[0]
-    jm = lambda t, s: ((j_bodies["type"] == t) & (j_bodies["somaSide"] == s)).to_numpy()
-    j_msk = {
-        "LC4_L": jm("LC4", "L"), "LC4_R": jm("LC4", "R"),
-        "LPLC2_L": jm("LPLC2", "L"), "LPLC2_R": jm("LPLC2", "R"),
-        "LC4_all": (j_bodies["type"] == "LC4").to_numpy(),
-        "LPLC2_all": (j_bodies["type"] == "LPLC2").to_numpy(),
-        "TTMn_L": jm("TTMn", "L"), "TTMn_R": jm("TTMn", "R"),
-        "DNp01_L": jm("DNp01", "L"), "DNp01_R": jm("DNp01", "R"),
-    }
-    dnp01_idx = np.concatenate([np.where(j_msk["DNp01_L"])[0], np.where(j_msk["DNp01_R"])[0]])
-    jump_dnp01_mask = j_msk["DNp01_L"] | j_msk["DNp01_R"]
-    jump_network = Network(W_j, Integrator(spike_idx=dnp01_idx,
-                                            spike_threshold=DNP01_SPIKE_THRESHOLD,
-                                            spike_amp=SPIKE_AMP),
-                            g=G, populations=j_msk)
+    # REFACTOR_PLAN.md phase 5b: circuit setup and all per-episode decision
+    # state now live in bridge.full_policy.FullPolicy -- the same code,
+    # moved (see that module's own docstring: a verbatim transcription,
+    # not a redesign). This block only constructs it and unpacks its
+    # public attributes back into the same local names the frame loop
+    # below already uses, so the loop's own text is untouched by this
+    # commit -- a golden mismatch here can only mean FullPolicy's
+    # constructed/reset state itself diverged from main()'s own setup,
+    # not a loop-logic bug (the loop body is migrated onto `policy.act()`
+    # directly in the next commit).
+    from bridge.full_policy import FullPolicy
+    import dataclasses as _dataclasses
+    from config.project_config import ProjectConfig as _ProjectConfig
+    _pc = _ProjectConfig()
+    _pc = _dataclasses.replace(_pc, noise=_dataclasses.replace(_pc.noise, sigma=sigma))
+    policy = FullPolicy(config=_pc, level=level, retinotopic=retinotopic,
+                         frame_skip=frame_skip, mb_weights=mb_weights)
+    policy.reset(seed)
 
-    # sprint 023: per-cell receptive fields for LC4/LPLC2 (retinotopy.py),
-    # replacing the uniform-theta injection below with a per-cell weighted
-    # one -- SAME 1255 neurons, SAME DNp01/TTMn, SAME thresholds, only the
-    # input map changes. `retinotopic=False` reproduces the exact
-    # pre-023 uniform injection, for the paired before/after comparison.
+    Kj, j_msk = policy.Kj, policy.j_msk
+    jump_dnp01_mask, jump_network = policy.jump_dnp01_mask, policy.jump_network
     if retinotopic:
-        from fly.sensing import retinotopy as rt
-        j_rf = {"LC4": rt.receptive_field_centers("LC4", j_bodies),
-                "LPLC2": rt.receptive_field_centers("LPLC2", j_bodies)}
-        # sprint 024: ORIGIN is now the real density mode of that type+
-        # side's own per-cell RF centres (rt.density_mode -- data-derived,
-        # not chosen), replacing 023's hex1.min(), the fix this sprint
-        # exists to test. FAR is still hex1.max(), unchanged from 023.
-        # HEX2_MID: that population's own real median hex2 ("eye level"),
-        # since this game has no elevation signal to drive that axis with.
-        j_azimuth_ref = {}
-        for t in ("LC4", "LPLC2"):
-            for side in ("L", "R"):
-                m = j_msk[f"{t}_{side}"]
-                h1 = j_rf[t]["hex1"][m]; h2 = j_rf[t]["hex2"][m]
-                spread = j_rf[t]["hex1_spread"][m]
-                origin = rt.density_mode(h1, spread)
-                j_azimuth_ref[(t, side)] = (origin, h1.max(), float(np.median(h2)))
-
-    print("Loading the steering circuit (DNa01/DNa02, N=60, cached)...")
-    s_bodies, _, _, _, W_s, _, _ = _memo_load("steering", load_steering)
-    Ks = W_s.shape[0]
-    r_mask, l_mask = make_steering_masks(s_bodies)
-    dna01_all = (s_bodies["type"] == "DNa01").to_numpy()
-    dna02_all = (s_bodies["type"] == "DNa02").to_numpy()
-    # sprint 017: by-TYPE means (dna01_all/dna02_all above) collapse L+R
-    # together and are NOT what the WTA decides on -- r_team/l_team (by
-    # HEMISPHERE, mixing DNa01+DNa02 on that side) are. Logging the by-side
-    # split explicitly so a real asymmetry (or its absence) is visible
-    # without having to re-derive it from the aggregate-by-type columns.
-    sm = lambda t, s: ((s_bodies["type"] == t) & (s_bodies["somaSide"] == s)).to_numpy()
-    dna01_l_mask, dna01_r_mask = sm("DNa01", "L"), sm("DNa01", "R")
-    dna02_l_mask, dna02_r_mask = sm("DNa02", "L"), sm("DNa02", "R")
-    steering_network = Network(W_s, Integrator(), g=G_STEER, populations={"R": r_mask, "L": l_mask})
+        j_rf, j_azimuth_ref, rt = policy.j_rf, policy.j_azimuth_ref, policy._rt
+    Ks, r_mask, l_mask = policy.Ks, policy.r_mask, policy.l_mask
+    dna01_all, dna02_all = policy.dna01_all, policy.dna02_all
+    dna01_l_mask, dna01_r_mask = policy.dna01_l_mask, policy.dna01_r_mask
+    dna02_l_mask, dna02_r_mask = policy.dna02_l_mask, policy.dna02_r_mask
+    steering_network = policy.steering_network
     h_steer = steering_network.h
-    orn_adapt = OlfactoryAdaptation()
-    orn_adapt_avers = OlfactoryAdaptation()  # separate receptor identity/glomerulus, sprint 016
+    orn_adapt, orn_adapt_avers = policy.orn_adapt, policy.orn_adapt_avers
 
-    print("Loading the takeoff circuit (DNp01 -> GFC1-4 -> DLMn, cached)...")
-    t_bodies, _, _, _, W_t, _, _ = _memo_load("takeoff", load_takeoff)
-    Kt = W_t.shape[0]
-    takeoff_dnp01_mask = (t_bodies["type"] == "DNp01").to_numpy()
-    dlmn_mask = t_bodies["type"].isin(["DLMn c-f", "DLMn a, b"]).to_numpy()
-    takeoff_network = Network(W_t, Integrator(), g=G_TAKEOFF,
-                               populations={"DNp01": takeoff_dnp01_mask, "DLMn": dlmn_mask})
+    Kt = policy.Kt
+    takeoff_dnp01_mask, dlmn_mask = policy.takeoff_dnp01_mask, policy.dlmn_mask
+    takeoff_network = policy.takeoff_network
     h_takeoff = takeoff_network.h
 
-    print("Loading the speed circuit (DNp09, N=60, cached)...")
-    p_bodies, _, _, _, W_p, _, _ = _memo_load("speed", load_speed)
-    Kp = W_p.shape[0]
-    dnp09_mask = (p_bodies["type"] == "DNp09").to_numpy()
-    # REFACTOR_PLAN.md phase 3: Network/Integrator replace this circuit's own
-    # standalone `h_speed = np.zeros(Kp)` + `dynamics.step(...)` call site.
-    speed_network = Network(W_p, Integrator(), g=G_SPEED, populations={"DNp09": dnp09_mask})
+    Kp, dnp09_mask = policy.Kp, policy.dnp09_mask
+    speed_network = policy.speed_network
 
-    print("Loading the MDN circuit (backward walking, N=60, cached)...")
-    m_bodies, _, _, _, W_m, _, _ = _memo_load("mdn", load_mdn)
-    Km = W_m.shape[0]
-    mdn_mask = (m_bodies["type"] == "MDN").to_numpy()
-    mdn_network = Network(W_m, Integrator(), g=G_MDN, populations={"MDN": mdn_mask})
+    Km, mdn_mask = policy.Km, policy.mdn_mask
+    mdn_network = policy.mdn_network
     h_mdn = mdn_network.h  # read in the `else` branch below on frames MDN isn't stepped
-    hab_escape = ReflexHabituation()
-    hab_climb = ReflexHabituation()
-    mdn_backup_hold = 0
+    hab_escape, hab_climb = policy.hab_escape, policy.hab_climb
+    mdn_backup_hold = policy.mdn_backup_hold
 
-    print("Loading the DNp02 circuit (second escape pathway, N=60, cached)...")
-    dp_bodies, _, _, _, W_dp, _, _ = _memo_load("dnp02", load_dnp02)
-    Kdp = W_dp.shape[0]
-    dnp02_lc4_r = ((dp_bodies["type"] == "LC4") & (dp_bodies["somaSide"] == "R")).to_numpy()
-    dnp02_lc4_l = ((dp_bodies["type"] == "LC4") & (dp_bodies["somaSide"] == "L")).to_numpy()
-    dnp02_l_mask = ((dp_bodies["type"] == "DNp02") & (dp_bodies["somaSide"] == "L")).to_numpy()
-    dnp02_r_mask = ((dp_bodies["type"] == "DNp02") & (dp_bodies["somaSide"] == "R")).to_numpy()
-    dnp02_idx = np.concatenate([np.where(dnp02_l_mask)[0], np.where(dnp02_r_mask)[0]])
-    dnp02_pos = {"L": 0, "R": 1}
-    dnp02_ttmn_l = ((dp_bodies["type"] == "TTMn") & (dp_bodies["somaSide"] == "L")).to_numpy()
-    dnp02_ttmn_r = ((dp_bodies["type"] == "TTMn") & (dp_bodies["somaSide"] == "R")).to_numpy()
-    dnp02_network = Network(W_dp, Integrator(spike_idx=dnp02_idx,
-                                              spike_threshold=DNP02_SPIKE_THRESHOLD,
-                                              spike_amp=SPIKE_AMP),
-                             g=G_DNP02,
-                             populations={"L": dnp02_l_mask, "R": dnp02_r_mask,
-                                          "TTMn_L": dnp02_ttmn_l, "TTMn_R": dnp02_ttmn_r})
+    Kdp = policy.Kdp
+    dnp02_lc4_r, dnp02_lc4_l = policy.dnp02_lc4_r, policy.dnp02_lc4_l
+    dnp02_l_mask, dnp02_r_mask = policy.dnp02_l_mask, policy.dnp02_r_mask
+    dnp02_idx = policy.dnp02_idx
+    dnp02_ttmn_l, dnp02_ttmn_r = policy.dnp02_ttmn_l, policy.dnp02_ttmn_r
+    dnp02_network = policy.dnp02_network
 
-    print("Loading the mushroom body circuit (KC/MBON/DAN, cached)...")
-    mb_bodies, _, _, _, W_mb_full, _, _ = _memo_load("mushroom_body", load_mushroom_body)
-    mb_kc_mask = (mb_bodies["role"] == "KC").to_numpy()
-    mb_mbon_mask = (mb_bodies["role"] == "MBON").to_numpy()
-    mb_is_pam = mb_bodies["type"].astype(str).str.startswith("PAM").to_numpy()
-    mb_dan_mask = (mb_bodies["role"] == "DAN").to_numpy()
-    mb_pam_mask = mb_dan_mask & mb_is_pam
-    mb_punish_mask = mb_dan_mask & ~mb_is_pam
-    mb_kc_idx = np.where(mb_kc_mask)[0]
-    mb_mbon_idx = np.where(mb_mbon_mask)[0]
-    mb_pam_idx = np.where(mb_pam_mask)[0]
-    mb_punish_idx = np.where(mb_punish_mask)[0]
-    n_kc, n_mbon = len(mb_kc_idx), len(mb_mbon_idx)
-    # W's convention (circuit.build_weight_matrix) is W[post, pre] -- rows
-    # are postsynaptic. This IS the matrix the plasticity rule modifies;
-    # `mb_weights`, if passed in, is this same sub-block carried over from
-    # a previous episode (the one piece of state that must persist across
-    # training -- everything else here resets fresh each call, as normal).
-    W_kc_mbon = (mb_weights if mb_weights is not None
-                 else W_mb_full[np.ix_(mb_mbon_idx, mb_kc_idx)].copy())
-    # Real, static (not modified by plasticity) -- DAN->MBON is the actual
-    # tripartite-synapse site in real anatomy, so reward/punishment reach
-    # each MBON in proportion to its own real dopaminergic input, with no
-    # extra hand-set scaling.
-    mb_pam_reach = W_mb_full[np.ix_(mb_mbon_idx, mb_pam_idx)].sum(axis=1)
-    mb_punish_reach = W_mb_full[np.ix_(mb_mbon_idx, mb_punish_idx)].sum(axis=1)
-    # Fixed, seeded (not a hand-set scalar -- same precedent as circuit.py's
-    # shuffle_edges seed elsewhere in this project), sparse random
-    # projection from the sensory-state vector onto KCs -- SPEC section 1:
-    # the randomness is the biologically correct part, nothing in this
-    # project's sensory abstractions (theta, odour, gap width, DNp09,
-    # hunger) has a real PN identity to look a synapse weight up for.
-    # Order: theta_L, theta_R, odor_l_eff, odor_r_eff, gap_w, dnp09_val, hunger
-    _mb_rng = np.random.default_rng(0)
-    N_MB_SENSORY = 7
-    mb_proj = np.zeros((n_kc, N_MB_SENSORY))
-    for _i in range(n_kc):
-        _feats = _mb_rng.choice(N_MB_SENSORY, size=3, replace=False)
-        mb_proj[_i, _feats] = 1.0
-    mb_elig = np.zeros(n_kc)
-    mb_prev_dnp09 = 0.0  # one-frame delay: DNp09/speed runs after steering
-    mb_bias_dnp02 = 0.0  # ditto for DNp02, which steps before this block
-    h_mbon = np.zeros(n_mbon)
-    prev_mario_x_abs = None
-    max_x_abs = None
-    # Real MBON->DNa02 (250 syn, checked against the connectome directly)
-    # and real MBON->DNp02 fraction (checked: zero -- no real synapse, so
-    # DNp02's modulation is a placed bias, SPEC section 5, at the SAME
-    # real-data-derived magnitude as DNa02's genuine one, to avoid
-    # inventing a fourth scalar just to size it).
-    MBON_DNA02_FRAC = {"L": 0.00379, "R": 0.00632}  # real, per body, averaged by side
+    n_kc, n_mbon = policy.n_kc, policy.n_mbon
+    W_kc_mbon = policy.W_kc_mbon
+    mb_pam_reach, mb_punish_reach = policy.mb_pam_reach, policy.mb_punish_reach
+    mb_proj = policy.mb_proj
+    mb_elig, mb_prev_dnp09 = policy.mb_elig, policy.mb_prev_dnp09
+    mb_bias_dnp02, h_mbon = policy.mb_bias_dnp02, policy.h_mbon
+    prev_mario_x_abs, max_x_abs = policy.prev_mario_x_abs, policy.max_x_abs
+    MBON_DNA02_FRAC = policy.MBON_DNA02_FRAC
 
     owns_env = savestate is None or "env" not in savestate
     if owns_env:
