@@ -25,6 +25,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 
+from sim.telemetry import TelemetryObserver
 from fly.network import dynamics
 from fly.network.integrator import Integrator
 from fly.network.network import Network
@@ -441,12 +442,27 @@ def make_steering_masks(bodies):
     return r, l
 
 
-def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
+def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
          force_mario_size=None, force_size_from_frame=None, record_video=True,
          inject_frame=None, frame_skip=1, savestate=None, mb_weights=None,
          mushroom_offset=None, inject_gap_frame=None, write_telemetry=True,
-         retinotopic=False, sigma=0.0, seed=None):
-    """`mb_weights`, if given, is the KC->MBON weight sub-matrix (SPEC_
+         retinotopic=False, sigma=0.0, seed=None, telemetry_path=None):
+    """REFACTOR_PLAN.md phase 5: `out_mp4` has no default any more. It used
+    to be `"runs/008_run.mp4"` -- a silent, stray, top-level fallback that
+    every actual caller already overrode (checked: none of run_008/016/023/
+    024, nor tests/golden/, ever relied on it). "Make a run without a named
+    project fail loudly" means exactly that: pass an explicit `out_mp4`
+    (as every real caller already does), or build one from a ProjectConfig
+    via `sim/output_routing.py`'s `resolve_run_path`/`resolve_telemetry_path`
+    and `sim/project_runner.py`'s `run_from_config`.
+
+    `telemetry_path`, if given, overrides the telemetry CSV's location
+    instead of deriving it from `out_mp4`'s own stem (the pre-phase-5
+    behaviour, unchanged when this is left `None`) -- `sim/output_routing.py`
+    uses this to put telemetry in `projects/<name>/telemetry/`, separate
+    from `projects/<name>/runs/`.
+
+    `mb_weights`, if given, is the KC->MBON weight sub-matrix (SPEC_
     mushroom_body.md) carried over from a previous call -- the ONE piece
     of state that must persist across training episodes. `None` (default)
     starts from the real, unmodified connectome weights. The (possibly
@@ -541,6 +557,15 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
     exactly). Returned in `info["seed"]`/`info["sigma"]` either way, so a
     caller that didn't choose a seed can still recover and log the one
     that was actually used."""
+    if out_mp4 is None:
+        raise ValueError(
+            "main() needs an explicit out_mp4 -- there is no default any "
+            "more (REFACTOR_PLAN.md phase 5: a run without a named project "
+            "must fail loudly, not silently write to a stray top-level "
+            "runs/008_run.mp4). Pass out_mp4 directly, or route it through "
+            "a ProjectConfig via sim.output_routing.resolve_run_path() / "
+            "sim.project_runner.run_from_config()."
+        )
     if seed is None:
         seed = int(np.random.SeedSequence().entropy % (2**32))
     rng = np.random.default_rng(seed)
@@ -762,19 +787,27 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
-        log = {k: [] for k in ("frame", "mario_x", "theta", "dtheta", "d_px", "frames_to_contact",
-                                "lc4", "lplc2", "mem", "spike",
-                                "ttmn", "dna01", "dna02", "direction", "climb", "conflict",
-                                "dnp09", "dlmn", "gap", "long_jump", "press_b",
-                                "odor_l", "odor_r", "hungry",
-                                "raw_odor_l", "raw_odor_r", "orn_a_l", "orn_a_r",
-                                "hab_escape", "hab_climb", "mdn", "mdn_backing_up",
-                                "ttmn_dnp02", "spike_dnp02", "pathway_fired",
-                                "avers_l", "avers_r", "avoid_odor", "refusing",
-                                "qblock_hit", "mario_size",
-                                "r_team", "l_team", "dna01_l", "dna01_r",
-                                "dna02_l", "dna02_r", "is_r_mask_sum", "is_l_mask_sum",
-                                "press_a", "lc4_l", "lc4_r", "lplc2_l", "lplc2_r")}
+        # REFACTOR_PLAN.md phase 5, section 5.2: "Telemetry becomes an
+        # observer the episode notifies, so adding a recorded field never
+        # edits the loop." Column order fixed here, once, exactly as the
+        # old `log = {k: [] for k in (...)}` dict comprehension fixed it --
+        # sim.telemetry.TelemetryObserver doesn't know what any of these
+        # mean, it just preserves this order in the CSV it writes.
+        observer = TelemetryObserver((
+            "frame", "mario_x", "theta", "dtheta", "d_px", "frames_to_contact",
+            "lc4", "lplc2", "mem", "spike",
+            "ttmn", "dna01", "dna02", "direction", "climb", "conflict",
+            "dnp09", "dlmn", "gap", "long_jump", "press_b",
+            "odor_l", "odor_r", "hungry",
+            "raw_odor_l", "raw_odor_r", "orn_a_l", "orn_a_r",
+            "hab_escape", "hab_climb", "mdn", "mdn_backing_up",
+            "ttmn_dnp02", "spike_dnp02", "pathway_fired",
+            "avers_l", "avers_r", "avoid_odor", "refusing",
+            "qblock_hit", "mario_size",
+            "r_team", "l_team", "dna01_l", "dna01_r",
+            "dna02_l", "dna02_r", "is_r_mask_sum", "is_l_mask_sum",
+            "press_a", "lc4_l", "lc4_r", "lplc2_l", "lplc2_r",
+        ))
 
         frame = 0
         done = False
@@ -787,13 +820,10 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
             # mario_x updated) so recorded video stays 1:1 with brain_panel.
             if frame_skip > 1 and frame % frame_skip != 0:
                 mario_x = int(ram[ADDR_MARIO_X])
-                for key in log:
-                    if key == "frame":
-                        log[key].append(frame)
-                    elif key == "mario_x":
-                        log[key].append(mario_x)
-                    else:
-                        log[key].append(log[key][-1])
+                row = dict(observer.last_row) if observer.last_row is not None else observer.new_row()
+                row["frame"] = frame
+                row["mario_x"] = mario_x
+                observer.record(row)
                 if record_video:
                     Image.fromarray(obs).save(tmp / f"{frame:05d}.png")
                 obs, reward, done, info = env.step(action)
@@ -1306,74 +1336,76 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
 
             action = action_index(direction, press_a, press_b)
 
-            log["frame"].append(frame)
-            log["mario_x"].append(mario_x)
-            log["theta"].append(max(theta["L"], theta["R"]))
+            row = observer.new_row()
+            row["frame"] = frame
+            row["mario_x"] = mario_x
+            row["theta"] = max(theta["L"], theta["R"])
             # sprint 023: dtheta on whichever side theta itself is dominant
             # this frame -- same side-selection convention as "theta" above,
             # not a new one -- needed to test corr(LC4_mean, dtheta) against
             # corr(LC4_mean, theta), the sprint's own decisive signature.
-            log["dtheta"].append(dtheta["L"] if theta["L"] >= theta["R"] else dtheta["R"])
+            row["dtheta"] = dtheta["L"] if theta["L"] >= theta["R"] else dtheta["R"]
             # sprint 023: raw signed d_px on the same dominant side, so
             # commitment distance (003/011's "d_px ~= 0") is readable
             # straight from telemetry instead of back-solved from theta.
             _dom_side = "L" if theta["L"] >= theta["R"] else "R"
-            log["d_px"].append(d_out[_dom_side] if d_out[_dom_side] is not None else np.nan)
-            log["lc4"].append(hj[j_msk["LC4_all"]].mean())
-            log["lplc2"].append(hj[j_msk["LPLC2_all"]].mean())
+            row["d_px"] = d_out[_dom_side] if d_out[_dom_side] is not None else np.nan
+            row["lc4"] = hj[j_msk["LC4_all"]].mean()
+            row["lplc2"] = hj[j_msk["LPLC2_all"]].mean()
             # sprint 017 overlay audit: "lc4"/"lplc2" above blend both
             # hemispheres into one number, same failure-mode class as the
             # dna01/dna02 bug -- lower stakes here since TTMn (the actual
             # jump decision) already reads max(L,R) internally, not this
             # blended mean, but a one-sided Goomba's real drive still gets
             # diluted by the quiet far side in what gets displayed/logged.
-            log["lc4_l"].append(hj[j_msk["LC4_L"]].mean())
-            log["lc4_r"].append(hj[j_msk["LC4_R"]].mean())
-            log["lplc2_l"].append(hj[j_msk["LPLC2_L"]].mean())
-            log["lplc2_r"].append(hj[j_msk["LPLC2_R"]].mean())
-            log["mem"].append(float(jump_network.mem.max()))
-            log["spike"].append(bool(jump_network.just_spiked.any()))
-            log["ttmn"].append(ttmn_val)
-            log["dnp09"].append(dnp09_val)
-            log["dlmn"].append(dlmn_val)
-            log["gap"].append(gap_w)
-            log["long_jump"].append(bool(long_jump))
-            log["press_b"].append(bool(press_b))
-            log["dna01"].append(h_steer[dna01_all].mean())
-            log["dna02"].append(h_steer[dna02_all].mean())
-            log["r_team"].append(r_team)
-            log["l_team"].append(l_team)
-            log["dna01_l"].append(h_steer[dna01_l_mask].mean())
-            log["dna01_r"].append(h_steer[dna01_r_mask].mean())
-            log["dna02_l"].append(h_steer[dna02_l_mask].mean())
-            log["dna02_r"].append(h_steer[dna02_r_mask].mean())
-            log["is_r_mask_sum"].append(float(Is[r_mask].sum()))
-            log["is_l_mask_sum"].append(float(Is[l_mask].sum()))
-            log["press_a"].append(bool(press_a))
-            log["direction"].append(direction)
-            log["climb"].append(bool(climb_trigger))
-            log["conflict"].append(bool(conflict))
-            log["odor_l"].append(odor_l_eff)
-            log["odor_r"].append(odor_r_eff)
-            log["hungry"].append(hunger == HUNGER_MULT_HUNGRY)
-            log["raw_odor_l"].append(prod_odor["L"])
-            log["raw_odor_r"].append(prod_odor["R"])
-            log["orn_a_l"].append(orn_adapt.a["L"])
-            log["orn_a_r"].append(orn_adapt.a["R"])
-            log["hab_escape"].append(hab_escape.hab_level)
-            log["hab_climb"].append(hab_climb.hab_level)
-            log["mdn"].append(float(mdn_val))
-            log["mdn_backing_up"].append(bool(mdn_backing_up))
-            log["ttmn_dnp02"].append(ttmn_val_dnp02)
-            log["spike_dnp02"].append(bool(dnp02_network.just_spiked.any()))
-            log["pathway_fired"].append(pathway_fired if pathway_fired else "")
-            log["frames_to_contact"].append(frames_to_contact if frames_to_contact is not None else np.nan)
-            log["avers_l"].append(avers_l_eff)
-            log["avers_r"].append(avers_r_eff)
-            log["avoid_odor"].append(avoid_odor)
-            log["refusing"].append(refusing)
-            log["qblock_hit"].append(qblock_hit)
-            log["mario_size"].append(mario_size)
+            row["lc4_l"] = hj[j_msk["LC4_L"]].mean()
+            row["lc4_r"] = hj[j_msk["LC4_R"]].mean()
+            row["lplc2_l"] = hj[j_msk["LPLC2_L"]].mean()
+            row["lplc2_r"] = hj[j_msk["LPLC2_R"]].mean()
+            row["mem"] = float(jump_network.mem.max())
+            row["spike"] = bool(jump_network.just_spiked.any())
+            row["ttmn"] = ttmn_val
+            row["dnp09"] = dnp09_val
+            row["dlmn"] = dlmn_val
+            row["gap"] = gap_w
+            row["long_jump"] = bool(long_jump)
+            row["press_b"] = bool(press_b)
+            row["dna01"] = h_steer[dna01_all].mean()
+            row["dna02"] = h_steer[dna02_all].mean()
+            row["r_team"] = r_team
+            row["l_team"] = l_team
+            row["dna01_l"] = h_steer[dna01_l_mask].mean()
+            row["dna01_r"] = h_steer[dna01_r_mask].mean()
+            row["dna02_l"] = h_steer[dna02_l_mask].mean()
+            row["dna02_r"] = h_steer[dna02_r_mask].mean()
+            row["is_r_mask_sum"] = float(Is[r_mask].sum())
+            row["is_l_mask_sum"] = float(Is[l_mask].sum())
+            row["press_a"] = bool(press_a)
+            row["direction"] = direction
+            row["climb"] = bool(climb_trigger)
+            row["conflict"] = bool(conflict)
+            row["odor_l"] = odor_l_eff
+            row["odor_r"] = odor_r_eff
+            row["hungry"] = hunger == HUNGER_MULT_HUNGRY
+            row["raw_odor_l"] = prod_odor["L"]
+            row["raw_odor_r"] = prod_odor["R"]
+            row["orn_a_l"] = orn_adapt.a["L"]
+            row["orn_a_r"] = orn_adapt.a["R"]
+            row["hab_escape"] = hab_escape.hab_level
+            row["hab_climb"] = hab_climb.hab_level
+            row["mdn"] = float(mdn_val)
+            row["mdn_backing_up"] = bool(mdn_backing_up)
+            row["ttmn_dnp02"] = ttmn_val_dnp02
+            row["spike_dnp02"] = bool(dnp02_network.just_spiked.any())
+            row["pathway_fired"] = pathway_fired if pathway_fired else ""
+            row["frames_to_contact"] = frames_to_contact if frames_to_contact is not None else np.nan
+            row["avers_l"] = avers_l_eff
+            row["avers_r"] = avers_r_eff
+            row["avoid_odor"] = avoid_odor
+            row["refusing"] = refusing
+            row["qblock_hit"] = qblock_hit
+            row["mario_size"] = mario_size
+            observer.record(row)
             if record_video:
                 Image.fromarray(obs).save(tmp / f"{frame:05d}.png")
 
@@ -1397,20 +1429,26 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
               f"qblock hits={n_qblock_hits}  refusal frames={n_refusals}  "
               f"ended={'died/flagged' if done else 'hit max_frames'}")
 
-        tel = pd.DataFrame(log)
+        tel = observer.to_dataframe()
         if write_telemetry:
             # sprint 017: 006-012 always wrote one of these; 016 quietly
             # didn't, and the diagnosis had to be done by OCR-ing the video
-            # instead of reading real numbers. Every column in `log` --
+            # instead of reading real numbers. Every column in `observer` --
             # the full overlay, not a curated subset -- same
             # `{stem}_telemetry.csv` naming `runs/006_steering_telemetry.csv`
             # etc. already established. Independent of record_video: a fast,
             # headless (record_video=False) run is exactly where this
             # matters most for diagnosis.
-            csv_path = Path(out_mp4).with_name(Path(out_mp4).stem + "_telemetry.csv")
-            csv_path.parent.mkdir(parents=True, exist_ok=True)
-            tel.to_csv(csv_path, index=False)
-            print(f"wrote {csv_path}")
+            #
+            # REFACTOR_PLAN.md phase 5: `telemetry_path`, if given, overrides
+            # the colocated-with-video default -- sim/output_routing.py uses
+            # this to route telemetry into projects/<name>/telemetry/,
+            # separate from projects/<name>/runs/. Every existing caller
+            # leaves telemetry_path unset and gets byte-identical behaviour
+            # to before this parameter existed.
+            csv_path = (Path(telemetry_path) if telemetry_path is not None
+                        else Path(out_mp4).with_name(Path(out_mp4).stem + "_telemetry.csv"))
+            observer.write(csv_path)
         if record_video:
             _ensure_ffmpeg_on_path()
             import brain_panel

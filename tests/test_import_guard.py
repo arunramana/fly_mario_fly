@@ -16,6 +16,18 @@ from pathlib import Path
 FLY_DIR = Path(__file__).parent.parent / "fly"
 FORBIDDEN_PREFIXES = ("mario", "bridge")
 
+# REFACTOR_PLAN.md phase 5, section 5.2: "Episode composes a Policy and an
+# Environment and knows nothing else... bridge supplies the concrete
+# fly-backed policy; mario/ supplies the environment." Episode must not
+# import any of fly/mario/bridge -- it receives concrete implementations
+# by dependency injection (the constructor), never by import. Scoped to
+# these two files specifically, not all of sim/: sim/project_runner.py
+# legitimately imports run_steering.py (which imports fly/mario/bridge
+# everywhere) to drive the full system from a ProjectConfig -- a
+# different, glue-layer module, not Episode itself.
+SIM_GENERIC_FILES = ("sim/episode.py", "sim/protocols.py")
+SIM_FORBIDDEN_PREFIXES = ("fly", "mario", "bridge")
+
 
 def _imported_top_level_names(py_file: Path) -> set[str]:
     tree = ast.parse(py_file.read_text(encoding="utf-8"), filename=str(py_file))
@@ -48,3 +60,20 @@ def test_fly_directory_is_not_empty():
     worse than no guard -- catches the path itself breaking (e.g. a future
     rename of fly/ that forgets this test)."""
     assert list(FLY_DIR.rglob("*.py")), f"no .py files found under {FLY_DIR}"
+
+
+def test_episode_never_imports_fly_mario_or_bridge():
+    root = FLY_DIR.parent
+    violations = []
+    for rel_path in SIM_GENERIC_FILES:
+        py_file = root / rel_path
+        assert py_file.exists(), f"expected {rel_path} to exist -- a rename broke this guard"
+        imported = _imported_top_level_names(py_file)
+        hit = imported & set(SIM_FORBIDDEN_PREFIXES)
+        if hit:
+            violations.append(f"{rel_path} imports {sorted(hit)}")
+    assert not violations, (
+        "sim/episode.py (and sim/protocols.py, the contract it depends on) "
+        "must not import fly/, mario/, or bridge/ (REFACTOR_PLAN.md section "
+        "5.2) -- violations:\n" + "\n".join(violations)
+    )
