@@ -52,7 +52,7 @@ Your seven tabs are kept, with the review's fixes folded in:
 
 | Tab | Contents | Change from the original idea |
 |---|---|---|
-| 1 Character | Mario / Luigi; internal state: hunger, starting power-up, arousal (pC1) | Luigi is cosmetic (identical physics in NES SMB1); says so in the UI |
+| 1 Character | Mario / Luigi; internal state: hunger, starting power-up, arousal (pC1) | Luigi is a display-only colour swap done in `tool/` (P0 found the RAM poke freezes movement — see the note below section 4's table); the game and telemetry are identical because it's the same Mario run underneath |
 | 2 Enemies | Goomba, Koopa, generic enemy: odour channel, valence, intensity, looming salience, danger weight | Driven by `EntityKind` + `bridge/profiles/default.json`, not a hand-made list |
 | 3 Objects & terrain | Power-ups, ? blocks, used blocks, pipes/solids, pits/gaps | Terrain added (pits, gaps, walls were missing) |
 | 4 Circuits & control | Every scalar in `config/params.py` grouped per circuit, with range and provenance (invented/measured); noise σ + seed; **shuffled-connectome toggle** | Shuffle added (CLAUDE.md invariant 6); noise "off" = σ 0 |
@@ -98,7 +98,11 @@ tool/
                           (name, type, default, range, provenance, group, wiring)
     wiring.py             the live/partial/not-wired table, one source of truth
     run_spec.py           RunSpec = ProjectConfig + tool settings + seed, frozen
-    runner.py             worker entry point: RunSpec -> run_steering.main(...)
+    runner.py             worker entry point: RunSpec -> run_steering.main(...);
+                          P2 also owns the persistent warm-worker pool (below)
+    palette.py            Mario<->Luigi sprite colour remap on a displayed RGB
+                          frame (tool-only, no RAM/game-state touch -- P0's
+                          Luigi note below section 4's table)
     run_store.py          NNN numbering, snapshot, index.json, outputs per run
     batch.py              seeds x episodes, parallel, aggregate results
     fitness.py            thin wrapper over sim/fitness.py for a finished run
@@ -109,7 +113,14 @@ tool/
     widgets/param_form.py auto-built form from ControlSpecs (sliders, spin
                           boxes, range clamps, provenance tooltips, greyed if
                           not wired, reset-to-default)
-    widgets/preview.py    live frame + brain panel view
+    widgets/preview.py    live preview: the raw `obs` RGB frame (through
+                          `palette.py` if Luigi is selected) plus telemetry
+                          bars (per-population activation as simple bars, not
+                          the full anatomical brain panel -- P0's 14fps
+                          finding rules that out for anything real-time). The
+                          full `render.brain_panel` composition stays a
+                          post-run, offline step (already proven at ~14fps,
+                          fine when nothing needs to watch it live)
     widgets/plots.py      telemetry plots
     tabs/character.py enemies.py objects.py circuits.py goal.py settings.py run.py
   tests/                  core unit tests + pytest-qt smoke tests
@@ -140,7 +151,7 @@ Audited against the current code. Ordered by need.
 | **C3** | `main(on_frame=None, should_stop=None)`: per-frame callback (frame index, RGB frame, telemetry row) and a cancel check | Live preview, progress bar, Cancel button | `None` → no call, no check | goldens |
 | **C4** | Put game score/coins/time/flag from the gym `info` dict into the returned summary `info` (not the CSV) | Fitness "points" has nothing to read today | summary dict gains keys; CSV untouched | goldens (CSV unchanged) + unit test |
 | **C5** | `FullPolicy(shuffle_seed=None)` / `main(shuffle_seed=None)` using `fly/connectome/circuit.py`'s `shuffle_edges`/`build_shuffled` | Shuffled-connectome toggle in tab 4 | `None` → real connectome | goldens; new test: shuffled run differs |
-| **C6** | `main(player="mario")`: `"luigi"` pokes the current-player RAM byte (0x0753) at reset | Mario/Luigi choice | `"mario"` → no poke | goldens; P0 spike verifies the poke is safe |
+| **C6** | **Retired, moved to tool scope.** No codebase change: see the Luigi note below the table. | — | — | — |
 | **C7** | Character internal state: `hunger_override=None` (today hunger is read from Mario's size, RAM 0x0756) and starting power-up (reuse `force_mario_size` + `force_size_from_frame=0`) | Tab 1 controls | `None` → read from RAM | goldens; **science change when used** (rule 3) |
 | **C8** | Per-entity perception: perception reads per-kind odour channels/gains/valence/looming salience from an entity-profile file (`bridge/profiles/default.json` already has the schema and distinct Goomba/Koopa channels) | Tabs 2–3: "smell differently, not just more or less" | `entity_profiles=None` → today's single aggregate | goldens; own SPEC + RUNS entry + shuffle control (**science sprint**) |
 | **C9** | pC1 arousal as an input | Tab 1 "arousal" | not built; stays `not wired` until a SPEC exists | — |
@@ -148,23 +159,38 @@ Audited against the current code. Ordered by need.
 Not changed: `FullPolicy`'s split (audit S1), the H-list literals, denormal
 flush, anything under `projects/legacy/`. The tool works around them.
 
+**Luigi, redesigned after P0 (was C6):** the RAM poke (0x0753) freezes
+movement (P0, section 6) — it is not a display choice, it changes what the
+game engine does. Dropped entirely; the codebase never learns a player
+selection exists. Instead, `tool/core/palette.py` remaps Mario's sprite
+colours to Luigi's on the **displayed** RGB frame only — the frame `obs`
+array the emulator already returns, after it leaves `run_steering.main()`,
+before it reaches the preview widget or an exported video. The RAM, the
+telemetry, the circuit's decisions and the recorded CSV are all untouched
+and identical to a Mario run with the same seed — there is no `player=`
+argument anywhere in the codebase, and no golden gate exposure at all,
+because nothing outside `tool/` changes. Wiring moves from P5 (it was
+gated on C6 landing) to whichever phase first displays a frame — P4 in
+section 6's numbering, since that's the live preview and the recorded
+video are the only two places a frame is ever shown.
+
 ---
 
 ## 5. Wiring status per tab (at the end of each phase)
 
-| Control | Today | After P1 | After P5 | After P6 |
-|---|---|---|---|---|
-| Character Mario/Luigi | not wired | not wired | live (C6) | live |
-| Hunger / power-up | not wired | not wired | live (C7) | live |
-| Arousal pC1 | not wired | not wired | not wired | not wired (C9) |
-| Enemy/object smell, looming, danger | not wired | not wired | not wired | live (C8) |
-| Circuit scalars (49) | partial (σ only via runner) | live (C1, C2) | live | live |
-| Noise σ, seed | live | live | live | live |
-| Shuffled connectome | not wired | not wired | live (C5) | live |
-| Home bias, level, frames | live | live | live | live |
-| Fitness weights | score-only | points live (C4) | live | live |
-| Frame skip, video, brain panel | live | live | live | live |
-| Parallel workers | — | — | live (tool batch) | live |
+| Control | Today | After P1 | After P4 | After P5 | After P6 |
+|---|---|---|---|---|---|
+| Character Mario/Luigi | not wired | not wired | **live** (`tool/core/palette.py`, display-only, moved up from P5 now that C6 is gone) | live | live |
+| Hunger / power-up | not wired | not wired | not wired | live (C7) | live |
+| Arousal pC1 | not wired | not wired | not wired | not wired | not wired (C9) |
+| Enemy/object smell, looming, danger | not wired | not wired | not wired | not wired | live (C8) |
+| Circuit scalars (49) | partial (σ only via runner) | live (C1, C2) | live | live | live |
+| Noise σ, seed | live | live | live | live | live |
+| Shuffled connectome | not wired | not wired | not wired | live (C5) | live |
+| Home bias, level, frames | live | live | live | live | live |
+| Fitness weights | score-only | points live (C4) | live | live | live |
+| Frame skip, video, brain panel | live | live | live | live | live |
+| Parallel workers | — | — | live (tool batch) | live | live |
 
 ---
 
@@ -253,15 +279,14 @@ Each phase ends with the golden gate green and a short entry in
     `tool/core/runner.py` needs (import `run_steering` in a spawned
     process, return results over a queue) is proven end to end.
 
-**Net effect on the plan, for review, not yet acted on:** the timing and
-PySide6 spikes came back positive and confirm sections 1-3 and 6 as
-written. The Luigi spike is new information sections 4 and 8 didn't have
-when they were written — the risk-table mitigation ("P0 spike; C6 stays
-opt-in") was right to ask for a check, and the check found a real
-problem, just not the anticipated one (it doesn't break the gym wrapper;
-it breaks the character's ability to move at all). Left for your call:
-whether C6 gets a dedicated follow-up spike before P5, gets redesigned,
-or gets dropped from scope.
+**Net effect on the plan.** The timing and PySide6 spikes came back
+positive and confirm sections 1-3 and 6 as written. The Luigi spike found
+a real problem, just not the one the risk table anticipated (it doesn't
+break the gym wrapper; it breaks the character's ability to move at
+all) — **decided:** C6 is dropped, redesigned as a display-only colour
+swap entirely inside `tool/` (see the note under section 4's table, and
+the updated section 1/3/5/6/8 entries above). No RAM poke, no codebase
+change, no golden-gate exposure; wiring moves up from P5 to P4.
 
 **P1 — Codebase enablement: C1, C2, C3, C4**
 - Make configs actually drive runs, add the frame hook/cancel, expose score.
@@ -273,9 +298,29 @@ or gets dropped from scope.
   `runner.py`, `run_store.py`, `batch.py`, `fitness.py`.
 - A CLI proves it end to end before any UI exists:
   `python -m tool.core.cli run <project> --seed 3` and `... batch --seeds 8`.
+- **Persistent warm workers.** P0's timing spike found ~7-8s of fixed
+  circuit-load cost per fresh process (section 6's P0 results above) —
+  `runner.py` keeps a small pool of long-lived worker processes (each
+  imports `run_steering`/`bridge.full_policy` once, keeping their
+  `_circuit_cache` warm) instead of spawning fresh per run, so a batch of
+  N runs pays that cost once per worker, not once per run.
+- **The test this needs, before it ships**: a reused (warm) worker's
+  telemetry for a given `RunSpec` must be byte-for-byte identical to the
+  same `RunSpec` run in a fresh process. This is not assumed safe —
+  `bridge/full_policy.py`'s `FullPolicy._prev_avoid_odor`/`_last_x` are
+  documented CLASS-level attributes (a deliberately preserved quirk from
+  `main._prev_avoid_odor`'s original function-attribute behaviour, phase
+  5b), meaning they persist across `FullPolicy` INSTANCES within one
+  process. A fresh process resets them to the class body's defaults every
+  time; a warm worker running episode 2 right after episode 1 would not.
+  Expect this test to fail on first write and to need a real fix (make
+  them per-instance, reset in `reset()`) before persistent workers are
+  safe — a small, additive, golden-gate-provable codebase change if so,
+  not assumed here.
 - Tests: project create/duplicate/save round-trip, schema covers all 49
   scalars with ranges, run numbering never reuses a number, snapshot
-  reproduces telemetry byte-for-byte.
+  reproduces telemetry byte-for-byte, warm-worker-vs-fresh-process
+  telemetry identity (above).
 
 **P3 — UI shell**
 - Project gate (new / duplicate / open / recent), main window, header with
@@ -285,8 +330,13 @@ or gets dropped from scope.
 - Unsaved-changes guard on close and before Play.
 
 **P4 — Run tab (the payoff)**
-- Play → worker process → live preview (emulator frame + optional brain
-  panel), progress, Cancel.
+- Play → worker process → live preview: the raw `obs` RGB frame each
+  `on_frame` callback (C3) hands back, recoloured through `palette.py`
+  when Luigi is selected, plus telemetry bars (per-population activation,
+  cheap to draw every frame) — not the full `render.brain_panel`
+  composition, which P0 measured at 14fps, unusable live. Progress, Cancel.
+- Luigi becomes live here (moved up from P5 — no codebase gate left once
+  C6 was dropped; see the note under section 4's table).
 - Run history table from `tool_runs/index.json`; select a run to see its
   summary, fitness, telemetry plots (x-progress, DNp01/Giant Fiber, steering
   L/R, odour, jumps) and play its video.
@@ -295,9 +345,10 @@ or gets dropped from scope.
 - Auto-writes `runs/NNN_slug.md` with setup and numbers; the user adds the
   "what we learned" line. The tool never appends to `docs/RUNS.md` (decision 2).
 
-**P5 — Tabs 1, 4, 5, 6 fully live: C5, C6, C7**
-- Character tab (Mario/Luigi, hunger, starting power-up), shuffled toggle,
-  goal & fitness tab, settings tab with parallel batches.
+**P5 — Tabs 1, 4, 5, 6 fully live: C5, C7**
+- Character tab (hunger, starting power-up — Mario/Luigi is already live
+  from P4), shuffled toggle, goal & fitness tab, settings tab with
+  parallel batches.
 - C7 used for the first time → one recorded run + RUNS entry.
 
 **P6 — Tabs 2 and 3 live: C8 (science sprint)**
@@ -332,7 +383,7 @@ or gets dropped from scope.
 | Runs are slow, so the preview feels dead | P0 timing; frame-skip and video-off defaults; preview throttled |
 | nes-py / spawn issues on Windows | P0 spike before any UI |
 | Module constants read at import (e.g. `run_steering.ODOUR_GAIN`) bypass the config | C1/C2 audit; each run in a fresh process; the honesty test catches misses |
-| Luigi poke breaks the gym wrapper | P0 spike; C6 stays opt-in |
+| Warm-worker reuse leaks state between runs (e.g. `FullPolicy`'s class-level `_prev_avoid_odor`/`_last_x`) | P2's byte-for-byte warm-vs-fresh test; fix before shipping the pool, not after |
 | Per-entity smell changes behaviour | C8 only as a SPEC'd science sprint with controls |
 | Tool edits drift from `docs/SCALARS.md` ranges | `schema.py` reads ranges from `config/params.py`, never duplicates them |
 
