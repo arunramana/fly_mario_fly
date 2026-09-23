@@ -33,9 +33,23 @@ working around it.
 2. **Never load the weights file whole.** 152M rows, 3.6 GB uncompressed.
    Stream it in Arrow record batches — `mcns.py` already does this.
 
-3. **Exactly two hand-set scalars**: the global gain `g` and the TTMn press
-   threshold. Everything else comes from the connectome. If a third constant
-   appears, flag it in the README.
+3. **Every hand-set scalar gets flagged and counted — no fixed budget.**
+   This invariant used to say "exactly two: the global gain `g` and the
+   TTMn press threshold, everything else from the connectome, flag a
+   third in the README." That held for the first prototype and then
+   stopped being true for 26 sprints while still being asserted: by
+   REFACTOR_PLAN.md phase 4's honest count (`docs/SCALARS.md`, generated
+   from `config/params.py`, not recalled from memory), there are **49**
+   — 29 invented (placed currents, mechanical hold durations), 20
+   measured (simulated against the real connectome-derived weight matrix
+   and picked by a sweep), **0 connectome-derived**. Zero of the 49 is
+   the real content of this invariant now: the connectome determines
+   each circuit's weight matrix, never one of the scalars controlling
+   how hard a circuit pushes on it. The rule going forward is the
+   spirit invariant 3 always had, stated honestly: every hand-set
+   scalar gets a typed, ranged home in `config/params.py` and a row in
+   `docs/SCALARS.md`, flagged there rather than left to accumulate
+   unlogged.
 
 4. **The circuit is recurrent, not feedforward.** Lateral connection within the
    detector populations is 3–9.5x their drive onto the Giant Fiber. Model it as
