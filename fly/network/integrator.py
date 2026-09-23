@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# The update rule every live circuit uses to advance its neurons one step:
+# activity fades, is pushed by inputs plus noise, and is kept between zero
+# and a cap. Optionally a chosen few neurons (the Giant Fiber, or DNp02)
+# instead build up charge and fire a spike when it crosses a threshold. A
+# test checks it gives the same numbers as the older rule in dynamics.py.
 """fly/network/integrator.py -- the one recurrent update every live circuit
 steps: a leaky-ReLU population plus an optional leaky-integrate-and-fire
 override on a named sub-population (DNp01 in the jump circuit, DNp02 in the

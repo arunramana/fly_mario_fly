@@ -117,7 +117,8 @@ so a Goomba and a Koopa still produce numerically identical looming and
 odour contributions today. `bridge/profiles/default.json` now gives
 `GOOMBA`/`KOOPA` distinct odour channels (`threat_goomba`/`threat_koopa`),
 but nothing reads those channels separately yet; every non-powerup entity
-still sums into run_steering.py's one undifferentiated aversive signal.
+still sums into one undifferentiated aversive signal (computed in
+`bridge/full_policy.py`'s `FullPolicy.act()`).
 Wiring a real per-species aggregate is live-behaviour work for whichever
 phase actually needs it (phase 6, most likely), not this one.
 
@@ -157,8 +158,9 @@ A real scoping decision, not an oversight: unifying it would touch the
 tile-scanning hot path for no behavioural gain this phase.
 
 **`pit_record()` isn't in the decision loop.** It builds a correct,
-tested `EntityRecord`, but `run_steering.py`'s `main()` still calls
-`tile_ram.gap_width()` directly for the real long-jump/refusal logic.
+tested `EntityRecord`, but `FullPolicy.act()` (`bridge/full_policy.py`)
+still calls `tile_ram.gap_width()` directly for the real long-jump/refusal
+logic.
 Wiring `pit_record()` into that state machine is deferred.
 
 **Pipe tiles (`0x10`-`0x15`) have no dedicated kind.** Confirmed in
@@ -194,7 +196,8 @@ above:
    pattern the plan's section 4 warns about. Registry's `ENTITY_WIDTH_PX`
    is now the one definition the enemy-classification path uses;
    `sensory.py`'s own copy (used only by offline diagnostics, `tune.py`/
-   `diag4.py`, never by the live game loop) was left alone -- consolidating
+   `diag4.py`/`denormal_probe.py` in `scripts/`, never by the live game
+   loop) was left alone -- consolidating
    it isn't required for this phase's behaviour-preservation goal and
    would touch diagnostic scripts for no functional gain.
 
@@ -207,6 +210,8 @@ above:
    unaffected -- but it's a real inconsistency in *where* a circuit's
    config lives, the kind of thing REFACTOR_PLAN.md phase 4 (per-component
    config extraction) exists to fix uniformly. Flagged, not fixed here.
+   *Since fixed in phase 4:* both files now read these values from the
+   dataclasses in `config/params.py`.
 
 5. **Pipe metatiles are a confirmed, verified ROM fact that was never
    given a name** -- see "What this model is NOT" above. Not a
@@ -225,14 +230,15 @@ above:
   (`threat_goomba`/`threat_koopa`) -- the discrimination the plan asked
   for is now expressible in data. The generic `ENEMY` fallback and
   `POWERUP`/`QUESTION_BLOCK` (sharing one `food` channel) still match what
-  `run_steering.py`'s `main()` actually computes today
+  `FullPolicy.act()` (`bridge/full_policy.py`) actually computes today
   (`mush["R"] + qblock["R"]` summed before `ODOUR_GAIN`; `goomba_odor`
   kept separate but undifferentiated by species). See "Phase 4: species
   decoding" above for why the channels exist without yet being read.
 - `looming_salience`, `danger_weight`, `is_food`, `body_scale`: present for
   every kind, matching the plan's `PerceptionProfile` shape, but **not**
-  yet read by any live code path -- `run_steering.py` still computes
+  yet read by any live code path -- `bridge/full_policy.py` still computes
   looming/danger/hunger-gating from its own scalars and RAM reads directly.
+  The file is read only by `tests/test_entities.py`.
   This file is documentation this phase, verified by
   `tests/test_entities.py` to cover every kind the registry can assign,
   not yet the runtime source of the numbers themselves. Making it that is

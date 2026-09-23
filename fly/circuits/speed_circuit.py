@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Builds the fly's "walk forward" network from its wiring diagram. It
+# starts from DNp09 (a pair of neurons linked to forward walking), adds
+# every neuron with at least 60 connections onto them, and works out how
+# strongly each neuron excites or inhibits the others. In the game, how
+# active DNp09 is decides whether Mario holds the run button (B).
 """
 speed_circuit.py — SPEC_terrain.md section 3: DNp09 (forward walking, 2
 neurons) plus every presynaptic partner with >=60 synapses onto DNp01...

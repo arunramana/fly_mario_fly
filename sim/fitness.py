@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Gives a finished game a single score: a weighted sum of points, distance
+# travelled and time. By default only distance counts, and a setting that
+# gives distance zero or negative weight is refused, because an earlier run
+# showed that scoring survival alone rewards getting stuck. Nothing that
+# decides Mario's moves reads this score; only the tests use it so far.
 """sim/fitness.py -- scores an episode after the fact from points, distance
 and time. Nothing that chooses an action reads it.
 """

@@ -1,5 +1,13 @@
 # fly_mario — restructure plan
 
+> **Status:** phases 0–6 have been carried out; each has an entry in
+> `docs/RUNS.md` ("Refactor phase 0-1" through "Refactor phase 5b,
+> correction", then 027 for phase 6). Some of what was built differs from
+> this plan: `ARCHITECTURE.md` was never created, and `run_steering.main()`
+> drives `bridge/full_policy.py`'s `FullPolicy` from its own loop rather
+> than through `sim/episode.py`'s `Episode`. Open structural findings are
+> in `docs/CODE_AUDIT.md`.
+
 Plan only. **Revision 3** — `fly/` ÷ `mario/` split, entity model, and a SOLID
 pass that removed two inheritance hierarchies.
 

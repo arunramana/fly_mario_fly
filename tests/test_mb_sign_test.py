@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Checks how the learning rule responds to the order of events. When a
+# memory-centre cell (Kenyon cell) fires and the learning signal (dopamine)
+# comes a few frames later, the connection must weaken, more so the shorter
+# the delay. When dopamine comes first, nothing must change. The file notes
+# that real flies strengthen it in that case; this project's rule cannot.
 """
 The sign test: does the rule flip sign with pairing order? Exercises the
 real fly.plasticity.three_factor depress()/update_eligibility():

@@ -66,6 +66,17 @@ Outside the 49 by category: `N_THRESHOLD = 60` / `load_jump(N=60)` define
 subgraph membership; `FitnessWeights` defaults; `AdaptiveHybridState`'s
 `alpha_a` / `beta` (diagnostic only).
 
+## D — scripts out of step with the current layout
+
+Diagnostic scripts only; nothing on the golden path. **Note only.**
+
+| Location | Finding |
+|---|---|
+| `scripts/compare_controllers.py` | Writes its three videos to top-level `runs/004a_real.mp4`, `runs/004b_shuffled_best.mp4` and `runs/004c_theta.mp4`, not `projects/<name>/runs/`. |
+| `scripts/bench_episodes.py` | Writes and deletes top-level `runs/_bench_tmp.mp4`. |
+| `scripts/diag4.py` | Its docstring calls the no-argument run the "current run_mario.py config", but the default is `--g 3.5`, while `JumpParams.g` is 2.0. |
+| `scripts/tune_steering.py`, `scripts/tune_terrain.py` | The closing "Decision" paragraphs, including their `rho(g=1)` values, are fixed text, not computed from that run. |
+
 ## Out of scope for cleanup
 
 - Split `FullPolicy`, or migrate `run_steering.main()` onto `Episode`.

@@ -1,3 +1,8 @@
+# What this file does, in plain English:
+# Loads the steering network (built in steering_circuit.py) while hiding its
+# long printed build report. The slow data extraction is saved to disk the
+# first time, so later loads are quick. Used by the game controller and
+# several tuning scripts.
 """Quiet re-load of the cached steering circuit -- mirrors load_cached.py."""
 import contextlib
 import io

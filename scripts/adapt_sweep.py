@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Tries every combination from a small grid of three settings on the jump
+# circuit: the overall connection strength "g", plus two that set how fast
+# and how hard neurons tire out with use. Each combination goes through the
+# "Diagnostic 4" stress test in diag4.py. Prints pass/fail for each of the
+# four checks, then lists the combinations that passed all four.
 """
 adapt_sweep.py -- SPEC_jump.md section 3 task: "check whether a leak/
 adaptation term is the missing piece."

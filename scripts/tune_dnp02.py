@@ -1,5 +1,11 @@
+# What this file does, in plain English:
+# Compares, with no game, when two escape neurons first fire: DNp01 (the main
+# "giant fiber" jump) and DNp02 (a second escape pathway), by simulating both
+# real circuits together. Prints both firing frames for a slowly approaching
+# object across a grid of DNp02 settings (strength, firing threshold, how
+# fast it builds up), then for a fast approach at one chosen setting.
 """
-tune_dnp02.py -- SPEC_second_escape.md: pick G_DNP02, DNP02_SPIKE_THRESHOLD,
+tune_dnp02.py -- DNp02 (docs/RUNS.md 012): pick G_DNP02, DNP02_SPIKE_THRESHOLD,
 DNP02_INTEGRATION_ALPHA by simulating the REAL DNp01 and DNp02 circuits
 side by side, under both a slow-rising threat and a fast/sudden one --
 before ever touching the emulator (same discipline as tune.py/SPEC_jump.md

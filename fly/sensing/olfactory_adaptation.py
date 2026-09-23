@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Makes Mario's sense of smell get used to a steady smell, as a fly's smell
+# receptors do. For each side (left, right) it keeps a slow running average
+# of the incoming smell signal and divides the signal down by it, so a
+# smell that stays put fades over about 1.5 seconds and recovers once gone.
+# The game controller keeps one copy for good smells and one for bad ones.
 """fly/sensing/olfactory_adaptation.py -- ORN adaptation.
 
 A real olfactory receptor neuron's response to a sustained concentration

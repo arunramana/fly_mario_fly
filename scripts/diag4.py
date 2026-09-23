@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# "Diagnostic 4": a stress test for the jump circuit. Feeds it a made-up
+# 3,000-frame pattern of enemies approaching on both sides, in bursts with
+# quiet gaps, and checks that activity follows the threat, nothing sits at
+# its maximum, activity settles in the gaps, and the jump signal fires only
+# during threats. Prints pass/fail; --sweep tries 20 connection strengths.
 """
 diag4.py -- SPEC_jump.md section 3, "Diagnostic 4 -- sustained input."
 

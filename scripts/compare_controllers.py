@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Compares three jump controllers: the real fly circuit, the best of the 20
+# shuffled copies from shuffle_sweep.py (same neurons, wiring scrambled at
+# random), and a no-brain rule that jumps when an enemy looks big enough.
+# Each plays levels 1-1 to 1-3 from 3 start points; scores go to a CSV in
+# projects/legacy/telemetry/ and three videos to runs/004a/b/c_*.mp4.
 """
 compare_controllers.py -- three controllers, same level, same env, compared
 button-press-trace by button-press-trace:

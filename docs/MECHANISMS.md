@@ -1,12 +1,25 @@
 # Candidate mechanisms
 
-Fly circuits not yet built, with what each would buy Mario. One entry per
-mechanism. **Nothing here is implemented** — this is the queue, and the
-connectome check comes before the code every time.
+Fly circuits proposed for the project, with what each would buy Mario. One
+entry per mechanism. This was written as a queue, before any of it was
+built; the connectome check comes before the code every time.
 
-Built already: escape (DNp01→TTMn), climbing/terrain, steering (DNa01/02),
-DNp09 speed gating, odour + hunger, habituation + MDN, mushroom body.
-See `docs/RUNS.md` for what each one actually did.
+**Status (see `docs/RUNS.md` for details):**
+
+- **Built in run 016 (#1, #5, #6):** aversive odour, odour braking and the
+  refusal rule. The connectome check found no real pathway for any of them
+  (the lateral-horn route reaches DNa01/DNa02 with 3 synapses; nothing
+  reaches DNp09), so all three are placed external currents rather than
+  connectome circuits. Run 017 fixed the brake to engage only on odour in
+  excess of `HOME_BIAS`.
+- **Checked and declined in run 017 (#2):** pC1 has 156 bodies (not ~85
+  as guessed below), has 0 synapses onto TTMn, and DNp37 does not exist in
+  this connectome.
+- **Not built:** #3, #4, #7, #8.
+
+Built before this queue: escape (DNp01→TTMn), climbing/terrain, steering
+(DNa01/02), DNp09 speed gating, odour + hunger, habituation + MDN,
+mushroom body.
 
 ---
 

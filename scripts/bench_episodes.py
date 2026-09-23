@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Measures how many game episodes per minute the full system can run. Times
+# one 2,500-frame episode the old way (fresh process, video on), then three
+# batches of 24 episodes run 8 at a time with no video: plain, skipping
+# frames, and restarting from a saved game state. Prints each speed and how
+# many times faster it is than the old way; it saves no results file.
 """
 bench_episodes.py -- SPEC_throughput.md: measure the actual episodes/minute
 before and after making episodes cheap. No new circuits; this only changes

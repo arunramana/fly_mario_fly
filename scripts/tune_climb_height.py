@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Works out how long the jump button must be held to get Mario over the
+# first wall in level 1-1 (no fly brain). Mario runs right, with a crude
+# automatic hop over nearby enemies, until the game's map shows a wall ahead;
+# the run is then replayed with jumps held 8 to 40 frames. Prints the wall's
+# height and, for each hold, whether Mario cleared it, was blocked or died.
 """
 tune_climb_height.py -- SPEC_habituation.md follow-up: calibrate
 CLIMB_JUMP_FRAMES against real wall height, the way 007 calibrated GAP_GAIN

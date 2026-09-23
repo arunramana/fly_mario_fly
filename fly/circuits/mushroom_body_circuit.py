@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Builds the fly's learning centre (the "mushroom body") from its wiring
+# diagram. It collects three real groups of cells: Kenyon cells that encode
+# what the fly senses, output cells (MBONs) that read them, and dopamine
+# cells that signal reward or punishment. It checks how many of each there
+# are, then works out how strongly each cell excites or inhibits others.
 """
 mushroom_body_circuit.py -- KC + MBON + PAM/PPL/PPM dopaminergic core.
 See SPEC_mushroom_body.md. Core = the three real populations themselves

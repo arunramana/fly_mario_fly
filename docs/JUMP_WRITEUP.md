@@ -3,7 +3,9 @@
 > Historical sprint-1 writeup, moved from the root `README.md`. File paths
 > reflect the pre-refactor layout: modules named here as root files now live
 > under `fly/`, `scripts/`, and `render/`, and the video/plot outputs are in
-> `projects/legacy/runs/`.
+> `projects/legacy/runs/`. Some details are also out of date:
+> `theta_multi_approach` has since been removed, and `run_mario.py` no
+> longer uses `sensory.py`.
 
 A Goomba approaches Mario, the real fruit-fly escape circuit (Janelia
 MaleCNS v1.0) fires, and TTMn's threshold-crossing presses A. See

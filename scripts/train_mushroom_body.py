@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Trains the "mushroom body" (the fly's learning centre) by playing 500
+# episodes of level 1-1 (or a number given on the command line), 1,200
+# frames each, no video, from the same saved start, carrying the learned
+# weights over from one episode to the next. Writes per-episode progress to
+# projects/legacy/telemetry/mb_training_curve.csv, final weights beside it.
 """
 train_mushroom_body.py -- SPEC_mushroom_body.md section 6: 500 episodes
 from an identical savestate, x-progress per episode as the learning curve.

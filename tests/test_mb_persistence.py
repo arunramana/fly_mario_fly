@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Checks that what the fly learns can be saved and carried into the next
+# game. Punishment learning happens at death, which ends the game, so it
+# only has an effect if it carries over. It checks that saving and reloading
+# the learned connection weights is exact, and that a fresh Python process
+# continuing from the saved weights learns exactly as an unbroken run does.
 """
 KC->MBON weight persistence. Death is the only aversive event and it ends
 the episode, so punishment learning exists only across episodes: without

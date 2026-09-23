@@ -117,6 +117,22 @@ credit problem the biology says the mechanism cannot solve.
 
 ## What to build in phase 6
 
+**Status: built in run 027** (`docs/RUNS.md` 027). How it differs from the
+list below:
+
+- The trace is `MushroomBodyParams.trace_decay` (60 frames), now cited to
+  this document with a 60–120 frame range. It is not a separate
+  `EligibilityTrace` class.
+- Events wired to dopamine (`fly/plasticity/dopamine.py`): a `?` block hit
+  or a stomp → PAM; death → PPL1/PPM. Mushroom collected and damage taken
+  are not wired. It is opt-in (`FullPolicy(event_proximal_dopamine=True)`);
+  the default still rewards forward progress every frame.
+- Sign check (`tests/test_mb_sign_test.py`): the rule does **not**
+  reproduce the fly's opposite-sign result. Backward pairing produces no
+  change, because the rule only ever depresses.
+- Event count, measured: about 12–13 appetitive events per episode
+  against exactly 1 aversive event (death).
+
 1. `EligibilityTrace` with `tau` in the range **60–120 frames**, bounded in
    `SCALARS.md` at that range with this document as the provenance — **measured,
    not invented**, which would be the first such scalar in the project.

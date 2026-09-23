@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# The basic rule for how simulated neurons change over time: each neuron's
+# activity fades a little every step and is pushed up by its inputs, never
+# below zero and capped at a maximum (10 steps per game frame). It also
+# holds the random "noise" added to inputs, a variant where the Giant Fiber
+# fires sharp spikes, and a variant with fatigue used by one diagnostic.
 """
 dynamics.py — the leaky integrator from SPEC_jump.md section 3.
 

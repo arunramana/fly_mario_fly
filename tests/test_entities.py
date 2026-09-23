@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Checks the code that labels things found in the game's memory: which byte
+# means a Goomba, a Koopa or a power-up, what each enemy slot holds, which
+# map tiles are ground, blocks or empty, and when a pit lies ahead. It also
+# checks every kind of thing has an entry in the default profile file. These
+# small tests pinpoint a break that the full-game tests would not.
 """
 Unit coverage for mario/entities/. The goldens only reach KindRegistry
 through a full episode and would not localise a break to this module.

@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Picks the overall connection strength "g" for the original 315-neuron jump
+# circuit, with no game involved. Tries 14 values of g against a made-up
+# approaching object and three checks: activity dies out with no input, a
+# brief pulse fades without echoing, and the escape neuron fires sharply and
+# late. Prints a table and saves a plot to projects/legacy/runs/.
 """
 tune.py — synthetic-looming harness for tuning g, per SPEC_jump.md section 3.
 

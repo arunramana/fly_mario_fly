@@ -1,3 +1,8 @@
+# What this file does, in plain English:
+# Checks the after-the-fact game score in sim/fitness.py: by default only
+# distance counts, a zero or negative distance weight is refused, a game
+# that went farther and died outscores one that stayed alive but got stuck
+# (numbers from an earlier run), and the score is a plain weighted sum.
 """
 Fitness is computed and recorded, never wired into a decision, so these
 tests check the object itself.

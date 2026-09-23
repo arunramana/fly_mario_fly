@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Picks how strongly smell pulls on steering, by simulating the real turning
+# circuit (DNa01/DNa02) with no game. A constant "go right" input competes
+# with a smell on the left at several strengths and distances, with and
+# without a hunger boost. Prints, for each case, whether the left side wins
+# ("FLIP"), meaning Mario would turn toward the smell.
 """
 tune_odour.py -- SPEC_odour.md section 0: pick ODOUR_GAIN and the hunger
 multiplier(s) by actually simulating the real steering circuit (DNa01/DNa02,

@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Reads the per-frame log (telemetry) of a finished run_steering.py game.
+# It lists each moment the fly's escape reflex committed to a jump, with how
+# many frames the enemy was from reaching Mario then, and measures how
+# closely two threat-detecting cell groups tracked the enemy's apparent size
+# versus how fast that size changed. Used by run_steering.py runs 023/024.
 """
 commitment_report.py -- the retinotopy measurement (docs/RUNS.md 023-024),
 read from a run_steering.py telemetry DataFrame:

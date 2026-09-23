@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Builds the fly's steering network from its wiring diagram. It starts from
+# DNa01/DNa02 (four neurons, two per side, that steer the fly), adds every
+# neuron with at least 60 connections onto them, and works out how strongly
+# each neuron excites or inhibits the others. In the game, whichever side
+# is more active decides whether Mario walks left or right.
 """
 steering_circuit.py — body-level steering circuit: DNa01/DNa02 core plus
 every presynaptic partner with >=60 synapses onto DNa01 UNION DNa02.

@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Defines a basic game loop: at each step the decision-maker (a "policy")
+# picks a button press, the game advances one step, and any attached
+# listeners are told what happened. It stops early when the game reports
+# the run is over. It never imports the fly, game or bridge code; the tests
+# use it, while run_steering.py runs its own loop instead.
 """sim/episode.py -- composes a Policy and an Environment and notifies
 observers each step. Imports nothing from fly/, mario/ or bridge/
 (tests/test_import_guard.py enforces it).

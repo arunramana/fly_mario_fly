@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Checks settings for the MDN circuit (the neurons that make a fly walk
+# backwards) by simulating it with no game. Prints its spectral radius (a
+# number saying whether activity can run away), then average MDN activity
+# after 300 steps with zero input at 4 strengths, and at 5 input levels at
+# strength 1.2, noting whether each hits the maximum.
 """
 tune_mdn.py -- pick G_MDN, MDN_DRIVE, MDN_THRESHOLD by directly simulating
 the real MDN circuit (same lighter-touch approach as tune_steering.py /

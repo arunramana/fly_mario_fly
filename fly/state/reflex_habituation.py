@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Makes a reflex give up when it keeps firing without getting anywhere, as
+# a fly's escape reflex does. Each time the reflex wants to fire it checks
+# how far Mario has moved forward since the last check; after 3 checks in
+# a row with under 16 pixels of progress the reflex is blocked until
+# progress resumes or it is reset. Used for the escape jump and climbing.
 """fly/state/reflex_habituation.py -- SPEC_habituation.md section 1. Giant
 Fiber pathway habituation, a documented property of the fly's reflex
 circuitry, not a timeout. Takes plain x-progress from the caller and never

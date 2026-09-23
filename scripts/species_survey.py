@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Finds which enemy types appear in levels 1-1 and 1-2. No fly brain: Mario
+# runs right and jumps on a random rhythm for 200,000 frames per level,
+# restarting whenever he dies, while each enemy's type code is read from the
+# game's memory. Prints every new type code as it is first seen, and how far
+# Mario got. Saves nothing.
 """species_survey.py -- which ADDR_ENEMY_TYPE bytes appear in 1-1 and 1-2?
 The real circuit dies early (1-1 x=1432, 1-2 x=184, at sigma=0), so this
 bypasses it: hold right and mash jump on a random duty cycle. A species

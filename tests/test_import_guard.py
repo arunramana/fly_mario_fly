@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Checks, by reading the source files without running them, that the fly
+# brain code in fly/ never pulls in game (mario/) or bridge code, and that
+# sim/episode.py and sim/protocols.py pull in none of fly/, mario/ or
+# bridge/. This keeps the parts separate. It also checks fly/ is not empty,
+# so the check cannot pass by finding nothing.
 """
 fly/ never imports mario/ or bridge/, and sim/episode.py imports none of
 them. Static (parses the AST) on purpose: a dynamic check would miss an

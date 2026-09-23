@@ -1,5 +1,11 @@
+# What this file does, in plain English:
+# Asks whether rebuilding the DNp02 escape circuit with more neurons (cutting
+# its minimum-connection cut-off from 60 to 30, 15 and 5) lets it fire before
+# DNp01 on a slow approach. For each size it searches settings kept safely
+# below the point where activity could run away, then prints the best lead
+# found and what happens on a fast approach.
 """
-tune_dnp02_widen.py -- SPEC_second_escape.md follow-up: does lowering
+tune_dnp02_widen.py -- docs/RUNS.md 012 follow-up: does lowering
 DNp02's own N threshold (60 -> 30 -> 15 -> 5) restore a genuine,
 STABLE early-commit advantage over DNp01, or does the null from N=60 hold?
 

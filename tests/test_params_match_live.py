@@ -1,3 +1,8 @@
+# What this file does, in plain English:
+# Checks that every default value in the central settings file
+# (config/params.py) equals the value the running code actually uses, in
+# run_mario.py, run_steering.py and several fly, bridge and game modules.
+# This keeps the settings file an accurate record of what the code does.
 """
 Every config/params.py default equals the value the live code uses,
 whether the live constant is sourced from the dataclass (run_mario.py,

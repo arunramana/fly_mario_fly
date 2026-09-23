@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Builds the fly's "walk backwards" network from its wiring diagram. It
+# starts from the 4 MDN neurons (the cells that make a fly back up), adds
+# every neuron with at least 60 connections onto them, and works out how
+# strongly each neuron excites or inhibits the others. In the game it makes
+# Mario back away once repeated escape jumps stop making forward progress.
 """
 mdn_circuit.py — body-level MDN circuit: MDN (Moonwalker Descending
 Neurons, backward walking) core plus every presynaptic partner with >=60

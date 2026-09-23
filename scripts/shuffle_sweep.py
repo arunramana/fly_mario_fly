@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Makes 20 "shuffled" copies of the jump circuit (same neurons, wiring
+# scrambled at random). For the real circuit and each copy, it searches for
+# an overall connection strength g that passes diag4.py's stress test: a
+# quick shortened test first, then the full test to confirm. Saves the
+# results to projects/legacy/telemetry/shuffle_sweep_results.json.
 """
 shuffle_sweep.py -- SPEC section 5, done properly: n=20 shuffles, each tuned
 with the SAME Diagnostic-4 procedure the real circuit got. Matched

@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Wraps one circuit's connection-strength table, its update rule and its
+# overall strength setting into one object that holds the neurons' current
+# activity. Each call advances the circuit one step; named groups of
+# neurons can be picked out, and tiny leftover values can be zeroed so the
+# arithmetic stays fast. The mushroom body's learning does not use it.
 """fly/network/network.py -- a circuit is a named configuration that builds
 a Network (REFACTOR_PLAN.md section 5.1), not a subclass of one.
 

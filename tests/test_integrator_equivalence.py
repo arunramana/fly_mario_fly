@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Checks that the shared neuron-update code (Integrator) gives exactly the
+# same numbers, bit for bit, as the two update routines in
+# fly/network/dynamics.py, with and without random noise and with and
+# without "spiking" neurons that fire in pulses. It uses small random test
+# networks, so a mismatch shows up here before the slower full-game tests.
 """
 fly.network.integrator.Integrator is bit-exact against
 fly.network.dynamics.step() (no spike index) and dynamics.HybridState

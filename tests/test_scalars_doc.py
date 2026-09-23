@@ -1,3 +1,7 @@
+# What this file does, in plain English:
+# Checks that docs/SCALARS.md, the document listing the hand-set numbers,
+# is exactly what the generator in config/scalars_doc.py produces now. If
+# it fails, the settings changed and the document needs regenerating.
 """
 docs/SCALARS.md must equal config/scalars_doc.generate(). If this fails,
 config/params.py changed without regenerating the doc.

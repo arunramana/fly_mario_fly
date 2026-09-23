@@ -1,6 +1,12 @@
+# What this file does, in plain English:
+# Builds the fly's "second escape route" network from its wiring diagram.
+# It starts from DNp02 (a pair of neurons that can also trigger an escape
+# jump), adds every neuron with at least 60 connections onto them, and adds
+# TTMn, the jump-muscle nerve cells DNp02 connects to. It returns the
+# neuron list and a table of how strongly each excites or inhibits others.
 """
 dnp02_circuit.py — body-level DNp02 circuit: DNp02 core, its N>=60
-presynaptic partners (overwhelmingly LC4 -- see SPEC_second_escape.md),
+presynaptic partners (overwhelmingly LC4 -- see docs/RUNS.md 012),
 PLUS TTMn explicitly folded in so the real DNp02->TTMn synapse (21 R, 5 L,
 confirmed against the weights file) is captured by the extraction. Unlike
 steering_circuit.py/mdn_circuit.py, this core has a genuine downstream
@@ -8,7 +14,8 @@ target within reach, not just upstream partners -- TTMn isn't found by the
 presynaptic-threshold rule (it's downstream of DNp02, not upstream), so it
 is added the same way SPEC_jump.md's pooling exception adds neurons that
 don't clear a threshold but are structurally load-bearing: explicitly,
-stated here as a judgement call. See SPEC_second_escape.md section 2.
+stated here as a judgement call. See docs/RUNS.md 012 (the original
+SPEC_second_escape.md is not in this repo).
 
     python dnp02_circuit.py
 """

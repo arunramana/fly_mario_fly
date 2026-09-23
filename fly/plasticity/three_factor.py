@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# The learning rule for the fly's learning centre (the mushroom body). It
+# keeps a fading memory of which sensory-coding cells were recently active;
+# when a reward or punishment signal arrives it weakens their links to the
+# output cells, in proportion to each link's current strength. Links only
+# ever weaken, never strengthen. Used by the game controller and a test.
 """fly/plasticity/three_factor.py -- the three-factor, depression-only
 KC->MBON rule (SPEC_mushroom_body.md section 4). The live circuit and the
 sign test (tests/test_mb_sign_test.py) both call these functions, so the

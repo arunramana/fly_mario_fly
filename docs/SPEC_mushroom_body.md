@@ -158,7 +158,9 @@ plot may say more than two near-identical videos would.
 
 Was 5 (`g`, `dnp01_spike_threshold`, `ttmn_press_threshold`,
 `G_DNP02`, `DNP02_SPIKE_THRESHOLD`/`DNP02_ALPHA` counted as the pair from
-SPEC_second_escape.md — see that spec's own accounting). This sprint adds
+SPEC_second_escape.md — see that spec's own accounting; that spec is not
+in this repo, and `docs/RUNS.md` entry 012 is the surviving record of the
+DNp02 work). This sprint adds
 exactly three: `KC_SPARSITY`, `TRACE_DECAY`, `LEARNING_RATE`. **8 total.**
 Flagged in the README, same as every prior addition — the budget is a
 standing invariant, and it costs something every time it grows.

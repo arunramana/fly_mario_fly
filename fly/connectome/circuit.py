@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Turns the fly's wiring diagram into the jump (escape) network that gets
+# simulated: looming detectors (LC4, LPLC2), the Giant Fiber (DNp01, which
+# commits the fly to a jump), the jump-muscle nerve cells (TTMn) and their
+# strongest inputs. It also holds the shared recipe every circuit uses for
+# connection strengths, and a randomly rewired copy used as a control.
 """
 circuit.py — body-level escape circuit: extraction, signs, weight matrix.
 

@@ -29,6 +29,9 @@ tests/      unit tests plus the golden-telemetry characterisation tests.
 docs/       specs, the run log, audits.
 ```
 
+Every `.py` file opens with a short `# What this file does, in plain
+English:` comment, so you can skim a file's purpose before reading its code.
+
 ## Setup
 
 Windows, Python 3.12. The pins in `requirements.txt` are load-bearing

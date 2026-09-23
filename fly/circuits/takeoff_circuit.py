@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Builds the fly's "take off" relay from its wiring diagram: the Giant
+# Fiber (DNp01, the neuron pair that commits the fly to a jump), the 34
+# relay cells it feeds (GFC1-4) and 10 wing-muscle nerve cells (DLMn). It
+# checks the Giant Fiber has no direct link to the wing cells, then builds
+# the connection-strength table. In the game it decides long vs short jumps.
 """
 takeoff_circuit.py — SPEC_terrain.md section 2: DNp01's own graded escape,
 extended to recruit the wing motor neurons.

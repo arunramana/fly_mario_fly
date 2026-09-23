@@ -1,9 +1,16 @@
+# What this file does, in plain English:
+# Makes artificial "something is approaching" test signals: how large an
+# object of a given width looks as it closes in at a steady speed, and a
+# longer pattern of overlapping approaches from both sides. It also picks
+# out the jump network's detector groups by side. Used only by diagnostic
+# and tuning scripts, not by the live game.
 """
 sensory.py — synthetic-looming stimulus + hemisphere routing helpers.
 
-Shared by tune.py (offline diagnostics, needs matplotlib) and run_mario.py
-(live emulator run, must NOT pull in matplotlib -- it drags contourpy,
-which forces numpy>=2 and breaks nes-py's numpy<2 pin. See requirements.txt).
+Shared by scripts/tune.py (offline diagnostics, needs matplotlib),
+scripts/diag4.py and scripts/denormal_probe.py. This module must NOT pull in
+matplotlib -- it drags contourpy, which forces numpy>=2 and breaks nes-py's
+numpy<2 pin. See requirements.txt.
 """
 
 from __future__ import annotations

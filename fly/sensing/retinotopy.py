@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# An experimental way to feed Mario's view to the looming detectors so each
+# cell responds to its own patch of the visual field, placed using where
+# each cell gets its eye input in the wiring diagram. The project's run log
+# records that it broke the escape jump, so it is off by default and kept
+# as a record of that result.
 """
 retinotopy.py -- per-cell receptive fields for LC4/LPLC2 and a RAM -> hex
 azimuth map, so an approaching enemy sweeps across the real population

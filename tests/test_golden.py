@@ -1,3 +1,8 @@
+# What this file does, in plain English:
+# A safety net for code changes. It replays three saved scenarios on level
+# 1-1 with the full fly brain and checks that each new per-frame log
+# (telemetry CSV) is byte-for-byte identical to a saved reference copy (a
+# "golden") in tests/golden/. Any change in behaviour, however small, fails.
 """
 Characterisation tests: a fresh `run_steering.main()` must reproduce three
 frozen telemetry runs byte-for-byte. Every refactor relies on this.

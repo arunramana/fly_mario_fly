@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# An investigation script: across the whole brain, what feeds the Giant
+# Fiber (DNp01) and the LPLC2 looming detectors, and how much of that input
+# is inhibitory? Its function full_presynaptic_population is also reused by
+# the circuit builders to find every neuron that connects onto a chosen set
+# of neurons, saving the result to disk.
 """
 query_input_pools.py — pure investigation, no model changes.
 

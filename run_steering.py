@@ -1,3 +1,11 @@
+# What this file does, in plain English:
+# The script that plays the game with the full simulated fly brain. Its
+# main() runs one game: each frame the fly-brain decision-maker in
+# bridge/full_policy.py picks the buttons; the script can plant test objects
+# in the game's memory (a fake mushroom, a fake wide pit), logs 54 values
+# per frame to a CSV file (telemetry) and can render a video. It returns the
+# log and a summary such as jump counts and the learned brain weights.
+# Given 008, 016, 023 or 024 on the command line, it re-runs that past run.
 """
 run_steering.py -- SPEC_steering.md: DNa01/DNa02 steering under a constant
 home bias, competing with a mushroom-odour signal read from RAM, plus a
@@ -103,7 +111,7 @@ MDN_DRIVE = _mdn_params.mdn_drive
 MDN_THRESHOLD = _mdn_params.mdn_threshold
 MDN_BACKUP_FRAMES = _mdn_params.mdn_backup_frames
 
-# ---- SPEC_second_escape.md -----------------------------------------------
+# ---- DNp02, the second escape pathway (docs/RUNS.md 012) -----------------
 # DNp02 is a real, direct, ipsilateral second path to TTMn, driven by
 # essentially all of LC4 (4209 synapses) and almost no LPLC2 (5). Without
 # expansion input it cannot tell a slow approach from a fast one, so it

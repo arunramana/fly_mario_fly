@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Decides when the learning centre gets a "reward" or "punishment" signal
+# (dopamine, the chemical that tells it something good or bad happened):
+# hitting a ? block or stomping an enemy is reward, dying is punishment,
+# each sent at full strength at the moment it happens. The game controller
+# always uses the death signal but uses the reward part only when asked.
 """fly/plasticity/dopamine.py -- event-proximal dopamine routing.
 
 A KC->MBON synaptic tag lasts ~1-2s and is negligible by 6s (Handler et al.

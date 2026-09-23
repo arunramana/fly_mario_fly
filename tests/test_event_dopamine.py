@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Checks the option that makes the fly's learning signal (dopamine) fire
+# only on real events. A ?-block hit or a stomp must give one reward pulse
+# and death one punishment pulse; a known 800-frame game must find 5 stomps
+# and 7 ?-block hits; switching the option on must change what is learned;
+# and plain forward movement alone must then cause no learning.
 """
 Event-proximal dopamine: a unit test of event_dopamine's routing and
 magnitude, and an integration check that FullPolicy's

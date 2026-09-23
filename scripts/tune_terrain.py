@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# The same kind of check as tune_steering.py, for two circuits: takeoff (the
+# escape neuron DNp01 through to the flight-muscle neurons DLMn) and speed
+# (DNp09). Prints each one's spectral radius (whether activity can run away)
+# at several g values, and how it responds to a short pulse or a steady
+# input. The "Decision" lines printed after are fixed text, not computed.
 """
 tune_terrain.py — SPEC_terrain.md's lighter gain checks for the two new
 circuits this sprint (takeoff: DNp01->GFC1-4->DLMn, and speed: DNp09),

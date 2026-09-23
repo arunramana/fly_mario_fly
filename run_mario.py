@@ -1,3 +1,11 @@
+# What this file does, in plain English:
+# A standalone demo: the fly's escape-jump circuit alone plays level 1-1.
+# Mario always holds right and run. Each frame, enemy positions read from
+# the game's memory (RAM) are turned into how large, and how fast-growing,
+# each enemy looks from Mario's point of view. That drives the fly's
+# threat-detecting neurons; when the jump-muscle neurons get active enough,
+# Mario presses jump (A) for a set number of frames. It stops after 300
+# frames or when the game ends, and saves a video with a live readout panel.
 """
 run_mario.py -- wire the connectome-derived escape circuit to SMB 1-1 and
 record video. Must run under fly_mario/.venv (numpy<2, gym==0.23.1 pins;

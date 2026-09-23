@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Records two videos of Mario playing 1,200 frames of level 1-1 from the same
+# saved start: one with the untrained "mushroom body" (the fly's learning
+# centre), one with the weights learned by train_mushroom_body.py. Writes
+# projects/legacy/runs/014a_before.mp4 and 014b_after.mp4, a telemetry CSV
+# beside each, and prints each episode's summary numbers.
 """Record the before (untrained) and after (trained) mushroom-body videos,
 same savestate for both. Run after scripts/train_mushroom_body.py has produced
 projects/legacy/telemetry/mb_trained_weights.npy.

@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Runs one game using only the settings in a project's config file (level,
+# frame limit, noise level, random seed, a few test options, and where to
+# save the output) by passing them to run_steering.py. Extra options given
+# by the caller override those settings. Kept apart from episode.py so that
+# file stays free of fly and game code.
 """sim/project_runner.py -- runs a project's scenario from its config file
 alone (tests/test_config_roundtrip.py checks the telemetry is
 byte-identical). Glue from ProjectConfig to run_steering.main(); kept out

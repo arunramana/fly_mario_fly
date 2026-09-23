@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Checks the basic game loop in sim/episode.py. It plays level 1-1 with the
+# jump-only fly policy and checks each step is recorded with a valid button
+# choice; checks, with a small fake game, that the loop stops as soon as the
+# game says it is over; and checks that two runs given different random
+# seeds press exactly the same buttons.
 """
 sim.episode.Episode end-to-end with a real Policy (bridge.policy.JumpPolicy)
 and a real MarioEnvironment. Tests the loop -- wiring, seeded reset, early

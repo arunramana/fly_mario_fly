@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Sanity-checks the strength setting g for the turning circuit (DNa01/DNa02)
+# with no game: prints its spectral radius (whether activity can run away)
+# at 7 values of g, and how the right-side neurons settle under a constant
+# input at 4 values. The closing "Decision" text (G_STEER = 1.2) is fixed
+# wording, printed whatever the numbers show.
 """
 tune_steering.py — SPEC_steering.md section 1's lighter gain check: not a
 full Diagnostic-4 sweep (out of scope, "cut for speed"), just spectral

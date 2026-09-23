@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Checks that a whole game can be reproduced from one settings file. It runs
+# the scenario described in projects/legacy/config.json and checks the
+# per-frame log it writes matches a saved reference copy byte for byte. It
+# also checks that saving output without naming a project, or running
+# without an output file name, stops with an error.
 """
 Run the 017 scenario from projects/legacy/config.json alone and assert
 byte-identical telemetry: a project reproducible from one file.

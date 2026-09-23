@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Collects the per-frame log ("telemetry") of a run: one row of named values
+# per game frame, saved as a CSV spreadsheet file. The column order is fixed
+# when it is created, whatever order values are filled in, because the tests
+# compare saved reference copies ("goldens") byte for byte. It can also hand
+# back the previous row so a frame can be repeated.
 """sim/telemetry.py -- accumulates one dict of column -> value per frame and
 writes them as a CSV. No dependency on fly/mario/bridge.
 

@@ -1,3 +1,8 @@
+# What this file does, in plain English:
+# The list of Python packages this project needs, for
+# `pip install -r requirements.txt`. Several versions are pinned on purpose;
+# the notes below say why, because upgrading them breaks the emulator.
+
 # Pinned for Windows + Python 3.12. nes-py 8.2.1's C extension does an
 # unsigned-byte multiply that overflows under NumPy 2.0's stricter casting
 # (OverflowError in rom.py's prg_rom_stop), so numpy must stay <2.
@@ -21,9 +26,10 @@ pyarrow
 opencv-python-headless<4.10
 
 # Do NOT install matplotlib into this venv: it pulls in contourpy, which
-# requires numpy>=2 and breaks nes-py the same way. Diagnostics that need
-# matplotlib (tune.py) run under the system Python instead -- run_mario.py
-# only imports the matplotlib-free helpers in sensory.py.
+# requires numpy>=2 and breaks nes-py the same way. The one script that
+# needs matplotlib (scripts/tune.py) runs under the system Python instead;
+# the other users of fly/sensing/sensory.py (scripts/diag4.py,
+# scripts/denormal_probe.py) only import its matplotlib-free helpers.
 
 # tests/golden/ -- characterisation tests, REFACTOR_PLAN.md phase 0.
 # No numpy/gym conflicts: installs clean against the pins above.

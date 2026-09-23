@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Measures, without changing anything, how much faster the jump circuit
+# would run if neuron values below 1e-30 were rounded to zero (numbers that
+# tiny can make the processor slow). Prints how small the values get and
+# timings with and without rounding; docs/RUNS.md records the result as
+# about 3.2x faster on a realistic input pattern and 4.7x during silence.
 """denormal_probe.py -- read-only: what does `h[h < 1e-30] = 0.0` buy on the
 jump circuit, the one circuit that never flushes? Measures it on the real
 weight matrix; applies no fix.

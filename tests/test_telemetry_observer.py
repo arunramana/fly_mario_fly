@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Checks the per-frame log recorder (sim/telemetry.py) on its own: new rows
+# start with every column empty, column order stays fixed whatever order
+# values are filled in, the previous row can be copied to repeat a frame,
+# saving creates missing folders, and adding a column needs no change to
+# the recorder itself.
 """
 sim.telemetry.TelemetryObserver in isolation.
 """

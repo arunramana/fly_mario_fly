@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Tests whether smell adaptation (the nose tiring of a smell that never
+# changes) frees Mario when he is stuck 24 pixels from a smell source. Feeds
+# a constant smell into the real turning circuit for 600 frames, with and
+# without adaptation, sated and hungry, and prints whether and at which
+# frame steering switches back from the smell to its default side.
 """
 tune_orn_adapt.py -- does ORN adaptation alone break Mario out of a spot
 he'd otherwise sit in forever?

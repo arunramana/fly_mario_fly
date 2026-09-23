@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Reads the per-frame log (telemetry) of a finished run_steering.py game and
+# finds every pit (a gap in the ground) Mario came up to. For each one it
+# reports the gap's width, how often the jump-trigger neuron fired on the
+# approach, whether a hop or the long jump was used, and whether Mario got
+# across or died. Used by run_steering.py's run 008; it changes no game.
 """
 pit_report.py -- SPEC_odour.md section 3: does the long jump generalise?
 

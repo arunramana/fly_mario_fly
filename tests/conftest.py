@@ -1,3 +1,8 @@
+# What this file does, in plain English:
+# Runs automatically before the tests. It limits the maths libraries to one
+# processing thread before anything else loads them. The file's own note
+# says that without this, the order the tests ran in could change the last
+# digit of one number in a saved game log and break the exact comparisons.
 """
 Set BLAS/OpenMP thread counts before any test module imports numpy. Once
 numpy is imported, BLAS latches its thread count from the environment, and

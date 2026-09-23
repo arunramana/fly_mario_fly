@@ -1,3 +1,9 @@
+# What this file does, in plain English:
+# Chooses which extra neurons join the jump network. Starting from the
+# looming detectors, the Giant Fiber and the jump-muscle cells, it adds
+# every neuron with at least N connections onto the detectors or Giant
+# Fiber, plus five named "pooling" neurons kept regardless. Run on its own,
+# it prints how many neurons different cut-offs would add.
 """
 expand_subgraph.py — SPEC_jump.md section 1b: sign-agnostic threshold expansion.
 
