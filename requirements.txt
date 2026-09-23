@@ -24,3 +24,7 @@ opencv-python-headless<4.10
 # requires numpy>=2 and breaks nes-py the same way. Diagnostics that need
 # matplotlib (tune.py) run under the system Python instead -- run_mario.py
 # only imports the matplotlib-free helpers in sensory.py.
+
+# tests/golden/ -- characterisation tests, REFACTOR_PLAN.md phase 0.
+# No numpy/gym conflicts: installs clean against the pins above.
+pytest
