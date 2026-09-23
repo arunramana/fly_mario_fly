@@ -48,6 +48,16 @@ working around it.
    Same neurons, same degree distribution, same signs, edges rewired at random.
    Without it we cannot claim the fly's wiring is doing anything.
 
+7. **Profile before proposing a GPU port — including when the proposal is
+   yours.** Every real bottleneck found on this project so far has been I/O
+   or a cached-value miss (a TTF file, a weights file, a font, reloaded when
+   it didn't need to be), never arithmetic. Sprint 026 profiled
+   `brain_panel.py` expecting the 141,781-point soma scatter to be the cost
+   (see "Use the GPU" below) and found `_font()` reloading fonts from disk
+   every frame instead — the scatter itself was 2.6ms of an 8.4ms frame.
+   Measure the actual phases before reaching for CuPy, not just before this
+   file's own GPU section is updated.
+
 ## Every change ends with a video in `runs/`
 
 Not optional, and not only when asked. Any sprint that changes what the agent
@@ -104,9 +114,21 @@ measured on this workload, a naive port makes things **slower**.
 - The full 166,700-neuron network (8.4M synapses): ~9.6 ms/step on CPU, roughly
   an order of magnitude better on GPU. If we scale past the 1,255-neuron
   subgraph, port it.
-- Per-neuron rendering in `brain_panel.py`: 141,781 points × thousands of frames
-  is genuinely GPU-shaped.
 - Anything batching hundreds of independent simulations as dense tensors.
+
+**Struck: "per-neuron rendering in `brain_panel.py` is genuinely
+GPU-shaped."** It wasn't. Sprint 026 profiled a real frame before porting
+anything (this section itself told it to): one `panel()` call was **8.4ms**
+against a **16.7ms** real-time budget — already under budget, GPU or not.
+Of that 8.4ms, the 141,781-point soma scatter this section predicted would
+be the cost was **2.6ms**. The actual waste was `_font()` reloading three
+TTF files from disk every single frame — a cached-value miss, not
+arithmetic — costing **2.7ms** for a value that never changes. Caching it
+(same fix class as the background-image cache already in `_build()`)
+dropped full `panel()` to **5.1ms** median, no GPU involved. This project's
+own invariant 7 exists because of this exact miss: the prediction here was
+plausible-sounding and wrong, caught only by measuring, not by reasoning
+about it harder.
 
 **Where it loses — don't:**
 
