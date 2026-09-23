@@ -19,6 +19,7 @@ os.environ.setdefault("MKL_NUM_THREADS", "1")
 
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 
 import setuptools  # noqa: F401  -- must import before gym on py3.12
 import numpy as np
@@ -749,494 +750,39 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
                           f"abs_col={gap_target_col} (mario_x={mario_x})")
                 poke_wide_gap(ram, gap_target_col)
 
-            # ---- terrain sensing: SPEC_terrain.md section 1 --------------
-            gap_w = tile_ram.gap_width(ram, GAP_LOOKAHEAD_TILES)
-            wall_ahead = tile_ram.solid_ahead(ram)
-            refusing = gap_w > REFUSAL_GAP_TILES
-            if refusing:
-                n_refusals += 1
-
-            # sprint 016: a real "?" block hit -- a column that carried a
-            # QUESTION_IDS tile last frame and no longer does this frame,
-            # detected via tile_ram directly rather than guessed from score
-            # RAM (tile_ram.question_blocks_near already excludes USED_BLOCK_
-            # ID by construction, so a disappearance IS the hit).
-            cur_qblock_cols = {
-                (int(ram[tile_ram.ADDR_MARIO_PAGE]) * 256 + mario_x) // 16 + off
-                for off in tile_ram.question_blocks_near(ram)
-            }
-            qblock_hit = bool(prev_qblock_cols - cur_qblock_cols)
-            if qblock_hit:
-                n_qblock_hits += 1
-                print(f"  frame {frame}: '?' block hit (column(s) "
-                      f"{sorted(prev_qblock_cols - cur_qblock_cols)} emptied)")
-            prev_qblock_cols = cur_qblock_cols
-
-            mario_size = int(ram[ADDR_MARIO_SIZE])
-            if mario_size > prev_mario_size:
-                print(f"  frame {frame}: Mario grew (size {prev_mario_size} -> "
-                      f"{mario_size}) -- ate the mushroom")
-            prev_mario_size = mario_size
-
-            # ---- escape jump + pit-triggered graded takeoff --------------
-            # SPEC_jump.md's circuit itself is untouched; the only addition
-            # is one extra additive term on DNp01's own per-frame input, a
-            # pit being a threat modality no looming detector can see
-            # (section 2) -- both hemispheres get it symmetrically, a gap
-            # dead ahead isn't lateralised.
-            theta, dtheta, d_out = enemy_thetas(ram, mario_x, prev_theta)
-            prev_theta = theta
-            for _side in ("L", "R"):
-                if d_out[_side] is not None:
-                    d_history[_side].append(d_out[_side])
-                    if len(d_history[_side]) > 10:
-                        d_history[_side].pop(0)
-                else:
-                    d_history[_side].clear()
-            Ij = np.zeros(Kj)
-            if retinotopic:
-                # sprint 023: per-cell drive instead of one blanket scalar
-                # per hemisphere -- same theta/dtheta magnitude as before,
-                # now weighted by each real cell's own receptive-field
-                # alignment to the SAME dominant enemy's real d_px that
-                # already determines theta/dtheta (d_out, above) -- no new
-                # enemy-selection logic, just a finer distribution of the
-                # existing signal across the population it's driving.
-                for _side in ("L", "R"):
-                    if d_out[_side] is None:
-                        continue
-                    for t, mag in (("LC4", abs(dtheta[_side])), ("LPLC2", theta[_side])):
-                        if mag == 0.0:
-                            continue
-                        origin, far, mid = j_azimuth_ref[(t, _side)]
-                        az1 = rt.azimuth_target(d_out[_side], origin, far, mid)
-                        w = rt.tuning_weights(az1, j_rf[t])
-                        Ij[j_msk[f"{t}_{_side}"]] = mag * w[j_msk[f"{t}_{_side}"]]
-            else:
-                Ij[j_msk["LC4_L"]] = abs(dtheta["L"]); Ij[j_msk["LPLC2_L"]] = theta["L"]
-                Ij[j_msk["LC4_R"]] = abs(dtheta["R"]); Ij[j_msk["LPLC2_R"]] = theta["R"]
-            # docs/MECHANISMS.md #6, sprint 016: "do not attempt" is part of
-            # the refusal rule itself, not just the steering push below --
-            # a gap past the validated-safe reach stops feeding DNp01 via
-            # this term, so the long jump this current alone would have
-            # recruited never gets attempted. LC4/LPLC2 (real enemy looming)
-            # are untouched -- a genuine Goomba threat next to a refused
-            # pit is a different modality and must still be escapable.
-            if not refusing:
-                Ij[jump_dnp01_mask] += GAP_GAIN * gap_w
-
-            # Takeoff circuit is stepped in lockstep with the jump circuit,
-            # substep by substep -- it reads DNp01's real spiking output
-            # (0 or spike_amp, never averaged away) as its own external
-            # drive each substep, so a gap-driven burst of closely-spaced
-            # DNp01 spikes integrates into a correspondingly higher GFC/DLMn
-            # level. The jump circuit's own code/state is untouched; this is
-            # a one-directional read.
-            for _ in range(dynamics.SUBSTEPS):
-                hj = jump_network.step(Ij, noise=noise)
-                It = np.zeros(Kt)
-                It[takeoff_dnp01_mask] = hj[jump_dnp01_mask]
-                h_takeoff = takeoff_network.step(It, noise=noise)
-            takeoff_network.flush_denormals()  # CLAUDE.md perf note
-            ttmn_val = max(hj[j_msk["TTMn_L"]].mean(), hj[j_msk["TTMn_R"]].mean())
-            dlmn_val = h_takeoff[dlmn_mask].mean()
-
-            # ---- DNp02: the second escape pathway, SPEC_second_escape.md --
-            # Raw dtheta, not the jump circuit's own (already fast-dynamics-
-            # filtered) LC4 output -- tune_dnp02.py found reading the real
-            # jump circuit's LC4 activation erases the very slow/fast
-            # distinction this pathway exists to make. LPLC2 is not fed in
-            # at all: its real input to DNp02 is noise-level (5 synapses/4
-            # pairs, whole connectome), the same bar SPEC_jump.md used to
-            # exclude LPLC1 from the original circuit.
-            #
-            # "Longer integration" lives in a slow EMA on the INPUT current,
-            # not in HybridState's own alpha -- HybridState applies one
-            # shared alpha to its WHOLE state vector, including TTMn's own
-            # decay (TTMn is part of this subgraph too, for the real
-            # DNp02->TTMn weight). Passing a small alpha there was found,
-            # by actually watching it happen, to also slow TTMn's decay to
-            # a crawl, leaving it pinned near the clip ceiling for dozens of
-            # frames after a single spike and firing on stale state with no
-            # enemy present. Smoothing the input instead keeps TTMn's own
-            # dynamics at the normal (fast) rate; only DNp02's sensory
-            # integration is slow.
-            dnp02_ema["L"] = (1 - DNP02_ALPHA) * dnp02_ema["L"] + DNP02_ALPHA * abs(dtheta["L"])
-            dnp02_ema["R"] = (1 - DNP02_ALPHA) * dnp02_ema["R"] + DNP02_ALPHA * abs(dtheta["R"])
-            Idp = np.zeros(Kdp)
-            Idp[dnp02_lc4_l] = dnp02_ema["L"]; Idp[dnp02_lc4_r] = dnp02_ema["R"]
-            # Placed bias, one-frame delayed (mb_bias_dnp02 is computed
-            # later in THIS SAME loop, after odour -- see the mushroom-body
-            # block) -- no real MBON->DNp02 synapse exists (checked), SPEC
-            # section 5.
-            Idp[dnp02_idx] += mb_bias_dnp02
-            for _ in range(dynamics.SUBSTEPS):
-                h_dnp02 = dnp02_network.step(Idp, noise=noise)
-            dnp02_network.flush_denormals()  # CLAUDE.md perf note
-            ttmn_val_dnp02 = max(h_dnp02[dnp02_ttmn_l].mean(), h_dnp02[dnp02_ttmn_r].mean())
-
-            # ---- steering: home bias + odour (mushroom + ?-blocks), WTA --
-            # SPEC_odour.md section 0: both odour sources are raw
-            # concentrations (1/px) until here -- ODOUR_GAIN and the hunger
-            # multiplier are applied ONCE, together, so a close encounter is
-            # actually comparable to HOME_BIAS in the real network's own
-            # units (tune_odour.py), not 40x too small by construction.
-            mush = mushroom_odor(ram, mario_x)
-            qblock = question_block_odor(ram)
-            hunger = hunger_multiplier(ram)
-            odor_gain_eff = ODOUR_GAIN * hunger
-            # pre-adaptation, but already gain/hunger-scaled -- see ALPHA_ADAPT's
-            # comment for why adaptation sits on this side of the gain, not the
-            # bare 1/distance concentration
-            prod_odor = {"R": odor_gain_eff * (mush["R"] + qblock["R"]),
-                         "L": odor_gain_eff * (mush["L"] + qblock["L"])}
-            adapted_odor = orn_adapt.apply(prod_odor)
-            odor_r_eff = adapted_odor["R"]
-            odor_l_eff = adapted_odor["L"]
-
-            # ---- aversive odour: every real enemy, docs/MECHANISMS.md #1 --
-            # Reuses ODOUR_GAIN (no hunger term -- see the sprint-016 scalar
-            # block above for why) and its own OlfactoryAdaptation instance
-            # (a distinct receptor identity/glomerulus, same ALPHA_ADAPT).
-            # goomba_odor returns concentration BY THE SIDE THE THREAT IS ON
-            # -- routing here is the OPPOSITE of mush/qblock's own-side
-            # routing: a threat on R pushes the L team up (turn away), a
-            # threat on L pushes the R team up. DNp01/looming is untouched
-            # (docs/MECHANISMS.md #1: "leave the DNp01 pathway wired") --
-            # this is a second, earlier-acting avoidance channel competing
-            # for the SAME steering decision, not a replacement in code.
-            avers_raw = goomba_odor(ram, mario_x)
-            avers_scaled = {"R": ODOUR_GAIN * avers_raw["R"], "L": ODOUR_GAIN * avers_raw["L"]}
-            avers_adapted = orn_adapt_avers.apply(avers_scaled)
-            avers_r_eff = avers_adapted["R"]  # threat on the RIGHT -> excites L team, see below
-            avers_l_eff = avers_adapted["L"]  # threat on the LEFT  -> excites R team
-
-            # ---- mushroom body: KC coding, MBON readout, dopamine, --------
-            # ---- depression-only plasticity, SPEC_mushroom_body.md --------
-            # mb_prev_dnp09 is last FRAME's dnp09_val (DNp09/speed steps
-            # later in this same loop, after steering) -- a one-frame
-            # delayed feedback, a deliberate, stated simplification rather
-            # than reordering circuits that already work.
-            mb_sensory = np.array([theta["L"], theta["R"], odor_l_eff, odor_r_eff,
-                                    float(gap_w), mb_prev_dnp09,
-                                    1.0 if hunger == HUNGER_MULT_HUNGRY else 0.0])
-            mb_raw = mb_proj @ mb_sensory
-            k_active = max(1, int(round(KC_SPARSITY * n_kc)))
-            mb_top = np.argpartition(mb_raw, -k_active)[-k_active:]
-            kc_active = np.zeros(n_kc)
-            kc_active[mb_top] = 1.0
-
-            mbon_drive = W_kc_mbon @ kc_active
-            h_mbon = (1.0 - dynamics.ALPHA) * h_mbon + dynamics.ALPHA * dynamics.phi(mbon_drive)
-            h_mbon[h_mbon < 1e-30] = 0.0  # flush denormals, CLAUDE.md perf note
-
-            mario_x_abs = int(ram[ADDR_MARIO_PAGE]) * 256 + mario_x
-            reward = 0.0 if prev_mario_x_abs is None else max(0, mario_x_abs - prev_mario_x_abs)
-            prev_mario_x_abs = mario_x_abs
-            max_x_abs = mario_x_abs if max_x_abs is None else max(max_x_abs, mario_x_abs)
-            # punishment (death) is applied once, after env.step() reports
-            # done, at the END of the frame below -- see that block.
-
-            mb_elig = (1.0 - 1.0 / TRACE_DECAY) * mb_elig + (1.0 / TRACE_DECAY) * kc_active
-            if reward > 0:
-                dopamine_reward = reward * mb_pam_reach  # per-MBON, real-weighted
-                # Depression only, both learning directions (SPEC section 4)
-                # -- multiplicative, so it's automatically zero wherever
-                # W_kc_mbon is already zero (no real synapse there).
-                W_kc_mbon -= (LEARNING_RATE * dopamine_reward[:, None] * mb_elig[None, :]
-                              * W_kc_mbon)
-
-            # sprint 020 FIX: this was `+MBON_DNA02_FRAC * mbon_agg` (an
-            # unconditional POSITIVE/excitatory bias) until a direct check
-            # of every real edge onto DNa02 within a proper KC/MBON/DNa02
-            # network found 243 of 295 real synapses inhibitory -- MBON31/
-            # MBON32 (the two bodies MBON_DNA02_FRAC was actually measured
-            # from) are BOTH GABAergic, confirmed against consensus_nt.
-            # `MBON_DNA02_FRAC` itself is still the right real magnitude
-            # (014's synapse-count fraction, unaffected by this) -- only
-            # the SIGN was wrong. Real biology this now matches, not
-            # invented for the occasion: mushroom-body appetitive learning
-            # in the fly is understood as depression RELEASING a baseline
-            # inhibitory MBON tone, not adding an attractive pull (Aso et
-            # al. and the broader MB literature) -- exactly the shape
-            # `SPEC_mushroom_body.md`'s own depression-only plasticity
-            # rule already implements: dopamine depresses W_kc_mbon, which
-            # lowers mbon_agg, which now correctly SHRINKS an inhibitory
-            # term rather than shrinking a (wrongly-signed) excitatory
-            # one. Naive (undepressed) MBON tone suppresses movement
-            # toward a source; learning a source is rewarding depresses
-            # that tone and disinhibits approach. No new scalar --
-            # MBON_DNA02_FRAC unchanged, only its sign in the expression.
-            mbon_agg = float(h_mbon.mean())
-            mb_bias_r = -MBON_DNA02_FRAC["R"] * mbon_agg
-            mb_bias_l = -MBON_DNA02_FRAC["L"] * mbon_agg
-            # DNp02's own bias has no real synapse to take a sign from
-            # (checked, zero -- SPEC_mushroom_body.md section 5); kept
-            # structurally parallel to the now-fixed real DNa02 term
-            # (same magnitude, same inhibitory-released-by-depression
-            # shape) rather than left as the one asymmetric case, a
-            # judgement call stated here, not a second real finding.
-            mb_bias_dnp02 = -MBON_DNA02_FRAC["R"] * mbon_agg
-
-            Is = np.zeros(Ks)
-            # avers_r_eff (threat ahead/right) excites the L team -- flee;
-            # avers_l_eff (threat behind/left) excites the R team -- same
-            # opposite-side routing on both hemispheres, mirrored.
-            Is[r_mask] = HOME_BIAS + odor_r_eff + avers_l_eff
-            Is[l_mask] = odor_l_eff + avers_r_eff
-            # Refusal rule, docs/MECHANISMS.md #6 (sprint 016): a gap wider
-            # than the validated-safe reach pushes the L team too, reusing
-            # GAP_GAIN (already "current per non-ground tile ahead") rather
-            # than a new scalar -- see REFUSAL_GAP_TILES's comment. Graded,
-            # not a hard override, so it competes through the same WTA
-            # instead of ignoring HOME_BIAS/odour outright.
-            if refusing:
-                Is[l_mask] += GAP_GAIN * gap_w
-            # Real MBON->DNa02 synapse (not DNa01 -- checked directly) gets
-            # the learned bias; DNa01 is untouched by the mushroom body.
-            Is[dna02_all & r_mask] += mb_bias_r
-            Is[dna02_all & l_mask] += mb_bias_l
-            for _ in range(dynamics.SUBSTEPS):
-                h_steer = steering_network.step(Is, noise=noise)
-            steering_network.flush_denormals()  # CLAUDE.md perf note
-
-            r_team = h_steer[r_mask].mean()
-            l_team = h_steer[l_mask].mean()
-            if r_team > l_team:
-                direction = "R"
-            elif l_team > r_team:
-                direction = "L"
-            # tie: keep previous direction (hysteresis, mechanical debounce)
-
-            # sprint 016: "log which one initiates each avoidance" -- was
-            # THIS frame's WTA choice of L attributable to the aversive
-            # channel specifically (as opposed to attractive odour pulling
-            # left, or the refusal push)? A pragmatic attribution, not a
-            # counterfactual re-simulation -- same bar `pathway_fired`
-            # already uses for DNp01-vs-DNp02 (a readiness check, not a
-            # shadow network). Captured BEFORE MDN's hard override below,
-            # so it reflects the steering WTA's own decision.
-            avoid_odor = bool(direction == "L" and avers_r_eff > 1e-6
-                               and avers_r_eff >= odor_l_eff and not refusing)
-            if avoid_odor and not getattr(main, "_prev_avoid_odor", False):
-                n_odor_avoids += 1
-                print(f"  frame {frame}: aversive odour steers AWAY (L) -- "
-                      f"avers_r_eff={avers_r_eff:.3f} theta_R={theta['R']:.3f} "
-                      f"d_px={d_out['R']}")
-            main._prev_avoid_odor = avoid_odor
-
-            # ---- contact-based climbing ----------------------------------
-            climb_trigger = False
-            if mario_x - last_reset_x >= CLIMB_CLEAR_DISTANCE:
-                climb_attempts = 0
-                last_reset_x = mario_x
-
-            # stall tracking: only while not already mid any jump
-            if jump_hold == 0 and climb_hold == 0:
-                if getattr(main, "_last_x", None) == mario_x:
-                    stall_count += 1
-                else:
-                    stall_count = 0
-                main._last_x = mario_x
-            else:
-                stall_count = 0
-                main._last_x = mario_x
-
-            # Gate on tile_ram.solid_ahead: SPEC_terrain.md section 1's
-            # whole point is finally telling a wall apart from a pit. A
-            # stall in front of a pit is DNp01/DLMn's job (above), not
-            # this reflex's -- climbing only fires at a real obstacle.
-            if (stall_count >= climb_stall_frames and direction == "R" and wall_ahead
-                    and jump_hold == 0 and climb_hold == 0 and climb_cooldown == 0):
-                if hab_climb.check(mario_x):
-                    mario_size = int(ram[ADDR_MARIO_SIZE])
-                    if climb_attempts == 0:
-                        hold = climb_hop_small_frames if mario_size == 0 else climb_hop_big_frames
-                        climb_attempts = 1
-                        n_climb_hops += 1
-                    else:
-                        hold = climb_jump_frames
-                        climb_attempts = 2
-                        n_climb_jumps += 1
-                    climb_hold = hold
-                    climb_trigger = True
-                    print(f"  frame {frame}: blocked-forward -> climb "
-                          f"{'hop' if hold != climb_jump_frames else 'jump'} "
-                          f"(hold={hold}, mario_size={mario_size})")
-                else:
-                    print(f"  frame {frame}: climb HABITUATED "
-                          f"(level={hab_climb.hab_level}) -- suppressed")
-                stall_count = 0
-
-            # ---- escape-jump trigger: DNp01 vs DNp02, COMPETE not sum -----
-            # SPEC_second_escape.md: each pathway's own TTMn readout crosses
-            # its (shared) press threshold independently -- never summed
-            # into one combined value, which would hide which pathway was
-            # actually responsible. Firing is gated on ttmn_val alone,
-            # EXACTLY the original, already-validated DNp01 condition --
-            # NOT also requiring just_spiked on the same exact frame. Found
-            # the hard way why that distinction matters: TTMn is a leaky
-            # accumulator that can still be over threshold several frames
-            # after the spike that pushed it there, and requiring
-            # coincident spiking delayed a real trigger from frame 105 to
-            # 108 in testing, by which point DLMn had ALSO climbed past its
-            # own threshold -- turning an ordinary short hop into an
-            # unrelated long jump and changing Mario's whole trajectory
-            # from there. just_spiked is used only for ATTRIBUTION (which
-            # pathway is logged as responsible), never for gating whether
-            # the press happens. Ties go to DNp01, the fast pathway,
-            # matching real GF latency priority. The LOSING pathway's state
-            # is reset so it doesn't also fire on a trailing frame for the
-            # same, already-handled threat.
-            escape_trigger = False
-            long_jump = False
-            pathway_fired = None
-            frames_to_contact = None  # sprint 023: captured into telemetry below, not just printed
-            if jump_cooldown > 0:
-                jump_cooldown -= 1
-            elif jump_hold == 0:
-                dnp01_ready = ttmn_val >= TTMN_PRESS_THRESHOLD
-                dnp02_ready = ttmn_val_dnp02 >= TTMN_PRESS_THRESHOLD
-                if dnp01_ready or dnp02_ready:
-                    if dnp01_ready and dnp02_ready:
-                        pathway_fired = "DNp01" if jump_network.just_spiked.any() else (
-                            "DNp02" if dnp02_network.just_spiked.any() else "DNp01")
-                    else:
-                        pathway_fired = "DNp01" if dnp01_ready else "DNp02"
-                    if hab_escape.check(mario_x):
-                        long_jump = dlmn_val >= DLMN_RECRUIT_THRESHOLD
-                        jump_hold = long_jump_hold_frames if long_jump else jump_hold_frames
-                        escape_trigger = True
-                        n_escape_jumps += 1
-                        if pathway_fired == "DNp01":
-                            n_dnp01_fired += 1
-                            dnp02_network.h[:] = 0.0; dnp02_network.mem[:] = 0.0  # loser resets
-                        else:
-                            n_dnp02_fired += 1
-                            jump_network.h[:] = 0.0; jump_network.mem[:] = 0.0  # loser resets
-                        side = "R" if theta["R"] >= theta["L"] else "L"
-                        hist = d_history[side]
-                        closing_px_per_frame = ((hist[0] - hist[-1]) / (len(hist) - 1)
-                                                 if len(hist) >= 2 else None)
-                        frames_to_contact = (abs(d_out[side]) / closing_px_per_frame
-                                              if (closing_px_per_frame and closing_px_per_frame > 0
-                                                  and d_out[side] is not None) else None)
-                        ftc_str = f"{frames_to_contact:.1f}" if frames_to_contact is not None else "?"
-                        print(f"  frame {frame}: {pathway_fired} commits -- "
-                              f"theta={theta[side]:.3f} d_px={d_out[side]} "
-                              f"est_frames_to_contact={ftc_str}")
-                        if long_jump:
-                            n_long_jumps += 1
-                            print(f"  frame {frame}: gap_width={gap_w} DLMn={dlmn_val:.2f} "
-                                  f">= {DLMN_RECRUIT_THRESHOLD} -> LONG JUMP (hold={jump_hold})")
-                    else:
-                        print(f"  frame {frame}: escape HABITUATED "
-                              f"(level={hab_escape.hab_level}) -- suppressed")
-
-            conflict = escape_trigger and (climb_trigger or climb_hold > 0)
-            if climb_trigger and (jump_hold > 0 or escape_trigger):
-                conflict = True
-            if conflict:
-                n_conflicts += 1
-                print(f"  frame {frame}: CONFLICT -- escape and climb both want A")
-
-            # ---- MDN: the escape-failed fallback, SPEC_habituation.md sec 2 -
-            # No real synapse from DNp01/GFC1-4 onto MDN in this connectome
-            # (checked) -- MDN_DRIVE is an external current, same category
-            # as HOME_BIAS/WALK_DRIVE/GAP_GAIN, only active once the escape
-            # reflex has fully given up. A fixed-duration override (not an
-            # open-ended state) once MDN's own real recurrent circuit
-            # actually crosses threshold -- backing up is a discrete
-            # corrective move, matching every other reflex's hold-duration
-            # pattern here.
-            if mdn_backup_hold == 0:
-                Im = np.zeros(Km)
-                Im[mdn_mask] = MDN_DRIVE if hab_escape.hab_level >= HAB_GIVE_UP else 0.0
-                for _ in range(dynamics.SUBSTEPS):
-                    h_mdn = mdn_network.step(Im, noise=noise)
-                mdn_network.flush_denormals()  # CLAUDE.md perf note
-                mdn_val = h_mdn[mdn_mask].mean()
-                if mdn_val >= MDN_THRESHOLD:
-                    mdn_backup_hold = mdn_backup_frames
-                    print(f"  frame {frame}: escape habituated -> MDN takes over, "
-                          f"backing up (hold={mdn_backup_frames})")
-            else:
-                mdn_val = h_mdn[mdn_mask].mean()
-
-            mdn_backing_up = mdn_backup_hold > 0
-            if mdn_backing_up:
-                direction = "L"  # hard override, not one more WTA bias
-                mdn_backup_hold -= 1
-                if mdn_backup_hold == 0:
-                    hab_escape.reset()  # a clean slate, per SPEC section 2
-
-            # ---- resolve one shared A button ------------------------------
-            press_a = jump_hold > 0 or climb_hold > 0
-            if jump_hold > 0:
-                jump_hold -= 1
-                if jump_hold == 0:
-                    jump_cooldown = jump_cooldown_frames
-            if climb_hold > 0:
-                climb_hold -= 1
-                if climb_hold == 0:
-                    climb_cooldown = climb_cooldown_frames
-            if climb_cooldown > 0 and climb_hold == 0:
-                climb_cooldown -= 1
-
-            # ---- speed: DNp09, SPEC_terrain.md section 3 ------------------
-            # A jump/hop/stall transiently interrupts ongoing locomotion --
-            # a real, documented phenomenon, not invented for convenience.
-            # WALK_SUPPRESSION cancels WALK_DRIVE while any of those are in
-            # progress, so DNp09 decays and B releases instead of holding
-            # forever.
-            busy = press_a or stall_count > 0
-            Ip = np.zeros(Kp)
-            if refusing:
-                # docs/MECHANISMS.md #6: "brake at the edge" -- a gap past
-                # the validated-safe reach gets zero walk drive outright,
-                # not a graded suppression (WALK_SUPPRESSION already covers
-                # the ordinary jump/stall case above). No real DNp09 synapse
-                # from either odour pathway exists (connectome check c,
-                # above) -- same placed-bias category as WALK_DRIVE itself.
-                Ip[dnp09_mask] = 0.0
-            else:
-                # docs/MECHANISMS.md #5: rising ATTRACTIVE odour brakes
-                # DNp09 (the aversive channel doesn't -- fleeing calls for
-                # speed, not caution, and MECHANISMS.md #5 frames this as an
-                # approach-to-food behaviour specifically).
-                #
-                # sprint 017 FIX: 016 shipped this using the raw odor_l_eff+
-                # odor_r_eff (already HOME_BIAS-comparable via ODOUR_GAIN),
-                # reasoning "no new scalar needed, it's already in the right
-                # units." That reasoning was wrong -- confirmed by an A/B on
-                # the real run, not assumed: with the original formula,
-                # dnp09's median over 300 frames was 0.0 and B was pressed
-                # 9.3% of the time; with odor forced to 0 (same run,
-                # otherwise identical), median was 0.94 and B was pressed
-                # 67.7% of the time. ODOUR_GAIN=16 was deliberately sized so
-                # odor ALONE could out-compete a constant HOME_BIAS=1.0 at
-                # long range (SPEC_odour.md section 0) -- reusing that same
-                # inflated magnitude as a braking signal meant "close to a
-                # block" and "merely aware of one 100px away, hunger-boosted"
-                # produced comparable brake strength, near-fully cancelling
-                # WALK_DRIVE across most of a `?`-block-dense stretch, not
-                # just on final approach. Fixed the same way SPEC_odour.md's
-                # OWN section-0 bug was fixed -- not by inventing a new
-                # braking-specific scalar, but by finding the right existing
-                # reference point: odor only brakes AFTER it has already
-                # overpowered HOME_BIAS (i.e. Mario has actually committed to
-                # approaching, not merely detected something) -- reuses
-                # HOME_BIAS itself as the free allowance, no new scalar.
-                odor_brake = min(WALK_DRIVE, max(0.0, odor_l_eff + odor_r_eff - HOME_BIAS))
-                Ip[dnp09_mask] = WALK_DRIVE - (WALK_SUPPRESSION if busy else 0.0) - odor_brake
-            for _ in range(dynamics.SUBSTEPS):
-                h_speed = speed_network.step(Ip, noise=noise)
-            speed_network.flush_denormals()  # CLAUDE.md perf note
-            dnp09_val = h_speed[dnp09_mask].mean()
-            press_b = dnp09_val >= DNP09_SPEED_THRESHOLD
-            mb_prev_dnp09 = dnp09_val  # for next frame's KC input -- see mushroom-body block
-
-            action = action_index(direction, press_a, press_b)
+            # ---- decision loop: bridge.full_policy.FullPolicy -------------
+            # REFACTOR_PLAN.md phase 5b: terrain sensing through the final
+            # action_index() call all now live in FullPolicy.act() -- the
+            # same code (see that module's own docstring: a verbatim
+            # transcription, not a redesign), moved so the mushroom body's
+            # KC/MBON plasticity update exists in exactly one place before
+            # phase 6's trace attaches to it. `policy` (constructed above)
+            # carries every persistent piece of state (jump_hold, hab_escape,
+            # W_kc_mbon, ...) that main()'s own locals used to hold directly;
+            # this block reads back only what the telemetry row below needs,
+            # via `policy.last_info` and the live sub-objects already
+            # aliased above (h_steer's own mask lookups, jump_network.mem,
+            # orn_adapt.a, ...).
+            action = policy.act(SimpleNamespace(ram=ram))
+            info_f = policy.last_info
+            mario_x = info_f["mario_x"]
+            theta, dtheta, d_out = info_f["theta"], info_f["dtheta"], info_f["d_px"]
+            gap_w, refusing = info_f["gap_w"], info_f["refusing"]
+            qblock_hit, mario_size = info_f["qblock_hit"], info_f["mario_size"]
+            hj = info_f["hj"]
+            h_steer = info_f["h_steer"]
+            ttmn_val, ttmn_val_dnp02 = info_f["ttmn_val"], info_f["ttmn_val_dnp02"]
+            dlmn_val, dnp09_val = info_f["dlmn_val"], info_f["dnp09_val"]
+            long_jump, press_a, press_b = info_f["long_jump"], info_f["press_a"], info_f["press_b"]
+            r_team, l_team, direction = info_f["r_team"], info_f["l_team"], info_f["direction"]
+            climb_trigger, conflict = info_f["climb_trigger"], info_f["conflict"]
+            odor_l_eff, odor_r_eff, hunger = info_f["odor_l_eff"], info_f["odor_r_eff"], info_f["hunger"]
+            prod_odor = info_f["prod_odor"]
+            mdn_val, mdn_backing_up = info_f["mdn_val"], info_f["mdn_backing_up"]
+            pathway_fired, frames_to_contact = info_f["pathway_fired"], info_f["frames_to_contact"]
+            avers_l_eff, avers_r_eff, avoid_odor = (info_f["avers_l_eff"], info_f["avers_r_eff"],
+                                                     info_f["avoid_odor"])
+            Is = info_f["Is"]
 
             row = observer.new_row()
             row["frame"] = frame
@@ -1313,17 +859,30 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
 
             obs, reward, done, info = env.step(action)
             frame += 1
-            if done:
-                # Punishment, once, on death (SPEC section 3): dynamics.CLIP
-                # (=50), an existing constant, not a new punishment-scaling
-                # scalar. Routed through real PPL+PPM->MBON weights, same
-                # depression-only rule as reward.
-                dopamine_punish = dynamics.CLIP * mb_punish_reach
-                W_kc_mbon -= (LEARNING_RATE * dopamine_punish[:, None] * mb_elig[None, :]
-                              * W_kc_mbon)
+            # REFACTOR_PLAN.md phase 5b: the death-triggered punishment
+            # update (SPEC_mushroom_body.md section 3, dynamics.CLIP routed
+            # through real PPL+PPM->MBON weights, same depression-only rule
+            # as reward) now lives on FullPolicy.on_step(), the ONE place
+            # the mushroom body's plasticity runs -- this used to read
+            # main()'s own `mb_elig` local directly, which went stale the
+            # moment policy.act() started reassigning `self.mb_elig` every
+            # frame instead of mutating it in place; on_step() reads
+            # `self.mb_elig` fresh, so there's no staleness to have.
+            policy.on_step(frame, SimpleNamespace(done=done), action)
 
         if owns_env:
             env.close()  # a caller-supplied env (savestate reuse across episodes) stays open
+        # REFACTOR_PLAN.md phase 5b: every one of these counters is now
+        # incremented inside FullPolicy.act(), not main()'s own locals
+        # (which stayed frozen at their commit-2 initial 0/None once the
+        # per-frame decision loop moved onto `policy` -- read fresh here).
+        n_escape_jumps, n_long_jumps = policy.n_escape_jumps, policy.n_long_jumps
+        n_dnp01_fired, n_dnp02_fired = policy.n_dnp01_fired, policy.n_dnp02_fired
+        n_climb_hops, n_climb_jumps = policy.n_climb_hops, policy.n_climb_jumps
+        n_conflicts = policy.n_conflicts
+        n_odor_avoids, n_qblock_hits, n_refusals = (policy.n_odor_avoids, policy.n_qblock_hits,
+                                                     policy.n_refusals)
+        max_x_abs = policy.max_x_abs
         print(f"\n{frame} frames -- escape jumps={n_escape_jumps} "
               f"(of which long jumps={n_long_jumps}, DNp01={n_dnp01_fired}, DNp02={n_dnp02_fired})  "
               f"climb hops={n_climb_hops}  climb jumps={n_climb_jumps}  "
