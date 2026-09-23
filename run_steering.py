@@ -556,7 +556,8 @@ def make_steering_masks(bodies):
 def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
          force_mario_size=None, force_size_from_frame=None, record_video=True,
          inject_frame=None, frame_skip=1, savestate=None, mb_weights=None,
-         mushroom_offset=None, inject_gap_frame=None, write_telemetry=True):
+         mushroom_offset=None, inject_gap_frame=None, write_telemetry=True,
+         retinotopic=False):
     """`mb_weights`, if given, is the KC->MBON weight sub-matrix (SPEC_
     mushroom_body.md) carried over from a previous call -- the ONE piece
     of state that must persist across training episodes. `None` (default)
@@ -618,7 +619,18 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
     target column (`wide_gap_target_col`, `lead_tiles` ahead of wherever
     Mario is at that frame) and re-pokes it every frame from then on
     (`poke_wide_gap`) to demonstrate the refusal rule, since 1-1 has no
-    real pit wide enough to need it."""
+    real pit wide enough to need it.
+
+    `retinotopic`, sprint 023: True drives LC4/LPLC2 per-cell, weighted by
+    each real cell's own receptive-field alignment to the approaching
+    enemy's actual position (`retinotopy.py`). False (default) reproduces
+    the exact pre-023 behaviour -- the same theta/dtheta scalar broadcast
+    identically to every cell in a hemisphere. Default is False, not
+    True: 023's own paired comparison found the per-cell weighting
+    starves DNp01/TTMn of drive at exactly the moment escape needs it
+    most (see docs/RUNS.md 023) -- a documented negative result, not a
+    shipped improvement. Kept available (not deleted) for whatever fixes
+    the azimuth-to-edge convention in a future sprint."""
     if force_mario_size is not None and force_size_from_frame is None:
         assert inject_frame is not None, (
             "force_mario_size needs an explicit force_size_from_frame when "
@@ -655,6 +667,26 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
     jump_dnp01_mask = j_msk["DNp01_L"] | j_msk["DNp01_R"]
     jump_state = dynamics.HybridState(Kj, dnp01_idx, spike_threshold=DNP01_SPIKE_THRESHOLD,
                                        spike_amp=SPIKE_AMP)
+
+    # sprint 023: per-cell receptive fields for LC4/LPLC2 (retinotopy.py),
+    # replacing the uniform-theta injection below with a per-cell weighted
+    # one -- SAME 1255 neurons, SAME DNp01/TTMn, SAME thresholds, only the
+    # input map changes. `retinotopic=False` reproduces the exact
+    # pre-023 uniform injection, for the paired before/after comparison.
+    if retinotopic:
+        import retinotopy as rt
+        j_rf = {"LC4": rt.receptive_field_centers("LC4", j_bodies),
+                "LPLC2": rt.receptive_field_centers("LPLC2", j_bodies)}
+        # HEX1_LO/HI: the REAL, measured extent of that type+side's own
+        # per-cell RF centres (not invented -- see receptive_field_centers).
+        # HEX2_MID: that population's own real median hex2 ("eye level"),
+        # since this game has no elevation signal to drive that axis with.
+        j_azimuth_ref = {}
+        for t in ("LC4", "LPLC2"):
+            for side in ("L", "R"):
+                m = j_msk[f"{t}_{side}"]
+                h1 = j_rf[t]["hex1"][m]; h2 = j_rf[t]["hex2"][m]
+                j_azimuth_ref[(t, side)] = (h1.min(), h1.max(), float(np.median(h2)))
 
     print("Loading the steering circuit (DNa01/DNa02, N=60, cached)...")
     s_bodies, _, _, _, W_s, _, _ = _memo_load("steering", load_steering)
@@ -798,7 +830,8 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
-        log = {k: [] for k in ("frame", "mario_x", "theta", "lc4", "lplc2", "mem", "spike",
+        log = {k: [] for k in ("frame", "mario_x", "theta", "dtheta", "d_px", "frames_to_contact",
+                                "lc4", "lplc2", "mem", "spike",
                                 "ttmn", "dna01", "dna02", "direction", "climb", "conflict",
                                 "dnp09", "dlmn", "gap", "long_jump", "press_b",
                                 "odor_l", "odor_r", "hungry",
@@ -897,8 +930,27 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
                 else:
                     d_history[_side].clear()
             Ij = np.zeros(Kj)
-            Ij[j_msk["LC4_L"]] = abs(dtheta["L"]); Ij[j_msk["LPLC2_L"]] = theta["L"]
-            Ij[j_msk["LC4_R"]] = abs(dtheta["R"]); Ij[j_msk["LPLC2_R"]] = theta["R"]
+            if retinotopic:
+                # sprint 023: per-cell drive instead of one blanket scalar
+                # per hemisphere -- same theta/dtheta magnitude as before,
+                # now weighted by each real cell's own receptive-field
+                # alignment to the SAME dominant enemy's real d_px that
+                # already determines theta/dtheta (d_out, above) -- no new
+                # enemy-selection logic, just a finer distribution of the
+                # existing signal across the population it's driving.
+                for _side in ("L", "R"):
+                    if d_out[_side] is None:
+                        continue
+                    for t, mag in (("LC4", abs(dtheta[_side])), ("LPLC2", theta[_side])):
+                        if mag == 0.0:
+                            continue
+                        lo, hi, mid = j_azimuth_ref[(t, _side)]
+                        az1 = rt.azimuth_target(d_out[_side], lo, hi, mid)
+                        w = rt.tuning_weights(az1, j_rf[t])
+                        Ij[j_msk[f"{t}_{_side}"]] = mag * w[j_msk[f"{t}_{_side}"]]
+            else:
+                Ij[j_msk["LC4_L"]] = abs(dtheta["L"]); Ij[j_msk["LPLC2_L"]] = theta["L"]
+                Ij[j_msk["LC4_R"]] = abs(dtheta["R"]); Ij[j_msk["LPLC2_R"]] = theta["R"]
             # docs/MECHANISMS.md #6, sprint 016: "do not attempt" is part of
             # the refusal rule itself, not just the steering push below --
             # a gap past the validated-safe reach stops feeding DNp01 via
@@ -1175,6 +1227,7 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
             escape_trigger = False
             long_jump = False
             pathway_fired = None
+            frames_to_contact = None  # sprint 023: captured into telemetry below, not just printed
             if jump_cooldown > 0:
                 jump_cooldown -= 1
             elif jump_hold == 0:
@@ -1324,6 +1377,16 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
             log["frame"].append(frame)
             log["mario_x"].append(mario_x)
             log["theta"].append(max(theta["L"], theta["R"]))
+            # sprint 023: dtheta on whichever side theta itself is dominant
+            # this frame -- same side-selection convention as "theta" above,
+            # not a new one -- needed to test corr(LC4_mean, dtheta) against
+            # corr(LC4_mean, theta), the sprint's own decisive signature.
+            log["dtheta"].append(dtheta["L"] if theta["L"] >= theta["R"] else dtheta["R"])
+            # sprint 023: raw signed d_px on the same dominant side, so
+            # commitment distance (003/011's "d_px ~= 0") is readable
+            # straight from telemetry instead of back-solved from theta.
+            _dom_side = "L" if theta["L"] >= theta["R"] else "R"
+            log["d_px"].append(d_out[_dom_side] if d_out[_dom_side] is not None else np.nan)
             log["lc4"].append(hj[j_msk["LC4_all"]].mean())
             log["lplc2"].append(hj[j_msk["LPLC2_all"]].mean())
             # sprint 017 overlay audit: "lc4"/"lplc2" above blend both
@@ -1372,6 +1435,7 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
             log["ttmn_dnp02"].append(ttmn_val_dnp02)
             log["spike_dnp02"].append(bool(dnp02_state.just_spiked.any()))
             log["pathway_fired"].append(pathway_fired if pathway_fired else "")
+            log["frames_to_contact"].append(frames_to_contact if frames_to_contact is not None else np.nan)
             log["avers_l"].append(avers_l_eff)
             log["avers_r"].append(avers_r_eff)
             log["avoid_odor"].append(avoid_odor)
@@ -1541,11 +1605,73 @@ def run_016(out_mp4="runs/016_smell.mp4", max_frames=1500,
     return tel, info
 
 
+def run_023(max_frames=1500, gap_frame=600):
+    """sprint 023: the paired before/after that decides whether per-cell
+    retinotopy (retinotopy.py) moves commitment earlier. Same level (1-1),
+    same max_frames/gap_frame as 016/017's own default configuration --
+    NOT a fresh scenario, so any difference is attributable to the one
+    thing that changed (`retinotopic`), not to a different run of Mario's
+    own organic encounters. Both conditions run from the SAME code, same
+    frame, so this is a true paired comparison, not "compare against 017's
+    old CSV" (017 predates the `dtheta`/`d_px` telemetry columns this
+    measurement needs, and predates the DNp09-brake fix landing in the
+    same working tree -- rerunning `retinotopic=False` here controls for
+    both, isolating the one real variable).
+
+    `retinotopic=False` gets no video (identical visible behaviour to
+    017 by construction -- the whole point of this sprint is that only
+    the INPUT MAP to LC4/LPLC2 changes, not the WTA/threshold/output
+    machinery), `retinotopic=True` gets `runs/023_retinotopy.mp4` -- the
+    first video since 017 because this is the first sprint since then
+    that changes what Mario does."""
+    from commitment_report import report
+
+    print("=" * 70)
+    print("sprint 023: retinotopy paired comparison, level 1-1")
+    print("=" * 70)
+
+    print("\n[before] retinotopic=False (uniform theta/dtheta broadcast)...")
+    tel_before, info_before = main(
+        out_mp4="runs/023_retinotopy_before.mp4", level="1-1",
+        max_frames=max_frames, record_video=False,
+        inject_gap_frame=gap_frame, retinotopic=False)
+
+    print("\n[after] retinotopic=True (per-cell receptive-field weighting)...")
+    tel_after, info_after = main(
+        out_mp4="runs/023_retinotopy.mp4", level="1-1",
+        max_frames=max_frames, record_video=True,
+        inject_gap_frame=gap_frame, retinotopic=True)
+
+    before = report(tel_before, "BEFORE (retinotopic=False)")
+    after = report(tel_after, "AFTER (retinotopic=True)")
+
+    print("\n" + "=" * 70)
+    print("sprint 023: verdict")
+    print("=" * 70)
+    if before["median_frames_to_contact"] is not None and after["median_frames_to_contact"] is not None:
+        print(f"median frames_to_contact at commit: {before['median_frames_to_contact']:.2f} -> "
+              f"{after['median_frames_to_contact']:.2f} "
+              f"({'EARLIER' if after['median_frames_to_contact'] > before['median_frames_to_contact'] else 'not earlier'})")
+    c_before = before["corr"]; c_after = after["corr"]
+    print(f"corr(LC4,theta) before={c_before['corr_lc4_theta']:.4f} after={c_after['corr_lc4_theta']:.4f}")
+    print(f"corr(LC4,dtheta) before={c_before['corr_lc4_dtheta']:.4f} after={c_after['corr_lc4_dtheta']:.4f}")
+    flipped = (c_after["corr_lc4_dtheta"] > c_after["corr_lc4_theta"]) and \
+              not (c_before["corr_lc4_dtheta"] > c_before["corr_lc4_theta"])
+    print(f"velocity-tuning signature (dtheta corr now exceeds theta corr, "
+          f"and didn't before): {flipped}")
+
+    return dict(tel_before=tel_before, tel_after=tel_after,
+                info_before=info_before, info_after=info_after,
+                before=before, after=after)
+
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == "008":
         run_008()
     elif len(sys.argv) > 1 and sys.argv[1] == "016":
         run_016()
+    elif len(sys.argv) > 1 and sys.argv[1] == "023":
+        run_023()
     else:
         main()

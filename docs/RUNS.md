@@ -1428,6 +1428,107 @@ entries individually, and it reproduces the same ranking (steering's own
 real partners ≫ MBON ≫ LC10a's chain) that the individual investigations
 already found. **Scalars: 0. Scaffolding: 0.**
 
+## 023 — retinotopy: a finer input map, and escape collapses instead of improving (`runs/023_retinotopy.mp4`)
+
+**Setup.** The prize was never "which hemisphere" (one bit, invisible at
+the jump circuit's single-button output) — it's angular velocity. Every
+LC4/LPLC2 cell received the identical θ/θ̇ scalar every frame; the
+population had no spatial extent to move across, so there was no
+velocity signal in the circuit, only size. `retinotopy.py` (new):
+per-cell receptive-field centres for LC4 (126 bodies) and LPLC2 (185
+bodies), synapse-weighted mean hex position over each cell's real
+one-hop Tm1/Tm2/Tm4/Tm9/Tm20/Mi1/Mi4 input (019's own verified,
+100%-coverage population), then a Gaussian per-cell weight — bandwidth
+= that cell's own measured RF spread, no hand-set constant — around a
+RAM-computed target azimuth that sweeps from `hex1_lo` (d_px≈0,
+"foveal") to `hex1_hi` (d_px≥`AZIMUTH_D_REF`=128px, "peripheral") as
+the tracked enemy closes. Wired into `run_steering.py` as a straight
+replacement of the uniform broadcast (`Ij[LC4_mask] = abs(dtheta)`
+becomes `Ij[LC4_mask] = abs(dtheta) * tuning_weights(...)`) — same 1,255
+neurons, same DNp01/TTMn, same `TTMN_PRESS_THRESHOLD=3.0`, only the
+input map changes. `retinotopic=False` reproduces the pre-023 code path
+exactly, giving a true paired comparison rather than a comparison
+against 017's old CSV (017 predates the `dtheta`/`d_px`/
+`frames_to_contact` telemetry columns this sprint added, and predates
+the DNp09-brake fix already sitting in this same working tree — rerunning
+the baseline here, not reusing 017's numbers, controls for both).
+**One new scalar**, named up front in the module docstring:
+`AZIMUTH_D_REF`, an invented reference distance (no degree transform
+exists for hex coordinates in this data, so "pixels per hex unit" isn't
+derivable). It replaces, not adds to, the existing invented convention
+(binary L/R hemisphere routing in `enemy_thetas`) — a continuous
+per-cell position replacing a single bit is a strictly smaller invention
+on top of the same underlying choice.
+
+**What happened.** Paired run, level 1-1, identical seed/conditions to
+016/017 (`max_frames=1500`, synthetic gap at frame 600). Baseline
+(`retinotopic=False`) reproduced 017 exactly — same 807 frames, same
+died/flagged ending, 10 escape commitments (1 DNp01, 9 DNp02), median
+`frames_to_contact` at commit 32.1. The retinotopic run **died at frame
+170 having never fired a single escape jump** — 0 commitments, 0 of
+either pathway. Reading the telemetry at matched `d_px` (both runs see
+the same first Goomba at the same distances, since nothing diverges
+until Mario's own actions do): at `d_px=23` the baseline's `lc4` reads
+0.039 and `ttmn` is already at 7.35 (over threshold, committing); the
+retinotopic run's `lc4` at the identical `d_px=23` reads **0.0053** —
+about 7x lower — and `ttmn` sits at 1.3e-148, not merely sub-threshold
+but numerically inert. The gap widens as the enemy closes: by `d_px=9`,
+baseline `lc4≈0.9` (already jumped and moved on), retinotopic `lc4`
+still only 0.0082. Mario walks straight into the Goomba never having
+crossed threshold once.
+
+**Mechanism, checked, not guessed.** Queried `tuning_weights` directly
+at the real per-side LC4/LPLC2 populations: mean per-cell weight across
+the population is **0.02–0.24** depending on target position, and it is
+LOWEST exactly at `d_px=0` (mean weight 0.05, LC4-L) — because `d_px=0`
+maps to `hex1_lo`, the extreme edge of each population's real measured
+hex1 range, where real RF-centre density is thinnest by construction
+(it's the tail of a distribution, not its mode). The old uniform
+broadcast gave every cell in the population the full scalar,
+unconditionally (effective weight 1.0, ~55–94 cells); the new per-cell
+weighting recruits only the few cells whose real RF sits near whatever
+edge the target happens to map to, and recruits FEWEST of them at the
+moment of greatest threat. Compounded by the circuit's own recurrence
+(lateral connections 3–9.5x drive onto the Giant Fiber, CLAUDE.md
+invariant 4): a smaller, spatially concentrated initial population gets
+less lateral reinforcement than a broad, uniformly-driven one, which is
+consistent with the ~7–100x gap observed being larger than the raw
+mean-weight ratio alone would predict.
+
+**The pre-registered falsification, and why it undershoots what actually
+happened.** Stated before the run: if commitment time doesn't move
+earlier and `corr(LC4_mean, θ̇)` doesn't newly exceed `corr(LC4_mean,
+θ)`, retinotopy is anatomically real and behaviourally inert. What
+happened is stronger than that null: commitment didn't just fail to move
+earlier, it **stopped happening at all**. On the correlation check
+specifically, the pre-registered signature doesn't discriminate here —
+`corr(LC4,θ̇)` exceeds `corr(LC4,θ)` in BOTH conditions (0.92 vs 0.58
+before, 0.94 vs 0.39 after), because LC4's scalar drive was already
+`abs(θ̇)`, not θ, in the pre-023 code (`Ij[LC4_mask] = abs(dtheta)`,
+unchanged by this sprint) — so a high LC4/θ̇ correlation was mechanically
+guaranteed before 023 ever ran, and isn't evidence of the POPULATION-level
+motion signal this sprint actually tested for. That correlation test was
+a flawed operationalisation, caught by running it rather than trusted on
+paper; the commitment-count result (10 → 0) is the real, decisive
+measurement and needs no such caveat.
+
+**What we learned.** Retinotopy is anatomically real (019) but this
+particular, explicitly-invented azimuth convention makes the modelled
+population WORSE at its job, not neutral and not better — mapping
+imminent collision to a real distribution's sparse edge starves the
+escape circuit at exactly the moment it matters most. Not a bug in the
+sense of a coding error (checked: weights, masks, and injection sites
+all do what their docstrings say); a real consequence of an honestly-
+invented convention meeting a real, non-uniform anatomical distribution.
+No fix attempted this sprint, as specified — the falsification is the
+finding. `retinotopic=True` is NOT the new default pending a redesign of
+the azimuth-to-edge mapping (e.g. anchoring "foveal" to the population's
+real density peak instead of its extreme) — left for a future sprint,
+not built here. **Scalars: 1 (`AZIMUTH_D_REF`, replacing not adding to
+the existing hemisphere-routing invention). Scaffolding: the hex-to-RAM
+azimuth convention itself, named in `retinotopy.py`'s own docstring
+before this run, not discovered after.**
+
 ## Still open
 
 - **The 009 climb/long-jump livelock is understood, not just patched
