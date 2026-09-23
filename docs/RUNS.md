@@ -2105,6 +2105,103 @@ Full 47-test suite (goldens, both import guards, integrator equivalence,
 params-match-live, scalars-doc, entities, episode, fitness, telemetry
 observer, config round-trip) green twice, two separate processes.
 
+## Refactor phase 5b -- the full system onto Policy
+
+Phase 5's own scoping decision closed here: `run_steering.main()`'s full
+system (jump, takeoff, DNp02, odour, mushroom body, steering, climb,
+escape resolution, MDN, speed) now runs through `bridge/full_policy.py`'s
+`FullPolicy`, not main()'s own locals. Verbatim transcription, not a
+redesign (that module's own docstring says so directly) -- three commits,
+goldens between each, same discipline as phase 3's six-site migration:
+add `FullPolicy` as dead code first (verified via a 300-frame smoke run
+against the real emulator, whose printed commit/climb/qblock trace
+matched `main()`'s own exactly); wire its constructor into `main()` while
+leaving the frame loop's own text untouched (isolates "does construction
+match" from any loop-logic question); then replace the loop body itself
+with one `policy.act()` call. A fourth commit removed the per-episode
+locals the first two left dead (jump_hold_frames and siblings, prev_theta,
+d_history, ..., every counter's initial 0) -- actively misleading once
+`policy.reset(seed)` owned all of it.
+
+**The mushroom body now updates in exactly one place.** This was the
+sprint's actual reason to exist: phase 6's eligibility trace attaches to
+`FullPolicy`'s own KC/MBON update, and there is no second copy in main()
+left to double-write it. Migrating the loop body surfaced a real bug this
+sprint fixed rather than shipped: the death-triggered punishment block
+read main()'s own `mb_elig` local directly, which goes stale the instant
+`policy.act()` starts reassigning `self.mb_elig` every frame (a `+`, not
+a mutating `+=`) instead of the old code's single per-call binding. Moved
+onto `policy.on_step()` -- the dual Policy/Observer role phase 5's own
+design sketched for exactly this ("the death-triggered mushroom-body
+punishment... apply it via `on_step()`") -- which reads `self.mb_elig`
+fresh and has no staleness to have. The end-of-run counter summary and
+`max_x_abs` in the return dict had the identical problem (main()'s locals
+froze at their initial 0/None once `policy.act()` took over incrementing
+them) and got the same fix.
+
+**Both import guards re-verified, not just re-run.** Per this sprint's
+own instruction, each guard was made to actually fail: a real `import
+mario.ram.tile_ram` appended to `fly/network/dynamics.py` failed the
+fly-guard, a real `import bridge.perception` appended to `sim/episode.py`
+failed the Episode-guard, both reverted after confirming the failure
+message named the real file and the real forbidden import. Neither guard
+needed to change -- `sim/episode.py`/`sim/protocols.py` were never touched
+this sprint, and `main()`'s own loop still lives in `run_steering.py`,
+not `sim/episode.py`, a stated scoping decision below.
+
+**Scoping decision, stated plainly, not silently under-delivered:**
+`main()`'s own `while frame < max_frames and not done:` loop is still
+what drives a real run -- not `sim.episode.Episode.run()`. `main()` owns
+real test-harness features `Episode`/`MarioEnvironment` don't support
+(`frame_skip` action-repeat, `savestate` backup/restore, `inject_frame`/
+`inject_gap_frame` synthetic RAM pokes, `force_mario_size`) and extending
+`MarioEnvironment` to cover all of them is its own real, riskier change,
+not a rename. What phase 5b's own mandate actually asked for --
+"`ProjectConfig` drives the whole system, not a subset," and "the
+mushroom body updates in exactly one place" -- is satisfied without it:
+every decision now runs through one real `Policy` (`FullPolicy`), built
+from one `ProjectConfig`, and `main()` is a thin caller of it, the same
+relationship `Episode` has to a `Policy` in miniature. `FullPolicy.on_step`
+is written for the real `Episode.observers` contract already, so wiring
+`main()`'s own loop onto `Episode` later is additive, not a further
+rewrite of the decision logic itself.
+
+**The event count, the other half of this sprint's ask.** Per-episode
+rewarded-event count on 1-1, baseline (`sigma=0`, `seed=0`, `max_frames=4000`,
+689 frames to death, `max_x=1432`) plus a 20-seed `sigma=0.04` sweep,
+counting mushrooms collected / damage taken / enemies stomped / `?`
+blocks hit (`main()` run unmodified, a read-only monkeypatch on the
+stomp proxy only, no code change):
+
+| | mushrooms | damage | stomps | qblock hits | total |
+|---|---|---|---|---|---|
+| baseline | 0 | 0 | 0 | 7 | 7 |
+| 20-seed sweep | 0 (all 20) | 0 (all 20) | 0 (all 20) | 4-7 (median 7, mean 6.45) | 4-7 |
+
+**This is a worse result than docs/TRACE_BIOLOGY.md's own open question
+anticipated.** That document asked whether the two discriminable classes
+(mushroom appetitive, enemy aversive) occur often enough to learn from --
+the answer here is not "rarely," it's "never, in every one of 21 runs
+tried." Every single rewarded event on 1-1 under the current baseline is
+a `?`-block hit (PAM only). Zero mushrooms are ever collected (odour pulls
+toward one, but nothing in this circuit's repertoire executes "hit the
+block a mushroom spawns from" as a distinct skill from qblock-hitting
+itself -- the mushroom census is a downstream consequence of a block hit
+that hasn't happened to spawn one across 21 runs, not an independent
+event). Zero stomps and zero damage in every run -- Mario's own vertical
+hitbox mechanics for stomping aren't modelled at all, and every death this
+circuit has ever produced has been from a Goomba PIT/side collision the
+telemetry doesn't distinguish from any other death for reward purposes.
+**Phase 6 has one discriminable stimulus class to learn from on 1-1, not
+two, and needs a different level or a synthetic/injected discriminator to
+test the aversive (PPL1/PPM) side of the plasticity rule at all** -- this
+is exactly the kind of finding docs/TRACE_BIOLOGY.md's own closing line
+asked to have in hand before building, not after a null.
+
+Goldens byte-identical, twice, separate processes, after every commit.
+Both import guards green (and re-verified to fail on a real violation).
+Full 47-test suite green, twice, separate processes.
+
 ## Still open
 
 - **The 009 climb/long-jump livelock is understood, not just patched
