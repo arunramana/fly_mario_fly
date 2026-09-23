@@ -90,3 +90,28 @@ either way); `receptive_field_centers`/`azimuth_target` use their new
 parameters directly (skipped if `fly.sensing.retinotopy`'s own `mcns`
 dependency isn't importable, pre-existing, nothing in this suite has ever
 exercised that permanently-off module before).
+
+## C3 — `run_steering.main(on_frame=None, should_stop=None)`
+
+**What.** `on_frame(frame, obs, row)` is called once per emulator frame
+(both the frame-skip repeat-row branch and the main decision branch),
+right after the telemetry row is finalised and (if `record_video`) its
+PNG is saved, right before `env.step()` advances to the next frame.
+`should_stop()` is called right after, once per frame; a true return
+`break`s the loop early, same effect as reaching `max_frames`.
+
+**Why.** The live preview needs the raw frame and that frame's telemetry
+as they happen, not after the whole episode ends; Cancel needs a way to
+actually stop a run in progress.
+
+**Default that keeps behaviour.** `None` for either (the default): never
+called, no branch taken beyond the `is not None` check. The existing
+`record_video`/telemetry code paths are untouched.
+
+**Proof.** `tests/test_golden.py` (3/3) unaffected. `tests/
+test_frame_callback.py` (new): `on_frame` is called exactly once per
+emulator frame with the matching frame index, an `obs` array of constant
+shape, and a `row` whose own `"frame"` key matches; `should_stop`
+returning `True` at frame 50 ends the episode at exactly 50 frames;
+passing harmless (no-op) callbacks produces byte-identical telemetry to
+not passing them at all.

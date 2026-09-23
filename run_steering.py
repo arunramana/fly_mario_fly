@@ -216,7 +216,7 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
          inject_frame=None, frame_skip=1, savestate=None, mb_weights=None,
          mushroom_offset=None, inject_gap_frame=None, write_telemetry=True,
          retinotopic=False, sigma=0.0, seed=None, telemetry_path=None,
-         event_proximal_dopamine=False, config=None):
+         event_proximal_dopamine=False, config=None, on_frame=None, should_stop=None):
     """Run one episode of the full system and return (telemetry, info).
 
     out_mp4: required. Build it from a ProjectConfig with
@@ -260,7 +260,18 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
         whatever config.noise.sigma was, same as with the default config
         -- a caller that wants config's own sigma to win passes
         sigma=config.noise.sigma explicitly (sim.project_runner.
-        run_from_config already does)."""
+        run_from_config already does).
+    on_frame: called as on_frame(frame, obs, row) once per emulator frame
+        (obs is the RGB frame the decision this row records was made from;
+        row is the same dict written to telemetry), right before env.step
+        advances to the next one. None (default): never called, no cost.
+        For a live preview -- raises inside it propagate, same as any
+        other caller error.
+    should_stop: called with no arguments once per emulator frame, right
+        after on_frame; a true return ends the episode early (frame count
+        and telemetry reflect wherever it stopped, same as reaching
+        max_frames). None (default): never called, the episode always
+        runs to death or max_frames. For a Cancel button."""
     if out_mp4 is None:
         raise ValueError(
             "main() needs an explicit out_mp4 -- there is no default any "
@@ -357,8 +368,12 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
                 observer.record(row)
                 if record_video:
                     Image.fromarray(obs).save(tmp / f"{frame:05d}.png")
+                if on_frame is not None:
+                    on_frame(frame, obs, row)
                 obs, reward, done, info = env.step(action)
                 frame += 1
+                if should_stop is not None and should_stop():
+                    break
                 continue
 
             if force_mario_size is not None and frame >= force_size_from_frame:
@@ -462,11 +477,15 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
             observer.record(row)
             if record_video:
                 Image.fromarray(obs).save(tmp / f"{frame:05d}.png")
+            if on_frame is not None:
+                on_frame(frame, obs, row)
 
             obs, reward, done, info = env.step(action)
             frame += 1
             # Death-triggered punishment (SPEC_mushroom_body.md section 3).
             policy.on_step(frame, SimpleNamespace(done=done), action)
+            if should_stop is not None and should_stop():
+                break
 
         if owns_env:
             env.close()  # a caller-supplied env (savestate reuse across episodes) stays open
