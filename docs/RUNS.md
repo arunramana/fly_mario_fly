@@ -1840,6 +1840,46 @@ places (`CLAUDE.md`, `README.md`, `SPEC_steering.md`,
 Zero logic edits. Goldens re-run and green after the move, proving the
 harness catches a real regression before phase 2 touches anything risky.
 
+## Refactor phase 2 -- the fly/mario split and entity records
+
+No behaviour changed (verified, not assumed -- see below) -- a short note,
+not a four-field entry, same as phase 0-1's.
+
+Housekeeping first, from phase 0-1's own findings: corrected
+`docs/REFACTOR_PLAN.md` section 3's diagram in place (it wrongly implied
+`RUNS.md`/`MECHANISMS.md` needed moving; they were already in `docs/`);
+decided and wrote down run-media durability in `CLAUDE.md` (video stays
+ephemeral and `.gitignore`d, telemetry CSVs and `.md` notes are the durable
+artifact -- every finding in this log has always come from a CSV number,
+never a video frame); flagged in the plan that `out_mp4="runs/..."`
+defaults still point outside the new structure until phase 5.
+
+Then the split: `fly/` (connectome, network, circuits, sensing, state) and
+`mario/` (ram, entities, actions, emulator) now exist as real packages,
+with `bridge/perception.py`/`motor.py` as the only modules importing both
+-- enforced by `tests/test_import_guard.py`, which parses every `fly/*.py`
+file's AST and was checked to actually fail on a real violation before
+being trusted. `EntityRecord`/`KindRegistry`
+(`mario/entities/`) replace three independent copies of
+`ram[ADDR_ENEMY_TYPE+i] == POWERUP_ID` (`run_mario.py`'s `enemy_thetas`,
+`run_steering.py`'s `mushroom_odor`/`goomba_odor`) with one classification
+-- the one real duplicated ROM fact this phase found and fixed, not just
+documented. `docs/ENTITIES.md` has the full report, including what the
+entity model deliberately does NOT cover yet (no per-species
+discrimination exists anywhere in this codebase -- a Goomba and a Koopa
+are the same `ENEMY` kind, because nothing has ever read the type byte for
+anything except the one powerup check).
+
+Verification: `tests/golden/` byte-identical before and after every step
+of the split, checked incrementally rather than once at the end. Along the
+way, found and fixed a real test-harness fragility (not a behaviour bug):
+running the new `tests/test_entities.py` before `tests/test_golden.py` in
+one pytest session perturbed the goldens' floating-point output at the
+16th significant digit -- BLAS latching its thread count from the ambient
+environment before `run_steering.py`'s own thread-count `setdefault` could
+run. `tests/conftest.py` now sets it before pytest imports any test module
+at all. Full suite green twice, two separate processes, after the fix.
+
 ## Still open
 
 - **The 009 climb/long-jump livelock is understood, not just patched
