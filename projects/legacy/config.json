@@ -1,0 +1,91 @@
+{
+  "demo": {
+    "mushroom_offset": -40
+  },
+  "dnp02": {
+    "alpha": 0.1,
+    "g": 1.2,
+    "spike_threshold": 0.1
+  },
+  "entity": {
+    "entity_width_px": 16
+  },
+  "habituation": {
+    "hab_give_up": 3,
+    "hab_progress_px": 16
+  },
+  "jump": {
+    "dnp01_spike_threshold": 0.5,
+    "g": 2.0,
+    "jump_cooldown_frames": 40,
+    "jump_hold_frames": 25,
+    "spike_amp": 50.0,
+    "ttmn_press_threshold": 3.0
+  },
+  "mdn": {
+    "g": 1.2,
+    "mdn_backup_frames": 30,
+    "mdn_drive": 2.0,
+    "mdn_threshold": 1.0
+  },
+  "mushroom_body": {
+    "kc_sparsity": 0.05,
+    "learning_rate": 0.001,
+    "trace_decay": 60.0
+  },
+  "network": {
+    "alpha": 0.3,
+    "clip": 50.0,
+    "substeps": 10
+  },
+  "noise": {
+    "sigma": 0.0
+  },
+  "odour": {
+    "alpha_adapt": 0.011111111111111112,
+    "hunger_mult_hungry": 3.0,
+    "hunger_mult_sated": 1.0,
+    "odour_gain": 16.0
+  },
+  "output": {
+    "project_name": "legacy"
+  },
+  "retinotopy": {
+    "azimuth_d_ref": 128.0,
+    "hex1_spread_fallback": 3.0,
+    "hex1_spread_floor": 0.5
+  },
+  "scenario": {
+    "inject_gap_frame": 600,
+    "level": "1-1",
+    "max_frames": 1500,
+    "retinotopic": false,
+    "seed": null
+  },
+  "speed": {
+    "dnp09_speed_threshold": 0.5,
+    "g": 1.2,
+    "walk_drive": 1.0,
+    "walk_suppression": 1.0
+  },
+  "steering": {
+    "climb_clear_distance": 24,
+    "climb_cooldown_frames": 15,
+    "climb_hop_big_frames": 14,
+    "climb_hop_small_frames": 10,
+    "climb_jump_frames": 25,
+    "climb_stall_frames": 20,
+    "g": 1.2,
+    "home_bias": 1.0
+  },
+  "takeoff": {
+    "dlmn_recruit_threshold": 1.0,
+    "g": 0.8,
+    "gap_gain": 0.6,
+    "gap_lookahead_tiles": 8,
+    "long_jump_hold_frames": 35
+  },
+  "terrain": {
+    "refusal_gap_tiles": 5
+  }
+}
