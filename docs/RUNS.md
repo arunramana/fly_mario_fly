@@ -2259,6 +2259,150 @@ concern is gone; the real open question is whether 60-120 frames of
 stomp to the decision that caused it, not whether events exist to learn
 from.
 
+## 027 — the eligibility trace: persistence, provenance, event-proximal dopamine, and the sign test (`projects/legacy/runs/027_event_proximal_dopamine.mp4`)
+
+**Setup.** REFACTOR_PLAN.md phase 6, the only refactor-line phase that
+changes behaviour. Four pieces, in the order the sprint's own prompt
+gated them: (1) `tests/test_mb_persistence.py` -- KC->MBON weight
+persistence, on the open list since sprint 014, never checked before now,
+made a hard prerequisite because death is the only aversive event, fires
+once, and is terminal, so punishment learning exists only across
+episodes. (2) `trace_decay` (60 frames, unchanged) reprovenanced from an
+uncited "measured" claim to a real citation, docs/TRACE_BIOLOGY.md's own
+literature check (Handler et al. 2019: KC->MBON synaptic-tag plasticity
+significant at ISIs of -1.2s/0s/+0.5s, negligible by 6s), range set to
+that window (60-120 frames, was `unknown`). (3) `fly/plasticity/
+dopamine.py`'s `event_dopamine()`, routing `?`-block-hit/stomp -> PAM and
+death -> PPL1/PPM, reusing `dynamics.CLIP` for magnitude on both sides
+(no new scalar) -- gated behind `FullPolicy.event_proximal_dopamine`
+(default False, a mode flag like `retinotopic`, not a scalar) so goldens
+stay frozen against the pre-phase-6 continuous-progress trigger. (4)
+`fly/plasticity/three_factor.py` extracts the depression-only update rule
+itself (`update_eligibility`, `depress`) out of the inline mushroom-body
+block, so `tests/test_mb_sign_test.py` can drive the REAL rule with a
+synthetic KC/DAN protocol at controlled ISIs, not a reimplementation.
+
+**What happened.** Persistence: the round trip (`np.save`/`np.load`) was
+already exact, but the FIRST real check -- a genuine subprocess restart
+reloading a trained matrix and continuing training, compared against an
+uninterrupted in-process continuation -- failed on its first run, and not
+for the reason it was written to catch. `FullPolicy.__init__` took a
+passed-in `mb_weights` by reference, not by copy; `self.W_kc_mbon -=
+(...)` (numpy's in-place `__isub__`) was silently mutating the CALLER's
+own array, so the test's own "before" snapshot got rewritten out from
+under it mid-episode and reported "no learning happened" when what had
+actually happened was "the two things being compared were, by then, the
+same object." Fixed with one `.copy()`; both checks pass afterward
+(exact round trip; subprocess-reload continuation byte-identical to an
+in-process one). Pre-existing since sprint 014, not introduced by phase
+5b's move -- no golden or existing caller ever passes `mb_weights`, so
+this changed zero recorded behaviour (verified, not assumed).
+
+The sign test's result, run before any episode per the prompt's own gate:
+forward pairing (KC fires, dopamine arrives ~5 frames later, well inside
+the trace window) depresses the synapse. Backward pairing (dopamine
+arrives, KC fires 5 frames later) produces **no significant change, not
+the opposite sign** -- `depress()` has no branch that can ever add
+weight, regardless of order. The rule does not reproduce Handler et al.
+2019's bidirectional, order-dependent finding; it implements
+SPEC_mushroom_body.md section 4's own earlier, different, also-documented
+model instead (valence comes from WHICH MBON gets depressed -- approach-
+promoting or avoidance-promoting -- not from a sign flip on one synapse).
+
+Class imbalance, measured two ways. Per docs/RUNS.md's phase 5b
+correction: ~12-13 appetitive events per episode (median 7 qblock hits +
+median 5 stomps) against exactly 1 aversive event (death, every episode).
+An idealized closed-form check (best-case eligibility = 1, using the real
+`depress()` function) predicted PAM-reachable synapses would collapse to
+<1% of their original weight within 8-10 episodes while PPL1/PPM-
+reachable synapses were still at 60%+ -- a dramatic, fast-saturating
+picture. **A real 15-episode training run (same savestate, `frame_skip=
+1`, `event_proximal_dopamine=True`) measured something much more modest,
+and the idealized estimate is flagged here as wrong, not quietly
+dropped:** starting from the untrained connectome (overall mean
+0.000201, 15.5% of entries nonzero -- a naturally small, sparse matrix,
+not the "1.0" the idealized check assumed), the top-10%-by-reach PAM
+population moved from 0.000171 to 0.000162 over 15 episodes (-5.3%,
+~180 combined qblock+stomp events) while the top-10%-by-reach PPL1/PPM
+population moved from 0.000174 to 0.000172 (-1.1%, 15 death events) --
+real eligibility values during actual gameplay sit far below the
+best-case ceiling the idealized check assumed (KC activity is sparse and
+EMA-smoothed, not continuously saturated), so real depression per event
+is far gentler than the worst case. The measured **per-episode** decay
+rate is ~4.6x faster for the appetitive channel than the aversive one --
+directionally exactly what a 12:1 event-count imbalance predicts, but
+smaller than 12:1 because punishment turns out to be **~2.6x more potent
+per individual event** on its own reachable synapses than reward is on
+its (`punish_reach`/`pam_reach` top values are comparable in raw
+magnitude, but the two populations aren't identical). At these real
+rates, reaching 50% depression by extrapolation is ~140 episodes for the
+appetitive channel and ~650 for the aversive one -- gradual on the scale
+of a real training run, not an instant floor.
+
+Demonstration run: baseline scenario (1-1, σ=0, seed=0) with
+`event_proximal_dopamine=True` -- 689 frames, dies at the identical point
+as the legacy-trigger baseline, max_x=1432. Identical on screen to every
+other σ=0/seed=0 video in this project, because a single episode's WTA/
+escape/steering decisions never read mushroom-body output strongly enough
+to diverge visibly -- what changed is invisible on screen and visible
+only in which frames actually depressed a synapse (7 qblock hits + 5
+stomps, not ~650 frames of forward progress). Goldens (frozen against the
+legacy trigger, `event_proximal_dopamine=False`) stayed byte-identical
+throughout, checked after every commit, twice, separate processes.
+
+**What we learned.** The persistence prerequisite would have failed
+silently in exactly the way the sprint's own prompt warned about, but not
+via the mechanism it named -- not "punishment never gets applied," but
+"punishment gets applied and then a naive verification of that fact
+lies about it" (an aliasing bug that made a real training loop's own
+carried-forward weights correct all along, while making THIS TEST's
+attempt to double-check that fact wrong). Fixed and verified; the
+prerequisite holds.
+
+The sign test is the one negative result this sprint reports as a fact
+about the implementation, not a bug: this project's plasticity rule is
+depression-only in a way that structurally cannot match Handler et al.'s
+bidirectional coincidence-detection finding, and that's an existing,
+stated design choice (SPEC_mushroom_body.md section 4) from before this
+sprint, not something phase 6 broke. Anyone building further on this
+mechanism needs to know it's the "different MBON populations" model, not
+the "same synapse flips sign" model, before assuming order-of-events
+sensitivity that isn't there.
+
+The class-imbalance finding is real but smaller than the naive 12:1 ratio
+suggests, and the FIRST estimate of it in this sprint (idealized,
+best-case eligibility) was itself wrong by orders of magnitude --
+CLAUDE.md invariant 7's own lesson (measure the actual thing, a
+plausible-sounding calculation isn't a substitute) applying here to a
+learning-rate question instead of a GPU one. The real, measured
+consequence: over any realistic training run, the appetitive channel
+will end up several times more depressed than the aversive channel per
+unit of wall-clock training, not because reward matters more per event
+(punishment is actually more potent per event) but purely because it
+fires ~12x more often. Whether that's a problem depends on what the
+mushroom body is FOR in this system -- if steering/DNp02 bias is meant to
+track "is this a place that's been good," an appetitive-dominated signal
+may be exactly the intended shape; if aversive learning (avoiding the
+kind of encounter that caused a specific death) matters as much, this
+imbalance means it will take roughly an order of magnitude more training
+to matter at all.
+
+**Not answered here, and flagged rather than skipped:** whether the new
+event-proximal trigger changes Mario's behaviour for the better than the
+old continuous-progress trigger over many episodes of real training --
+this sprint verified the mechanism runs correctly and characterised what
+it does to the weights, not whether it improves anything. That's its own
+measurement (a real multi-episode training curve, event-proximal vs
+legacy, compared on survival/distance), not attempted here.
+
+Deliverables: goldens green at σ=0 with the new mechanism disabled (3/3,
+twice, separate processes), both import guards green, full suite green
+(57/57), one video + telemetry (`projects/legacy/runs/
+027_event_proximal_dopamine.mp4`), this four-field entry, scalars (one:
+`trace_decay`'s reprovenance, value unchanged) counted separately from
+scaffolding (`event_dopamine`, `three_factor.py`, `event_proximal_dopamine`
+the mode flag, the stomp-detection addition to `FullPolicy`).
+
 ## Still open
 
 - **The 009 climb/long-jump livelock is understood, not just patched
