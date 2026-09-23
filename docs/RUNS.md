@@ -1771,6 +1771,41 @@ specified). Scaffolding: 0**, as expected — no RAM convention, no
 invented distance or edge, just a real Gaussian on a real quantity
 already in the model.
 
+## 026 — brain panel: speed and layout, a rendering note (`runs/026_panel_017_reprise.mp4`)
+
+No behaviour changed (nes-py/circuits/telemetry untouched) — a brief
+note, not a four-field entry, as specified for a pure rendering sprint.
+
+Profiled `panel()` first (`profile_brain_panel.py`): 8.4ms median for one
+frame (worst case, every banner active, 10.2ms) against a 16.7ms
+real-time budget — already under budget before touching anything. The
+one real waste: `_font()` reloaded three TTF files from disk on every
+single call, ~2.7ms/frame for zero reason (fonts never change). Cached
+it the same way the soma background already was; full panel() dropped
+to 5.1ms median. Per the sprint's own stated rule ("if this lands under
+budget, stop"), no GPU port was attempted — CuPy scatter_add was not
+written, and nes-py remains a sequential CPU emulator that sets a floor
+regardless, per CLAUDE.md's own GPU section.
+
+New layout, 1536x1080: left column (512px) is the brain silhouette in
+the upper 2/3 (512x720) with **nothing overlaid on it** — spikes and
+population glow are still drawn at real soma positions, that's the
+whole point of the panel, but every piece of text (legend, numeric
+values, `steer R_team=…/L_team=…`, every banner: SPIKE/CLIMB/CONFLICT/
+PIT/LONG JUMP/REFUSING/ODOUR OVERRIDE) moved to a dedicated 512x360
+telemetry strip below it. Right column (1024px): the emulator frame at
+integer 4x (256x240 -> 1024x960), `Image.NEAREST` (no interpolation —
+pixel art), vertically centred with a 60px letterbox top and bottom.
+After the layout change, full panel() re-profiled at 5.8ms median —
+still comfortably under budget.
+
+Re-rendered 017's exact scenario (same `main()` call: level 1-1,
+`max_frames=1500`, `inject_gap_frame=600`) with the new panel rather
+than inventing a new one, so the layout is comparable to something
+already watched — reproduced 017 event-for-event (807 frames, same
+commit/odour/`?`-block/long-jump frames down to the integer). Only the
+rendering changed.
+
 ## Still open
 
 - **The 009 climb/long-jump livelock is understood, not just patched
