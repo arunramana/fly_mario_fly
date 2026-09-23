@@ -13,10 +13,10 @@ from __future__ import annotations
 
 import numpy as np
 
-import dynamics
-import dnp02_circuit
+from fly.network import dynamics
+from fly.circuits import dnp02_circuit
 from run_mario import SPIKE_AMP, DNP01_SPIKE_THRESHOLD, G
-from load_cached import load as load_jump
+from fly.connectome.load_cached import load as load_jump
 from tune_dnp02 import make_jump_masks, slow_ramp, fast_loom
 
 SAFETY = 0.85

@@ -27,8 +27,13 @@ import cv2
 import gym_super_mario_bros
 from nes_py.wrappers import JoypadSpace
 
-import dynamics
-from load_cached import load
+from fly.network import dynamics
+from fly.connectome.load_cached import load
+from mario.ram.addresses import (
+    ADDR_MARIO_X, ADDR_MARIO_PAGE, ADDR_ENEMY_X, ADDR_ENEMY_ACTIVE,
+    ADDR_ENEMY_TYPE, N_ENEMY_SLOTS, POWERUP_ID,
+)
+from bridge.perception import enemy_thetas
 
 # ---- hand-set scalars -------------------------------------------------
 # G was 3.5 -- passed the single-ramp diagnostics in tune.py but failed
@@ -49,50 +54,14 @@ JUMP_COOLDOWN_FRAMES = 40
 W_TILE = 16.0
 MAX_FRAMES = 300
 
-# RAM addresses, SPEC section 2
-ADDR_MARIO_X = 0x0086
-ADDR_MARIO_PAGE = 0x006D
-ADDR_ENEMY_X = 0x0087
-ADDR_ENEMY_ACTIVE = 0x000F
-ADDR_ENEMY_TYPE = 0x0016
-N_ENEMY_SLOTS = 5
-
-# Powerups (mushroom/flower/star/1-up) share the same 5 enemy-object slots
-# as actual enemies (SPEC_odour.md section 1) -- they are approach targets,
-# not threats, and must never reach the looming detectors. Bug found via
-# SPEC_habituation.md's investigation: run_steering.py's synthetic mushroom
-# injection (a static object, never removed) was being read by this
-# function as a permanent, unresolvable "enemy" once Mario ended up parked
-# near it -- a real Goomba eventually gets walked past or jumped over,
-# changing d and letting theta decay; a static injected object never does.
-POWERUP_ID = 0x2E
+# RAM addresses (ADDR_MARIO_X/PAGE/ENEMY_X/ACTIVE/TYPE, N_ENEMY_SLOTS,
+# POWERUP_ID) and enemy_thetas() itself moved to mario/ram/addresses.py and
+# bridge/perception.py in REFACTOR_PLAN.md phase 2 -- both imported above.
+# run_steering.py imports the same two names from here as it always did;
+# they now come from this module's own imports, not a fresh definition.
 
 MOVES = [["right", "B"], ["right", "A", "B"]]
 RUN, JUMP = 0, 1
-
-
-def enemy_thetas(ram, mario_x, prev_theta):
-    """Nearest active THREAT's theta/dtheta per hemisphere. Enemies ahead of
-    Mario (on-screen x >= mario_x) route Right; behind route Left -- our
-    convention, SPEC doesn't fix one since retinotopy is skipped (section 2).
-    Powerup-type slots are skipped -- see POWERUP_ID's comment."""
-    theta = {"L": 0.0, "R": 0.0}
-    d_out = {"L": None, "R": None}
-    for i in range(N_ENEMY_SLOTS):
-        if ram[ADDR_ENEMY_ACTIVE + i] == 0:
-            continue
-        if ram[ADDR_ENEMY_TYPE + i] == POWERUP_ID:
-            continue
-        enemy_x = int(ram[ADDR_ENEMY_X + i])
-        d = enemy_x - int(mario_x)
-        side = "R" if d >= 0 else "L"
-        ad = max(abs(d), 1)
-        th = 2.0 * np.arctan(W_TILE / (2.0 * ad))
-        if th > theta[side]:
-            theta[side] = th
-            d_out[side] = d
-    dtheta = {s: theta[s] - prev_theta[s] for s in ("L", "R")}
-    return theta, dtheta, d_out
 
 
 def make_env():

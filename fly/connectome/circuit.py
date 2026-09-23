@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 import mcns  # noqa: E402
 
 TYPES = ["LC4", "LPLC2", "DNp01", "TTMn"]
@@ -238,7 +238,7 @@ def build_expanded(N: int = 60):
     build(), but over the ~1200-neuron subgraph instead of the 315-neuron
     core -- extract_edges/build_signs/build_weight_matrix don't care how
     many bodies they're given."""
-    import expand_subgraph
+    from fly.connectome import expand_subgraph
 
     print(f"Building expanded subgraph at N={N}...")
     bodies, per_pre = expand_subgraph.build(N)

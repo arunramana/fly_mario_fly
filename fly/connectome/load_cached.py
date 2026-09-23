@@ -3,7 +3,7 @@ disk, this just silences the verbose build prints for fast iteration."""
 import contextlib
 import io
 
-import circuit
+from fly.connectome import circuit
 
 
 def load(N=60):

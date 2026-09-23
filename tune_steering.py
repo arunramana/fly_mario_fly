@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import numpy as np
 
-import circuit
-import dynamics
-from load_steering_cached import load
+from fly.connectome import circuit
+from fly.network import dynamics
+from fly.circuits.load_steering_cached import load
 
 HOME_BIAS = 1.0  # the constant "go home" current, R-hemisphere only -- see run_steering.py
 

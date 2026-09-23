@@ -16,9 +16,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-import circuit
-import dynamics
-from sensory import DRIVEN_SIDE, W_TILE, theta_ramp, masks, sensory_trace  # noqa: F401
+from fly.connectome import circuit
+from fly.network import dynamics
+from fly.sensing.sensory import DRIVEN_SIDE, W_TILE, theta_ramp, masks, sensory_trace  # noqa: F401
 
 
 def diag_zero_input_decay(W, g, K, n_frames=40):

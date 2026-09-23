@@ -1,15 +1,15 @@
 """
-steering_circuit.py — body-level steering circuit: DNa01/DNa02 core plus
-every presynaptic partner with >=60 synapses onto DNa01 UNION DNa02.
+speed_circuit.py — SPEC_terrain.md section 3: DNp09 (forward walking, 2
+neurons) plus every presynaptic partner with >=60 synapses onto DNp01...
+onto DNp09. Checked directly against the weights file: DNa01/DNa02 (the
+steering circuit) have NO direct synapse onto DNp09, so this needs its own
+small subgraph rather than reusing steering's output -- 23 partners, 25
+neurons total.
 
-Same extraction/signs/weight-matrix pipeline as circuit.py's build_expanded
-(SPEC_jump section 1b's sign-agnostic threshold rule), scoped to a different
-4-body core -- DNa01/DNa02, the steering descending neurons, instead of
-LC4/LPLC2/DNp01. See SPEC_steering.md section 1. Does not modify circuit.py;
-reuses its build_signs/build_weight_matrix/spectral_radius, which are
-generic over any (bodies, edges, signs) and don't care what the core is.
+Same extraction/signs/weight-matrix pipeline as circuit.py/
+steering_circuit.py. Does not modify either.
 
-    python steering_circuit.py
+    python speed_circuit.py
 """
 
 from __future__ import annotations
@@ -19,14 +19,14 @@ from pathlib import Path
 
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 import mcns  # noqa: E402
 
-import circuit
-from query_input_pools import full_presynaptic_population
+from fly.connectome import circuit
+from fly.connectome.query_input_pools import full_presynaptic_population
 
-CORE_TYPES = ["DNa01", "DNa02"]
-EXPECTED_COUNTS = {"DNa01": 2, "DNa02": 2}
+CORE_TYPES = ["DNp09"]
+EXPECTED_COUNTS = {"DNp09": 2}
 N_THRESHOLD = 60
 
 
@@ -43,10 +43,8 @@ def core_bodies(ann: pd.DataFrame) -> pd.DataFrame:
 
 
 def combined_presynaptic_weight(core: pd.DataFrame) -> pd.DataFrame:
-    """Per presynaptic body: total synapses onto DNa01 UNION DNa02, whole
-    connectome -- SPEC_steering section 1's N=60 threshold rule."""
     core_ids = core["bodyId"].to_numpy()
-    edges = full_presynaptic_population(core_ids, "dna0102_full_presynaptic.parquet")
+    edges = full_presynaptic_population(core_ids, "dnp09_full_presynaptic.parquet")
     per_pre = edges.groupby("body_pre", as_index=False)["weight"].sum()
     per_pre = per_pre.rename(columns={"weight": "total_weight_onto_core"})
     return per_pre.sort_values("total_weight_onto_core", ascending=False)
@@ -62,8 +60,8 @@ def build(N: int = N_THRESHOLD):
     threshold_ids = set(candidates.loc[candidates["total_weight_onto_core"] >= N, "body_pre"])
 
     all_ids = core_ids | threshold_ids
-    print(f"steering circuit: N={N}")
-    print(f"  core (DNa01/DNa02):                 {len(core_ids)}")
+    print(f"speed circuit: N={N}")
+    print(f"  core (DNp09):                       {len(core_ids)}")
     print(f"  threshold-expansion (new neurons):  {len(threshold_ids)}")
     print(f"  TOTAL:                              {len(all_ids)}")
 
@@ -74,8 +72,6 @@ def build(N: int = N_THRESHOLD):
 
 
 def build_full(N: int = N_THRESHOLD):
-    """Full pipeline: extract, sign, weight-matrix. Mirrors
-    circuit.build_expanded's shape but for the steering core."""
     bodies, per_pre = build(N)
     core = bodies[bodies["in_core"]]
     counts = core["type"].value_counts().to_dict()
@@ -83,20 +79,17 @@ def build_full(N: int = N_THRESHOLD):
         got = counts.get(t, 0)
         assert got == expected, f"{t}: found {got}, expected {expected} (core unaffected by expansion)"
 
-    print("\nExtracting body-level edges over the steering subgraph "
+    print("\nExtracting body-level edges over the speed subgraph "
           "(streams the full weights file once; cached after)...")
     edges, total_input = mcns.body_subgraph(
-        bodies["bodyId"], cache_name=f"edges_steering_bodies_N{N}.parquet"
+        bodies["bodyId"], cache_name=f"edges_speed_bodies_N{N}.parquet"
     )
 
-    print("\nAssigning signs from consensus_nt (circuit.build_signs's own "
-          "'sign by type' printout below only lists the JUMP circuit's four "
-          "types, not ours -- harmless, its own per-type loop is hardcoded "
-          "to that other core; real per-type counts for this core follow)...")
+    print("\nAssigning signs from consensus_nt...")
     signs = circuit.build_signs(bodies)
 
     sign_of_body = signs.reindex(bodies["bodyId"]).to_numpy()
-    print("  sign by type (steering core types):")
+    print("  sign by type (speed core types):")
     for t in CORE_TYPES:
         sub = sign_of_body[bodies["type"].to_numpy() == t]
         print(f"    {t:8s} +1: {int((sub > 0).sum()):3d}  "
@@ -106,20 +99,14 @@ def build_full(N: int = N_THRESHOLD):
     W, order, diag = circuit.build_weight_matrix(bodies, edges, total_input, signs)
 
     rho1 = circuit.spectral_radius(W, 1.0)
-    print(f"\nSpectral radius of W_steer (g=1): {rho1:.4f}")
+    print(f"\nSpectral radius of W_speed (g=1): {rho1:.4f}")
 
-    print("\n--- E/I balance of the steering subgraph (by neuron count) ---")
+    print("\n--- E/I balance of the speed subgraph (by neuron count) ---")
     n_exc = int((sign_of_body > 0).sum())
     n_inh = int((sign_of_body < 0).sum())
     n_zero = int((sign_of_body == 0).sum())
     print(f"  excitatory: {n_exc}  inhibitory: {n_inh}  unsigned: {n_zero}  "
           f"(of {len(bodies)} total)")
-
-    print("\n--- input coverage for DNa01/DNa02 ---")
-    for t in CORE_TYPES:
-        frac = diag.loc[diag["type"] == t, "coverage_frac"]
-        print(f"  {t:8s} mean coverage: {frac.mean()*100:.1f}%  "
-              f"(min {frac.min()*100:.1f}%, max {frac.max()*100:.1f}%)")
 
     return bodies, edges, total_input, signs, W, order, diag
 

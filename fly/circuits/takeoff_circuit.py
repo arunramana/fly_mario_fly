@@ -28,10 +28,10 @@ from pathlib import Path
 
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 import mcns  # noqa: E402
 
-import circuit
+from fly.connectome import circuit
 
 CORE_TYPES = ["DNp01", "GFC1", "GFC2", "GFC3", "GFC4", "DLMn c-f", "DLMn a, b"]
 EXPECTED_COUNTS = {

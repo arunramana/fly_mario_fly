@@ -18,9 +18,10 @@ from __future__ import annotations
 
 import numpy as np
 
-import dynamics
-from load_steering_cached import load as load_steering
-from run_steering import OlfactoryAdaptation, ALPHA_ADAPT, ODOUR_GAIN, HOME_BIAS, G_STEER
+from fly.network import dynamics
+from fly.circuits.load_steering_cached import load as load_steering
+from fly.sensing.olfactory_adaptation import OlfactoryAdaptation, ALPHA_ADAPT
+from run_steering import ODOUR_GAIN, HOME_BIAS, G_STEER
 
 N_FRAMES = 600
 STUCK_RAW_CONC = 1.0 / 24.0  # "parked" 24px from a source -- realistic close range

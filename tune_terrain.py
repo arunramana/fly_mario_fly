@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import numpy as np
 
-import circuit
-import dynamics
-from load_takeoff_cached import load as load_takeoff
-from load_speed_cached import load as load_speed
+from fly.connectome import circuit
+from fly.network import dynamics
+from fly.circuits.load_takeoff_cached import load as load_takeoff
+from fly.circuits.load_speed_cached import load as load_speed
 
 
 def tune_takeoff():

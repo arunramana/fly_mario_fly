@@ -2,7 +2,7 @@
 import contextlib
 import io
 
-import mushroom_body_circuit
+from fly.circuits import mushroom_body_circuit
 
 
 def load():

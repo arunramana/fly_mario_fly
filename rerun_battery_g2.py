@@ -31,7 +31,7 @@ from compare_controllers import (LEVELS, DNP01_SPIKE_THRESHOLD, SPIKE_AMP, TTMN_
                                   battery, build_shuffled_quiet, make_baseline_decider,
                                   make_circuit_decider, record_hero_run, run_episode,
                                   tune_baseline_c)
-from load_cached import load
+from fly.connectome.load_cached import load
 
 G_A = 2.0
 LEVELS_2 = ["1-1", "1-2"]

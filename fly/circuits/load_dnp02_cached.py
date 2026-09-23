@@ -2,7 +2,7 @@
 import contextlib
 import io
 
-import dnp02_circuit
+from fly.circuits import dnp02_circuit
 
 
 def load(N=dnp02_circuit.N_THRESHOLD):

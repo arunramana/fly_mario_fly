@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import numpy as np
 
-import dynamics
-from load_steering_cached import load as load_steering
+from fly.network import dynamics
+from fly.circuits.load_steering_cached import load as load_steering
 
 HOME_BIAS = 1.0
 G_STEER = 1.2

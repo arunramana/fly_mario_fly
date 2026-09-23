@@ -24,17 +24,29 @@ import setuptools  # noqa: F401  -- must import before gym on py3.12
 import numpy as np
 import pandas as pd
 from PIL import Image
-import gym_super_mario_bros
-from nes_py.wrappers import JoypadSpace
 
-import dynamics
-import tile_ram
-from load_cached import load as load_jump
-from load_steering_cached import load as load_steering
-from load_takeoff_cached import load as load_takeoff
-from load_speed_cached import load as load_speed
-from load_mdn_cached import load as load_mdn
-from load_dnp02_cached import load as load_dnp02
+from fly.network import dynamics
+from fly.sensing.olfactory_adaptation import OlfactoryAdaptation
+from fly.state.reflex_habituation import ReflexHabituation, HAB_GIVE_UP
+from mario.ram import tile_ram
+from mario.ram.addresses import (
+    ADDR_MARIO_X, ADDR_MARIO_PAGE, ADDR_MARIO_Y, ADDR_MARIO_SIZE,
+    ADDR_ENEMY_X, ADDR_ENEMY_Y, ADDR_ENEMY_ACTIVE, ADDR_ENEMY_TYPE,
+    N_ENEMY_SLOTS, POWERUP_ID,
+)
+from mario.actions.actions import MOVES, action_index
+from mario.emulator.env import make_env
+from bridge.perception import (
+    enemy_thetas, mushroom_odor, question_block_odor, goomba_odor,
+    hunger_multiplier, HUNGER_MULT_HUNGRY,
+)
+from fly.connectome.load_cached import load as load_jump
+from fly.circuits.load_steering_cached import load as load_steering
+from fly.circuits.load_takeoff_cached import load as load_takeoff
+from fly.circuits.load_speed_cached import load as load_speed
+from fly.circuits.load_mdn_cached import load as load_mdn
+from fly.circuits.load_dnp02_cached import load as load_dnp02
+from fly.circuits.load_mushroom_body_cached import load as load_mushroom_body
 
 # SPEC_throughput.md: loading all 6 circuits from their on-disk parquet
 # cache takes ~6.8s -- measured, not assumed -- versus well under a second
@@ -51,13 +63,17 @@ def _memo_load(key, loader, *args, **kwargs):
     if key not in _circuit_cache:
         _circuit_cache[key] = loader(*args, **kwargs)
     return _circuit_cache[key]
-from run_mario import (ADDR_MARIO_X, ADDR_MARIO_PAGE, ADDR_ENEMY_X, ADDR_ENEMY_ACTIVE,
-                        ADDR_ENEMY_TYPE, POWERUP_ID,
-                        N_ENEMY_SLOTS, enemy_thetas,
-                        JUMP_HOLD_FRAMES, JUMP_COOLDOWN_FRAMES,
+
+
+# run_mario.py still owns G/DNP01_SPIKE_THRESHOLD/SPIKE_AMP/TTMN_PRESS_
+# THRESHOLD/JUMP_HOLD_FRAMES/JUMP_COOLDOWN_FRAMES -- the jump circuit's own
+# hand-set scalars, never moved. Consolidating these alongside every other
+# circuit's own gain (which all live here in run_steering.py instead) is a
+# real inconsistency, flagged in docs/REFACTOR_PLAN.md's phase 2 report --
+# out of scope for a phase whose rule is "move code, don't change it".
+from run_mario import (JUMP_HOLD_FRAMES, JUMP_COOLDOWN_FRAMES,
                         G, DNP01_SPIKE_THRESHOLD, SPIKE_AMP, TTMN_PRESS_THRESHOLD)
 from compare_controllers import _ensure_ffmpeg_on_path
-from load_mushroom_body_cached import load as load_mushroom_body
 
 # ---- hand-set scalars, SPEC_odour.md section 0 ---------------------------
 # Run 006's finding: 1/40=0.025 vs HOME_BIAS=1.0 is a 40x gap BY
@@ -75,15 +91,17 @@ from load_mushroom_body_cached import load as load_mushroom_body
 # this is a scaling fix to two competing DIRECTION signals, not a reason to
 # lower it -- that would just make Mario permanently distractible).
 ODOUR_GAIN = 16.0
-HUNGER_MULT_HUNGRY = 3.0      # RAM 0x0756==0 (small Mario)
-HUNGER_MULT_SATED = 1.0       # RAM 0x0756>=1 (big/fiery Mario) -- unboosted, not zeroed
+# HUNGER_MULT_HUNGRY/SATED moved to bridge/perception.py with
+# hunger_multiplier() itself, phase 2 -- imported above. Values unchanged
+# (3.0/1.0); tune_odour.py's own sweep, referenced above, is what picked them.
 
 # ---- ORN adaptation, sprint after SPEC_odour.md -------------------------
 # A real olfactory receptor neuron's response to a SUSTAINED concentration
 # decays over ~1-2 seconds and recovers once the stimulus is gone -- this is
 # receptor physiology, not a steering rule, so it is applied entirely
-# within the sensory layer (see OlfactoryAdaptation below), and the WTA
-# code downstream never needs to know it exists. Applied to the
+# within the sensory layer (OlfactoryAdaptation, moved to
+# fly/sensing/olfactory_adaptation.py in phase 2), and the WTA code
+# downstream never needs to know it exists. Applied to the
 # ODOUR_GAIN/hunger-scaled signal rather than the bare 1/distance
 # concentration: ODOUR_GAIN and hunger already represent the receptor's own
 # state-dependent sensitivity (hunger-modulated olfactory gain is itself a
@@ -95,10 +113,10 @@ HUNGER_MULT_SATED = 1.0       # RAM 0x0756>=1 (big/fiery Mario) -- unboosted, no
 # the real circuit in tune_orn_adapt.py before trusting the arithmetic).
 # It is also the general anti-stuck mechanism asked for: a place Mario has
 # sat near for a while stops smelling, so the still-fresh, never-adapted
-# HOME_BIAS takes back over. ALPHA_ADAPT=1/90 gives a ~1.5s time constant at
-# 60fps -- this runs once per EMULATOR frame, same cadence as the odour
-# reading itself, so 90 FRAMES really is ~1.5s of wall-clock game time.
-ALPHA_ADAPT = 1.0 / 90.0
+# HOME_BIAS takes back over. ALPHA_ADAPT=1/90 (fly/sensing/
+# olfactory_adaptation.py) gives a ~1.5s time constant at 60fps -- this runs
+# once per EMULATOR frame, same cadence as the odour reading itself, so 90
+# FRAMES really is ~1.5s of wall-clock game time.
 
 # ---- hand-set scalars, SPEC_steering.md section 5 -----------------------
 G_STEER = 1.2                # steering circuit gain -- tune_steering.py
@@ -146,8 +164,10 @@ DNP09_SPEED_THRESHOLD = 0.5          # DNp09 mean activation -> press B
 # CLIMB_CLEAR_DISTANCE already uses, just smaller (a single tile is a much
 # lower bar than 24px, deliberately -- habituation should engage before a
 # reflex has failed enough times to also blow through CLIMB_CLEAR_DISTANCE).
-HAB_PROGRESS_PX = 16
-HAB_GIVE_UP = 3              # consecutive no-progress firings before a reflex suppresses itself
+# HAB_PROGRESS_PX/HAB_GIVE_UP moved to fly/state/reflex_habituation.py with
+# ReflexHabituation itself, phase 2 (HAB_GIVE_UP imported above -- main()
+# still compares against it directly for MDN's own trigger). Values
+# unchanged (16px / 3 firings).
 
 # MDN (backward walking, 4 bodies, confirmed) has no direct synapse from
 # DNp01/GFC1-4 in this connectome (checked) -- same situation DNp09 was in
@@ -306,180 +326,21 @@ LEARNING_RATE = 0.001
 # kind is counted. Flagged here either way, per CLAUDE.md invariant 3.
 REFUSAL_GAP_TILES = 5
 
-ADDR_MARIO_SIZE = 0x0756
-# ADDR_ENEMY_TYPE/POWERUP_ID now live in run_mario.py (imported below) --
-# enemy_thetas() needed them too, to fix the contamination bug SPEC_
-# habituation.md's investigation found.
+# ADDR_MARIO_SIZE/ADDR_ENEMY_TYPE/POWERUP_ID now live in
+# mario/ram/addresses.py (imported above), phase 2 -- enemy_thetas() needed
+# some of them too, to fix the contamination bug SPEC_habituation.md's
+# investigation found.
 
 # 8-way action space (was: hold B unconditionally) -- {left,right} x
 # {A on/off} x {B on/off}. Index = direction_base + 2*press_a + press_b.
-MOVES = [
-    ["right"], ["right", "B"], ["right", "A"], ["right", "A", "B"],
-    ["left"], ["left", "B"], ["left", "A"], ["left", "A", "B"],
-]
-
-
-def action_index(direction: str, press_a: bool, press_b: bool) -> int:
-    base = 0 if direction == "R" else 4
-    return base + 2 * int(press_a) + int(press_b)
-
+# MOVES/action_index moved to mario/actions/actions.py, phase 2 (imported
+# above), make_env moved to mario/emulator/env.py, same phase.
 
 MAX_FRAMES = 1200
 # No default injection frame any more (sprint 011: opt-in only, see main()'s
 # `inject_frame` docstring) -- callers that want the odour demo pass their
 # own frame number explicitly, e.g. run_008()'s inject_frame=60.
 MUSHROOM_OFFSET = -40  # spawn BEHIND Mario so it competes with HOME_BIAS's rightward pull
-
-
-def make_env(level="1-1"):
-    env = gym_super_mario_bros.make(f"SuperMarioBros-{level}-v0")
-    return JoypadSpace(env, MOVES)
-
-
-def mushroom_odor(ram, mario_x):
-    """SPEC_steering.md section 2: powerups share the enemy slots,
-    Enemy_ID==0x2E. concentration ~ 1/distance, routed by sign of d exactly
-    like enemy routing in enemy_thetas -- ahead/right excites the R team,
-    behind/left the L team. Raw concentration, NO gain applied here --
-    ODOUR_GAIN/hunger are applied once, at the call site, so both odour
-    sources share one gain constant (SPEC_odour.md section 0)."""
-    odor = {"L": 0.0, "R": 0.0}
-    for i in range(N_ENEMY_SLOTS):
-        if ram[ADDR_ENEMY_ACTIVE + i] == 0 or ram[ADDR_ENEMY_TYPE + i] != POWERUP_ID:
-            continue
-        d = int(ram[ADDR_ENEMY_X + i]) - int(mario_x)
-        conc = 1.0 / max(abs(d), 1)
-        side = "R" if d >= 0 else "L"
-        odor[side] += conc
-    return odor
-
-
-def question_block_odor(ram):
-    """SPEC_odour.md section 1: a second odour source at every `?` block
-    tile_ram finds (0xC0 coin, 0xC1 power-up -- not distinguished, same as
-    the mushroom not distinguishing power-up subtype). tile_ram.
-    question_blocks_near returns signed TILE-COLUMN offsets relative to
-    Mario, not pixels -- convert (*16) before applying the same
-    concentration formula and gain as the mushroom, so one gain constant
-    covers both. Limitation, stated here per spec, not discovered later:
-    this is a horizontal-only signal -- it can pull Mario to stand under a
-    block, nothing more. Actually hitting it from below is the existing
-    contact-based climb reflex's job, and that reflex's tile_ram.solid_ahead
-    check explicitly excludes question tiles from counting as a climb
-    target (they float overhead, not underfoot) -- so whether stage two
-    ever actually fires is an open question this sprint answers empirically,
-    not by assumption. See the writeup for what was actually observed."""
-    odor = {"L": 0.0, "R": 0.0}
-    for offset_tiles in tile_ram.question_blocks_near(ram):
-        d = offset_tiles * 16
-        conc = 1.0 / max(abs(d), 1)
-        side = "R" if d >= 0 else "L"
-        odor[side] += conc
-    return odor
-
-
-def goomba_odor(ram, mario_x):
-    """docs/MECHANISMS.md section 1 / SPEC_odour.md sprint 016: every real
-    (non-powerup) active enemy slot is an AVERSIVE odour source, same
-    concentration ~ 1/distance formula as mushroom_odor/question_block_odor
-    -- reuses enemy_thetas' own exclusion of POWERUP_ID slots so a powerup
-    never doubles as a threat. Returned by THE SIDE THE THREAT IS ON (R if
-    d>=0, matching enemy_thetas' own convention) -- opposite-sign ROUTING
-    into DNa01/DNa02 happens at the call site, not here, exactly mirroring
-    how mushroom/qblock keep raw concentration separate from gain/routing.
-    No gain, no hunger term applied here (this sprint's ODOUR_GAIN is reused
-    at the call site; fleeing isn't hunger-gated the way foraging is)."""
-    odor = {"L": 0.0, "R": 0.0}
-    for i in range(N_ENEMY_SLOTS):
-        if ram[ADDR_ENEMY_ACTIVE + i] == 0 or ram[ADDR_ENEMY_TYPE + i] == POWERUP_ID:
-            continue
-        d = int(ram[ADDR_ENEMY_X + i]) - int(mario_x)
-        conc = 1.0 / max(abs(d), 1)
-        side = "R" if d >= 0 else "L"
-        odor[side] += conc
-    return odor
-
-
-class OlfactoryAdaptation:
-    """Sensory-layer ORN adaptation, one instance's worth of receptor state
-    per hemisphere (L/R match the same split the odour sources already
-    route by). Modeled divisively, not subtractively -- a real firing rate
-    (or here, a concentration) can't be driven negative by adaptation, it
-    can only be divided down towards zero -- as a slow trace `a` of the RAW
-    concentration each side has actually been receiving:
-
-        a(t+1) = (1 - ALPHA_ADAPT) * a(t) + ALPHA_ADAPT * raw(t)
-        adapted(t) = raw(t) / (1 + a(t))
-
-    Applied to the ODOUR_GAIN/hunger-scaled signal (see ALPHA_ADAPT's
-    comment for why) -- `raw` here is that scaled value, not the bare
-    1/distance concentration. A source Mario is stuck next to keeps `raw`
-    constant, so `a` climbs toward that same value and `adapted` decays
-    toward `raw/(1+raw)` -- e.g. a hungry Mario's scaled odour of 2.0
-    (comfortably beating HOME_BIAS=1.0) decays toward 2.0/3.0=0.667, which
-    loses to HOME_BIAS -- home wins the WTA back even though the raw
-    stimulus never went away. Leaving the source (raw -> 0) lets `a` relax
-    back down at the same ALPHA_ADAPT rate, and the next encounter starts
-    fresh."""
-
-    def __init__(self):
-        self.a = {"L": 0.0, "R": 0.0}
-
-    def apply(self, raw: dict) -> dict:
-        out = {}
-        for side in ("L", "R"):
-            self.a[side] = (1.0 - ALPHA_ADAPT) * self.a[side] + ALPHA_ADAPT * raw[side]
-            out[side] = raw[side] / (1.0 + self.a[side])
-        return out
-
-
-class ReflexHabituation:
-    """SPEC_habituation.md section 1: any reflex that keeps firing without
-    net forward progress since the last time it was checked progressively
-    suppresses itself -- real, documented Giant Fiber pathway habituation,
-    not a timeout. One instance per reflex (escape, climb), fully
-    independent state.
-
-    `last_check_x` updates every time `check()` is called, whether or not
-    the reflex actually fires -- so a suppressed reflex keeps listening for
-    the progress that would re-sensitise it (e.g. after MDN backs Mario up
-    and a later attempt actually clears the obstacle)."""
-
-    def __init__(self, give_up=None, progress_px=None):
-        self.last_check_x = None
-        self.hab_level = 0
-        # read the module globals at construction time, not class-definition
-        # time -- a mutable default here would silently ignore any later
-        # override of HAB_GIVE_UP/HAB_PROGRESS_PX (found this the hard way
-        # while building the baseline-vs-fix comparison for this sprint)
-        self.give_up = HAB_GIVE_UP if give_up is None else give_up
-        self.progress_px = HAB_PROGRESS_PX if progress_px is None else progress_px
-
-    def check(self, mario_x) -> bool:
-        """Call exactly once per frame the reflex's OWN trigger condition
-        is true. Returns whether the reflex should actually fire this time
-        (False once habituation has reached give_up)."""
-        if self.last_check_x is not None:
-            progress = mario_x - self.last_check_x
-            if progress < self.progress_px:
-                self.hab_level = min(self.hab_level + 1, self.give_up)
-            else:
-                self.hab_level = 0
-        self.last_check_x = mario_x
-        return self.hab_level < self.give_up
-
-    def reset(self):
-        """MDN's fixed-duration backup (SPEC section 2) ends with a clean
-        slate for the escape reflex -- backing up is a discrete corrective
-        action, not a lingering state."""
-        self.last_check_x = None
-        self.hab_level = 0
-
-
-def hunger_multiplier(ram):
-    """SPEC_odour.md section 2: RAM 0x0756==0 (small Mario) = hungry = the
-    boosted odour gain; >=1 (big/fiery) = sated = the unboosted one."""
-    return HUNGER_MULT_HUNGRY if int(ram[ADDR_MARIO_SIZE]) == 0 else HUNGER_MULT_SATED
 
 
 def find_inactive_slot(ram):
@@ -507,7 +368,7 @@ def inject_mushroom(ram, mario_x, mario_y, offset=None):
     ram[ADDR_ENEMY_ACTIVE + slot] = 1
     ram[ADDR_ENEMY_TYPE + slot] = POWERUP_ID
     ram[ADDR_ENEMY_X + slot] = x & 0xFF
-    ram[0x00B6 + slot] = int(mario_y)  # Enemy_Y, same array run_mario.py's spec table lists
+    ram[ADDR_ENEMY_Y + slot] = int(mario_y)
     print(f"  injected synthetic mushroom into slot {slot} at x={x} (mario_x={mario_x}, "
           f"i.e. {off:+d}px -- {'ahead, reachable' if off > 0 else 'behind, competes with HOME_BIAS'})")
     return True
@@ -702,7 +563,7 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
     # input map changes. `retinotopic=False` reproduces the exact
     # pre-023 uniform injection, for the paired before/after comparison.
     if retinotopic:
-        import retinotopy as rt
+        from fly.sensing import retinotopy as rt
         j_rf = {"LC4": rt.receptive_field_centers("LC4", j_bodies),
                 "LPLC2": rt.receptive_field_centers("LPLC2", j_bodies)}
         # sprint 024: ORIGIN is now the real density mode of that type+
@@ -904,7 +765,7 @@ def main(out_mp4="runs/008_run.mp4", level="1-1", max_frames=MAX_FRAMES,
                 ram[ADDR_MARIO_SIZE] = force_mario_size
 
             mario_x = int(ram[ADDR_MARIO_X])
-            mario_y = int(ram[0x00B5])
+            mario_y = int(ram[ADDR_MARIO_Y])
 
             if inject_frame is not None and not injected and frame >= inject_frame:
                 inject_mushroom(ram, mario_x, mario_y, offset=mushroom_offset)

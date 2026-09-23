@@ -18,9 +18,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 import mcns  # noqa: E402
-from query_input_pools import full_presynaptic_population  # noqa: E402
+from fly.connectome.query_input_pools import full_presynaptic_population  # noqa: E402
 
 CORE_TYPES = ["LC4", "LPLC2", "DNp01", "TTMn"]
 POOLING_TYPES = ["PVLP011", "LPi21", "LPi2b", "Li39", "LPT59"]

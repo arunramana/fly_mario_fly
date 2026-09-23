@@ -3,7 +3,7 @@ mirrors load_cached.py / load_steering_cached.py."""
 import contextlib
 import io
 
-import takeoff_circuit
+from fly.circuits import takeoff_circuit
 
 
 def load():

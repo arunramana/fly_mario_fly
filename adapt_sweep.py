@@ -12,9 +12,9 @@ two-scalar budget, CLAUDE.md invariant 3).
 """
 from __future__ import annotations
 
-import dynamics
+from fly.network import dynamics
 from diag4 import diagnostic4
-from load_cached import load
+from fly.connectome.load_cached import load
 
 G_VALUES = [0.3, 0.5, 0.7, 0.9, 1.0, 1.1, 1.3, 1.5, 2.0, 3.5]
 ALPHA_A_VALUES = [0.005, 0.02, 0.05]   # slow vs. the leak's alpha=0.3

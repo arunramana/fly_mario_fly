@@ -47,9 +47,9 @@ from PIL import Image
 import gym_super_mario_bros
 from nes_py.wrappers import JoypadSpace
 
-import circuit
-import dynamics
-from load_cached import load
+from fly.connectome import circuit
+from fly.network import dynamics
+from fly.connectome.load_cached import load
 from run_mario import (ADDR_MARIO_X, ADDR_ENEMY_X, ADDR_ENEMY_ACTIVE,
                         N_ENEMY_SLOTS, W_TILE, enemy_thetas,
                         JUMP_HOLD_FRAMES, JUMP_COOLDOWN_FRAMES,

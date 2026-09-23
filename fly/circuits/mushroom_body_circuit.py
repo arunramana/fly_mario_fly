@@ -26,10 +26,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 import mcns  # noqa: E402
 
-import circuit
+from fly.connectome import circuit
 
 EXPECTED_KC = 4064
 EXPECTED_MBON = 97

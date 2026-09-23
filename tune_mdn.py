@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import numpy as np
 
-import dynamics
-from load_mdn_cached import load
+from fly.network import dynamics
+from fly.circuits.load_mdn_cached import load
 
 SUBSTEPS_TO_SETTLE = 300
 

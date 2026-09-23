@@ -13,9 +13,9 @@ from __future__ import annotations
 
 import numpy as np
 
-import dynamics
-from load_cached import load as load_jump
-from load_dnp02_cached import load as load_dnp02
+from fly.network import dynamics
+from fly.connectome.load_cached import load as load_jump
+from fly.circuits.load_dnp02_cached import load as load_dnp02
 from run_mario import DNP01_SPIKE_THRESHOLD, SPIKE_AMP, G
 
 SUBSTEPS = dynamics.SUBSTEPS

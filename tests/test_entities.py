@@ -1,0 +1,89 @@
+"""Unit coverage for mario/entities/ -- narrower and faster than the golden
+tests, which only exercise KindRegistry indirectly through a full episode.
+REFACTOR_PLAN.md phase 2's own deliverable list doesn't require this, but
+the golden tests alone wouldn't localise a break in, say, pit_record() to
+this module specifically."""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import numpy as np
+
+from mario.entities.kinds import EntityKind, Trait
+from mario.entities.registry import DEFAULT as registry, ENTITY_WIDTH_PX
+from mario.ram.addresses import (
+    ADDR_ENEMY_ACTIVE, ADDR_ENEMY_TYPE, ADDR_ENEMY_X, ADDR_ENEMY_Y,
+    N_ENEMY_SLOTS, POWERUP_ID,
+)
+from mario.ram import tile_ram
+
+PROFILE_PATH = Path(__file__).parent.parent / "bridge" / "profiles" / "default.json"
+
+
+def _fake_ram(size=0x800):
+    return np.zeros(size, dtype=np.uint8)
+
+
+def test_enemy_kind_matches_the_old_bare_comparison():
+    assert registry.enemy_kind(POWERUP_ID) == EntityKind.POWERUP
+    assert registry.enemy_kind(0x00) == EntityKind.ENEMY
+    assert registry.enemy_kind(0x02) == EntityKind.ENEMY
+
+
+def test_enemy_records_reproduces_slot_layout():
+    ram = _fake_ram()
+    ram[ADDR_ENEMY_ACTIVE + 0] = 1
+    ram[ADDR_ENEMY_TYPE + 0] = POWERUP_ID
+    ram[ADDR_ENEMY_X + 0] = 200
+    ram[ADDR_ENEMY_ACTIVE + 1] = 1
+    ram[ADDR_ENEMY_TYPE + 1] = 0x00  # some non-powerup enemy
+    ram[ADDR_ENEMY_X + 1] = 50
+
+    records = registry.enemy_records(ram)
+    assert len(records) == N_ENEMY_SLOTS
+    assert records[0].active and records[0].kind == EntityKind.POWERUP
+    assert records[0].x == 200 and records[0].width == ENTITY_WIDTH_PX
+    assert Trait.COLLECTIBLE in records[0].traits
+    assert records[1].active and records[1].kind == EntityKind.ENEMY
+    assert Trait.THREAT in records[1].traits
+    assert not records[2].active  # untouched slot
+
+
+def test_tile_kind_matches_tile_ram_constants():
+    assert registry.tile_kind(tile_ram.GROUND_ID) == EntityKind.GROUND
+    assert registry.tile_kind(tile_ram.QUESTION_COIN_ID) == EntityKind.QUESTION_BLOCK
+    assert registry.tile_kind(tile_ram.QUESTION_POWERUP_ID) == EntityKind.QUESTION_BLOCK
+    assert registry.tile_kind(tile_ram.USED_BLOCK_ID) == EntityKind.USED_BLOCK
+    assert registry.tile_kind(tile_ram.EMPTY_ID) == EntityKind.EMPTY
+    assert registry.tile_kind(0x51) == EntityKind.SOLID_OTHER  # a brick, e.g.
+
+
+def test_pit_record_none_when_ground_ahead():
+    ram = _fake_ram()
+    # ground row filled with GROUND_ID for every column solid_ahead/gap_width look at
+    ram[tile_ram.BUF1_ADDR + tile_ram.GROUND_ROW * tile_ram.COLS:
+        tile_ram.BUF1_ADDR + (tile_ram.GROUND_ROW + 1) * tile_ram.COLS] = tile_ram.GROUND_ID
+    ram[tile_ram.BUF2_ADDR + tile_ram.GROUND_ROW * tile_ram.COLS:
+        tile_ram.BUF2_ADDR + (tile_ram.GROUND_ROW + 1) * tile_ram.COLS] = tile_ram.GROUND_ID
+    assert registry.pit_record(ram, mario_x=40) is None
+
+
+def test_pit_record_present_over_a_gap():
+    ram = _fake_ram()  # all-zero == EMPTY_ID everywhere -- a gap by construction
+    rec = registry.pit_record(ram, mario_x=40)
+    assert rec is not None
+    assert rec.kind == EntityKind.PIT
+    assert rec.width > 0 and rec.width % 16 == 0
+    assert Trait.LETHAL_ON_CONTACT in rec.traits
+
+
+def test_default_profile_covers_every_kind_the_registry_assigns():
+    profile = json.loads(PROFILE_PATH.read_text())
+    kinds_with_profiles = {k for k in profile if not k.startswith("_")}
+    # every EntityKind the registry can actually assign should have a
+    # profile entry, except EMPTY -- the absence of a tile, not an entity.
+    for kind in EntityKind:
+        if kind is EntityKind.EMPTY:
+            continue
+        assert kind.name in kinds_with_profiles, f"{kind.name} has no bridge/profiles/default.json entry"

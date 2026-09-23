@@ -36,7 +36,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import mcns  # noqa: E402
 
-import circuit
+from fly.connectome import circuit
 
 # The traced chain's real populations, sprint 018 (hop-by-hop synapse
 # counts) + sprint 019 (the decisive tiling test, LC10a's own real

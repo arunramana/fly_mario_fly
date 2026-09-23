@@ -36,9 +36,9 @@ import io
 import json
 import time
 
-import circuit
+from fly.connectome import circuit
 from diag4 import diagnostic4
-from load_cached import load
+from fly.connectome.load_cached import load
 
 N_SHUFFLES = 20
 SCREEN_GRID = [0.05, 0.1, 0.2, 0.4, 0.7, 1.0, 1.5, 2.0, 3.0, 4.5, 7.0, 11.0, 17.0, 25.0]

@@ -20,11 +20,11 @@ from pathlib import Path
 
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 import mcns  # noqa: E402
 
-import circuit
-from query_input_pools import full_presynaptic_population
+from fly.connectome import circuit
+from fly.connectome.query_input_pools import full_presynaptic_population
 
 CORE_TYPES = ["MDN"]
 EXPECTED_COUNTS = {"MDN": 4}

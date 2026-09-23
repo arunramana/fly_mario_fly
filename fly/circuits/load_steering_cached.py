@@ -2,7 +2,7 @@
 import contextlib
 import io
 
-import steering_circuit
+from fly.circuits import steering_circuit
 
 
 def load(N=steering_circuit.N_THRESHOLD):

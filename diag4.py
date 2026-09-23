@@ -33,9 +33,9 @@ import argparse
 
 import numpy as np
 
-import dynamics
-from load_cached import load
-from sensory import masks, sustained_bilateral_trace
+from fly.network import dynamics
+from fly.connectome.load_cached import load
+from fly.sensing.sensory import masks, sustained_bilateral_trace
 
 # thresholds for what counts as "passes" -- these are diagnostic acceptance
 # criteria, not model parameters; they do not count against CLAUDE.md's

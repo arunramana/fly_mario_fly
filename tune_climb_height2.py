@@ -8,7 +8,7 @@ sys.path.insert(0, ".")
 import setuptools
 import gym_super_mario_bros
 from nes_py.wrappers import JoypadSpace
-import tile_ram
+from mario.ram import tile_ram
 from run_mario import ADDR_ENEMY_X, ADDR_ENEMY_ACTIVE, N_ENEMY_SLOTS, ADDR_MARIO_X
 from tune_climb_height import contiguous_height
 

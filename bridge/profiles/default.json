@@ -1,0 +1,71 @@
+{
+  "_comment": "REFACTOR_PLAN.md section 4/phase 2: documents, per EntityKind, what bridge/perception.py's already-existing functions actually compute today. Odour is a list of labelled channels (not a scalar) so a Goomba and a Koopa CAN smell different once code exists that tells them apart -- today's ENEMY kind covers both identically, which this file states rather than hides. This is documentation this phase: the live numbers (ODOUR_GAIN, HUNGER_MULT_*) stay hand-set scalars in run_steering.py (CLAUDE.md invariant 3). Making this file the runtime source of those numbers is per-component config extraction, REFACTOR_PLAN.md phase 4, not this one. See docs/ENTITIES.md.",
+
+  "ENEMY": {
+    "odours": [
+      {"channel": "threat", "sign": -1, "hunger_gated": false}
+    ],
+    "looming_salience": 1.0,
+    "danger_weight": 1.0,
+    "is_food": false,
+    "body_scale": 1.0,
+    "_note": "Every active, non-powerup enemy slot -- Goomba, Green Koopa Troopa, Piranha Plant, whatever else SMB puts in this slot -- is this ONE kind. ADDR_ENEMY_TYPE is never read for anything except the powerup check, so this project cannot express 'a Goomba smells different from a Koopa' yet, only document that it doesn't."
+  },
+
+  "POWERUP": {
+    "odours": [
+      {"channel": "food", "sign": 1, "hunger_gated": true}
+    ],
+    "looming_salience": 0.0,
+    "danger_weight": 0.0,
+    "is_food": true,
+    "body_scale": 1.0,
+    "_note": "mushroom/flower/star/1-up, one RAM type byte (0x2E), never distinguished from each other."
+  },
+
+  "QUESTION_BLOCK": {
+    "odours": [
+      {"channel": "food", "sign": 1, "hunger_gated": true}
+    ],
+    "looming_salience": 0.0,
+    "danger_weight": 0.0,
+    "is_food": true,
+    "body_scale": 1.0,
+    "_note": "Tile-based, not an enemy-slot entity -- bridge/perception.py's question_block_odor reads tile_ram directly rather than mario.entities.registry, a deliberate phase-2 scoping decision (docs/ENTITIES.md). Shares the 'food' channel with POWERUP because run_steering.py's main() sums them before applying ODOUR_GAIN/hunger -- this file documents that equivalence, it doesn't create it."
+  },
+
+  "GROUND": {
+    "odours": [],
+    "looming_salience": 0.0,
+    "danger_weight": 0.0,
+    "is_food": false,
+    "body_scale": 1.0
+  },
+
+  "USED_BLOCK": {
+    "odours": [],
+    "looming_salience": 0.0,
+    "danger_weight": 0.0,
+    "is_food": false,
+    "body_scale": 1.0,
+    "_note": "A question block after it's been hit -- solid, nothing left to smell (tile_ram.USED_BLOCK_ID is excluded from QUESTION_IDS by construction)."
+  },
+
+  "SOLID_OTHER": {
+    "odours": [],
+    "looming_salience": 0.0,
+    "danger_weight": 0.0,
+    "is_food": false,
+    "body_scale": 1.0,
+    "_note": "Bricks, pipes, anything else tile_ram.solid_ahead treats as a wall. Pipe metatile IDs (0x10-0x15) are confirmed in tile_ram.py's own docstring but never given a separate kind -- folded in here, undifferentiated, exactly as the climb reflex already treats them."
+  },
+
+  "PIT": {
+    "odours": [],
+    "looming_salience": 0.0,
+    "danger_weight": 1.0,
+    "is_food": false,
+    "body_scale": 1.0,
+    "_note": "Synthesised from a run of EMPTY ground tiles, not read from a RAM slot. mario.entities.registry.KindRegistry.pit_record() builds a real EntityRecord for it; not yet a call site in main()'s decision loop (docs/ENTITIES.md)."
+  }
+}

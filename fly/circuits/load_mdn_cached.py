@@ -2,7 +2,7 @@
 import contextlib
 import io
 
-import mdn_circuit
+from fly.circuits import mdn_circuit
 
 
 def load(N=mdn_circuit.N_THRESHOLD):
