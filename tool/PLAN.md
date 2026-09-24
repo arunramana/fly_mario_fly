@@ -1,8 +1,9 @@
 # fly_mario tool — build plan
 
-Status: P0 and P1 done 2026-09-23 (P0 results in section 6; P1 -- C1-C4 --
-in `tool/CODEBASE_CHANGES.md`, golden gate green after each), awaiting
-review before P2. Written 2026-09-23, after the September cleanup
+Status: P0, P1 and P2 done 2026-09-23 (P0 results in section 6; P1 -- C1-C4
+-- and C10 in `tool/CODEBASE_CHANGES.md`; P2 -- tool/core/, headless,
+`tool/README.md` -- golden gate green throughout), awaiting review before
+P3. Written 2026-09-23, after the September cleanup
 (`docs/CHANGES_2026-09.md`, HEAD `f55396e`).
 
 The goal (from the project doc `fly-mario-tool-vision.md`): a tool that feels like a game. Pick a character, tune the world and the
@@ -323,7 +324,24 @@ change, no golden-gate exposure; wiring moves up from P5 to P4.
   reproduces telemetry byte-for-byte, warm-worker-vs-fresh-process
   telemetry identity (above).
 
-**P3 — UI shell**
+**Done 2026-09-23.** All nine `tool/core/` modules built as planned, plus
+`cli.py` (`python -m tool.core.cli run|batch`) and `tool/tests/`. The
+persistent-worker prerequisite predicted above was real: `tool/tests/
+test_warm_worker_identity.py` runs two `RunSpec`s through one
+single-worker `multiprocessing.Pool` and compares the second run's
+telemetry, byte for byte, against the same `RunSpec` run alone in a fresh
+process. C10 (`tool/CODEBASE_CHANGES.md`) fixed the exact leak this test
+was written to catch (`FullPolicy._prev_avoid_odor`/`_last_x`, class- not
+instance-level) before writing the test that exercises it through a real
+pool, and the golden gate was re-run alone and both orderings (normal and
+reversed test-file order) as part of that fix, not just once here. All
+five tool-core tests plus the warm-worker test pass; the full golden gate
+(`pytest tests/`) stayed green throughout, unaffected (nothing under
+`tool/` is imported by anything outside it, per ground rule 1). Warm
+workers use `multiprocessing.Pool` directly (its own worker processes are
+already persistent/reused across submitted tasks) rather than a
+hand-rolled queue-based pool -- simpler, and the stdlib's own tested
+implementation. `tool/README.md` has the CLI usage.
 - Project gate (new / duplicate / open / recent), main window, header with
   Play/Save/dirty state, seven tabs as skeletons.
 - `param_form` auto-builds tab 4 from `schema.py`: validation from ranges,

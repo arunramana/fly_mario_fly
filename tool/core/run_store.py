@@ -1,0 +1,65 @@
+"""tool/core/run_store.py -- NNN numbering, index.json, run history
+(tool/PLAN.md section 3: projects/<name>/tool_runs/index.json). The
+number never repeats, even if an earlier run's files were deleted -- it
+reads the index's own recorded maximum, never a directory listing.
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+from datetime import datetime, timezone
+from pathlib import Path
+
+from config.output_routing import PROJECTS_ROOT
+
+
+def _index_path(project_name: str) -> Path:
+    return PROJECTS_ROOT / project_name / "tool_runs" / "index.json"
+
+
+def _read_index(project_name: str) -> list[dict]:
+    path = _index_path(project_name)
+    if not path.exists():
+        return []
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def next_run_number(project_name: str) -> int:
+    entries = _read_index(project_name)
+    if not entries:
+        return 1
+    return max(e["number"] for e in entries) + 1
+
+
+def git_commit() -> str | None:
+    try:
+        result = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True,
+                                 text=True, check=True, cwd=Path(__file__).parent.parent.parent)
+        return result.stdout.strip()
+    except Exception:
+        return None
+
+
+def record_run(project_name: str, number: int, slug: str, seed: int,
+                info: dict, run_spec_snapshot: dict) -> None:
+    """`info` is run_steering.main()'s own summary dict -- `mb_weights`
+    (a numpy array, not JSON-safe) is dropped from the stored copy; every
+    other key is a plain number/bool/string."""
+    path = _index_path(project_name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    entries = _read_index(project_name)
+    entries.append({
+        "number": number,
+        "slug": slug,
+        "seed": seed,
+        "git_commit": git_commit(),
+        "time": datetime.now(timezone.utc).isoformat(),
+        "summary": {k: v for k, v in info.items() if k != "mb_weights"},
+        "run_spec": run_spec_snapshot,
+    })
+    path.write_text(json.dumps(entries, indent=2, sort_keys=True, default=str), encoding="utf-8")
+
+
+def list_runs(project_name: str) -> list[dict]:
+    return _read_index(project_name)
