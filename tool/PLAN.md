@@ -1,17 +1,41 @@
 # fly_mario tool — build plan
 
-Status: P0-P5 and P7 done (P0-P2 2026-09-23, P3-P5 and P7 2026-09-24 --
-see section 6 for each phase's own results). `python -m tool` opens a
-project and plays a run with a live preview, verified end to end, not
-just constructed (`tool/tests/test_ui_smoke.py`). P6 (tabs 2-3, C8) is
-next -- `docs/SPEC_entity_perception.md` drafted, awaiting approval
-before any C8 code. C9 (arousal) remains not wired, no SPEC yet. C7's own
-first real recorded run + `docs/RUNS.md` entry is also not done yet
-(flagged in section 6's P5 note, not silently skipped). Full repo golden
-gate green throughout: 74/74 after C5+C7 landed, 74/74 again at the very
-end of that pass; P7 was tool-only, `tool/tests/` 22/22 (no repo-wide
-golden gate run, nothing outside `tool/` changed). Written 2026-09-23,
-after the September cleanup (`docs/CHANGES_2026-09.md`, HEAD `f55396e`).
+Status: **P0-P7 done**, including C8a (P0-P2 2026-09-23, P3-P5/P7
+2026-09-24, P6/C8a 2026-09-24 -- see section 6 for each phase's own
+results). `python -m tool` opens a project and plays a run with a live
+preview, verified end to end, not just constructed
+(`tool/tests/test_ui_smoke.py`); tabs 2-3 edit real per-kind entity
+profiles (`tool/tests/test_entity_profiles_tab.py`).
+
+**Still open:**
+- **C9** (arousal, `character.arousal_pc1`) -- not wired, no SPEC yet.
+- **C8b** (distinct channels mapped to distinct connectome receptor
+  populations, `docs/SPEC_entity_perception.md` section 0) -- C8a is
+  gains only; C8b is a separate, larger, not-yet-scoped change.
+- **Pits/terrain** -- PIT and the terrain kinds (GROUND/USED_BLOCK/
+  SOLID_OTHER) are greyed in tabs 2-3 (C8a section 6): PIT has no live
+  call site in the decision loop yet, terrain kinds have no odours and
+  unread looming/danger fields.
+- **C7's own first real recorded run** + `docs/RUNS.md` entry -- flagged
+  since P5, still not done (not silently skipped).
+- **The slowdown** -- whether a warm no-video run still hits P0's
+  measured 99fps, or something added across C1-C10/C5/C7/C8a cost real
+  throughput, has not been measured since P0. Being timed now.
+- **Whether the C5 shuffled control is fair** -- `projects/legacy/runs/
+  029_c8a_validation.md`'s sweep found all 8 sampled shuffled networks
+  (`shuffle_seed=1..8`) die at the identical x=285 under the default
+  profile, 0% survival: a working jump/escape circuit looks like the
+  exception for a shuffled connectome at this level, not the rule. If
+  that's a calibration artifact (the shuffled network's gain was never
+  re-tuned the way `scripts/shuffle_sweep.py`/`compare_controllers.py`
+  tune it per network) rather than a real finding about the connectome,
+  every C5 comparison this project has run needs that caveat attached.
+
+Full repo golden gate green throughout every codebase-touching phase:
+74/74 after C5+C7 landed, 82/82 after C8a's own perception-layer tests
+landed (`tests/test_c8a_entity_profiles.py`). Written 2026-09-23, after
+the September cleanup (`docs/CHANGES_2026-09.md`, HEAD `f55396e`);
+updated 2026-09-24 for P6/C8a.
 
 The goal (from the project doc `fly-mario-tool-vision.md`): a tool that feels like a game. Pick a character, tune the world and the
 brain, press Play, watch the fly perform, and compare outcomes across runs.
