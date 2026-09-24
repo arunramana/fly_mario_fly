@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -88,3 +89,36 @@ def write_run_note(project_name: str, number: int, slug: str, seed: int,
     )
     path.write_text(text, encoding="utf-8")
     return path
+
+
+def export_run_bundle(project_name: str, number: int) -> Path:
+    """One zip with everything needed to hand a single run to someone else
+    or archive it outside the project: the frozen RunSpec (config.json),
+    telemetry CSV, video (if `record_video` was on), and the run note (if
+    written) -- tool/PLAN.md P7. Written next to the run's own files, at
+    `projects/<name>/runs/NNN_slug_bundle.zip`.
+    """
+    entries = _read_index(project_name)
+    matches = [e for e in entries if e["number"] == number]
+    if not matches:
+        raise ValueError(f"no run #{number} recorded for project {project_name!r}")
+    entry = matches[0]
+    slug = entry["slug"]
+    project_root = PROJECTS_ROOT / project_name
+
+    bundle_path = project_root / "runs" / f"{slug}_bundle.zip"
+    bundle_path.parent.mkdir(parents=True, exist_ok=True)
+
+    candidates = {
+        "config.json": None,  # written from run_spec below, not a file on disk
+        f"{slug}_telemetry.csv": project_root / "telemetry" / f"{slug}_telemetry.csv",
+        f"{slug}.mp4": project_root / "runs" / f"{slug}.mp4",
+        f"{slug}.md": project_root / "runs" / f"{slug}.md",
+    }
+
+    with zipfile.ZipFile(bundle_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("config.json", json.dumps(entry["run_spec"], indent=2, sort_keys=True))
+        for arcname, path in candidates.items():
+            if path is not None and path.exists():
+                zf.write(path, arcname)
+    return bundle_path

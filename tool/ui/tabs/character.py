@@ -13,12 +13,17 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
+from tool.core.tool_settings import CharacterSettings
+from tool.ui.widgets.preset_bar import PresetBar
+
 
 class CharacterTab(QWidget):
     def __init__(self, window, parent=None):
         super().__init__(parent)
         self._window = window
         layout = QVBoxLayout(self)
+
+        layout.addWidget(PresetBar("character", self._preset_data, self._apply_preset))
 
         player_box = QGroupBox("Character")
         player_form = QFormLayout(player_box)
@@ -54,6 +59,16 @@ class CharacterTab(QWidget):
         layout.addWidget(arousal_box)
 
         layout.addStretch(1)
+
+    def _preset_data(self) -> dict:
+        return dataclasses.asdict(self._window.get_tool_settings().character)
+
+    def _apply_preset(self, data: dict) -> None:
+        settings = self._window.get_tool_settings()
+        self._window.set_tool_settings(
+            dataclasses.replace(settings, character=CharacterSettings(**data))
+        )
+        self._window.reload_tab("character")
 
     @staticmethod
     def _hunger_index(value: bool | None) -> int:

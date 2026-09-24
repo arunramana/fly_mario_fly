@@ -23,11 +23,11 @@ NOT_WIRED = "not_wired"
 # few tool-settings-only controls that have no config/params.py home.
 CONTROL_WIRING: dict[str, str] = {
     "character.player": LIVE,                # tool/core/palette.py, display-only (P4)
-    "character.hunger_override": NOT_WIRED,   # C7, tool/PLAN.md P5
-    "character.starting_powerup": NOT_WIRED,  # C7, tool/PLAN.md P5
+    "character.hunger_override": LIVE,        # C7, GUI in P5, tests/test_c7_character_state.py
+    "character.starting_powerup": LIVE,       # C7, GUI in P5, tests/test_c7_character_state.py
     "character.arousal_pc1": NOT_WIRED,       # C9, no SPEC yet
     "enemies.smell_profile": NOT_WIRED,       # C8, tool/PLAN.md P6 (science sprint)
-    "circuits.shuffle_seed": NOT_WIRED,       # C5, tool/PLAN.md P5
+    "circuits.shuffle_seed": LIVE,            # C5, GUI in P5, tests/test_c5_shuffle.py
     "fitness.points": LIVE,                   # C4: info["score"] feeds it
     "fitness.distance": LIVE,
     "fitness.time": LIVE,
@@ -35,8 +35,8 @@ CONTROL_WIRING: dict[str, str] = {
     "render.frame_skip": LIVE,
     "render.record_video": LIVE,
     "render.brain_panel": LIVE,
-    "render.parallel_workers": PARTIAL,       # tool/core/batch.py works (this phase); no GUI yet
-    "render.live_preview_fps": NOT_WIRED,     # no live preview yet (P4)
+    "render.parallel_workers": LIVE,          # Settings tab -> run_batch(n_workers=...), P7
+    "render.live_preview_fps": LIVE,          # runner.py's every-Nth-frame throttle, P7
 }
 
 

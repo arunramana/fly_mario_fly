@@ -5,6 +5,7 @@ reuses a number, snapshot reproduces telemetry byte-for-byte.
 from __future__ import annotations
 
 import dataclasses
+import json
 import shutil
 
 import pytest
@@ -15,7 +16,9 @@ from config.project_config import ProjectConfig
 from tool.core.fitness import fitness_of
 from tool.core.project import ToolProject
 from tool.core.run_spec import RunSpec
-from tool.core.run_store import _index_path, list_runs, next_run_number, record_run
+from tool.core.run_store import (
+    _index_path, export_run_bundle, list_runs, next_run_number, record_run,
+)
 from tool.core.runner import run_one
 from tool.core.schema import ControlSpec, all_controls, get_value, with_value
 from tool.core.tool_settings import CharacterSettings, ToolSettings
@@ -132,3 +135,31 @@ def test_snapshot_reproduces_telemetry_byte_for_byte(clean_project):
         "replaying a run from its own stored snapshot did not reproduce "
         "the original telemetry byte-for-byte"
     )
+
+
+def test_export_run_bundle_contains_config_and_telemetry(clean_project):
+    import zipfile
+
+    cfg = ProjectConfig(
+        scenario=dataclasses.replace(ProjectConfig().scenario, level="1-1", max_frames=100),
+        output=dataclasses.replace(ProjectConfig().output, project_name=PROJECT_NAME),
+    )
+    slug = "001_bundle_test"
+    spec = RunSpec(project_name=PROJECT_NAME, config=cfg, tool_settings=ToolSettings(),
+                    seed=0, out_filename=f"{slug}.mp4")
+    tel, info = run_one(spec)
+    record_run(PROJECT_NAME, 1, slug, seed=0, info=info, run_spec_snapshot=spec.to_dict())
+
+    bundle_path = export_run_bundle(PROJECT_NAME, 1)
+    assert bundle_path.exists()
+    with zipfile.ZipFile(bundle_path) as zf:
+        names = set(zf.namelist())
+        assert "config.json" in names
+        assert f"{slug}_telemetry.csv" in names
+        # No video/note in this test (record_video defaults False, no note written).
+        assert f"{slug}.mp4" not in names
+        config_snapshot = json.loads(zf.read("config.json"))
+        assert config_snapshot["config"]["output"]["project_name"] == PROJECT_NAME
+
+    with pytest.raises(ValueError):
+        export_run_bundle(PROJECT_NAME, 999)

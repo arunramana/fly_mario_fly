@@ -66,9 +66,16 @@ class RunTab(QWidget):
         self.media_player.setVideoOutput(self.video_widget)
         right.addTab(self.video_widget, "Video")
 
+        history_tab = QWidget()
+        history_layout = QVBoxLayout(history_tab)
+        history_layout.setContentsMargins(0, 0, 0, 0)
         self.history_list = QListWidget()
         self.history_list.itemDoubleClicked.connect(self._on_history_selected)
-        right.addTab(self.history_list, "History")
+        history_layout.addWidget(self.history_list)
+        self.export_button = QPushButton("Export bundle (config + CSV + video + note)")
+        self.export_button.clicked.connect(self._on_export_clicked)
+        history_layout.addWidget(self.export_button)
+        right.addTab(history_tab, "History")
 
         self.batch_label = QLabel("No batch run yet.")
         self.batch_label.setWordWrap(True)
@@ -111,6 +118,15 @@ class RunTab(QWidget):
     def _on_history_selected(self, item: QListWidgetItem) -> None:
         entry = item.data(Qt.ItemDataRole.UserRole)
         self._window.load_history_run(entry)
+
+    def _on_export_clicked(self) -> None:
+        item = self.history_list.currentItem()
+        if item is None:
+            self.show_result("Select a run in History to export.", is_error=True)
+            return
+        entry = item.data(Qt.ItemDataRole.UserRole)
+        path = self._window.export_history_run(entry)
+        self.show_result(f"Exported #{entry['number']:03d} to {path}")
 
     def show_video(self, path) -> None:
         from PySide6.QtCore import QUrl

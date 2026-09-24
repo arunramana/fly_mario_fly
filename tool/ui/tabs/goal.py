@@ -11,6 +11,9 @@ from PySide6.QtWidgets import (
     QCheckBox, QSpinBox, QVBoxLayout, QWidget,
 )
 
+from tool.core.tool_settings import ExperimentSettings, FitnessSettings
+from tool.ui.widgets.preset_bar import PresetBar
+
 LEVELS = ["1-1", "1-2", "1-3", "1-4"]
 
 
@@ -21,6 +24,8 @@ class GoalTab(QWidget):
         layout = QVBoxLayout(self)
         config = window.get_config()
         settings = window.get_tool_settings()
+
+        layout.addWidget(PresetBar("goal", self._preset_data, self._apply_preset))
 
         scenario_box = QGroupBox("Scenario")
         scenario_form = QFormLayout(scenario_box)
@@ -121,3 +126,31 @@ class GoalTab(QWidget):
         settings = self._window.get_tool_settings()
         fitness = dataclasses.replace(settings.fitness, time=value)
         self._window.set_tool_settings(dataclasses.replace(settings, fitness=fitness))
+
+    def _preset_data(self) -> dict:
+        config = self._window.get_config()
+        settings = self._window.get_tool_settings()
+        return {
+            "level": config.scenario.level,
+            "max_frames": config.scenario.max_frames,
+            "sigma": config.noise.sigma,
+            "fitness": dataclasses.asdict(settings.fitness),
+            "experiment": dataclasses.asdict(settings.experiment),
+        }
+
+    def _apply_preset(self, data: dict) -> None:
+        config = self._window.get_config()
+        scenario = dataclasses.replace(
+            config.scenario, level=data["level"], max_frames=data["max_frames"])
+        noise = dataclasses.replace(config.noise, sigma=data["sigma"])
+        self._window.set_config(dataclasses.replace(config, scenario=scenario, noise=noise))
+
+        settings = self._window.get_tool_settings()
+        fitness = FitnessSettings(**data["fitness"])
+        experiment = ExperimentSettings(**{
+            **data["experiment"], "seeds": tuple(data["experiment"]["seeds"]),
+        })
+        self._window.set_tool_settings(
+            dataclasses.replace(settings, fitness=fitness, experiment=experiment)
+        )
+        self._window.reload_tab("goal")

@@ -7,6 +7,9 @@ __pycache__/
 *.pyc
 *.mp4
 *.png
+# Exception: tool/README.md's own screenshots are documentation, not a run's
+# re-renderable output -- these are the only PNGs meant to be committed.
+!tool/docs/screenshots/*.png
 *.parquet
 *.feather
 .pytest_cache/

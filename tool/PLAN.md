@@ -1,15 +1,17 @@
 # fly_mario tool — build plan
 
-Status: P0-P5 done (P0-P2 2026-09-23, P3-P5 2026-09-24 -- see section 6 for
-each phase's own results). `python -m tool` opens a project and plays a
-run with a live preview, verified end to end, not just constructed
-(`tool/tests/test_ui_smoke.py`). C8/C9 (tabs 2-3, arousal) remain not
-wired -- science sprints of their own, P6+. C7's own first real recorded
-run + `docs/RUNS.md` entry is also not done yet (flagged in section 6's
-P5 note, not silently skipped). Full repo golden gate green throughout:
-74/74 after C5+C7 landed, 74/74 again at the very end of this pass.
-Written 2026-09-23, after the September cleanup
-(`docs/CHANGES_2026-09.md`, HEAD `f55396e`).
+Status: P0-P5 and P7 done (P0-P2 2026-09-23, P3-P5 and P7 2026-09-24 --
+see section 6 for each phase's own results). `python -m tool` opens a
+project and plays a run with a live preview, verified end to end, not
+just constructed (`tool/tests/test_ui_smoke.py`). P6 (tabs 2-3, C8) is
+next -- `docs/SPEC_entity_perception.md` drafted, awaiting approval
+before any C8 code. C9 (arousal) remains not wired, no SPEC yet. C7's own
+first real recorded run + `docs/RUNS.md` entry is also not done yet
+(flagged in section 6's P5 note, not silently skipped). Full repo golden
+gate green throughout: 74/74 after C5+C7 landed, 74/74 again at the very
+end of that pass; P7 was tool-only, `tool/tests/` 22/22 (no repo-wide
+golden gate run, nothing outside `tool/` changed). Written 2026-09-23,
+after the September cleanup (`docs/CHANGES_2026-09.md`, HEAD `f55396e`).
 
 The goal (from the project doc `fly-mario-tool-vision.md`): a tool that feels like a game. Pick a character, tune the world and the
 brain, press Play, watch the fly perform, and compare outcomes across runs.
@@ -448,6 +450,54 @@ status line for the final number.
 **P7 — Polish**
 - Presets (save/load a tab's settings), keyboard shortcuts, export a run
   bundle (config + CSV + video + note), `tool/README.md` with screenshots.
+
+Done (2026-09-24, tool-only, `pytest tool/tests/` throughout -- 22 passed,
+no repo-wide golden gate run since nothing outside `tool/` changed):
+- **Live-preview fps throttle**: `runner.py`'s `run_one_streaming` now
+  sends every Nth frame (`round(60 / render.live_preview_fps)`), each one
+  spatially strided 2x before it crosses the process boundary (the
+  preview widget scales up to 512x480 regardless, so full-res frames only
+  cost IPC bandwidth). `render.live_preview_fps` promoted `not_wired` ->
+  `live` in `wiring.py` (`test_preview_throttle.py`). Found and fixed a
+  real latent bug while wiring this: `main_window._poll_queue` was
+  passing the queued RGB `frame` array itself into `set_progress` where a
+  frame *index* was expected -- silently swallowed until now because a
+  QTimer slot's exception doesn't crash the app. Fixed by dropping the
+  unused `frame` positional from the queue tuple entirely and reading
+  the frame index from `row["frame"]` instead.
+- **Parallel workers**: already fully wired since P5
+  (`main_window.run_batch` reads `render.parallel_workers` into
+  `run_batch`'s `n_workers`) but still marked `partial` in `wiring.py`
+  from before the Settings tab existed -- corrected to `live`, along with
+  `character.hunger_override`/`character.starting_powerup`/
+  `circuits.shuffle_seed`, all three also genuinely live since P5
+  (C7/C5's own tests) but never updated in this file.
+- **Keyboard shortcuts**: Space/Esc/Ctrl+S in `main_window.py`, scoped
+  `ApplicationShortcut` rather than Qt's default `WindowShortcut` --
+  the default silently never fires under the offscreen QPA platform
+  `tool/tests` runs under (offscreen never marks a window "active" the
+  way a real window manager would), found by testing, not assumed.
+  `test_shortcuts.py` fires each `QShortcut`'s own `activated` signal
+  directly rather than simulating OS key events, for the same reason.
+- **Presets**: `tool/core/presets.py` (global, JSON,
+  `tool_presets/<tab_key>/<name>.json`) + `tool/ui/widgets/preset_bar.py`
+  (one shared save/load row), wired into Character, Circuits, Goal, and
+  Settings (Enemies/Objects skipped -- their controls are still
+  `not_wired` placeholders; a preset for a control that does nothing
+  would itself be a control that lies). Loading a preset swaps in a
+  freshly built tab widget (`MainWindow.reload_tab`) rather than
+  hand-writing a refresh() for every widget on every tab.
+- **Run bundle export**: `run_store.export_run_bundle` zips a run's
+  frozen `RunSpec` (`config.json`), telemetry CSV, video and note
+  (whichever exist) into `projects/<name>/runs/NNN_slug_bundle.zip`; an
+  "Export bundle" button on the Run tab's History view.
+- **Screenshots**: `tool/scripts/gen_screenshots.py` (needs a real Qt
+  platform -- the offscreen platform used for testing has no font
+  backend and renders only tofu boxes, found by looking at the first
+  attempt's output, not assumed to work). Three screenshots committed
+  under `tool/docs/screenshots/` via a narrow `.gitignore` exception
+  (the blanket `*.png` rule is for re-renderable run output, not
+  documentation).
 
 ---
 

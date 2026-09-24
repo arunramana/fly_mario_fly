@@ -38,17 +38,34 @@ def run_one(spec, on_frame=None, should_stop=None):
 
 
 def run_one_streaming(spec, frame_queue, stop_event):
-    """Runs one RunSpec, streaming (frame, obs, row) tuples onto
+    """Runs one RunSpec, streaming ("frame", obs, row) tuples onto
     `frame_queue` and stopping early if `stop_event` is set -- meant to
     run in a child process the GUI spawns for Play (tool/PLAN.md P4).
     `obs`/`row` cross the process boundary through the queue exactly as
-    `on_frame` received them; the parent process applies the Luigi
-    colour swap (tool/core/palette.py) itself when it draws them, so this
-    function stays display-agnostic.
+    `on_frame` received them (minus the unused `frame` positional -- the
+    preview widget only ever reads `obs`, so it never crosses the process
+    boundary); the parent process applies the Luigi colour swap
+    (tool/core/palette.py) itself when it draws them, so this function
+    stays display-agnostic.
+
+    Throttled by `render.live_preview_fps` (tool/PLAN.md P7, tab 6's
+    Settings control): the emulator runs at a fixed 60fps regardless, so
+    a requested preview fps below that means sending every Nth frame,
+    not skipping simulation steps. Each frame actually sent is also
+    spatially downsampled 2x ("shrunk") -- the preview widget scales
+    whatever it's given up to 512x480 anyway (tool/ui/widgets/preview.py),
+    so full-resolution frames only cost IPC bandwidth for no visible gain.
     """
+    fps = spec.tool_settings.render.live_preview_fps
+    every_n = max(1, round(60 / max(1, fps)))
+    counter = {"n": 0}
+
     def on_frame(frame, obs, row):
+        counter["n"] += 1
+        if counter["n"] % every_n != 0:
+            return
         try:
-            frame_queue.put_nowait(("frame", frame, obs, row))
+            frame_queue.put_nowait(("frame", obs[::2, ::2], row))
         except Exception:
             pass  # a full/closed queue drops frames rather than blocking the sim
 

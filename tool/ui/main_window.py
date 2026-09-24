@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import multiprocessing as mp
 
-from PySide6.QtCore import QTimer
-from PySide6.QtGui import QCloseEvent
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QCloseEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton,
     QTabWidget, QVBoxLayout, QWidget,
@@ -18,7 +18,9 @@ from PySide6.QtWidgets import (
 
 from tool.core.fitness import fitness_of
 from tool.core.run_spec import RunSpec
-from tool.core.run_store import next_run_number, record_run, write_run_note, list_runs
+from tool.core.run_store import (
+    export_run_bundle, next_run_number, record_run, write_run_note, list_runs,
+)
 from tool.core.runner import run_one_streaming
 from tool.core.batch import run_batch
 
@@ -77,7 +79,35 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(SettingsTab(self), "6 Settings")
         self.tabs.addTab(self.run_tab, "7 Run")
 
+        # tab_key -> (tab index, class) for reload_tab (P7 presets): a
+        # preset load changes window state, then swaps in a freshly built
+        # tab widget rather than hand-writing a refresh() for every
+        # control on every preset-bearing tab.
+        self._tab_factories = {
+            "character": (0, CharacterTab),
+            "circuits": (3, CircuitsTab),
+            "goal": (4, GoalTab),
+            "settings": (5, SettingsTab),
+        }
+
         self.run_tab.refresh_history(list_runs(self.project.name))
+
+        # P7 keyboard shortcuts. ApplicationShortcut, not the default
+        # WindowShortcut: there is only ever one window open at a time
+        # (the project gate closes before this one opens), so window vs.
+        # application scope makes no practical difference here, and
+        # ApplicationShortcut doesn't depend on the platform's own notion
+        # of "the active window" -- WindowShortcut silently never fired
+        # under the offscreen QPA platform tool/tests runs under, since
+        # offscreen never marks a window active the way a real window
+        # manager would.
+        for shortcut, slot in (
+            (QKeySequence(Qt.Key.Key_Space), self.play),
+            (QKeySequence(Qt.Key.Key_Escape), self.cancel),
+            (QKeySequence.StandardKey.Save, self.save),
+        ):
+            sc = QShortcut(shortcut, self, activated=slot)
+            sc.setContext(Qt.ShortcutContext.ApplicationShortcut)
 
     # ---- project state accessors (tabs read/write through these) --------
 
@@ -105,6 +135,22 @@ class MainWindow(QMainWindow):
 
     def on_player_changed(self, player: str) -> None:
         self.run_tab.preview.set_player(player)
+
+    def reload_tab(self, key: str) -> None:
+        """Rebuilds one tab from current window state (P7 presets: after a
+        preset load replaces window.config/tool_settings, the tab's own
+        widgets -- built once from the OLD values in __init__ -- have no
+        other way to pick up the change)."""
+        index, factory = self._tab_factories[key]
+        title = self.tabs.tabText(index)
+        old_widget = self.tabs.widget(index)
+        new_widget = factory(self)
+        self.tabs.removeTab(index)
+        self.tabs.insertTab(index, new_widget, title)
+        self.tabs.setCurrentIndex(index)
+        old_widget.deleteLater()
+        if key == "character":
+            self.character_tab = new_widget
 
     def save(self) -> None:
         self.project.save()
@@ -167,9 +213,9 @@ class MainWindow(QMainWindow):
             message = self._queue.get_nowait()
             kind = message[0]
             if kind == "frame":
-                _frame_idx, obs, row = message[1], message[2], message[3]
+                obs, row = message[1], message[2]
                 self.run_tab.preview.show_frame(obs, row)
-                self.run_tab.set_progress(_frame_idx, max_frames)
+                self.run_tab.set_progress(row.get("frame", 0), max_frames)
             elif kind == "done":
                 info = message[1]
                 self._on_run_finished(info)
@@ -232,3 +278,6 @@ class MainWindow(QMainWindow):
         video_path = resolve_run_path(self.project.config, f"{slug}.mp4")
         if video_path.exists():
             self.run_tab.show_video(video_path)
+
+    def export_history_run(self, entry: dict):
+        return export_run_bundle(self.project.name, entry["number"])
