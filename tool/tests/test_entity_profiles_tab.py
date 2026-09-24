@@ -73,6 +73,50 @@ def test_enabled_with_no_override_reproduces_disabled(clean_project):
     assert tel_off.equals(tel_on)
 
 
+def test_valence_checkbox_round_trips_and_changes_telemetry(qtbot, clean_project):
+    """tool/SPEC_ui_retro.md section 4: toggling the Enemies tab's GOOMBA
+    "Smells good" checkbox must (a) write sign=+1 into
+    projects/<name>/entity_profiles.json and (b) actually move telemetry
+    -- ground rule 4, no control lies."""
+    import json
+
+    from tool.core.project import ToolProject
+    from tool.ui.main_window import MainWindow
+
+    project = ToolProject.create(PROJECT_NAME)
+    window = MainWindow(project)
+    qtbot.addWidget(window)
+
+    from mario.entities.kinds import EntityKind
+    enemies_tab = window.tabs.widget(1)
+    enemies_tab.enable_checkbox.setChecked(True)
+    goomba_check = enemies_tab._valence_checks[EntityKind.GOOMBA]
+    assert goomba_check.isChecked() is False  # GOOMBA ships aversive by default
+
+    goomba_check.setChecked(True)
+
+    override_path = PROJECTS_ROOT / PROJECT_NAME / "entity_profiles.json"
+    override = json.loads(override_path.read_text(encoding="utf-8"))
+    assert override["GOOMBA"]["odours"][0]["sign"] == 1
+
+    cfg = _cfg()
+    settings_flipped = window.get_tool_settings()
+    settings_default = dataclasses.replace(
+        settings_flipped, entity_profile=EntityProfileSettings(enabled=False))
+
+    spec_default = RunSpec(project_name=PROJECT_NAME, config=cfg, tool_settings=settings_default,
+                            seed=0, out_filename="default.mp4")
+    spec_flipped = RunSpec(project_name=PROJECT_NAME, config=cfg, tool_settings=settings_flipped,
+                            seed=0, out_filename="flipped.mp4")
+    tel_default, _ = run_one(spec_default)
+    tel_flipped, _ = run_one(spec_flipped)
+    assert not tel_default["odor_r"].equals(tel_flipped["odor_r"]), (
+        "flipping GOOMBA's valence through the Enemies tab produced identical "
+        "food-odour telemetry -- the checkbox isn't reaching a real run"
+    )
+    window.save()
+
+
 def test_tabs_build_and_checkbox_stays_synced(qtbot, clean_project):
     from tool.core.project import ToolProject
     from tool.ui.main_window import MainWindow

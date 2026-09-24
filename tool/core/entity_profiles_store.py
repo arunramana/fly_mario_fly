@@ -72,5 +72,30 @@ def set_kind_odour_intensity(project_name: str, kind_name: str, odour_index: int
     save_override_raw(project_name, override)
 
 
+def set_kind_odour_sign(project_name: str, kind_name: str, odour_index: int, sign: int) -> None:
+    """tool/SPEC_ui_retro.md section 4, the valence flip: sets one
+    odour-list entry's `sign` (+1 attractive / -1 aversive), the same
+    restate-the-whole-list pattern as set_kind_odour_intensity above.
+    Runtime needs no change -- bridge/perception.py's profiled_odor
+    already routes by `odour.sign` per entry (SPEC section 1.2/1.3), so a
+    flipped GOOMBA (sign=+1) moves its concentration into the *food* sum
+    instead of *threat*, using its own `intensity`; `danger_weight` then
+    does nothing for that entry, since section 1's design only applies it
+    to threat-signed channels."""
+    from mario.entities.kinds import EntityKind
+    merged = load_profiles(project_root=PROJECTS_ROOT / project_name)
+    kind_profile = merged.get(EntityKind[kind_name])
+    odours = [
+        {"channel": o.channel, "sign": sign if i == odour_index else o.sign, "hunger_gated": o.hunger_gated,
+         "intensity": o.intensity}
+        for i, o in enumerate(kind_profile.odours)
+    ]
+    override = load_override_raw(project_name)
+    kind_override = dict(override.get(kind_name, {}))
+    kind_override["odours"] = odours
+    override[kind_name] = kind_override
+    save_override_raw(project_name, override)
+
+
 def load_merged(project_name: str) -> EntityProfiles:
     return load_profiles(project_root=PROJECTS_ROOT / project_name)

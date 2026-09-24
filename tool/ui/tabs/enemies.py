@@ -16,7 +16,9 @@ from PySide6.QtWidgets import (
 )
 
 from mario.entities.kinds import EntityKind
-from tool.core.entity_profiles_store import load_merged, set_kind_field, set_kind_odour_intensity
+from tool.core.entity_profiles_store import (
+    load_merged, set_kind_field, set_kind_odour_intensity, set_kind_odour_sign,
+)
 
 # (EntityKind, display name) -- the kinds this tab edits; a live channel
 # in bridge/perception.py's profiled_odor/profiled_enemy_thetas (SPEC
@@ -48,6 +50,7 @@ class EnemiesTab(QWidget):
 
         profiles = load_merged(window.project.name)
         self._kind_boxes = []
+        self._valence_checks: dict[EntityKind, QCheckBox] = {}
         for kind, label in LIVE_KINDS:
             box = self._kind_box(kind, label, profiles)
             box.setEnabled(settings.entity_profile.enabled)
@@ -69,6 +72,26 @@ class EnemiesTab(QWidget):
             intensity_spin.valueChanged.connect(
                 lambda value, k=kind: self._on_intensity_changed(k, value))
             form.addRow(f"Odour intensity ({profile.odours[0].channel})", intensity_spin)
+
+            # tool/SPEC_ui_retro.md section 4: valence flip. Checked =
+            # sign > 0 (attractive, routes into profiled_odor's food sum);
+            # unchecked = sign < 0 (aversive, threat sum). A flipped kind's
+            # danger_weight control above then does nothing for it (SPEC
+            # section 1 only applies danger_weight to threat-signed
+            # channels) -- said in the tooltip so it doesn't look like a bug.
+            valence_check = QCheckBox("Smells good (attractive)")
+            valence_check.setChecked(profile.odours[0].sign > 0)
+            valence_check.setToolTip(
+                "Off: smells bad -- routes into the threat sum, scaled by "
+                "danger weight below. On: smells good -- routes into the "
+                "food sum instead, and danger weight then does nothing "
+                "for this kind. This is a science change when actually "
+                "used (CLAUDE.md rule 3) -- give it its own recorded run."
+            )
+            valence_check.toggled.connect(
+                lambda checked, k=kind: self._on_sign_changed(k, checked))
+            form.addRow("Valence", valence_check)
+            self._valence_checks[kind] = valence_check
 
         looming_spin = QDoubleSpinBox()
         looming_spin.setRange(0.0, 10.0)
@@ -107,3 +130,6 @@ class EnemiesTab(QWidget):
 
     def _on_intensity_changed(self, kind: EntityKind, value: float) -> None:
         set_kind_odour_intensity(self._window.project.name, kind.name, 0, value)
+
+    def _on_sign_changed(self, kind: EntityKind, checked: bool) -> None:
+        set_kind_odour_sign(self._window.project.name, kind.name, 0, 1 if checked else -1)

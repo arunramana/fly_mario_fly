@@ -14,7 +14,7 @@ import pytest
 
 import run_steering
 from bridge.entity_profiles import EntityProfiles, KindProfile, OdourChannel, load as load_profiles
-from bridge.perception import profiled_enemy_thetas
+from bridge.perception import profiled_enemy_thetas, profiled_odor
 from mario.entities.kinds import EntityKind
 from mario.entities.record import EntityRecord
 
@@ -119,6 +119,62 @@ def test_modified_danger_weight_changes_telemetry(tmp_path):
     assert not tel_default["avers_r"].equals(tel_modified["avers_r"]), (
         "boosting GOOMBA's danger_weight produced identical aversive-odour "
         "telemetry -- the profile isn't reaching the threat-odour pathway"
+    )
+
+
+def test_flipped_goomba_sign_moves_signal_from_threat_to_food():
+    """tool/SPEC_ui_retro.md section 4, the valence flip: GOOMBA's sign
+    flipped from -1 to +1 must move its concentration OUT of the threat
+    sum and INTO the food sum, not just change "something". Calls
+    profiled_odor directly (not a full run_steering.main() episode): this
+    is a closed-loop policy, so a flip that changes GOOMBA's avoid
+    behaviour on frame 1 changes every action after it, and comparing
+    whole telemetry columns end to end would be testing the butterfly
+    effect, not the routing this fix actually changes."""
+    default_profiles = load_profiles(project_root=None)
+    goomba = default_profiles.get(EntityKind.GOOMBA)
+    assert goomba.odours[0].sign == -1  # this test only means something if the default really is aversive
+
+    flipped_goomba = KindProfile(
+        odours=(OdourChannel(goomba.odours[0].channel, sign=1,
+                              hunger_gated=goomba.odours[0].hunger_gated,
+                              intensity=goomba.odours[0].intensity),),
+        looming_salience=goomba.looming_salience, danger_weight=goomba.danger_weight,
+        is_food=goomba.is_food, body_scale=goomba.body_scale,
+    )
+    flipped_profiles = EntityProfiles(by_kind={**default_profiles.by_kind, EntityKind.GOOMBA: flipped_goomba})
+
+    # A synthetic, all-empty tile buffer (mario at abs column 0) so
+    # profiled_odor's tile-sourced ("?" block) sums are exactly zero and
+    # every non-zero contribution below is attributable to the one
+    # registry-sourced GOOMBA record.
+    fake_ram = np.zeros(0x06A0, dtype=np.uint8)
+    registry = _FakeRegistry([
+        EntityRecord(kind=EntityKind.GOOMBA, x=20, y=None, width=16,
+                     height=None, active=True, traits=frozenset()),
+    ])
+
+    food_gated, food_ungated, threat = profiled_odor(
+        fake_ram, mario_x=16, registry=registry, profiles=default_profiles)
+    food_gated_flipped, food_ungated_flipped, threat_flipped = profiled_odor(
+        fake_ram, mario_x=16, registry=registry, profiles=flipped_profiles)
+
+    assert threat["R"] > 0.0, "the default (aversive) profile produced no threat contribution to test against"
+    assert threat_flipped["R"] == 0.0, (
+        "flipping GOOMBA's sign to +1 still left a threat-side contribution "
+        "-- profiled_odor is not routing purely by sign"
+    )
+    assert food_gated["R"] == food_gated_flipped["R"] == 0.0  # GOOMBA's own entry is hunger_gated=False either way
+    assert food_ungated["R"] == 0.0, "the default (aversive) profile should contribute nothing to food"
+    assert food_ungated_flipped["R"] > 0.0, (
+        "flipping GOOMBA's sign to +1 produced no food-side contribution "
+        "-- the signal didn't move anywhere, it just vanished"
+    )
+    assert food_ungated_flipped["R"] == pytest.approx(threat["R"] / goomba.danger_weight), (
+        "the flipped contribution should be the same raw concentration "
+        "(intensity/distance) as the un-flipped threat one, just with "
+        "danger_weight no longer applied (SPEC section 1.2/1.3: "
+        "danger_weight has no meaning for a food-signed channel)"
     )
 
 
