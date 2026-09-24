@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import multiprocessing as mp
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import QEvent, Qt, QTimer
 from PySide6.QtGui import QCloseEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
-    QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton,
+    QApplication, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton,
     QTabWidget, QVBoxLayout, QWidget,
 )
 
@@ -106,11 +106,33 @@ class MainWindow(QMainWindow):
         # manager would.
         for shortcut, slot in (
             (QKeySequence(Qt.Key.Key_Space), self.play),
-            (QKeySequence(Qt.Key.Key_Escape), self.cancel),
             (QKeySequence.StandardKey.Save, self.save),
         ):
             sc = QShortcut(shortcut, self, activated=slot)
             sc.setContext(Qt.ShortcutContext.ApplicationShortcut)
+
+        # Escape does NOT go through QShortcut (found in real desktop
+        # testing, not offscreen -- a QShortcut, Application-scoped or
+        # not, is delivered through the same notify()/ShortcutOverride
+        # pipeline a focused widget gets first refusal on; many widgets
+        # -- a spin box mid-edit among them -- claim Escape for their own
+        # "revert" behaviour and never let it reach the shortcut map at
+        # all). An event filter on the QApplication itself gets every
+        # key event before ANY widget's own keyPressEvent, so nothing
+        # downstream ever gets a chance to swallow it first.
+        QApplication.instance().installEventFilter(self)
+
+    def eventFilter(self, obj, event) -> bool:
+        # Only claims Escape while a run is actually active -- otherwise a
+        # legitimate, ordinary use of Escape elsewhere (a spin box
+        # reverting an in-progress edit, a combo box closing its popup)
+        # would be silently swallowed for no reason. Cancelling a run in
+        # progress is the one case Escape must win unconditionally.
+        if (event.type() == QEvent.Type.KeyPress and event.key() == Qt.Key.Key_Escape
+                and self._process is not None and self._process.is_alive()):
+            self.cancel()
+            return True
+        return super().eventFilter(obj, event)
 
     # ---- project state accessors (tabs read/write through these) --------
 
