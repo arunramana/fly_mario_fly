@@ -78,19 +78,25 @@ def mushroom_odor(ram, mario_x, registry=DEFAULT_REGISTRY):
     return odor
 
 
-def question_block_odor(ram):
+def question_block_odor(ram, entity_width_px: int = 16):
     """SPEC_odour.md section 1: a second odour source at every `?` block
     tile_ram finds (0xC0 coin, 0xC1 power-up -- not distinguished, same as
     the mushroom not distinguishing power-up subtype). tile_ram.
     question_blocks_near returns signed TILE-COLUMN offsets relative to
-    Mario, not pixels -- convert (*16) before applying the same
-    concentration formula and gain as the mushroom, so one gain constant
-    covers both. Horizontal-only: it can pull Mario under a block, nothing
-    more. Hitting it is left to the climb reflex, whose solid_ahead check
-    excludes question tiles (they float overhead)."""
+    Mario, not pixels -- convert (*entity_width_px) before applying the
+    same concentration formula and gain as the mushroom, so one gain
+    constant covers both. Horizontal-only: it can pull Mario under a
+    block, nothing more. Hitting it is left to the climb reflex, whose
+    solid_ahead check excludes question tiles (they float overhead).
+
+    `entity_width_px=16` is a reference default matching
+    `config.entity.entity_width_px`'s own default (docs/CODE_AUDIT.md's
+    "do not merge" section: this used to be a second, independent `16`
+    literal under a different name; real callers with a config pass it
+    explicitly, same pattern as fly/network/dynamics.py's ALPHA/CLIP)."""
     odor = {"L": 0.0, "R": 0.0}
     for offset_tiles in tile_ram.question_blocks_near(ram):
-        d = offset_tiles * 16
+        d = offset_tiles * entity_width_px
         conc = 1.0 / max(abs(d), 1)
         side = "R" if d >= 0 else "L"
         odor[side] += conc

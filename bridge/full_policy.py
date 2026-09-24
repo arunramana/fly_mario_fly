@@ -260,13 +260,20 @@ class FullPolicy:
                           else W_mb_full[np.ix_(self.mb_mbon_idx, self.mb_kc_idx)].copy())
         self.mb_pam_reach = W_mb_full[np.ix_(self.mb_mbon_idx, mb_pam_idx)].sum(axis=1)
         self.mb_punish_reach = W_mb_full[np.ix_(self.mb_mbon_idx, mb_punish_idx)].sum(axis=1)
-        _mb_rng = np.random.default_rng(0)
-        N_MB_SENSORY = 7
-        self.mb_proj = np.zeros((self.n_kc, N_MB_SENSORY))
+        # N_MB_SENSORY/features-per-KC/the projection seed are "Advanced"
+        # config/params.py fields (docs/CODE_AUDIT.md section H) -- an
+        # architecture dimension and a seed the golden depends on
+        # bit-for-bit, not a gain; golden-safe because their defaults (7,
+        # 3, 0) are exactly what was hardcoded here before.
+        _mb_rng = np.random.default_rng(c.mushroom_body.kc_projection_seed)
+        n_mb_sensory = c.mushroom_body.n_mb_sensory
+        self.mb_proj = np.zeros((self.n_kc, n_mb_sensory))
         for _i in range(self.n_kc):
-            _feats = _mb_rng.choice(N_MB_SENSORY, size=3, replace=False)
+            _feats = _mb_rng.choice(n_mb_sensory, size=c.mushroom_body.kc_features_per_cell,
+                                     replace=False)
             self.mb_proj[_i, _feats] = 1.0
-        self.MBON_DNA02_FRAC = {"L": 0.00379, "R": 0.00632}
+        self.MBON_DNA02_FRAC = {"L": c.mushroom_body.mbon_dna02_frac_l,
+                                 "R": c.mushroom_body.mbon_dna02_frac_r}
         self.substeps = c.network.substeps
         self.registry = KindRegistry(entity_width_px=c.entity.entity_width_px)
 
@@ -347,7 +354,7 @@ class FullPolicy:
         }
         stomp = False
         for i, last_x in self._prev_enemy_slots.items():
-            if i not in now_active_enemy_slots and abs(last_x - mario_x) < 20:
+            if i not in now_active_enemy_slots and abs(last_x - mario_x) < c.interaction.stomp_distance_px:
                 stomp = True
         if stomp:
             self.n_stomps += 1
@@ -368,7 +375,7 @@ class FullPolicy:
         for _side in ("L", "R"):
             if d_out[_side] is not None:
                 self.d_history[_side].append(d_out[_side])
-                if len(self.d_history[_side]) > 10:
+                if len(self.d_history[_side]) > c.interaction.closing_speed_history_frames:
                     self.d_history[_side].pop(0)
             else:
                 self.d_history[_side].clear()
@@ -396,7 +403,7 @@ class FullPolicy:
             It = np.zeros(self.Kt)
             It[self.takeoff_dnp01_mask] = hj[self.jump_dnp01_mask]
             h_takeoff = self.takeoff_network.step(It, noise=self.noise)
-        self.takeoff_network.flush_denormals()
+        self.takeoff_network.flush_denormals(c.network.denormal_flush_threshold)
         ttmn_val = max(hj[self.j_msk["TTMn_L"]].mean(), hj[self.j_msk["TTMn_R"]].mean())
         dlmn_val = h_takeoff[self.dlmn_mask].mean()
 
@@ -408,14 +415,14 @@ class FullPolicy:
         Idp[self.dnp02_idx] += self.mb_bias_dnp02
         for _ in range(self.substeps):
             h_dnp02 = self.dnp02_network.step(Idp, noise=self.noise)
-        self.dnp02_network.flush_denormals()
+        self.dnp02_network.flush_denormals(c.network.denormal_flush_threshold)
         ttmn_val_dnp02 = max(h_dnp02[self.dnp02_ttmn_l].mean(), h_dnp02[self.dnp02_ttmn_r].mean())
 
         # ---- steering: home bias + odour (mushroom + ?-blocks), WTA ---
         hunger = hunger_multiplier(ram, override=self.hunger_override)
         if self.entity_profiles is None:
             mush = mushroom_odor(ram, mario_x, registry=self.registry)
-            qblock = question_block_odor(ram)
+            qblock = question_block_odor(ram, entity_width_px=c.entity.entity_width_px)
             food_raw = {"R": mush["R"] + qblock["R"], "L": mush["L"] + qblock["L"]}
             avers_raw = goomba_odor(ram, mario_x, registry=self.registry)
             odor_gain_eff = c.odour.odour_gain * hunger
@@ -453,7 +460,7 @@ class FullPolicy:
         mbon_drive = self.W_kc_mbon @ kc_active
         self.h_mbon = ((1.0 - c.network.alpha) * self.h_mbon
                        + c.network.alpha * dynamics.phi(mbon_drive, clip=c.network.clip))
-        self.h_mbon[self.h_mbon < 1e-30] = 0.0
+        self.h_mbon[self.h_mbon < c.network.denormal_flush_threshold] = 0.0
 
         mario_x_abs = int(ram[ADDR_MARIO_PAGE]) * 256 + mario_x
         progress = 0.0 if self.prev_mario_x_abs is None else max(0, mario_x_abs - self.prev_mario_x_abs)
@@ -485,7 +492,7 @@ class FullPolicy:
         Is[self.dna02_all & self.l_mask] += mb_bias_l
         for _ in range(self.substeps):
             h_steer = self.steering_network.step(Is, noise=self.noise)
-        self.steering_network.flush_denormals()
+        self.steering_network.flush_denormals(c.network.denormal_flush_threshold)
 
         r_team = h_steer[self.r_mask].mean()
         l_team = h_steer[self.l_mask].mean()
@@ -494,7 +501,7 @@ class FullPolicy:
         elif l_team > r_team:
             self.direction = "L"
 
-        avoid_odor = bool(self.direction == "L" and avers_r_eff > 1e-6
+        avoid_odor = bool(self.direction == "L" and avers_r_eff > c.odour.avers_presence_gate
                            and avers_r_eff >= odor_l_eff and not refusing)
         if avoid_odor and not self._prev_avoid_odor:
             self.n_odor_avoids += 1
@@ -594,7 +601,7 @@ class FullPolicy:
             Im[self.mdn_mask] = c.mdn.mdn_drive if self.hab_escape.hab_level >= self.hab_escape.give_up else 0.0
             for _ in range(self.substeps):
                 h_mdn = self.mdn_network.step(Im, noise=self.noise)
-            self.mdn_network.flush_denormals()
+            self.mdn_network.flush_denormals(c.network.denormal_flush_threshold)
             mdn_val = h_mdn[self.mdn_mask].mean()
             if mdn_val >= c.mdn.mdn_threshold:
                 self.mdn_backup_hold = self.mdn_backup_frames
@@ -633,7 +640,7 @@ class FullPolicy:
                                     - (c.speed.walk_suppression if busy else 0.0) - odor_brake)
         for _ in range(self.substeps):
             h_speed = self.speed_network.step(Ip, noise=self.noise)
-        self.speed_network.flush_denormals()
+        self.speed_network.flush_denormals(c.network.denormal_flush_threshold)
         dnp09_val = h_speed[self.dnp09_mask].mean()
         press_b = dnp09_val >= c.speed.dnp09_speed_threshold
         self.mb_prev_dnp09 = dnp09_val

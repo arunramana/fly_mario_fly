@@ -43,28 +43,39 @@ Each of these lookalikes differs in one load-bearing way:
 `mario/ram/tile_ram.py` still defines `ADDR_MARIO_X` / `ADDR_MARIO_PAGE`
 alongside `mario/ram/addresses.py` (same values).
 
-## H — hard-coded values not among the 49
+## H — hard-coded values not among the 49 (RESOLVED, see git history)
 
-Live (or demo-only) literals absent from `docs/SCALARS.md`. **Note only**:
-extracting one risks a silent golden mismatch if a value is "corrected"
-on the way.
+All ten promoted into `config/params.py` (the codebase: commit that did
+this promotion), each with identical defaults, the golden gate green
+throughout, `docs/SCALARS.md` regenerated. The literal locations below
+are retained as a record of what moved where, not as open items:
 
-| Location | Value | Role |
+| Location | Value | New home |
 |---|---|---|
-| `FullPolicy.__init__` | `MBON_DNA02_FRAC` L `0.00379`, R `0.00632` | MBON bias onto DNa02 / DNp02 every frame |
-| `FullPolicy.__init__` | `N_MB_SENSORY = 7`, 3 features per KC, RNG seed `0` | Kenyon-cell projection (the seed is part of the golden) |
-| `FullPolicy.act` | stomp if `abs(last_x - mario_x) < 20` | 20px, not one tile (16px) — do not "fix" to 16 |
-| `FullPolicy.act` | distance history capped at `10` | closing-speed estimate |
-| `FullPolicy.act` / `Network.flush_denormals` | `1e-30` | denormal flush (the jump circuit skips it) |
-| `FullPolicy.act` | `avers_r_eff > 1e-6` | aversive-odour presence gate |
-| `wide_gap_target_col` | `lead_tiles=10` | synthetic-gap demo only |
-| `poke_wide_gap` | `REFUSAL_GAP_TILES + 2` | the `+2` is a second constant |
-| `question_block_odor` | `offset_tiles * 16` | metatile width |
-| `run_steering.MAX_FRAMES` / `ScenarioParams.max_frames` | both `1200` | two homes; scenario params are outside the 49 |
+| `FullPolicy.__init__` | `MBON_DNA02_FRAC` L `0.00379`, R `0.00632` | `mushroom_body.mbon_dna02_frac_l` / `_r` |
+| `FullPolicy.__init__` | `N_MB_SENSORY = 7`, 3 features per KC, RNG seed `0` | `mushroom_body.n_mb_sensory` / `.kc_features_per_cell` / `.kc_projection_seed` — all three marked `advanced=True` in their own field metadata (an architecture dimension and a seed the golden depends on bit-for-bit, not a gain like the rest of `config/params.py`) |
+| `FullPolicy.act` | stomp if `abs(last_x - mario_x) < 20` | `interaction.stomp_distance_px` (new `InteractionParams` group — not one circuit's own gain). Still deliberately not 16 (`entity_width_px`) — the field's own provenance restates the audit's warning |
+| `FullPolicy.act` | distance history capped at `10` | `interaction.closing_speed_history_frames` |
+| `FullPolicy.act` / `Network.flush_denormals` | `1e-30` | `network.denormal_flush_threshold` — `Network.flush_denormals` keeps its own hardcoded default for callers with no config (`scripts/denormal_probe.py`), kept in sync by `tests/test_params_match_live.py`, same pattern as `dynamics.ALPHA`/`CLIP` |
+| `FullPolicy.act` | `avers_r_eff > 1e-6` | `odour.avers_presence_gate` |
+| `wide_gap_target_col` | `lead_tiles=10` | `demo.wide_gap_lead_tiles` — exercised by `tests/test_golden.py::test_017_reprise` via `inject_gap_frame`, so this one is NOT purely demo-only the way `mushroom_offset` is (checked directly while promoting it) |
+| `poke_wide_gap` | `REFUSAL_GAP_TILES + 2` | `terrain.refusal_gap_margin_tiles` (the `+2` itself) |
+| `question_block_odor` | `offset_tiles * 16` | reads `entity.entity_width_px` directly — not a new field, a de-duplication (this file's own "Do not merge" section already flagged the same pattern for `W_TILE`/`ENTITY_WIDTH_PX`) |
+| `run_steering.MAX_FRAMES` / `ScenarioParams.max_frames` | both `1200` | `run_steering.MAX_FRAMES` deleted; `main()`'s own `max_frames` default now reads `ScenarioParams().max_frames` directly — one home, not two kept equal by hand |
 
-Outside the 49 by category: `N_THRESHOLD = 60` / `load_jump(N=60)` define
-subgraph membership; `FitnessWeights` defaults; `AdaptiveHybridState`'s
-`alpha_a` / `beta` (diagnostic only).
+A real bug surfaced while promoting these:
+`config.project_config._from_dict` (and `tool.core.tool_settings._from_dict`,
+same pattern) passed an explicit `None` for any field name absent from a
+saved JSON, instead of leaving it out of `kwargs` so the dataclass's own
+default applies — harmless while every field had always existed, but a
+`TypeError` two layers down the moment a new field (e.g.
+`mushroom_body.n_mb_sensory`) was added and an older `config.json`
+without it was loaded. Fixed in the same commit; both functions now skip
+absent keys entirely rather than defaulting them to `None`.
+
+Outside the 49 (and outside this promotion) by category: `N_THRESHOLD =
+60` / `load_jump(N=60)` define subgraph membership; `FitnessWeights`
+defaults; `AdaptiveHybridState`'s `alpha_a` / `beta` (diagnostic only).
 
 ## D — scripts out of step with the current layout
 
@@ -80,7 +91,11 @@ Diagnostic scripts only; nothing on the golden path. **Note only.**
 ## Out of scope for cleanup
 
 - Split `FullPolicy`, or migrate `run_steering.main()` onto `Episode`.
-- Move the H values into `config/params.py`.
+- ~~Move the H values into `config/params.py`~~ — **done** (section H
+  above): promoted under the exact discipline this line was warning
+  against skipping (identical defaults, golden gate green throughout),
+  not by ignoring the warning. Struck, not deleted, so the reasoning
+  for why it was originally flagged stays on record.
 - Unify the circuit builders or odour helpers.
 - Touch `fly/network/dynamics.py`, `Integrator`, plasticity, RAM maps, or
   anything under `projects/`.

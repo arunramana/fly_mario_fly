@@ -49,6 +49,7 @@ from config.params import (
     Dnp02Params, MdnParams, MushroomBodyParams, OdourParams, SpeedParams,
     SteeringParams, TakeoffParams, TerrainParams, DemoParams,
 )
+from config.project_config import ScenarioParams
 
 from render.video import _ensure_ffmpeg_on_path
 from config.logging_setup import ensure_logging, setup_logging
@@ -155,8 +156,9 @@ REFUSAL_GAP_TILES = TerrainParams().refusal_gap_tiles
 # 8-way action space: {left,right} x {A on/off} x {B on/off}
 # (mario/actions/actions.py).
 
-MAX_FRAMES = 1200
 MUSHROOM_OFFSET = DemoParams().mushroom_offset  # spawn BEHIND Mario so it competes with HOME_BIAS's rightward pull
+WIDE_GAP_LEAD_TILES = DemoParams().wide_gap_lead_tiles
+REFUSAL_GAP_MARGIN_TILES = TerrainParams().refusal_gap_margin_tiles
 
 
 def find_inactive_slot(ram):
@@ -187,7 +189,7 @@ def inject_mushroom(ram, mario_x, mario_y, offset=None):
     return True
 
 
-def wide_gap_target_col(ram, mario_x, lead_tiles=10) -> int:
+def wide_gap_target_col(ram, mario_x, lead_tiles=WIDE_GAP_LEAD_TILES) -> int:
     """Pick the FIXED absolute tile-column the synthetic gap will live at,
     once, at the moment of injection -- `lead_tiles` ahead of Mario's
     column at that instant. Callers must hold onto this value and pass it
@@ -198,7 +200,7 @@ def wide_gap_target_col(ram, mario_x, lead_tiles=10) -> int:
     return col0 + lead_tiles
 
 
-def poke_wide_gap(ram, target_col: int, width_tiles=REFUSAL_GAP_TILES + 2):
+def poke_wide_gap(ram, target_col: int, width_tiles=REFUSAL_GAP_TILES + REFUSAL_GAP_MARGIN_TILES):
     """A synthetic wide pit for the refusal demo: 1-1's real pits are only
     2 tiles, well under REFUSAL_GAP_TILES. Pokes the collision-tile buffer
     that tile_ram.py decodes. Must be called every frame at the same
@@ -211,7 +213,7 @@ def poke_wide_gap(ram, target_col: int, width_tiles=REFUSAL_GAP_TILES + 2):
         ram[buf_addr + tile_ram.GROUND_ROW * 16 + (col % 16)] = tile_ram.EMPTY_ID
 
 
-def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
+def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
          force_mario_size=None, force_size_from_frame=None, record_video=True,
          inject_frame=None, frame_skip=1, savestate=None, mb_weights=None,
          mushroom_offset=None, inject_gap_frame=None, write_telemetry=True,
@@ -405,10 +407,11 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
 
             if inject_gap_frame is not None and frame >= inject_gap_frame:
                 if gap_target_col is None:
-                    gap_target_col = wide_gap_target_col(ram, mario_x)
+                    gap_target_col = wide_gap_target_col(ram, mario_x, lead_tiles=_pc.demo.wide_gap_lead_tiles)
                     log.debug(f"  frame {frame}: sprint-016 synthetic wide gap poked at "
                               f"abs_col={gap_target_col} (mario_x={mario_x})")
-                poke_wide_gap(ram, gap_target_col)
+                poke_wide_gap(ram, gap_target_col,
+                              width_tiles=_pc.terrain.refusal_gap_tiles + _pc.terrain.refusal_gap_margin_tiles)
 
             # ---- decision: FullPolicy.act(); read back what telemetry needs -
             action = policy.act(SimpleNamespace(ram=ram))

@@ -13,13 +13,17 @@ behaviour.
 """
 from __future__ import annotations
 
+import inspect
+
 import run_mario
 import run_steering
 import bridge.perception as perception
 import fly.network.dynamics as dynamics
+import fly.network.network as network
 import fly.sensing.retinotopy as retinotopy
 import fly.state.reflex_habituation as reflex_habituation
 import mario.entities.registry as registry
+from config.project_config import ScenarioParams
 from config.params import (
     Dnp02Params, JumpParams, MdnParams, MushroomBodyParams, NetworkParams,
     OdourParams, SpeedParams, SteeringParams, TakeoffParams, TerrainParams,
@@ -112,10 +116,30 @@ def test_odour_params_match_live():
 
 def test_terrain_params_match_run_steering():
     assert TerrainParams().refusal_gap_tiles == run_steering.REFUSAL_GAP_TILES
+    assert TerrainParams().refusal_gap_margin_tiles == run_steering.REFUSAL_GAP_MARGIN_TILES
 
 
 def test_demo_params_match_run_steering():
     assert DemoParams().mushroom_offset == run_steering.MUSHROOM_OFFSET
+    assert DemoParams().wide_gap_lead_tiles == run_steering.WIDE_GAP_LEAD_TILES
+
+
+def test_scenario_params_match_run_steering_main_default():
+    """docs/CODE_AUDIT.md section H: run_steering.MAX_FRAMES and
+    ScenarioParams.max_frames used to be two independent `1200` literals
+    -- main()'s own default now reads ScenarioParams() directly, so
+    there is exactly one home, not two kept equal by hand."""
+    default = inspect.signature(run_steering.main).parameters["max_frames"].default
+    assert default == ScenarioParams().max_frames
+
+
+def test_network_params_denormal_threshold_matches_flush_denormals_default():
+    """fly/network/network.py's Network.flush_denormals keeps its own
+    hardcoded default (like dynamics.ALPHA/CLIP) for callers with no
+    config in hand (scripts/denormal_probe.py) -- FullPolicy's own call
+    sites pass config.network.denormal_flush_threshold explicitly."""
+    default = inspect.signature(network.Network.flush_denormals).parameters["threshold"].default
+    assert default == NetworkParams().denormal_flush_threshold
 
 
 def test_entity_params_match_registry_py():

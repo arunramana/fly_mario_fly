@@ -56,9 +56,13 @@ def _footer(total: int) -> str:
     return f"""
 ## Totals
 
-**{total} hand-set scalars.** Three (`RetinotopyParams`) are dormant and one
-(`DemoParams.mushroom_offset`) only matters in the opt-in injection demo;
-the other {total - 4} are live in every default run.
+**{total} hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
+more (`DemoParams.mushroom_offset`, `DemoParams.wide_gap_lead_tiles`,
+`TerrainParams.refusal_gap_margin_tiles`) only matter in an opt-in
+injection demo -- the first is untested by any golden, the other two are
+exercised by `tests/test_golden.py::test_017_reprise`'s own
+`inject_gap_frame`, so "opt-in" here means "off by default", not
+"untested". The other {total - 6} are live in every default run.
 
 A range of `unknown` means genuinely unknown, not left blank: an invented
 bound would be scaffolding that looks like data. Only `JumpParams.g` and
@@ -71,6 +75,12 @@ weight matrix `W`; every scalar here sits outside it, as a gain on it, a
 threshold on its output, or a mechanical hold with no neural meaning.
 "Measured" means simulated against the real `W` and picked by a sweep, or
 matched to a published biological timescale.
+
+Three fields are marked `advanced` in their own metadata (not shown in
+the table above, checked via `field.metadata["advanced"]`):
+`MushroomBodyParams.n_mb_sensory`, `.kc_features_per_cell`,
+`.kc_projection_seed` -- an architecture dimension and a seed the golden
+depends on bit-for-bit, not a gain like the rest of this table.
 """
 
 

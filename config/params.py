@@ -26,9 +26,14 @@ from dataclasses import dataclass, field, fields
 Range = tuple[float, float] | None
 
 
-def _f(default, range: Range, provenance: str, home: str):
+def _f(default, range: Range, provenance: str, home: str, advanced: bool = False):
+    """`advanced=True`: not a circuit gain in the usual sense (an
+    architecture dimension or a seed the golden depends on bit-for-bit,
+    docs/CODE_AUDIT.md section H) -- tracked and reproducible the same as
+    every other field, but flagged so a future UI can put it in its own
+    section instead of alongside `jump.g`."""
     return field(default=default, metadata={
-        "range": range, "provenance": provenance, "home": home,
+        "range": range, "provenance": provenance, "home": home, "advanced": advanced,
     })
 
 
@@ -43,6 +48,15 @@ class NetworkParams:
                       "fly/network/dynamics.py (CLIP)")
     substeps: int = _f(10, None, "measured (spec-level, sprint 1: 60fps frame = 16.7ms, ~1.67ms/substep)",
                         "fly/network/dynamics.py (SUBSTEPS)")
+    denormal_flush_threshold: float = _f(1e-30, None,
+                                           "invented (docs/CODE_AUDIT.md section H: numerical hygiene -- "
+                                           "anything below this is flushed to exactly 0.0 so subnormal "
+                                           "floats don't slow the matvec; not a claim about a real "
+                                           "biological floor. The jump circuit deliberately does NOT call "
+                                           "flush_denormals -- CLAUDE.md's own GPU section: fixing that "
+                                           "re-baselines every golden and needs its own dedicated sprint)",
+                                           "fly/network/network.py (Network.flush_denormals's own default) "
+                                           "and bridge/full_policy.py's h_mbon inline flush")
 
 
 @dataclass(frozen=True)
@@ -197,6 +211,37 @@ class MushroomBodyParams:
                                 "invented (checked against a hand-computed dW on a real KC->MBON "
                                 "weight: one full punishment depresses an eligible synapse by 5%)",
                                 "run_steering.py (LEARNING_RATE)")
+    mbon_dna02_frac_l: float = _f(0.00379, None,
+                                    "measured (docs/RUNS.md run 014: a raw synapse-COUNT fraction "
+                                    "computed against the real mushroom-body connectome, not a sweep "
+                                    "or a published timescale -- the closest existing provenance "
+                                    "bucket, not a perfect fit; run 020 found the shipped code applied "
+                                    "it unsigned/excitatory when the MBON's real dominant partners are "
+                                    "GABAergic, fixed in run 021; 014's own finding that this bias is "
+                                    "~4,000x too small to matter still stands)",
+                                    "bridge/full_policy.py (MBON_DNA02_FRAC['L'])")
+    mbon_dna02_frac_r: float = _f(0.00632, None,
+                                    "measured (docs/RUNS.md run 014, same derivation and caveats as "
+                                    "mbon_dna02_frac_l)",
+                                    "bridge/full_policy.py (MBON_DNA02_FRAC['R'])")
+    n_mb_sensory: int = _f(7, None,
+                             "invented (docs/CODE_AUDIT.md section H: the KC projection's input "
+                             "vector dimensionality -- theta_L, theta_R, odor_l_eff, odor_r_eff, "
+                             "gap_w, mb_prev_dnp09, hungry; changing this changes the shape of "
+                             "mb_proj, not just a gain)",
+                             "bridge/full_policy.py (N_MB_SENSORY)", advanced=True)
+    kc_features_per_cell: int = _f(3, None,
+                                     "invented (docs/CODE_AUDIT.md section H: how many of the "
+                                     "n_mb_sensory features each Kenyon cell samples -- an "
+                                     "architecture choice, matched loosely to the real fly's KC "
+                                     "claw count, not measured against this connectome)",
+                                     "bridge/full_policy.py (np.random.choice(N_MB_SENSORY, size=3))",
+                                     advanced=True)
+    kc_projection_seed: int = _f(0, None,
+                                   "invented (docs/CODE_AUDIT.md section H: fixes WHICH random KC "
+                                   "projection is built once at __init__ -- \"the seed is part of "
+                                   "the golden\", not a value to change casually)",
+                                   "bridge/full_policy.py (np.random.default_rng(0))", advanced=True)
 
 
 # ---- fly/state/ habituation ----------------------------------------------
@@ -236,6 +281,11 @@ class OdourParams:
                               "measured (~1.5s time constant at 60fps, the real ORN adaptation "
                               "timescale asked for)",
                               "fly/sensing/olfactory_adaptation.py (ALPHA_ADAPT)")
+    avers_presence_gate: float = _f(1e-6, None,
+                                      "invented (docs/CODE_AUDIT.md section H: a numerical "
+                                      "near-zero floor for \"is there any aversive odour at all\", "
+                                      "not a claim about a real detection threshold)",
+                                      "bridge/full_policy.py (avers_r_eff > 1e-6)")
 
 
 # ---- terrain / refusal ---------------------------------------------------
@@ -248,6 +298,36 @@ class TerrainParams:
                                   "008/011's 8-tile failure -- \"refuse anything not already shown "
                                   "to work\", not a circuit gain)",
                                   "run_steering.py (REFUSAL_GAP_TILES)")
+    refusal_gap_margin_tiles: int = _f(2, None,
+                                         "invented (docs/CODE_AUDIT.md section H: the synthetic wide-"
+                                         "gap demo's own poke is refusal_gap_tiles PLUS this margin, so "
+                                         "it's unambiguously wider than the refusal threshold it's "
+                                         "testing, not a circuit gain -- exercised by "
+                                         "tests/test_golden.py::test_017_reprise via inject_gap_frame)",
+                                         "run_steering.py (poke_wide_gap's width_tiles default)")
+
+
+# ---- game-event detection (stomp, closing speed) -- not one circuit's own -
+
+@dataclass(frozen=True)
+class InteractionParams:
+    """FullPolicy.act's own game-mechanic detection, not any one circuit's
+    gain (docs/CODE_AUDIT.md section H)."""
+    stomp_distance_px: int = _f(20, None,
+                                  "invented (docs/CODE_AUDIT.md section H: a stomp is inferred as "
+                                  "\"an enemy slot went inactive within this many px of Mario's own "
+                                  "position\" -- 20px, deliberately NOT one tile (16px, "
+                                  "entity_width_px) -- do not \"fix\" this to match that; the audit "
+                                  "explicitly flags them as different numbers for a reason no longer "
+                                  "documented beyond \"not the same value\")",
+                                  "bridge/full_policy.py (FullPolicy.act, "
+                                  "abs(last_x - mario_x) < 20)")
+    closing_speed_history_frames: int = _f(10, None,
+                                             "invented (docs/CODE_AUDIT.md section H: how many recent "
+                                             "frames of distance-to-threat history the closing-speed "
+                                             "estimate keeps)",
+                                             "bridge/full_policy.py (FullPolicy.act, "
+                                             "d_history capped at 10)")
 
 
 # ---- mario/entities/ -----------------------------------------------------
@@ -290,17 +370,25 @@ class RetinotopyParams:
 @dataclass(frozen=True)
 class DemoParams:
     """mushroom_offset only matters when a caller opts in with
-    inject_frame=; no golden run does."""
+    inject_frame=; no golden run does. wide_gap_lead_tiles matters
+    whenever inject_gap_frame is set -- test_017_reprise does."""
     mushroom_offset: int = _f(-40, None,
                                 "invented (spawn position for the synthetic mushroom-injection "
                                 "demo, behind Mario so it competes with HOME_BIAS's rightward pull)",
                                 "run_steering.py (MUSHROOM_OFFSET)")
+    wide_gap_lead_tiles: int = _f(10, None,
+                                    "invented (docs/CODE_AUDIT.md section H: how many tiles ahead "
+                                    "of Mario the synthetic wide-gap demo places its fixed gap column "
+                                    "-- exercised by tests/test_golden.py::test_017_reprise via "
+                                    "inject_gap_frame, not purely a demo-only value the way "
+                                    "mushroom_offset is)",
+                                    "run_steering.py (wide_gap_target_col's lead_tiles default)")
 
 
 ALL_PARAM_CLASSES = (
     NetworkParams, NoiseParams, JumpParams, Dnp02Params, TakeoffParams, SpeedParams,
     SteeringParams, MdnParams, MushroomBodyParams, HabituationParams, OdourParams,
-    TerrainParams, EntityParams, RetinotopyParams, DemoParams,
+    TerrainParams, InteractionParams, EntityParams, RetinotopyParams, DemoParams,
 )
 
 

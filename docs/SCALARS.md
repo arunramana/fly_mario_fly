@@ -17,6 +17,7 @@ disagree.
 | `alpha` | `0.3` | unknown | measured (spec-level, sprint 1: leak time constant ~= 1/alpha substeps) | `fly/network/dynamics.py (ALPHA)` |
 | `clip` | `50.0` | unknown | invented (spec-level, sprint 1: arbitrary firing-rate ceiling) | `fly/network/dynamics.py (CLIP)` |
 | `substeps` | `10` | unknown | measured (spec-level, sprint 1: 60fps frame = 16.7ms, ~1.67ms/substep) | `fly/network/dynamics.py (SUBSTEPS)` |
+| `denormal_flush_threshold` | `1e-30` | unknown | invented (docs/CODE_AUDIT.md section H: numerical hygiene -- anything below this is flushed to exactly 0.0 so subnormal floats don't slow the matvec; not a claim about a real biological floor. The jump circuit deliberately does NOT call flush_denormals -- CLAUDE.md's own GPU section: fixing that re-baselines every golden and needs its own dedicated sprint) | `fly/network/network.py (Network.flush_denormals's own default) and bridge/full_policy.py's h_mbon inline flush` |
 
 ## NoiseParams
 
@@ -91,6 +92,11 @@ disagree.
 | `kc_sparsity` | `0.05` | unknown | measured (matches the real fly's ~5% concurrently-active KC fraction, enforced structurally via top-k rather than simulating the real APL feedback-inhibition neuron) | `run_steering.py (KC_SPARSITY)` |
 | `trace_decay` | `60.0` | 60.0-120.0 | measured (docs/TRACE_BIOLOGY.md, Handler et al. 2019, Cell: KC->MBON synaptic-tag plasticity is significant at ISIs of -1.2s/0s/+0.5s, a ~1-2s window, and negligible by 6s -- 60 frames = 1s at 60Hz sits at that window's near edge, and the range is the window itself, 60-120 frames) | `run_steering.py (TRACE_DECAY)` |
 | `learning_rate` | `0.001` | unknown | invented (checked against a hand-computed dW on a real KC->MBON weight: one full punishment depresses an eligible synapse by 5%) | `run_steering.py (LEARNING_RATE)` |
+| `mbon_dna02_frac_l` | `0.00379` | unknown | measured (docs/RUNS.md run 014: a raw synapse-COUNT fraction computed against the real mushroom-body connectome, not a sweep or a published timescale -- the closest existing provenance bucket, not a perfect fit; run 020 found the shipped code applied it unsigned/excitatory when the MBON's real dominant partners are GABAergic, fixed in run 021; 014's own finding that this bias is ~4,000x too small to matter still stands) | `bridge/full_policy.py (MBON_DNA02_FRAC['L'])` |
+| `mbon_dna02_frac_r` | `0.00632` | unknown | measured (docs/RUNS.md run 014, same derivation and caveats as mbon_dna02_frac_l) | `bridge/full_policy.py (MBON_DNA02_FRAC['R'])` |
+| `n_mb_sensory` | `7` | unknown | invented (docs/CODE_AUDIT.md section H: the KC projection's input vector dimensionality -- theta_L, theta_R, odor_l_eff, odor_r_eff, gap_w, mb_prev_dnp09, hungry; changing this changes the shape of mb_proj, not just a gain) | `bridge/full_policy.py (N_MB_SENSORY)` |
+| `kc_features_per_cell` | `3` | unknown | invented (docs/CODE_AUDIT.md section H: how many of the n_mb_sensory features each Kenyon cell samples -- an architecture choice, matched loosely to the real fly's KC claw count, not measured against this connectome) | `bridge/full_policy.py (np.random.choice(N_MB_SENSORY, size=3))` |
+| `kc_projection_seed` | `0` | unknown | invented (docs/CODE_AUDIT.md section H: fixes WHICH random KC projection is built once at __init__ -- "the seed is part of the golden", not a value to change casually) | `bridge/full_policy.py (np.random.default_rng(0))` |
 
 ## HabituationParams
 
@@ -107,12 +113,21 @@ disagree.
 | `hunger_mult_hungry` | `3.0` | unknown | measured (scripts/tune_odour.py sweep: smallest value that still flips the WTA at d=40px) | `bridge/perception.py (HUNGER_MULT_HUNGRY)` |
 | `hunger_mult_sated` | `1.0` | unknown | invented (unboosted baseline, not zeroed) | `bridge/perception.py (HUNGER_MULT_SATED)` |
 | `alpha_adapt` | `0.011111111111111112` | unknown | measured (~1.5s time constant at 60fps, the real ORN adaptation timescale asked for) | `fly/sensing/olfactory_adaptation.py (ALPHA_ADAPT)` |
+| `avers_presence_gate` | `1e-06` | unknown | invented (docs/CODE_AUDIT.md section H: a numerical near-zero floor for "is there any aversive odour at all", not a claim about a real detection threshold) | `bridge/full_policy.py (avers_r_eff > 1e-6)` |
 
 ## TerrainParams
 
 | field | value | range | provenance | home |
 |---|---|---|---|---|
 | `refusal_gap_tiles` | `5` | unknown | invented (mechanical body-scaled threshold, derived from prior calibration boundaries: 007's clean 0-4-tile GAP_GAIN sweep and 008/011's 8-tile failure -- "refuse anything not already shown to work", not a circuit gain) | `run_steering.py (REFUSAL_GAP_TILES)` |
+| `refusal_gap_margin_tiles` | `2` | unknown | invented (docs/CODE_AUDIT.md section H: the synthetic wide-gap demo's own poke is refusal_gap_tiles PLUS this margin, so it's unambiguously wider than the refusal threshold it's testing, not a circuit gain -- exercised by tests/test_golden.py::test_017_reprise via inject_gap_frame) | `run_steering.py (poke_wide_gap's width_tiles default)` |
+
+## InteractionParams
+
+| field | value | range | provenance | home |
+|---|---|---|---|---|
+| `stomp_distance_px` | `20` | unknown | invented (docs/CODE_AUDIT.md section H: a stomp is inferred as "an enemy slot went inactive within this many px of Mario's own position" -- 20px, deliberately NOT one tile (16px, entity_width_px) -- do not "fix" this to match that; the audit explicitly flags them as different numbers for a reason no longer documented beyond "not the same value") | `bridge/full_policy.py (FullPolicy.act, abs(last_x - mario_x) < 20)` |
+| `closing_speed_history_frames` | `10` | unknown | invented (docs/CODE_AUDIT.md section H: how many recent frames of distance-to-threat history the closing-speed estimate keeps) | `bridge/full_policy.py (FullPolicy.act, d_history capped at 10)` |
 
 ## EntityParams
 
@@ -133,22 +148,33 @@ disagree.
 | field | value | range | provenance | home |
 |---|---|---|---|---|
 | `mushroom_offset` | `-40` | unknown | invented (spawn position for the synthetic mushroom-injection demo, behind Mario so it competes with HOME_BIAS's rightward pull) | `run_steering.py (MUSHROOM_OFFSET)` |
+| `wide_gap_lead_tiles` | `10` | unknown | invented (docs/CODE_AUDIT.md section H: how many tiles ahead of Mario the synthetic wide-gap demo places its fixed gap column -- exercised by tests/test_golden.py::test_017_reprise via inject_gap_frame, not purely a demo-only value the way mushroom_offset is) | `run_steering.py (wide_gap_target_col's lead_tiles default)` |
 
 
 ## Totals
 
-**49 hand-set scalars.** Three (`RetinotopyParams`) are dormant and one
-(`DemoParams.mushroom_offset`) only matters in the opt-in injection demo;
-the other 45 are live in every default run.
+**60 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
+more (`DemoParams.mushroom_offset`, `DemoParams.wide_gap_lead_tiles`,
+`TerrainParams.refusal_gap_margin_tiles`) only matter in an opt-in
+injection demo -- the first is untested by any golden, the other two are
+exercised by `tests/test_golden.py::test_017_reprise`'s own
+`inject_gap_frame`, so "opt-in" here means "off by default", not
+"untested". The other 54 are live in every default run.
 
 A range of `unknown` means genuinely unknown, not left blank: an invented
 bound would be scaffolding that looks like data. Only `JumpParams.g` and
 `NoiseParams.sigma` have a characterised range.
 
-By category (the first word of each provenance): **29 invented**, **20 measured**, **0 connectome-derived** (of 49).
+By category (the first word of each provenance): **38 invented**, **22 measured**, **0 connectome-derived** (of 60).
 
 None are connectome-derived. The connectome determines each circuit's
 weight matrix `W`; every scalar here sits outside it, as a gain on it, a
 threshold on its output, or a mechanical hold with no neural meaning.
 "Measured" means simulated against the real `W` and picked by a sweep, or
 matched to a published biological timescale.
+
+Three fields are marked `advanced` in their own metadata (not shown in
+the table above, checked via `field.metadata["advanced"]`):
+`MushroomBodyParams.n_mb_sensory`, `.kc_features_per_cell`,
+`.kc_projection_seed` -- an architecture dimension and a seed the golden
+depends on bit-for-bit, not a gain like the rest of this table.

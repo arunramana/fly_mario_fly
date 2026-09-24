@@ -107,12 +107,21 @@ class ToolSettings:
 def _from_dict(cls, data: dict):
     """Same pattern as config.project_config's own _from_dict: needs
     get_type_hints, not field.type, because `from __future__ import
-    annotations` stringifies every annotation."""
+    annotations` stringifies every annotation.
+
+    A field name ABSENT from `data` is left out of `kwargs` entirely, so
+    the dataclass's own default applies (same real bug config.
+    project_config._from_dict had: an older saved tool.json missing e.g.
+    `entity_profile` used to pass an explicit `None`, overriding
+    `EntityProfileSettings`'s own default instead of forward-compatibly
+    falling back to it)."""
     hints = get_type_hints(cls)
     kwargs = {}
     for f in fields(cls):
+        if f.name not in data:
+            continue
         field_type = hints[f.name]
-        raw = data.get(f.name)
+        raw = data[f.name]
         if is_dataclass(field_type) and isinstance(raw, dict):
             kwargs[f.name] = _from_dict(field_type, raw)
         elif f.name == "seeds" and raw is not None:

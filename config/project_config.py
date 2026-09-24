@@ -22,9 +22,10 @@ from pathlib import Path
 from typing import get_type_hints
 
 from config.params import (
-    Dnp02Params, DemoParams, EntityParams, HabituationParams, JumpParams,
-    MdnParams, MushroomBodyParams, NetworkParams, NoiseParams, OdourParams,
-    RetinotopyParams, SpeedParams, SteeringParams, TakeoffParams, TerrainParams,
+    Dnp02Params, DemoParams, EntityParams, HabituationParams, InteractionParams,
+    JumpParams, MdnParams, MushroomBodyParams, NetworkParams, NoiseParams,
+    OdourParams, RetinotopyParams, SpeedParams, SteeringParams, TakeoffParams,
+    TerrainParams,
 )
 
 
@@ -60,6 +61,7 @@ class ProjectConfig:
     habituation: HabituationParams = field(default_factory=HabituationParams)
     odour: OdourParams = field(default_factory=OdourParams)
     terrain: TerrainParams = field(default_factory=TerrainParams)
+    interaction: InteractionParams = field(default_factory=InteractionParams)
     entity: EntityParams = field(default_factory=EntityParams)
     retinotopy: RetinotopyParams = field(default_factory=RetinotopyParams)
     demo: DemoParams = field(default_factory=DemoParams)
@@ -82,12 +84,22 @@ class ProjectConfig:
 def _from_dict(cls, data: dict):
     """Inverse of `dataclasses.asdict()` for nested frozen dataclasses.
     Uses `get_type_hints` because `from __future__ import annotations`
-    makes `field.type` a string, which `is_dataclass()` never matches."""
+    makes `field.type` a string, which `is_dataclass()` never matches.
+
+    A field name ABSENT from `data` is left out of `kwargs` entirely, so
+    the dataclass's own default applies -- found as a real bug while
+    adding new config/params.py fields: `data.get(f.name)` used to pass
+    an explicit `None` for any key an OLDER saved config.json doesn't
+    have, overriding the field's real default (a `TypeError` two layers
+    down, e.g. `MushroomBodyParams(n_mb_sensory=None)`) instead of
+    forward-compatibly falling back to it."""
     hints = get_type_hints(cls)
     kwargs = {}
     for f in fields(cls):
+        if f.name not in data:
+            continue
         field_type = hints[f.name]
-        raw = data.get(f.name)
+        raw = data[f.name]
         if is_dataclass(field_type) and isinstance(raw, dict):
             kwargs[f.name] = _from_dict(field_type, raw)
         else:
