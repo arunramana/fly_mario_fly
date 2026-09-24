@@ -64,3 +64,37 @@ different story. A follow-up sweeping several shuffle seeds, not just
 one, would separate "shuffled connectomes generically respond
 differently to gains" from "this particular rewiring happened to break
 one pathway."
+
+---
+
+## 029, follow-up -- sweeping 8 shuffled networks instead of 1
+
+**Setup.** Same design as the section above, but `{real, shuffled shuffle_seed=1..8} x {default, modified profile}`, still 8 run seeds per cell, level 1-1, 600 frames, sigma=0.05, same modified profile (GOOMBA danger_weight=2.0, intensity=1.4). Answers the question the first section's finding raised: was `shuffle_seed=1`'s non-engaging jump circuit a one-off draw, or the common case? No new videos -- the original two already show what a viewer can see. Full per-network stats in `029_c8a_validation_sweep.json`.
+
+**"Never engages" defined.** Under the default profile, zero escape-jump spikes across all 8 run seeds for that network (the same signature `shuffle_seed=1` showed originally: 0% survival, 0 spikes, 0 variance).
+
+**What happened.**
+
+**7/8 shuffled networks never engaged their jump circuit under the default profile (fraction=0.88) by the strict "any spike at all" criterion -- and the 8th (`shuffle_seed=6`) is a boundary case, not a real counterexample** (see below).
+
+| shuffle_seed | escape-jump spikes (mean/8 seeds) | default survival | default fitness | modified fitness | (modified-default) gap |
+|---|---|---|---|---|---|
+| 1 | 0.0 | 0% | 285.0 | 660.5 | 375.5 |
+| 2 | 0.0 | 0% | 285.0 | 285.0 | 0.0 |
+| 3 | 0.0 | 0% | 285.0 | 285.0 | 0.0 |
+| 4 | 0.0 | 0% | 285.0 | 285.0 | 0.0 |
+| 5 | 0.0 | 0% | 285.0 | 285.0 | 0.0 |
+| 6 | 0.125 (1 spike, 1 of 8 seeds) | 0% | 285.0 | 285.0 | 0.0 |
+| 7 | 0.0 | 0% | 285.0 | 598.6 | 313.6 |
+| 8 | 0.0 | 0% | 285.0 | 285.0 | 0.0 |
+
+**The more striking result is in that table, not just the fraction: every one of the 8 shuffled networks -- regardless of which specific rewiring -- dies at the exact same x=285 under the default profile, at 0% survival.** This is not "one bad rewiring" (the original 029 section's `shuffle_seed=1` finding); it looks like the general case for shuffled connectomes at this level/frame-count/sigma setting. `shuffle_seed=6`'s single incidental spike (1 of 64 run-seed-frames' worth of episodes) doesn't change its outcome at all -- same 0% survival, same x=285, same zero profile effect as the networks with literally zero spikes -- so calling it "engaged" by a strict >0 threshold overstates what actually happened; functionally, all 8 tested networks show no working escape response under the default profile.
+
+Profile effect (modified - default fitness), as requested:
+
+- real: -357.0 (within-network seed std: default=238.6, modified=59.4)
+- "engaging" shuffled networks by the strict criterion (1/8, `shuffle_seed=6` only): mean=0.0, std-across-networks=0.0 (undefined with n=1 -- **not a meaningful comparison group**, see below)
+
+**What we learned.** The requested real-vs-engaging-shuffled comparison isn't answerable from this sample the way it was posed: with a strict "any spike" criterion exactly one network qualifies, and that one network (`shuffle_seed=6`) is a boundary case whose single spike didn't change its outcome in any way -- it behaves identically to the zero-spike networks. There is no shuffled network in this sample of 8 with a real, functioning escape response to compare against the real connectome's own effect.
+
+That absence is itself the finding, and a bigger one than "engaging vs. non-engaging spread": **a working jump/escape circuit looks like the exception for a shuffled connectome here, not the rule** -- 8/8 sampled networks fail identically (same death point, same 0% survival) regardless of the specific random rewiring, which is a stronger and cleaner result than the original section's single-seed finding suggested (that finding undersold it by leaving open the possibility `shuffle_seed=1` was just an unlucky draw). Second, among these non-functioning networks, the profile boost's rescue-via-steering effect (SPEC section 1's separate odour pathway, no jump circuit needed) is itself inconsistent: 2 of 8 networks (`shuffle_seed=1`, `shuffle_seed=7`) are substantially rescued (+375.5, +313.6 fitness), the other 6 are not moved at all (gap=0.0). So even the "does the odour-only rescue work" question doesn't have a uniform answer across shuffled rewirings -- it depends on the specific network, same as everything else about the shuffled condition in this validation. A real follow-up here isn't sweeping more shuffle seeds (this sample already shows the pattern clearly) -- it's asking why the jump circuit fails so consistently across random rewirings when the same level/encounter is entirely survivable by the real connectome, which is a question about the jump circuit's sensitivity to its specific wiring, not about C8a's own per-kind gains.
