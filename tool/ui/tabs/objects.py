@@ -1,37 +1,31 @@
-"""tool/ui/tabs/objects.py -- tab 3: per-kind odour intensity for
-POWERUP/QUESTION_BLOCK (C8a, tool/PLAN.md P6,
-docs/SPEC_entity_perception.md). GROUND/USED_BLOCK/SOLID_OTHER/PIT are
-shown greyed: PIT has no live call site in FullPolicy.act()'s decision
-loop yet (bridge/profiles/default.json's own note), and the terrain
-kinds have no odours and unread looming/danger fields (SPEC section 6) --
-editing them would be a control that lies (ground rule 4). Shares the
-same "Enable per-kind entity profiles" toggle as tab 2 (enemies.py);
-flipping it in either tab reloads both so they never show mismatched
-checkbox state.
+"""tool/ui/tabs/objects.py -- tab 3: picture cards for POWERUP/
+QUESTION_BLOCK plus greyed GROUND/USED_BLOCK/SOLID_OTHER/PIT (C8a,
+tool/PLAN.md P6, docs/SPEC_entity_perception.md; tool/SPEC_ui_retro.md
+sections 7/10 -- card grid, entity registry). Greyed cards' detail panel
+states WHY, not just that it's disabled (tool/core/entity_registry.py's
+own reasons, derived alongside "live"). Shares the same "Enable per-kind
+entity profiles" toggle as tab 2 (enemies.py); flipping it in either tab
+reloads both so they never show mismatched checkbox state.
 """
 
 from __future__ import annotations
 
 import dataclasses
 
-from PySide6.QtWidgets import (
-    QCheckBox, QDoubleSpinBox, QFormLayout, QGroupBox, QLabel, QVBoxLayout, QWidget,
-)
+from PySide6.QtWidgets import QCheckBox, QVBoxLayout, QWidget
 
 from mario.entities.kinds import EntityKind
 from tool.core.entity_profiles_store import load_merged, set_kind_odour_intensity, set_kind_odour_sign
+from tool.core.entity_registry import all_entity_entries
+from tool.ui.widgets.entity_cards import EntityCardGrid
 
-LIVE_KINDS = [
-    (EntityKind.POWERUP, "Power-up (mushroom/flower/star/1-up)"),
-    (EntityKind.QUESTION_BLOCK, "`?` block"),
-]
-
-GREYED_KINDS = [
-    (EntityKind.GROUND, "Ground -- no odours, looming/danger unread"),
-    (EntityKind.USED_BLOCK, "Used block -- no odours, looming/danger unread"),
-    (EntityKind.SOLID_OTHER, "Bricks/pipes/other solid -- no odours, looming/danger unread"),
-    (EntityKind.PIT, "Pit -- not yet a call site in the decision loop"),
-]
+# Same small, stable tab-membership split as enemies.py's own
+# ENEMIES_TAB_KINDS -- live/greyed status itself is derived, this list
+# just says which kinds appear on THIS tab.
+OBJECTS_TAB_KINDS = (
+    EntityKind.POWERUP, EntityKind.QUESTION_BLOCK,
+    EntityKind.GROUND, EntityKind.USED_BLOCK, EntityKind.SOLID_OTHER, EntityKind.PIT,
+)
 
 
 class ObjectsTab(QWidget):
@@ -48,61 +42,30 @@ class ObjectsTab(QWidget):
         layout.addWidget(self.enable_checkbox)
 
         profiles = load_merged(window.project.name)
-        self._kind_boxes = []
-        self._valence_checks: dict[EntityKind, QCheckBox] = {}
-        for kind, label in LIVE_KINDS:
-            box = self._kind_box(kind, label, profiles)
-            box.setEnabled(settings.entity_profile.enabled)
-            self._kind_boxes.append(box)
-            layout.addWidget(box)
+        entries_by_kind = {e.kind: e for e in all_entity_entries()}
+        entries = [entries_by_kind[k] for k in OBJECTS_TAB_KINDS]
 
-        for kind, reason in GREYED_KINDS:
-            box = QGroupBox(kind.name.replace("_", " ").title())
-            box_layout = QVBoxLayout(box)
-            note = QLabel(reason)
-            note.setWordWrap(True)
-            note.setEnabled(False)
-            box_layout.addWidget(note)
-            box.setEnabled(False)
-            layout.addWidget(box)
+        # No on_field_changed handler needed: every kind on this tab is
+        # is_food=True (or greyed), so EntityCardGrid never renders a
+        # looming/danger control here at all (see its own is_food gate).
+        self._grid = EntityCardGrid(
+            entries, profiles, settings.entity_profile.enabled,
+            self._on_intensity_changed, self._on_sign_changed, lambda *_: None,
+        )
+        layout.addWidget(self._grid)
+        # Backward-compatible aliases (tool/tests/test_entity_profiles_tab.py):
+        # LIVE detail pages only, matching the pre-card-grid shape (the
+        # old GREYED_KINDS boxes were never in this list either).
+        self._kind_boxes = [self._grid._kind_boxes[e.kind] for e in entries if e.live]
+        self._valence_checks = self._grid._valence_checks
 
         layout.addStretch(1)
-
-    def _kind_box(self, kind: EntityKind, label: str, profiles) -> QGroupBox:
-        profile = profiles.get(kind)
-        box = QGroupBox(label)
-        form = QFormLayout(box)
-        intensity_spin = QDoubleSpinBox()
-        intensity_spin.setRange(0.0, 10.0)
-        intensity_spin.setSingleStep(0.1)
-        intensity_spin.setValue(profile.odours[0].intensity)
-        intensity_spin.valueChanged.connect(
-            lambda value, k=kind: self._on_intensity_changed(k, value))
-        form.addRow(f"Odour intensity ({profile.odours[0].channel})", intensity_spin)
-
-        # tool/SPEC_ui_retro.md section 4 -- same valence flip as
-        # enemies.py. POWERUP/QUESTION_BLOCK default to sign=+1
-        # (attractive) already; unchecking makes them aversive instead.
-        valence_check = QCheckBox("Smells good (attractive)")
-        valence_check.setChecked(profile.odours[0].sign > 0)
-        valence_check.setToolTip(
-            "Off: smells bad -- routes into the threat sum. On (default "
-            "for this kind): smells good -- routes into the food sum. "
-            "This is a science change when actually used (CLAUDE.md "
-            "rule 3) -- give it its own recorded run."
-        )
-        valence_check.toggled.connect(
-            lambda checked, k=kind: self._on_sign_changed(k, checked))
-        form.addRow("Valence", valence_check)
-        self._valence_checks[kind] = valence_check
-        return box
 
     def _on_enable_toggled(self, checked: bool) -> None:
         settings = self._window.get_tool_settings()
         entity_profile = dataclasses.replace(settings.entity_profile, enabled=checked)
         self._window.set_tool_settings(dataclasses.replace(settings, entity_profile=entity_profile))
-        for box in self._kind_boxes:
-            box.setEnabled(checked)
+        self._grid.set_enabled(checked)
         self._window.reload_tab("enemies")
 
     def _on_intensity_changed(self, kind: EntityKind, value: float) -> None:

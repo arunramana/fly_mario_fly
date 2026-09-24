@@ -58,7 +58,13 @@ class MainWindow(QMainWindow):
         self.title_label = QLabel(self._title())
         save_button = QPushButton("Save")
         save_button.clicked.connect(self.save)
-        header_play_button = QPushButton("▶ Play")
+        # tool/SPEC_ui_retro.md section 5: restyled and relabelled
+        # "START" (the retro/arcade convention), not a new, separate
+        # screen -- the project gate is already this app's own "insert
+        # coin" step. objectName drives tool/ui/style.qss's
+        # #startButton rule.
+        header_play_button = QPushButton("START")
+        header_play_button.setObjectName("startButton")
         header_play_button.clicked.connect(self.play)
         header.addWidget(self.title_label)
         header.addStretch(1)
@@ -69,37 +75,29 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         outer.addWidget(self.tabs)
 
-        from tool.ui.tabs.character import CharacterTab
-        from tool.ui.tabs.enemies import EnemiesTab
-        from tool.ui.tabs.objects import ObjectsTab
-        from tool.ui.tabs.circuits import CircuitsTab
-        from tool.ui.tabs.goal import GoalTab
-        from tool.ui.tabs.settings import SettingsTab
-        from tool.ui.tabs.run import RunTab
+        # tool/SPEC_ui_retro.md section 10 (minimal scope): the seven tabs
+        # are built by iterating TAB_REGISTRY, not seven hardcoded
+        # addTab() calls -- adding a tab needs an entry there, not an
+        # edit here (tool/tests/test_tab_registry.py's own dummy-entry
+        # test proves it). self.character_tab/self.run_tab stay named
+        # attributes (other code reaches into them directly, e.g.
+        # on_player_changed -> self.run_tab.preview.set_player) --
+        # `attr_name` on the matching entries is how those two still get
+        # stashed, without a full self.tab(name) reach-through refactor.
+        from tool.core.tab_registry import TAB_REGISTRY
 
-        self.character_tab = CharacterTab(self)
-        self.run_tab = RunTab(self)
-        self.tabs.addTab(self.character_tab, "1 Character")
-        self.tabs.addTab(EnemiesTab(self), "2 Enemies")
-        self.tabs.addTab(ObjectsTab(self), "3 Objects")
-        self.tabs.addTab(CircuitsTab(self), "4 Circuits")
-        self.tabs.addTab(GoalTab(self), "5 Goal")
-        self.tabs.addTab(SettingsTab(self), "6 Settings")
-        self.tabs.addTab(self.run_tab, "7 Run")
-
-        # tab_key -> (tab index, class) for reload_tab (P7 presets; C8a's
-        # enemies/objects tabs also use this to keep their shared "enable
-        # entity profiles" checkbox in sync with each other): a preset
-        # load or a cross-tab setting change swaps in a freshly built tab
-        # widget rather than hand-writing a refresh() for every control.
-        self._tab_factories = {
-            "character": (0, CharacterTab),
-            "enemies": (1, EnemiesTab),
-            "objects": (2, ObjectsTab),
-            "circuits": (3, CircuitsTab),
-            "goal": (4, GoalTab),
-            "settings": (5, SettingsTab),
-        }
+        self._tab_factories = {}
+        for index, entry in enumerate(TAB_REGISTRY):
+            widget = entry.factory(self)
+            self.tabs.addTab(widget, entry.title)
+            if entry.attr_name:
+                setattr(self, entry.attr_name, widget)
+            # reload_tab() only ever rebuilds a tab OTHER than "run" today
+            # (P7 presets, C8a's enemies/objects sync) -- run.py has no
+            # reload path of its own, so it's left out of the factory map
+            # exactly as it was before this registry existed.
+            if entry.tab_id != "run":
+                self._tab_factories[entry.tab_id] = (index, entry.factory)
 
         self.run_tab.refresh_history(list_runs(self.project.name))
 

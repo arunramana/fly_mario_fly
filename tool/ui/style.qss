@@ -1,0 +1,118 @@
+/* tool/ui/style.qss -- tool/SPEC_ui_retro.md section 5: the retro/
+   video-game theme, loaded once (QApplication.setStyleSheet) at startup
+   (tool/ui/app.py) -- no per-widget inline styling scattered across tab
+   files. The six colour placeholders below (SKY_BLUE, MARIO_RED,
+   LUIGI_GREEN, BRICK_BROWN, BLACK, WHITE, each wrapped in a leading and
+   trailing "at" sign) are substituted from tool/ui/palette_colors.py's
+   own constants at load time, a plain string replace (QSS has no
+   variables) -- never hand-duplicated here as a literal hex code.
+
+   Press Start 2P (bundled, tool/assets/fonts/) is reserved for headers,
+   labels, buttons and tabs -- a pixel font at small sizes is often
+   illegible, and a 60-scalar form in it at a readable size would not fit
+   on screen. Spin/combo/line-edit fields keep a normal monospace font. */
+
+QWidget {
+    background-color: @SKY_BLUE@;
+    color: @BLACK@;
+    font-family: "Press Start 2P", sans-serif;
+    font-size: 10pt;
+}
+
+QDoubleSpinBox, QSpinBox, QComboBox, QLineEdit, QTextEdit {
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 11pt;
+    background-color: @WHITE@;
+    color: @BLACK@;
+    border: 2px solid @BLACK@;
+    padding: 2px;
+}
+
+QGroupBox {
+    border: 3px solid @BLACK@;
+    margin-top: 16px;
+    padding-top: 10px;
+    background-color: @SKY_BLUE@;
+    font-size: 9pt;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 8px;
+    padding: 2px 6px;
+    color: @WHITE@;
+    background-color: @BRICK_BROWN@;
+}
+
+QPushButton {
+    font-family: "Press Start 2P", sans-serif;
+    font-size: 9pt;
+    background-color: @BRICK_BROWN@;
+    color: @WHITE@;
+    border: 3px solid @BLACK@;
+    min-height: 32px;
+    padding: 8px 14px;
+}
+
+QPushButton:hover {
+    background-color: @MARIO_RED@;
+}
+
+QPushButton:checked {
+    background-color: @LUIGI_GREEN@;
+    border-color: @WHITE@;
+}
+
+QPushButton:disabled {
+    background-color: #888888;
+    color: #cccccc;
+    border-color: #555555;
+}
+
+/* The header's Play button, restyled and relabelled "START" (section 5's
+   own retro/arcade convention) -- not a new, separate screen. */
+QPushButton#startButton {
+    background-color: @MARIO_RED@;
+    font-size: 12pt;
+    min-height: 44px;
+    min-width: 120px;
+}
+
+QPushButton#startButton:hover {
+    background-color: @LUIGI_GREEN@;
+}
+
+QTabWidget::pane {
+    border: 3px solid @BLACK@;
+    background-color: @SKY_BLUE@;
+}
+
+QTabBar::tab {
+    font-family: "Press Start 2P", sans-serif;
+    background-color: @BRICK_BROWN@;
+    color: @WHITE@;
+    border: 2px solid @BLACK@;
+    padding: 8px 12px;
+    font-size: 8pt;
+}
+
+QTabBar::tab:selected {
+    background-color: @MARIO_RED@;
+}
+
+QProgressBar {
+    border: 2px solid @BLACK@;
+    background-color: @WHITE@;
+    text-align: center;
+    color: @BLACK@;
+}
+
+QProgressBar::chunk {
+    background-color: @LUIGI_GREEN@;
+}
+
+QCheckBox, QRadioButton {
+    font-family: "Press Start 2P", sans-serif;
+    font-size: 8pt;
+    spacing: 8px;
+}

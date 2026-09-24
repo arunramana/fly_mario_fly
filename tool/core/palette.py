@@ -29,15 +29,18 @@ from __future__ import annotations
 
 import numpy as np
 
+from config.params import EntityParams
+from tool.core.display_params import PaletteDisplayParams
+
 # All four in the NES's own 256x240 coordinate space (matching mario_x,
 # a raw RAM value) -- scaled to whatever `frame`'s actual resolution is
 # in to_luigi() below, since the live preview queues a 2x-shrunk frame
 # (tool/core/runner.py's run_one_streaming) but mario_x is never shrunk.
 NES_WIDTH_PX, NES_HEIGHT_PX = 256, 240
-MARIO_WIDTH_PX = 16     # mario.entities.registry.ENTITY_WIDTH_PX's own convention
-MARIO_X_MARGIN_PX = 8   # padding either side -- the sprite's own pixels aren't perfectly
-                         # aligned to mario_x as a left edge in every animation frame
-MARIO_Y_MIN, MARIO_Y_MAX = 140, 240  # ground level through a generous jump apex
+MARIO_WIDTH_PX = EntityParams().entity_width_px  # same 16px every enemy-slot entity assumes
+MARIO_X_MARGIN_PX = PaletteDisplayParams().mario_x_margin_px
+MARIO_Y_MIN = PaletteDisplayParams().mario_y_min_px
+MARIO_Y_MAX = NES_HEIGHT_PX  # the bottom of the screen -- a hardware fact, not a hand-set choice
 
 
 def to_luigi(frame: np.ndarray, mario_x: int | None = None) -> np.ndarray:

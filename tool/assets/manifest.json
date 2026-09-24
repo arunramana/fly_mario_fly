@@ -1,0 +1,10 @@
+{
+  "_comment": "tool/SPEC_ui_retro.md section 9: asset id -> path relative to tool/assets/. Circuit cards are NOT here -- their images are generated (render.brain_panel.highlight_populations, section 8), never user-supplied, so they never need a placeholder fallback. See tool/assets/README.md for what to actually supply.",
+  "mario_card": "characters/mario.png",
+  "luigi_card": "characters/luigi.png",
+  "goomba_card": "entities/goomba.png",
+  "koopa_card": "entities/koopa.png",
+  "enemy_card": "entities/enemy.png",
+  "powerup_card": "entities/powerup.png",
+  "question_block_card": "entities/question_block.png"
+}

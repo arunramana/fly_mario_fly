@@ -22,10 +22,17 @@ class ParamForm(QWidget):
 
     changed = Signal(object)
 
-    def __init__(self, config, parent=None):
+    def __init__(self, config, parent=None, groups: set[str] | None = None):
+        """`groups=None` (default): every scalar, the original scrollable
+        stack of everything ALL_PARAM_CLASSES tracks. `groups={"jump",
+        "dnp02"}`: only those groups' own fields -- tool/SPEC_ui_retro.md
+        section 8's per-circuit-card detail panel, reached through a card
+        instead of a scrollable stack of all of them at once."""
         super().__init__(parent)
         self._config = config
+        self._groups = groups
         self._widget_by_path: dict[str, QWidget] = {}
+        self._group_boxes: dict[str, QGroupBox] = {}
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -34,14 +41,16 @@ class ParamForm(QWidget):
         inner = QWidget()
         inner_layout = QVBoxLayout(inner)
 
-        groups: dict[str, list] = {}
+        by_group: dict[str, list] = {}
         for control in all_controls():
-            groups.setdefault(control.group, []).append(control)
+            if self._groups is not None and control.group not in self._groups:
+                continue
+            by_group.setdefault(control.group, []).append(control)
 
-        for group_name in sorted(groups):
+        for group_name in sorted(by_group):
             box = QGroupBox(group_name)
             form = QFormLayout(box)
-            for control in groups[group_name]:
+            for control in by_group[group_name]:
                 widget = self._build_widget(control)
                 label = QLabel(control.name)
                 label.setToolTip(
@@ -49,10 +58,22 @@ class ParamForm(QWidget):
                 )
                 form.addRow(label, widget)
             inner_layout.addWidget(box)
+            self._group_boxes[group_name] = box
 
         inner_layout.addStretch(1)
         scroll.setWidget(inner)
         outer.addWidget(scroll)
+
+    def show_only_groups(self, groups: set[str] | None) -> None:
+        """Runtime visibility toggle over one full, eagerly-built form --
+        tool/SPEC_ui_retro.md section 8: the Circuits tab keeps ONE
+        ParamForm (so `_widget_by_path` still covers every scalar, the
+        single writable home section 3 requires) and shows/hides each
+        group's own box depending on which card is selected, rather than
+        building a separate ParamForm per card. `groups=None` shows every
+        group -- the original scrollable stack."""
+        for group_name, box in self._group_boxes.items():
+            box.setVisible(groups is None or group_name in groups)
 
     def _build_widget(self, control) -> QWidget:
         if control.type is bool:

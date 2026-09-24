@@ -12,27 +12,30 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import QLabel, QProgressBar, QVBoxLayout, QWidget
 
+from config.params import JumpParams
+from tool.core.display_params import PreviewBarParams
 from tool.core.palette import apply as apply_palette
 
 # (telemetry key, display label, max value for the bar) -- a small, fixed
 # set of per-population activations that already exist as row values,
 # cheap because they're just floats the run already computed.
 #
-# Max values are per-population, not a uniform guess: measured against a
-# real 689-frame run (level 1-1, sigma=0, seed=0, 9 escape jumps) --
-# found in manual testing that a uniform 5.0 pinned TTMn at 100% the
-# instant it fired, since a jump's TTMn value is exactly SPIKE_AMP=50.0
-# (config.jump.spike_amp, "a spike is a full-scale event"), 10x the old
-# assumed ceiling. dna01/dna02 (observed max ~10.4) were also clipped,
-# just less severely.
+# Max values are per-population, not a uniform guess (tool/core/
+# display_params.py's own PreviewBarParams, tool/SCALARS_UI.md) -- found
+# in manual testing that a uniform 5.0 pinned TTMn at 100% the instant it
+# fired, since a jump's TTMn value is exactly SPIKE_AMP, "a spike is a
+# full-scale event", 10x the old assumed ceiling. dna01/dna02 (observed
+# max ~10.4) were also clipped, just less severely. TTMn's own max reads
+# config.jump.spike_amp directly rather than a duplicate display scalar.
+_bars = PreviewBarParams()
 _BARS = [
-    ("lc4", "LC4", 4.0),        # observed max ~3.36
-    ("lplc2", "LPLC2", 6.0),    # observed max ~5.49
-    ("ttmn", "TTMn", 50.0),     # SPIKE_AMP -- a jump spike is a full-scale event
-    ("dna01", "DNa01", 12.0),   # observed max ~10.4
-    ("dna02", "DNa02", 12.0),   # observed max ~10.4
-    ("dnp09", "DNp09", 1.0),    # observed max ~0.94, a bounded [0,1] output
-    ("mdn", "MDN", 12.0),       # same WTA-style circuit shape as dna01/dna02
+    ("lc4", "LC4", _bars.bar_max_lc4),
+    ("lplc2", "LPLC2", _bars.bar_max_lplc2),
+    ("ttmn", "TTMn", JumpParams().spike_amp),
+    ("dna01", "DNa01", _bars.bar_max_dna01),
+    ("dna02", "DNa02", _bars.bar_max_dna02),
+    ("dnp09", "DNp09", _bars.bar_max_dnp09),
+    ("mdn", "MDN", _bars.bar_max_mdn),
 ]
 
 

@@ -10,6 +10,14 @@ __pycache__/
 # Exception: tool/README.md's own screenshots are documentation, not a run's
 # re-renderable output -- these are the only PNGs meant to be committed.
 !tool/docs/screenshots/*.png
+# Exception: tool/SPEC_ui_retro.md section 9's card images -- the
+# placeholder ships with the feature (generated once, not per-run), and
+# user-supplied character/entity card images are real assets, not a run's
+# re-renderable output. tool/assets/generated/ (section 8's circuit brain-
+# maps) stays ignored -- those ARE regenerable from the connectome data.
+!tool/assets/placeholder.png
+!tool/assets/characters/*.png
+!tool/assets/entities/*.png
 *.parquet
 *.feather
 .pytest_cache/

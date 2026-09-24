@@ -45,6 +45,7 @@ One panel() call is ~5.1ms median against a 16.7ms real-time budget
 from __future__ import annotations
 
 import logging
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -82,11 +83,15 @@ SURFACE = (13, 13, 13)
 COL = {"LC4": (57, 135, 229), "LPLC2": (25, 158, 112),
        "DNp01": (217, 89, 38), "TTMn": (230, 103, 103),
        "DNa01": (168, 121, 224), "DNa02": (222, 178, 60),
-       "DNp09": (99, 200, 226), "DLMn": (240, 140, 200)}
+       "DNp09": (99, 200, 226), "DLMn": (240, 140, 200),
+       "MDN": (120, 200, 255), "KC": (200, 200, 90),
+       "MBON": (230, 150, 60), "DAN": (180, 90, 200)}
 LABEL = {"LC4": "LC4  looming", "LPLC2": "LPLC2  looming",
          "DNp01": "DNp01  Giant Fiber", "TTMn": "TTMn  jump muscle",
          "DNa01": "DNa01  steering", "DNa02": "DNa02  steering",
-         "DNp09": "DNp09  forward walking", "DLMn": "DLMn  wing downstroke"}
+         "DNp09": "DNp09  forward walking", "DLMn": "DLMn  wing downstroke",
+         "MDN": "MDN  backward walking", "KC": "KC  mushroom body input",
+         "MBON": "MBON  mushroom body output", "DAN": "DAN  dopamine (PAM/PPL/PPM)"}
 ORDER = ["LC4", "LPLC2", "DNp01", "TTMn"]
 # DNa01/DNa02/DNp09/DLMn are drawn only when the telemetry carries them
 # (run_steering.py). DLMn spans two connectome types; POP_TYPES maps the
@@ -94,6 +99,18 @@ ORDER = ["LC4", "LPLC2", "DNp01", "TTMn"]
 STEERING_ORDER = ["DNa01", "DNa02"]
 TERRAIN_ORDER = ["DNp09", "DLMn"]
 POP_TYPES = {"DLMn": ["DLMn c-f", "DLMn a, b"]}
+
+# tool/SPEC_ui_retro.md section 8's own stated gap: MDN and the mushroom
+# body's core populations had no soma-position entries here at all. MDN
+# selects by `type` like everything above; KC/MBON have many distinct
+# `type` values and are only cleanly identified by `class`
+# (fly/circuits/mushroom_body_circuit.py's own core_bodies() uses the
+# same class/type split); DAN is the union of PAM/PPL/PPM-prefixed types,
+# same regex as that file's DAN_TYPE_RE, not split into reward/punish
+# here since a circuit card's highlight just needs "these are the
+# mushroom body's neurons," not the reward/punish distinction.
+POP_CLASS = {"KC": "Kenyon_Cell", "MBON": "MBON"}
+DAN_TYPE_RE = re.compile(r"^(PAM|PPL|PPM)")
 
 _cache = {}
 
@@ -125,7 +142,7 @@ def _build():
     if not ANN.exists():
         sys.exit(f"Annotations not found at {ANN}")
 
-    df = feather.read_table(ANN, columns=["bodyId", "type", "somaLocation"]).to_pandas()
+    df = feather.read_table(ANN, columns=["bodyId", "type", "class", "somaLocation"]).to_pandas()
     df = df[df.somaLocation.notna()].copy()
     L = np.array([list(v) for v in df.somaLocation], dtype=float)
     px, pz = L[:, 0], L[:, 2]
@@ -144,11 +161,21 @@ def _build():
         bg[..., c] = np.maximum(np.clip(tone * base * 2.6, 0, base), SURFACE[c])
 
     _cache["bg"] = Image.fromarray(bg)
-    _cache["pop"] = {t: (U[df.type.isin(POP_TYPES.get(t, [t])).values],
-                         V[df.type.isin(POP_TYPES.get(t, [t])).values])
-                     for t in COL}
+    _cache["pop"] = {t: (U[_pop_mask(df, t).values], V[_pop_mask(df, t).values]) for t in COL}
     _cache["n"] = len(df)
     return _cache
+
+
+def _pop_mask(df, pop_name: str):
+    """One population's row mask -- `type` for most populations (isin, so
+    DLMn's two connectome types both count), `class` for KC/MBON (many
+    distinct `type` values each), a type-prefix regex for DAN (the union
+    of PAM/PPL/PPM)."""
+    if pop_name == "DAN":
+        return df.type.astype(str).str.match(DAN_TYPE_RE)
+    if pop_name in POP_CLASS:
+        return df["class"] == POP_CLASS[pop_name]
+    return df.type.isin(POP_TYPES.get(pop_name, [pop_name]))
 
 
 def _draw_brain(act: dict, norm: dict, pops: list) -> Image.Image:
@@ -170,6 +197,18 @@ def _draw_brain(act: dict, norm: dict, pops: list) -> Image.Image:
         for uu, vv in zip(u, v):
             d.ellipse([uu - rad, vv - rad, uu + rad, vv + rad], fill=(r, g, b, alpha))
     return im
+
+
+def highlight_populations(pops: list[str]) -> Image.Image:
+    """tool/SPEC_ui_retro.md section 8: a circuit card's static brain-map
+    image -- "highlight these populations at full brightness," not a
+    per-frame telemetry composite. Thin wrapper over `_draw_brain` with
+    every population clamped to its own maximum (act=norm=1.0 each), so
+    the whole point-cloud lights up regardless of what a real run's
+    activity happened to reach. Generate once per card, not per frame --
+    these are static images (cache the result, don't call this in a
+    render loop)."""
+    return _draw_brain({p: 1.0 for p in pops}, {p: 1.0 for p in pops}, pops)
 
 
 def _draw_strip(act: dict, norm: dict, pops: list, spike: bool, caption: str,

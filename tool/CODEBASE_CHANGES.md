@@ -248,3 +248,40 @@ differing from the RAM-driven default; `hunger_override=None` (explicit)
 == omitted; `force_mario_size=1, force_size_from_frame=0` holds
 `mario_size==1` the whole episode (proving the pre-existing mechanism
 already does what "starting power-up" needs, with no new code).
+
+## C11 — `render/brain_panel.py`: MDN and mushroom-body soma positions
+
+**What.** `render.brain_panel`'s soma-position cache only ever knew
+LC4/LPLC2/DNp01/TTMn/DNa01/DNa02/DNp09/DLMn (`COL`'s old eight keys).
+Added `MDN` (selected by `type`, same as everything else already there),
+`KC`/`MBON` (selected by `class` -- `Kenyon_Cell`/`MBON` respectively,
+since each has many distinct `type` values, exactly the split
+`fly/circuits/mushroom_body_circuit.py`'s own `core_bodies()` already
+uses), and `DAN` (the union of `PAM`/`PPL`/`PPM`-prefixed types, same
+regex as that file's `DAN_TYPE_RE`). `_build()` now also reads the
+annotations feather's `class` column, not just `type`/`somaLocation`.
+Also adds `highlight_populations(pops) -> PIL.Image`, a thin wrapper over
+the existing `_draw_brain` that clamps every named population to full
+brightness (`act=norm=1.0` each) -- a circuit card's static brain-map
+image, not a per-frame telemetry composite.
+
+**Why.** tool/SPEC_ui_retro.md section 8's own stated gap: the MDN and
+mushroom-body circuit cards had no real soma positions to draw at all --
+their brain-map images would have been blank silhouettes.
+
+**Default that keeps behaviour.** Every existing `COL` key's own
+selection logic is untouched; the four new keys are additive. No
+existing caller passes the new keys, so `render_run`'s own per-frame
+composite (used by every existing recorded run) is byte-for-byte
+unaffected.
+
+**Proof.** `tests/test_brain_panel_populations.py` (new): all four new
+populations resolve to a non-empty soma-position array (real coordinates
+from the connectome annotations, not placeholders); `MDN`'s count matches
+what `fly/circuits/mdn_circuit.py`'s own `CORE_TYPES` selection finds
+(4); `KC`/`MBON`/`DAN`'s counts are close to (within the expected
+somaLocation-coverage gap of) `fly/circuits/mushroom_body_circuit.py`'s
+own asserted `EXPECTED_KC`/`EXPECTED_MBON`/`EXPECTED_DAN`; `highlight_
+populations` renders without crashing for each of the six circuit cards'
+own population lists. Full golden gate (97/97) unaffected -- this module
+is never on the golden's own telemetry path.
