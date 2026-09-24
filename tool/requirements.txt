@@ -3,3 +3,4 @@
 # installing these, and tests/golden/ (3/3) stays byte-identical.
 PySide6==6.11.2
 pyqtgraph==0.14.0
+pytest-qt==4.5.0
