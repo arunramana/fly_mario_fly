@@ -217,7 +217,7 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
          mushroom_offset=None, inject_gap_frame=None, write_telemetry=True,
          retinotopic=False, sigma=0.0, seed=None, telemetry_path=None,
          event_proximal_dopamine=False, config=None, on_frame=None, should_stop=None,
-         shuffle_seed=None, hunger_override=None):
+         shuffle_seed=None, hunger_override=None, entity_profiles=None):
     """Run one episode of the full system and return (telemetry, info).
 
     out_mp4: required. Build it from a ProjectConfig with
@@ -280,7 +280,12 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
     hunger_override: None (default) reads hunger from Mario's real size, as
         always. True/False forces hungry/sated regardless of size -- a
         science change when actually used (CLAUDE.md rule 3), not just a
-        display choice."""
+        display choice.
+    entity_profiles: None (default) computes looming/odour exactly as
+        before this parameter existed (docs/SPEC_entity_perception.md,
+        C8a). A bridge.entity_profiles.EntityProfiles applies each kind's
+        intensity/looming_salience/danger_weight -- a science change when
+        it differs from bridge/profiles/default.json's shipped values."""
     if out_mp4 is None:
         raise ValueError(
             "main() needs an explicit out_mp4 -- there is no default any "
@@ -312,7 +317,8 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
     policy = FullPolicy(config=_pc, level=level, retinotopic=retinotopic,
                          frame_skip=frame_skip, mb_weights=mb_weights,
                          event_proximal_dopamine=event_proximal_dopamine,
-                         shuffle_seed=shuffle_seed, hunger_override=hunger_override)
+                         shuffle_seed=shuffle_seed, hunger_override=hunger_override,
+                         entity_profiles=entity_profiles)
     policy.reset(seed)
 
     # Live sub-objects and masks the telemetry row reads.

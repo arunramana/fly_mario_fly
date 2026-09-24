@@ -31,6 +31,7 @@ import numpy as np
 from bridge.perception import (
     enemy_thetas, mushroom_odor, question_block_odor, goomba_odor,
     hunger_multiplier, HUNGER_MULT_HUNGRY,
+    profiled_enemy_thetas, profiled_odor,
 )
 from bridge.motor import action_index
 from mario.entities.registry import KindRegistry
@@ -95,7 +96,7 @@ class FullPolicy:
     def __init__(self, config: ProjectConfig | None = None, level: str = "1-1",
                  retinotopic: bool = False, frame_skip: int = 1, mb_weights=None,
                  event_proximal_dopamine: bool = False, shuffle_seed: int | None = None,
-                 hunger_override: bool | None = None):
+                 hunger_override: bool | None = None, entity_profiles=None):
         """`hunger_override`: None (default) reads hunger from Mario's real
         size, as always. True/False forces hungry/sated regardless of size
         (tool/PLAN.md C7) -- a character-state control, science-change-when-
@@ -110,7 +111,16 @@ class FullPolicy:
         rewards any forward progress, every frame. True rewards only a `?`
         block hit or a stomp, each within the ~1-2s synaptic-tag window
         (docs/TRACE_BIOLOGY.md). Like `retinotopic`, a mode flag, not a
-        scalar, so it is not in config/params.py."""
+        scalar, so it is not in config/params.py.
+        `entity_profiles`: None (default) computes looming/odour exactly
+        as before this parameter existed -- `enemy_thetas`/`mushroom_odor`/
+        `question_block_odor`/`goomba_odor` unchanged, untouched code path
+        (docs/SPEC_entity_perception.md, C8a). A `bridge.entity_profiles.
+        EntityProfiles` switches to the profiled_* functions, applying each
+        kind's intensity/looming_salience/danger_weight -- a science change
+        when actually given a profile that differs from
+        bridge/profiles/default.json's own shipped values (CLAUDE.md
+        rule 3), byte-identical to the None path when it doesn't."""
         self.config = config or ProjectConfig()
         self.level = level
         self.retinotopic = retinotopic
@@ -118,6 +128,7 @@ class FullPolicy:
         self.event_proximal_dopamine = event_proximal_dopamine
         self.shuffle_seed = shuffle_seed
         self.hunger_override = hunger_override
+        self.entity_profiles = entity_profiles
         c = self.config
 
         self.jump_hold_frames = max(1, round(c.jump.jump_hold_frames / frame_skip))
@@ -348,7 +359,11 @@ class FullPolicy:
         self.prev_mario_size = mario_size
 
         # ---- escape jump + pit-triggered graded takeoff --------------
-        theta, dtheta, d_out = enemy_thetas(ram, mario_x, self.prev_theta, registry=self.registry)
+        if self.entity_profiles is None:
+            theta, dtheta, d_out = enemy_thetas(ram, mario_x, self.prev_theta, registry=self.registry)
+        else:
+            theta, dtheta, d_out = profiled_enemy_thetas(
+                ram, mario_x, self.prev_theta, registry=self.registry, profiles=self.entity_profiles)
         self.prev_theta = theta
         for _side in ("L", "R"):
             if d_out[_side] is not None:
@@ -397,17 +412,29 @@ class FullPolicy:
         ttmn_val_dnp02 = max(h_dnp02[self.dnp02_ttmn_l].mean(), h_dnp02[self.dnp02_ttmn_r].mean())
 
         # ---- steering: home bias + odour (mushroom + ?-blocks), WTA ---
-        mush = mushroom_odor(ram, mario_x, registry=self.registry)
-        qblock = question_block_odor(ram)
         hunger = hunger_multiplier(ram, override=self.hunger_override)
-        odor_gain_eff = c.odour.odour_gain * hunger
-        prod_odor = {"R": odor_gain_eff * (mush["R"] + qblock["R"]),
-                     "L": odor_gain_eff * (mush["L"] + qblock["L"])}
+        if self.entity_profiles is None:
+            mush = mushroom_odor(ram, mario_x, registry=self.registry)
+            qblock = question_block_odor(ram)
+            food_raw = {"R": mush["R"] + qblock["R"], "L": mush["L"] + qblock["L"]}
+            avers_raw = goomba_odor(ram, mario_x, registry=self.registry)
+            odor_gain_eff = c.odour.odour_gain * hunger
+            prod_odor = {"R": odor_gain_eff * food_raw["R"], "L": odor_gain_eff * food_raw["L"]}
+        else:
+            food_gated, food_ungated, avers_raw = profiled_odor(
+                ram, mario_x, registry=self.registry, profiles=self.entity_profiles)
+            odor_gain_eff = c.odour.odour_gain * hunger
+            # food_gated * odor_gain_eff (hunger folded in, one multiply) +
+            # food_ungated * odour_gain (hunger never applied) -- matches
+            # the un-profiled branch's own single-multiplication structure
+            # bit for bit when food_ungated is all-zero, today's shipped
+            # default.json's actual shape (profiled_odor's own docstring).
+            prod_odor = {"R": odor_gain_eff * food_gated["R"] + c.odour.odour_gain * food_ungated["R"],
+                         "L": odor_gain_eff * food_gated["L"] + c.odour.odour_gain * food_ungated["L"]}
         adapted_odor = self.orn_adapt.apply(prod_odor)
         odor_r_eff = adapted_odor["R"]
         odor_l_eff = adapted_odor["L"]
 
-        avers_raw = goomba_odor(ram, mario_x, registry=self.registry)
         avers_scaled = {"R": c.odour.odour_gain * avers_raw["R"], "L": c.odour.odour_gain * avers_raw["L"]}
         avers_adapted = self.orn_adapt_avers.apply(avers_scaled)
         avers_r_eff = avers_adapted["R"]

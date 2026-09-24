@@ -228,21 +228,23 @@ above:
   'a Goomba smells bad and a Koopa smells bad differently' is expressible").
   As of phase 4, `GOOMBA` and `KOOPA` each have their OWN channel
   (`threat_goomba`/`threat_koopa`) -- the discrimination the plan asked
-  for is now expressible in data. The generic `ENEMY` fallback and
-  `POWERUP`/`QUESTION_BLOCK` (sharing one `food` channel) still match what
-  `FullPolicy.act()` (`bridge/full_policy.py`) actually computes today
-  (`mush["R"] + qblock["R"]` summed before `ODOUR_GAIN`; `goomba_odor`
-  kept separate but undifferentiated by species). See "Phase 4: species
-  decoding" above for why the channels exist without yet being read.
-- `looming_salience`, `danger_weight`, `is_food`, `body_scale`: present for
-  every kind, matching the plan's `PerceptionProfile` shape, but **not**
-  yet read by any live code path -- `bridge/full_policy.py` still computes
-  looming/danger/hunger-gating from its own scalars and RAM reads directly.
-  The file is read only by `tests/test_entities.py`.
-  This file is documentation this phase, verified by
-  `tests/test_entities.py` to cover every kind the registry can assign,
-  not yet the runtime source of the numbers themselves. Making it that is
-  per-component config extraction -- REFACTOR_PLAN.md phase 4.
+  for is expressible in data, but as of C8a (below) still only as a
+  *label*: the channel string itself isn't read yet, only `sign`/
+  `intensity`/`hunger_gated`. Making the channel string itself select a
+  distinct connectome receptor population is C8b, a separate, larger,
+  not-yet-scoped change (`docs/SPEC_entity_perception.md` section 0).
+- `looming_salience`, `danger_weight`, `is_food`, `body_scale`, and
+  `odours[].intensity` (new field, C8a): **live as of C8a**
+  (`docs/SPEC_entity_perception.md`), read by
+  `bridge/entity_profiles.py`'s `load()` and consumed by
+  `bridge/perception.py`'s `profiled_enemy_thetas()`/`profiled_odor()` --
+  but only when `FullPolicy` is constructed with
+  `entity_profiles=<EntityProfiles>`. The default, `entity_profiles=None`,
+  is unaffected: `bridge/full_policy.py` still computes looming/odour via
+  the original, un-profiled `enemy_thetas`/`mushroom_odor`/
+  `question_block_odor`/`goomba_odor` in that case, byte-identical to
+  before C8a existed. `is_food`/`body_scale` remain unread by either code
+  path -- still documentation, not yet load-bearing.
 
 ## Enforcement
 

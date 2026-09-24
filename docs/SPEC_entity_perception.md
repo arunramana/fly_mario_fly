@@ -221,14 +221,18 @@ even though these live in a JSON profile table, not
 `config/params.py`'s flat dataclasses (a per-kind table doesn't fit that
 shape, same reason `bridge/profiles/default.json`'s existing
 `looming_salience`/`danger_weight` aren't in `config/params.py` today
-either). Every non-empty-odour kind's `intensity` default (5 kinds ship a
-channel today — GOOMBA, KOOPA, ENEMY, POWERUP, QUESTION_BLOCK, one odour
-entry each — so 5 new values, all `1.0`) gets a `_note` in
-`bridge/profiles/default.json` matching the existing style, and a row in
-`docs/SCALARS.md`'s own accounting (a new "profile scalars" section, if
-the existing table's shape doesn't fit a per-kind field) — the point is
-that the number is written down and its provenance stated (`invented,
-default 1.0, matches today's implicit behaviour`).
+either). **Not `docs/SCALARS.md`**: that file is machine-generated
+exclusively from `config/params.py` and byte-checked against it
+(`tests/test_scalars_doc.py`) — a hand-written addition there would
+either break that test or be silently erased by the next regeneration.
+Every non-empty-odour kind's `intensity` default (5 kinds ship a channel
+today — GOOMBA, KOOPA, ENEMY, POWERUP, QUESTION_BLOCK, one odour entry
+each — so 5 new values, all `1.0`) gets a `_note` in
+`bridge/profiles/default.json` matching the existing style (provenance:
+`invented, default 1.0, matches today's implicit behaviour`), and
+`docs/ENTITIES.md`'s own "Perceptual profiles" section — the doc that
+already tracks this file's provenance — is updated to say the fields are
+now live, not just documentation.
 
 ## 5. Validation: a 2×2 batch, prediction stated before running it
 
@@ -347,7 +351,8 @@ has cleared.
   `projects/<name>/runs/NNNb_shuffled.mp4`, each with its own `.md` note
   (setup, numbers, which way the prediction went). **`docs/RUNS.md`
   itself is not touched by this sprint** — the user appends that entry.
-- `docs/SCALARS.md` updated per section 4.
+- `docs/ENTITIES.md` updated per section 4 (not `docs/SCALARS.md` --
+  machine-generated, see that section).
 
 ## 8. Explicitly out of scope
 

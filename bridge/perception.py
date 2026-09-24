@@ -14,8 +14,12 @@ tiles instead, a different data source (docs/ENTITIES.md).
 
 bridge/profiles/default.json labels the odour channels: POWERUP and
 QUESTION_BLOCK emit the hunger-gated "food" channel, ENEMY the un-gated
-"threat" channel. The profile is documentation; the gains come from
-config.params.OdourParams.
+"threat" channel. Un-profiled (this file's original functions), the
+profile is documentation only; the gains come from config.params.
+OdourParams. C8a (docs/SPEC_entity_perception.md) adds profiled_
+enemy_thetas/profiled_odor, which DO read the profile's per-kind
+intensity/looming_salience/danger_weight numbers -- only reached when
+FullPolicy is given entity_profiles=<EntityProfiles>, never by default.
 """
 
 from __future__ import annotations
@@ -27,6 +31,7 @@ from mario.entities.registry import DEFAULT as DEFAULT_REGISTRY
 from mario.ram import tile_ram
 from mario.ram.addresses import ADDR_MARIO_SIZE
 from config.params import OdourParams
+from bridge.entity_profiles import EntityProfiles
 
 _odour_params = OdourParams()
 HUNGER_MULT_HUNGRY = _odour_params.hunger_mult_hungry  # RAM 0x0756==0 (small Mario)
@@ -107,6 +112,98 @@ def goomba_odor(ram, mario_x, registry=DEFAULT_REGISTRY):
         side = "R" if d >= 0 else "L"
         odor[side] += conc
     return odor
+
+
+def profiled_enemy_thetas(ram, mario_x, prev_theta, registry, profiles: EntityProfiles):
+    """C8a (docs/SPEC_entity_perception.md section 1.1): same as
+    enemy_thetas, except each entity's raw angular size is scaled by its
+    kind's `looming_salience * danger_weight` (the master-knob product)
+    before the per-side max and before being stored for next frame's
+    dtheta -- danger_weight is a per-kind master knob over BOTH looming
+    and threat odour (profiled_odor below), looming_salience the
+    per-sense knob on top of it. Clamped at pi: theta_raw is always < pi
+    by construction (2*arctan(...) of any positive finite input), but a
+    salience/danger product > 1.0 can push the scaled value past a
+    physically meaningful half-angle. Only called when entity_profiles is
+    not None -- enemy_thetas itself is untouched."""
+    theta = {"L": 0.0, "R": 0.0}
+    d_out = {"L": None, "R": None}
+    for rec in registry.enemy_records(ram):
+        if not rec.active or rec.kind == EntityKind.POWERUP:
+            continue
+        d = rec.x - int(mario_x)
+        side = "R" if d >= 0 else "L"
+        ad = max(abs(d), 1)
+        th_raw = 2.0 * np.arctan(rec.width / (2.0 * ad))
+        profile = profiles.get(rec.kind)
+        th = min(np.pi, th_raw * profile.looming_salience * profile.danger_weight)
+        if th > theta[side]:
+            theta[side] = th
+            d_out[side] = d
+    dtheta = {s: theta[s] - prev_theta[s] for s in ("L", "R")}
+    return theta, dtheta, d_out
+
+
+def profiled_odor(ram, mario_x, registry, profiles: EntityProfiles):
+    """C8a (docs/SPEC_entity_perception.md sections 1.2/1.3): replaces
+    mushroom_odor + question_block_odor (food) and goomba_odor (threat)
+    with one per-entity, per-kind aggregation. For each active entity
+    (every enemy-slot occupant, plus every `?`-block tile), each of its
+    kind's odour-list entries contributes `intensity / max(|d|,1)` to a
+    food sum (sign > 0) or `intensity * danger_weight / max(|d|,1)` to
+    the threat sum (sign < 0; danger_weight has no meaning for a food
+    channel and is not applied there). No hunger term on the threat
+    side -- fleeing stays un-hunger-gated, as today.
+
+    Returns (food_gated, food_ungated, threat): the food total is split
+    by each entry's own `hunger_gated`, NOT pre-multiplied by hunger --
+    the call site applies hunger to `food_gated` only, in one
+    multiplication, same as the un-profiled functions' own
+    `odor_gain_eff = odour_gain * hunger` convention. This split (rather
+    than multiplying by hunger per-entry, in here) is what makes a
+    profile whose entries are all hunger_gated -- true of every entry
+    `bridge/profiles/default.json` ships today -- reproduce the old
+    aggregate's floating-point operation order bit for bit: per-entry
+    multiplication and a single combined multiplication are
+    mathematically equal but not IEEE-754 identical, and the SPEC's own
+    backward-compatibility test (section 2) checks for identical.
+
+    Raw concentrations throughout -- no odour_gain applied here, same
+    convention as the un-profiled functions. Only called when
+    entity_profiles is not None."""
+    # Entity-sourced and tile-sourced totals are accumulated as separate
+    # running sums, combined only once at the end -- matching
+    # mushroom_odor(...) + question_block_odor(...)'s own grouping
+    # exactly, for the same bit-reproduction reason as the gated/ungated
+    # split above.
+    food_gated_entities = {"L": 0.0, "R": 0.0}
+    food_gated_tiles = {"L": 0.0, "R": 0.0}
+    food_ungated_entities = {"L": 0.0, "R": 0.0}
+    food_ungated_tiles = {"L": 0.0, "R": 0.0}
+    threat = {"L": 0.0, "R": 0.0}
+
+    def add(kind, d, gated_bucket, ungated_bucket):
+        side = "R" if d >= 0 else "L"
+        ad = max(abs(d), 1)
+        profile = profiles.get(kind)
+        for odour in profile.odours:
+            conc = odour.intensity / ad
+            if odour.sign > 0:
+                (gated_bucket if odour.hunger_gated else ungated_bucket)[side] += conc
+            else:
+                threat[side] += conc * profile.danger_weight
+
+    for rec in registry.enemy_records(ram):
+        if not rec.active:
+            continue
+        add(rec.kind, rec.x - int(mario_x), food_gated_entities, food_ungated_entities)
+
+    for offset_tiles in tile_ram.question_blocks_near(ram):
+        add(EntityKind.QUESTION_BLOCK, offset_tiles * 16, food_gated_tiles, food_ungated_tiles)
+
+    food_gated = {s: food_gated_entities[s] + food_gated_tiles[s] for s in ("L", "R")}
+    food_ungated = {s: food_ungated_entities[s] + food_ungated_tiles[s] for s in ("L", "R")}
+    return food_gated, food_ungated, threat
 
 
 def hunger_multiplier(ram, override: bool | None = None):
