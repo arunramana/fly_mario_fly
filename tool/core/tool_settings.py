@@ -38,6 +38,17 @@ class CircuitSettings:
 
 
 @dataclass(frozen=True)
+class EntityProfileSettings:
+    """Tabs 2/3. `enabled=False` (default): FullPolicy gets
+    entity_profiles=None, byte-identical to before C8a existed
+    (docs/SPEC_entity_perception.md). True: runner.py loads
+    projects/<name>/entity_profiles.json (bridge/entity_profiles.py),
+    merged over bridge/profiles/default.json -- the file existing is not
+    itself what turns the feature on, this flag is (ground rule 4)."""
+    enabled: bool = False
+
+
+@dataclass(frozen=True)
 class FitnessSettings:
     """Tab 5. Mirrors sim.fitness.FitnessWeights's own fields exactly (kept
     as its own dataclass, not a re-export, so tool.json's schema doesn't
@@ -75,6 +86,7 @@ class RenderSettings:
 class ToolSettings:
     character: CharacterSettings = field(default_factory=CharacterSettings)
     circuits: CircuitSettings = field(default_factory=CircuitSettings)
+    entity_profile: EntityProfileSettings = field(default_factory=EntityProfileSettings)
     fitness: FitnessSettings = field(default_factory=FitnessSettings)
     experiment: ExperimentSettings = field(default_factory=ExperimentSettings)
     render: RenderSettings = field(default_factory=RenderSettings)

@@ -22,6 +22,11 @@ def run_one(spec, on_frame=None, should_stop=None):
     if character.starting_powerup:
         powerup_kwargs = dict(force_mario_size=1, force_size_from_frame=0)
 
+    entity_profiles = None
+    if spec.tool_settings.entity_profile.enabled:
+        from tool.core.entity_profiles_store import load_merged
+        entity_profiles = load_merged(spec.project_name)
+
     tel, info = run_from_config(
         spec.config, spec.out_filename,
         seed=spec.seed,
@@ -30,6 +35,7 @@ def run_one(spec, on_frame=None, should_stop=None):
         event_proximal_dopamine=spec.tool_settings.experiment.learning_enabled,
         shuffle_seed=spec.tool_settings.circuits.shuffle_seed,
         hunger_override=character.hunger_override,
+        entity_profiles=entity_profiles,
         on_frame=on_frame,
         should_stop=should_stop,
         **powerup_kwargs,

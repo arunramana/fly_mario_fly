@@ -79,12 +79,15 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(SettingsTab(self), "6 Settings")
         self.tabs.addTab(self.run_tab, "7 Run")
 
-        # tab_key -> (tab index, class) for reload_tab (P7 presets): a
-        # preset load changes window state, then swaps in a freshly built
-        # tab widget rather than hand-writing a refresh() for every
-        # control on every preset-bearing tab.
+        # tab_key -> (tab index, class) for reload_tab (P7 presets; C8a's
+        # enemies/objects tabs also use this to keep their shared "enable
+        # entity profiles" checkbox in sync with each other): a preset
+        # load or a cross-tab setting change swaps in a freshly built tab
+        # widget rather than hand-writing a refresh() for every control.
         self._tab_factories = {
             "character": (0, CharacterTab),
+            "enemies": (1, EnemiesTab),
+            "objects": (2, ObjectsTab),
             "circuits": (3, CircuitsTab),
             "goal": (4, GoalTab),
             "settings": (5, SettingsTab),
@@ -142,12 +145,17 @@ class MainWindow(QMainWindow):
         widgets -- built once from the OLD values in __init__ -- have no
         other way to pick up the change)."""
         index, factory = self._tab_factories[key]
+        was_current = self.tabs.currentIndex()
         title = self.tabs.tabText(index)
         old_widget = self.tabs.widget(index)
         new_widget = factory(self)
         self.tabs.removeTab(index)
         self.tabs.insertTab(index, new_widget, title)
-        self.tabs.setCurrentIndex(index)
+        # Preserve whichever tab the user was actually on -- reload_tab is
+        # also used to sync a DIFFERENT tab (enemies.py/objects.py's
+        # shared checkbox, C8a) than the one whose control was just
+        # changed, and that must not steal focus away from it.
+        self.tabs.setCurrentIndex(was_current)
         old_widget.deleteLater()
         if key == "character":
             self.character_tab = new_widget

@@ -102,7 +102,15 @@ def test_play_streams_frames_and_finishes_without_a_modal_dialog(qtbot, clean_pr
     timeout_timer = QTimer()
     timeout_timer.setSingleShot(True)
     timeout_timer.timeout.connect(loop.quit)
-    timeout_timer.start(120_000)
+    # 170s, just under pytest.ini's 180s ceiling: this test's own suite has
+    # grown from 13 to 27+ files (P7/C8a), and running the FULL suite (not
+    # this file alone) now sometimes pushes real wall-clock past the
+    # original 120s under CPU contention from the other multiprocessing-
+    # heavy tests -- observed directly (the child process printed its
+    # "wrote ... telemetry.csv" completion line after this timer would have
+    # already fired), not assumed. A soft timeout here still fails with a
+    # clear assertion instead of pytest-timeout's harsher thread-kill.
+    timeout_timer.start(170_000)
 
     window.play()
     assert window._process is not None and window._process.is_alive()

@@ -26,7 +26,8 @@ CONTROL_WIRING: dict[str, str] = {
     "character.hunger_override": LIVE,        # C7, GUI in P5, tests/test_c7_character_state.py
     "character.starting_powerup": LIVE,       # C7, GUI in P5, tests/test_c7_character_state.py
     "character.arousal_pc1": NOT_WIRED,       # C9, no SPEC yet
-    "enemies.smell_profile": NOT_WIRED,       # C8, tool/PLAN.md P6 (science sprint)
+    "enemies.smell_profile": LIVE,             # C8a, GUI in P6, tool/tests/test_entity_profiles_tab.py
+    "entity_profile.enabled": LIVE,            # C8a, same test
     "circuits.shuffle_seed": LIVE,            # C5, GUI in P5, tests/test_c5_shuffle.py
     "fitness.points": LIVE,                   # C4: info["score"] feeds it
     "fitness.distance": LIVE,
