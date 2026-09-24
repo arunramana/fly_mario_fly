@@ -1,9 +1,14 @@
 # fly_mario tool — build plan
 
-Status: P0, P1 and P2 done 2026-09-23 (P0 results in section 6; P1 -- C1-C4
--- and C10 in `tool/CODEBASE_CHANGES.md`; P2 -- tool/core/, headless,
-`tool/README.md` -- golden gate green throughout), awaiting review before
-P3. Written 2026-09-23, after the September cleanup
+Status: P0-P5 done (P0-P2 2026-09-23, P3-P5 2026-09-24 -- see section 6 for
+each phase's own results). `python -m tool` opens a project and plays a
+run with a live preview, verified end to end, not just constructed
+(`tool/tests/test_ui_smoke.py`). C8/C9 (tabs 2-3, arousal) remain not
+wired -- science sprints of their own, P6+. C7's own first real recorded
+run + `docs/RUNS.md` entry is also not done yet (flagged in section 6's
+P5 note, not silently skipped). Full repo golden gate green throughout:
+74/74 after C5+C7 landed, 74/74 again at the very end of this pass.
+Written 2026-09-23, after the September cleanup
 (`docs/CHANGES_2026-09.md`, HEAD `f55396e`).
 
 The goal (from the project doc `fly-mario-tool-vision.md`): a tool that feels like a game. Pick a character, tune the world and the
@@ -342,11 +347,16 @@ workers use `multiprocessing.Pool` directly (its own worker processes are
 already persistent/reused across submitted tasks) rather than a
 hand-rolled queue-based pool -- simpler, and the stdlib's own tested
 implementation. `tool/README.md` has the CLI usage.
+
+**P3 — UI shell**
 - Project gate (new / duplicate / open / recent), main window, header with
   Play/Save/dirty state, seven tabs as skeletons.
 - `param_form` auto-builds tab 4 from `schema.py`: validation from ranges,
   provenance tooltips, reset-to-default, greyed `not wired` controls.
 - Unsaved-changes guard on close and before Play.
+
+**Done 2026-09-24** (with P4 and P5, in one pass -- see the note after
+P5 below for the combined result and the real bug it found).
 
 **P4 — Run tab (the payoff)**
 - Play → worker process → live preview: the raw `obs` RGB frame each
@@ -369,6 +379,66 @@ implementation. `tool/README.md` has the CLI usage.
   from P4), shuffled toggle, goal & fitness tab, settings tab with
   parallel batches.
 - C7 used for the first time → one recorded run + RUNS entry.
+
+**Done 2026-09-24, P3+P4+P5 in one pass** (priority was finishing fast,
+per instruction). C5 (`shuffle_seed`) and C7 (`hunger_override`, and
+`starting_powerup` reusing the existing `force_mario_size`) landed first
+as their own `codebase:` commits (`tool/CODEBASE_CHANGES.md`), each with
+the golden gate green before any UI touched them. Then the UI:
+
+- `tool/ui/`: `app.py` (QApplication + the gate), `gate.py`
+  (new/duplicate/open/recent, cannot be skipped), `main_window.py`
+  (header: name/dirty/Save/Play + the seven tabs), all seven
+  `tabs/*.py`, `widgets/param_form.py` (schema-driven, range-clamped,
+  greyed when not `live`), `widgets/preview.py` (raw frame +
+  `palette.py` + telemetry bars), `widgets/plots.py` (pyqtgraph).
+- Play/Cancel share one stop event exactly as planned: a spawn-context
+  `multiprocessing.Process` runs `runner.run_one_streaming`, streaming
+  frames over a `Queue` a `QTimer` polls; Cancel sets the paired `Event`,
+  which `should_stop()` (C3) checks.
+- Run history, plots, video playback (`QMediaPlayer`/`QVideoWidget`,
+  confirmed importable from the `PySide6-Addons` wheel P0 already
+  installed), a batch view (per-seed fitness + mean/min/max), and
+  `run_store.write_run_note` for `projects/<name>/runs/NNN_slug.md` --
+  the tool never touches `docs/RUNS.md` (decision 2).
+- C7's own "one recorded run + RUNS entry" (this section's own last
+  bullet) is **not done in this pass** -- flagged honestly rather than
+  claimed: priority was the plumbing and the UI, per this run's explicit
+  instruction, and a real forced-hunger recording is a science sprint in
+  its own right (CLAUDE.md rule 3), not something to rush through to
+  check a box. Left for a dedicated follow-up.
+
+**A real hang, found smoke-testing Play end to end, not by inspection.**
+The first working version of `_on_run_finished`/`_on_run_error` opened a
+`QMessageBox` on every run result. In an automated/offscreen smoke test
+(and arguably in normal use too -- a modal on every Play is a bad
+interruption) this blocks the Qt event loop forever, since nothing
+dismisses it. A *second*, different hang showed up right after fixing
+the first: `pytest-qt`'s own teardown calls `window.close()` on every
+`qtbot`-tracked widget, which correctly triggers the unsaved-changes
+prompt on a dirty window -- also modal, also nothing to dismiss it.
+Fixed by (1) making run results a non-blocking label on the Run tab plus
+the status bar, never a dialog, and (2) not leaving test windows dirty
+before teardown, rather than weakening the real close-confirmation
+prompt, which is a genuine interactive decision and stayed as a modal on
+purpose. `tool/tests/pytest.ini` now sets a 180s default timeout
+(`pytest-timeout`, added to `tool/requirements.txt`), scoped to
+`tool/tests/` only (a nested ini file, so `pytest tests/` at the repo
+root is untouched) -- a future hang like either of these fails in 180s
+instead of running for hours.
+
+**Proof.** `tool/tests/test_ui_smoke.py` (`pytest-qt`): all seven tabs
+build; flipping a Circuits control marks the project dirty; **Play
+streams every one of a short episode's frames to the live preview and
+finishes cleanly with no modal dialog anywhere in the path** -- the
+explicit target this run was built against, verified end to end, not
+just constructed. Full `tool/tests/` suite green (13/13). The repo's own
+golden gate (`pytest tests/`) ran full and green right after C5+C7
+landed (74/74, before any UI code existed) and once more at the very
+end of this pass, covering the combined result -- not re-run after each
+tool-only UI commit in between, per this run's own instruction to skip
+that repetition and prioritise speed. See this file's own top-of-file
+status line for the final number.
 
 **P6 — Tabs 2 and 3 live: C8 (science sprint)**
 - `docs/SPEC_entity_perception.md` first. Then per-kind channels in
