@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import multiprocessing as mp
 
-from PySide6.QtCore import QEvent, Qt, QTimer
+from PySide6.QtCore import QEvent, Qt, QTimer, Signal
 from PySide6.QtGui import QCloseEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton,
@@ -26,6 +26,14 @@ from tool.core.batch import run_batch
 
 
 class MainWindow(QMainWindow):
+    # Emitted at the end of set_config() with the NEW ProjectConfig --
+    # tool/SPEC_ui_retro.md section 3's "one home per setting": any tab
+    # showing a value it doesn't own (e.g. Goal's read-only noise.sigma
+    # display) subscribes to this instead of taking a snapshot once at
+    # construction, so it can never go stale after an edit made from
+    # wherever that value's own single writable home actually is.
+    config_changed = Signal(object)
+
     def __init__(self, project, parent=None):
         super().__init__(parent)
         self.project = project
@@ -145,6 +153,7 @@ class MainWindow(QMainWindow):
     def set_config(self, config) -> None:
         self.project.config = config
         self.mark_dirty()
+        self.config_changed.emit(config)
 
     def get_tool_settings(self):
         return self.project.tool_settings

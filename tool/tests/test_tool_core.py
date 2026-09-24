@@ -65,9 +65,9 @@ def test_project_create_duplicate_save_round_trip(clean_project):
         shutil.rmtree(dup_root, ignore_errors=True)
 
 
-def test_schema_covers_all_49_scalars_with_ranges():
+def test_schema_covers_all_scalars_with_ranges():
     controls = all_controls()
-    assert len(controls) == 49 == scalar_count()
+    assert len(controls) == 60 == scalar_count()
     assert all(isinstance(c, ControlSpec) for c in controls)
     # Every control's range is EXACTLY what config/params.py's own field
     # metadata says -- None ("genuinely unknown", config/params.py's own

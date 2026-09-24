@@ -41,13 +41,23 @@ class GoalTab(QWidget):
         self.max_frames_spin.valueChanged.connect(self._on_max_frames_changed)
         scenario_form.addRow("Max frames", self.max_frames_spin)
 
+        # tool/SPEC_ui_retro.md section 3, "one home per setting": found
+        # noise.sigma editable in BOTH this tab and the Circuits tab
+        # (schema.py's ParamForm covers all 49, sigma among them), nothing
+        # keeping the two in sync by construction. The Circuits tab is now
+        # the one writable home; this is read-only, always showing the
+        # live config.noise.sigma via MainWindow.config_changed (not a
+        # value snapshotted once at construction, which would go stale
+        # the moment the Circuits tab's own widget changed it).
         self.sigma_spin = QDoubleSpinBox()
         self.sigma_spin.setRange(0.0, 1.0)
         self.sigma_spin.setDecimals(4)
         self.sigma_spin.setSingleStep(0.01)
         self.sigma_spin.setValue(config.noise.sigma)
-        self.sigma_spin.valueChanged.connect(self._on_sigma_changed)
-        scenario_form.addRow("Noise sigma", self.sigma_spin)
+        self.sigma_spin.setEnabled(False)
+        self.sigma_spin.setToolTip("Read-only -- change noise.sigma from the Circuits tab.")
+        window.config_changed.connect(self._on_config_changed_externally)
+        scenario_form.addRow("Noise sigma (see Circuits tab)", self.sigma_spin)
 
         self.seeds_edit = QLineEdit(" ".join(str(s) for s in settings.experiment.seeds))
         self.seeds_edit.setToolTip("Space-separated seeds -- one run each on Play/Batch")
@@ -91,10 +101,12 @@ class GoalTab(QWidget):
         scenario = dataclasses.replace(config.scenario, max_frames=value)
         self._window.set_config(dataclasses.replace(config, scenario=scenario))
 
-    def _on_sigma_changed(self, value: float) -> None:
-        config = self._window.get_config()
-        noise = dataclasses.replace(config.noise, sigma=value)
-        self._window.set_config(dataclasses.replace(config, noise=noise))
+    def _on_config_changed_externally(self, config) -> None:
+        """MainWindow.config_changed -- keeps the read-only sigma display
+        live no matter which tab actually changed it."""
+        self.sigma_spin.blockSignals(True)
+        self.sigma_spin.setValue(config.noise.sigma)
+        self.sigma_spin.blockSignals(False)
 
     def _on_seeds_changed(self) -> None:
         text = self.seeds_edit.text().strip()
