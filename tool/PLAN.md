@@ -442,10 +442,17 @@ tool-only UI commit in between, per this run's own instruction to skip
 that repetition and prioritise speed. See this file's own top-of-file
 status line for the final number.
 
-**P6 — Tabs 2 and 3 live: C8 (science sprint)**
-- `docs/SPEC_entity_perception.md` first. Then per-kind channels in
-  perception, entity-profile editor in tabs 2–3 writing
-  `projects/<name>/tool.json`, shuffled control, recorded runs, RUNS entry.
+**P6 — Tabs 2 and 3 live: C8a (science sprint)**
+- `docs/SPEC_entity_perception.md` first (done, revised 2026-09-24 --
+  C8a is gains on the existing aggregates, C8b -- distinct channels
+  mapped to distinct connectome receptor populations -- is future work
+  with its own SPEC). Then per-kind gains in perception, entity-profile
+  editor in tabs 2–3 writing **`projects/<name>/entity_profiles.json`**
+  (a dedicated file, not `tool.json` -- corrected from this bullet's
+  earlier text, matching config.json/tool.json's own precedent of one
+  file per shape of data), the shuffled control as part of a 2x2 batch
+  (real/shuffled x default/modified profile, section 5), recorded runs.
+  `docs/RUNS.md` entry left to the user, not written by this sprint.
 
 **P7 — Polish**
 - Presets (save/load a tab's settings), keyboard shortcuts, export a run
