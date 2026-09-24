@@ -1,0 +1,234 @@
+"""tool/ui/main_window.py -- header (project name, dirty marker, Save,
+Play) + seven tabs (tool/PLAN.md P3/P4). Owns the Play/Cancel worker
+process: a multiprocessing.Process running tool.core.runner.
+run_one_streaming, polled by a QTimer, stopped by a shared
+multiprocessing.Event -- "Play and Cancel through a shared stop event."
+"""
+
+from __future__ import annotations
+
+import multiprocessing as mp
+
+from PySide6.QtCore import QTimer
+from PySide6.QtGui import QCloseEvent
+from PySide6.QtWidgets import (
+    QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton,
+    QTabWidget, QVBoxLayout, QWidget,
+)
+
+from tool.core.fitness import fitness_of
+from tool.core.run_spec import RunSpec
+from tool.core.run_store import next_run_number, record_run, write_run_note, list_runs
+from tool.core.runner import run_one_streaming
+from tool.core.batch import run_batch
+
+
+class MainWindow(QMainWindow):
+    def __init__(self, project, parent=None):
+        super().__init__(parent)
+        self.project = project
+        self._dirty = False
+        self._process: mp.Process | None = None
+        self._queue: mp.Queue | None = None
+        self._stop_event: mp.Event | None = None
+        self._poll_timer = QTimer(self)
+        self._poll_timer.setInterval(33)  # ~30fps preview polling
+        self._poll_timer.timeout.connect(self._poll_queue)
+        self._current_run_number: int | None = None
+        self._current_run_slug: str | None = None
+
+        self.setWindowTitle(self._title())
+        self.resize(1100, 800)
+
+        central = QWidget()
+        self.setCentralWidget(central)
+        outer = QVBoxLayout(central)
+
+        header = QHBoxLayout()
+        self.title_label = QLabel(self._title())
+        save_button = QPushButton("Save")
+        save_button.clicked.connect(self.save)
+        header_play_button = QPushButton("▶ Play")
+        header_play_button.clicked.connect(self.play)
+        header.addWidget(self.title_label)
+        header.addStretch(1)
+        header.addWidget(save_button)
+        header.addWidget(header_play_button)
+        outer.addLayout(header)
+
+        self.tabs = QTabWidget()
+        outer.addWidget(self.tabs)
+
+        from tool.ui.tabs.character import CharacterTab
+        from tool.ui.tabs.enemies import EnemiesTab
+        from tool.ui.tabs.objects import ObjectsTab
+        from tool.ui.tabs.circuits import CircuitsTab
+        from tool.ui.tabs.goal import GoalTab
+        from tool.ui.tabs.settings import SettingsTab
+        from tool.ui.tabs.run import RunTab
+
+        self.character_tab = CharacterTab(self)
+        self.run_tab = RunTab(self)
+        self.tabs.addTab(self.character_tab, "1 Character")
+        self.tabs.addTab(EnemiesTab(self), "2 Enemies")
+        self.tabs.addTab(ObjectsTab(self), "3 Objects")
+        self.tabs.addTab(CircuitsTab(self), "4 Circuits")
+        self.tabs.addTab(GoalTab(self), "5 Goal")
+        self.tabs.addTab(SettingsTab(self), "6 Settings")
+        self.tabs.addTab(self.run_tab, "7 Run")
+
+        self.run_tab.refresh_history(list_runs(self.project.name))
+
+    # ---- project state accessors (tabs read/write through these) --------
+
+    def _title(self) -> str:
+        return f"fly_mario -- {self.project.name}{' *' if self._dirty else ''}"
+
+    def get_config(self):
+        return self.project.config
+
+    def set_config(self, config) -> None:
+        self.project.config = config
+        self.mark_dirty()
+
+    def get_tool_settings(self):
+        return self.project.tool_settings
+
+    def set_tool_settings(self, settings) -> None:
+        self.project.tool_settings = settings
+        self.mark_dirty()
+
+    def mark_dirty(self) -> None:
+        self._dirty = True
+        self.title_label.setText(self._title())
+        self.setWindowTitle(self._title())
+
+    def on_player_changed(self, player: str) -> None:
+        self.run_tab.preview.set_player(player)
+
+    def save(self) -> None:
+        self.project.save()
+        self._dirty = False
+        self.title_label.setText(self._title())
+        self.setWindowTitle(self._title())
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        if self._dirty:
+            reply = QMessageBox.question(
+                self, "Unsaved changes",
+                "This project has unsaved changes. Save before closing?",
+                QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard
+                | QMessageBox.StandardButton.Cancel,
+            )
+            if reply == QMessageBox.StandardButton.Save:
+                self.save()
+            elif reply == QMessageBox.StandardButton.Cancel:
+                event.ignore()
+                return
+        if self._process is not None and self._process.is_alive():
+            self.cancel()
+        event.accept()
+
+    # ---- Play / Cancel, through a shared stop event ----------------------
+
+    def _make_run_spec(self, seed: int, out_filename: str) -> RunSpec:
+        return RunSpec(project_name=self.project.name, config=self.project.config,
+                        tool_settings=self.project.tool_settings, seed=seed,
+                        out_filename=out_filename)
+
+    def play(self) -> None:
+        if self._process is not None and self._process.is_alive():
+            return
+        seed = self.project.tool_settings.experiment.seeds[0]
+        number = next_run_number(self.project.name)
+        slug = f"{number:03d}_play_seed{seed}"
+        spec = self._make_run_spec(seed, f"{slug}.mp4")
+        self._current_run_number = number
+        self._current_run_slug = slug
+
+        ctx = mp.get_context("spawn")
+        self._queue = ctx.Queue()
+        self._stop_event = ctx.Event()
+        self._process = ctx.Process(target=run_one_streaming, args=(spec, self._queue, self._stop_event))
+        self._process.start()
+        self.run_tab.set_running(True)
+        self.run_tab.progress.setValue(0)
+        self._poll_timer.start()
+
+    def cancel(self) -> None:
+        if self._stop_event is not None:
+            self._stop_event.set()
+
+    def _poll_queue(self) -> None:
+        if self._queue is None:
+            return
+        max_frames = self.project.config.scenario.max_frames
+        while not self._queue.empty():
+            message = self._queue.get_nowait()
+            kind = message[0]
+            if kind == "frame":
+                _frame_idx, obs, row = message[1], message[2], message[3]
+                self.run_tab.preview.show_frame(obs, row)
+                self.run_tab.set_progress(_frame_idx, max_frames)
+            elif kind == "done":
+                info = message[1]
+                self._on_run_finished(info)
+                return
+            elif kind == "error":
+                self._on_run_error(message[1])
+                return
+
+    def _on_run_finished(self, info: dict) -> None:
+        self._poll_timer.stop()
+        if self._process is not None:
+            self._process.join(timeout=5)
+        self._process = None
+        self.run_tab.set_running(False)
+
+        number, slug = self._current_run_number, self._current_run_slug
+        seed = self.project.tool_settings.experiment.seeds[0]
+        spec = self._make_run_spec(seed, f"{slug}.mp4")
+        record_run(self.project.name, number, slug, seed, info, spec.to_dict())
+        write_run_note(self.project.name, number, slug, seed,
+                        self.project.config, self.project.tool_settings, info)
+        self.run_tab.refresh_history(list_runs(self.project.name))
+        fitness = fitness_of(self.project.tool_settings.fitness, info)
+        text = (f"Run #{number}: fitness={fitness:.1f}, frames={info.get('n_frames')}, "
+                f"died={info.get('died_or_flagged')}, max_x={info.get('max_x_abs')}")
+        self.run_tab.show_result(text)
+        self.statusBar().showMessage(text, 10_000)
+
+    def _on_run_error(self, message: str) -> None:
+        self._poll_timer.stop()
+        if self._process is not None:
+            self._process.join(timeout=5)
+        self._process = None
+        self.run_tab.set_running(False)
+        text = f"Run failed: {message}"
+        self.run_tab.show_result(text, is_error=True)
+        self.statusBar().showMessage(text, 10_000)
+
+    # ---- Batch -------------------------------------------------------
+
+    def run_batch(self) -> None:
+        seeds = list(self.project.tool_settings.experiment.seeds)
+        n_workers = self.project.tool_settings.render.parallel_workers
+        result = run_batch(self.project, seeds=seeds, n_workers=n_workers)
+        self.run_tab.refresh_history(list_runs(self.project.name))
+        self.run_tab.show_batch_result(result)
+
+    # ---- History -------------------------------------------------------
+
+    def load_history_run(self, entry: dict) -> None:
+        import pandas as pd
+
+        from config.output_routing import resolve_telemetry_path
+        slug = entry["slug"]
+        telemetry_path = resolve_telemetry_path(self.project.config, f"{slug}_telemetry.csv")
+        if telemetry_path.exists():
+            tel = pd.read_csv(telemetry_path)
+            self.run_tab.plots.set_dataframe(tel)
+        from config.output_routing import resolve_run_path
+        video_path = resolve_run_path(self.project.config, f"{slug}.mp4")
+        if video_path.exists():
+            self.run_tab.show_video(video_path)

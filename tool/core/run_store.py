@@ -63,3 +63,28 @@ def record_run(project_name: str, number: int, slug: str, seed: int,
 
 def list_runs(project_name: str) -> list[dict]:
     return _read_index(project_name)
+
+
+def write_run_note(project_name: str, number: int, slug: str, seed: int,
+                    config, tool_settings, info: dict) -> Path:
+    """`projects/<name>/runs/NNN_slug.md`, CLAUDE.md's own convention --
+    setup and numbers filled in; the user adds the "what we learned" line
+    (tool/PLAN.md P4, decision 2: the tool never appends to docs/RUNS.md,
+    only writes this)."""
+    path = PROJECTS_ROOT / project_name / "runs" / f"{slug}.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = (
+        f"# {number:03d} -- {slug}\n\n"
+        f"**Setup.** Level {config.scenario.level}, seed {seed}, "
+        f"sigma={config.noise.sigma}, max_frames={config.scenario.max_frames}, "
+        f"player={tool_settings.character.player}, "
+        f"shuffle_seed={tool_settings.circuits.shuffle_seed}, "
+        f"hunger_override={tool_settings.character.hunger_override}, "
+        f"learning_enabled={tool_settings.experiment.learning_enabled}.\n\n"
+        f"**What happened.** {info.get('n_frames')} frames, "
+        f"died_or_flagged={info.get('died_or_flagged')}, "
+        f"max_x_abs={info.get('max_x_abs')}, score={info.get('score')}.\n\n"
+        f"**What we learned.** _(fill in)_\n"
+    )
+    path.write_text(text, encoding="utf-8")
+    return path
