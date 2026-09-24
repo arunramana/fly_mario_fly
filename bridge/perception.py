@@ -109,7 +109,15 @@ def goomba_odor(ram, mario_x, registry=DEFAULT_REGISTRY):
     return odor
 
 
-def hunger_multiplier(ram):
+def hunger_multiplier(ram, override: bool | None = None):
     """SPEC_odour.md section 2: RAM 0x0756==0 (small Mario) = hungry = the
-    boosted odour gain; >=1 (big/fiery) = sated = the unboosted one."""
+    boosted odour gain; >=1 (big/fiery) = sated = the unboosted one.
+
+    `override` (tool/PLAN.md C7): None (default) reads RAM as above. True
+    forces hungry, False forces sated, independent of Mario's actual size
+    -- a character-state control, not a RAM fact, so it never touches RAM
+    itself. A science change when actually used (CLAUDE.md rule 3): it
+    changes what the circuit does, not just what the tool displays."""
+    if override is not None:
+        return HUNGER_MULT_HUNGRY if override else HUNGER_MULT_SATED
     return HUNGER_MULT_HUNGRY if int(ram[ADDR_MARIO_SIZE]) == 0 else HUNGER_MULT_SATED

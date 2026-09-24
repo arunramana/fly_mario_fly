@@ -67,6 +67,23 @@ def _memo_load(key, loader, *args, **kwargs):
     return _circuit_cache[key]
 
 
+def _load_maybe_shuffled(key, loader, shuffle_seed, *args, **kwargs):
+    """tool/PLAN.md C5, CLAUDE.md invariant 6: the real (memoised, unshuffled)
+    circuit is always what's cached -- `shuffle_seed=None` returns it as-is;
+    otherwise rebuilds W from the SAME bodies/edges/signs with edges rewired
+    at random (`fly.connectome.circuit.build_shuffled`: same neurons, same
+    in/out degree distribution, same signs). Not cached itself (CLAUDE.md:
+    skip performance work absent a measured need) -- a fresh shuffle per
+    FullPolicy construction, same cost class as the rest of __init__."""
+    bodies, edges, total_input, signs, W, order, diag = _memo_load(key, loader, *args, **kwargs)
+    if shuffle_seed is None:
+        return bodies, edges, total_input, signs, W, order, diag
+    from fly.connectome import circuit
+    W_shuf, order_shuf, diag_shuf = circuit.build_shuffled(bodies, edges, total_input, signs,
+                                                            seed=shuffle_seed)
+    return bodies, edges, total_input, signs, W_shuf, order_shuf, diag_shuf
+
+
 def _make_steering_masks(bodies):
     dna = bodies["type"].isin(["DNa01", "DNa02"]).to_numpy()
     r = dna & (bodies["somaSide"] == "R").to_numpy()
@@ -77,8 +94,19 @@ def _make_steering_masks(bodies):
 class FullPolicy:
     def __init__(self, config: ProjectConfig | None = None, level: str = "1-1",
                  retinotopic: bool = False, frame_skip: int = 1, mb_weights=None,
-                 event_proximal_dopamine: bool = False):
-        """`event_proximal_dopamine`: False (default, what the goldens use)
+                 event_proximal_dopamine: bool = False, shuffle_seed: int | None = None,
+                 hunger_override: bool | None = None):
+        """`hunger_override`: None (default) reads hunger from Mario's real
+        size, as always. True/False forces hungry/sated regardless of size
+        (tool/PLAN.md C7) -- a character-state control, science-change-when-
+        used (CLAUDE.md rule 3), passed straight to
+        `bridge.perception.hunger_multiplier`.
+        `shuffle_seed`: None (default) uses the real connectome. An int
+        rebuilds every circuit's weight matrix with edges rewired at random
+        (same neurons, same degree distribution, same signs -- CLAUDE.md
+        invariant 6, tool/PLAN.md C5) -- the control this project's own
+        rule says must ship WITH a feature, not be added after.
+        `event_proximal_dopamine`: False (default, what the goldens use)
         rewards any forward progress, every frame. True rewards only a `?`
         block hit or a stomp, each within the ~1-2s synaptic-tag window
         (docs/TRACE_BIOLOGY.md). Like `retinotopic`, a mode flag, not a
@@ -88,6 +116,8 @@ class FullPolicy:
         self.retinotopic = retinotopic
         self.frame_skip = frame_skip
         self.event_proximal_dopamine = event_proximal_dopamine
+        self.shuffle_seed = shuffle_seed
+        self.hunger_override = hunger_override
         c = self.config
 
         self.jump_hold_frames = max(1, round(c.jump.jump_hold_frames / frame_skip))
@@ -101,7 +131,7 @@ class FullPolicy:
         self.mdn_backup_frames = max(1, round(c.mdn.mdn_backup_frames / frame_skip))
 
         log.debug("Loading the jump circuit (unchanged, cached)...")
-        j_bodies, _, _, _, W_j, _, _ = _memo_load("jump", load_jump, N=60)
+        j_bodies, _, _, _, W_j, _, _ = _load_maybe_shuffled("jump", load_jump, self.shuffle_seed, N=60)
         self.Kj = W_j.shape[0]
         jm = lambda t, s: ((j_bodies["type"] == t) & (j_bodies["somaSide"] == s)).to_numpy()
         self.j_msk = {
@@ -143,7 +173,7 @@ class FullPolicy:
                     self.j_azimuth_ref[(t, side)] = (origin, h1.max(), float(np.median(h2)))
 
         log.debug("Loading the steering circuit (DNa01/DNa02, N=60, cached)...")
-        s_bodies, _, _, _, W_s, _, _ = _memo_load("steering", load_steering)
+        s_bodies, _, _, _, W_s, _, _ = _load_maybe_shuffled("steering", load_steering, self.shuffle_seed)
         self.Ks = W_s.shape[0]
         self.r_mask, self.l_mask = _make_steering_masks(s_bodies)
         self.dna01_all = (s_bodies["type"] == "DNa01").to_numpy()
@@ -156,7 +186,7 @@ class FullPolicy:
             populations={"R": self.r_mask, "L": self.l_mask})
 
         log.debug("Loading the takeoff circuit (DNp01 -> GFC1-4 -> DLMn, cached)...")
-        t_bodies, _, _, _, W_t, _, _ = _memo_load("takeoff", load_takeoff)
+        t_bodies, _, _, _, W_t, _, _ = _load_maybe_shuffled("takeoff", load_takeoff, self.shuffle_seed)
         self.Kt = W_t.shape[0]
         self.takeoff_dnp01_mask = (t_bodies["type"] == "DNp01").to_numpy()
         self.dlmn_mask = t_bodies["type"].isin(["DLMn c-f", "DLMn a, b"]).to_numpy()
@@ -165,7 +195,7 @@ class FullPolicy:
             populations={"DNp01": self.takeoff_dnp01_mask, "DLMn": self.dlmn_mask})
 
         log.debug("Loading the speed circuit (DNp09, N=60, cached)...")
-        p_bodies, _, _, _, W_p, _, _ = _memo_load("speed", load_speed)
+        p_bodies, _, _, _, W_p, _, _ = _load_maybe_shuffled("speed", load_speed, self.shuffle_seed)
         self.Kp = W_p.shape[0]
         self.dnp09_mask = (p_bodies["type"] == "DNp09").to_numpy()
         self.speed_network = Network(
@@ -173,7 +203,7 @@ class FullPolicy:
             populations={"DNp09": self.dnp09_mask})
 
         log.debug("Loading the MDN circuit (backward walking, N=60, cached)...")
-        m_bodies, _, _, _, W_m, _, _ = _memo_load("mdn", load_mdn)
+        m_bodies, _, _, _, W_m, _, _ = _load_maybe_shuffled("mdn", load_mdn, self.shuffle_seed)
         self.Km = W_m.shape[0]
         self.mdn_mask = (m_bodies["type"] == "MDN").to_numpy()
         self.mdn_network = Network(
@@ -181,7 +211,7 @@ class FullPolicy:
             populations={"MDN": self.mdn_mask})
 
         log.debug("Loading the DNp02 circuit (second escape pathway, N=60, cached)...")
-        dp_bodies, _, _, _, W_dp, _, _ = _memo_load("dnp02", load_dnp02)
+        dp_bodies, _, _, _, W_dp, _, _ = _load_maybe_shuffled("dnp02", load_dnp02, self.shuffle_seed)
         self.Kdp = W_dp.shape[0]
         self.dnp02_lc4_r = ((dp_bodies["type"] == "LC4") & (dp_bodies["somaSide"] == "R")).to_numpy()
         self.dnp02_lc4_l = ((dp_bodies["type"] == "LC4") & (dp_bodies["somaSide"] == "L")).to_numpy()
@@ -201,7 +231,7 @@ class FullPolicy:
                          "TTMn_L": self.dnp02_ttmn_l, "TTMn_R": self.dnp02_ttmn_r})
 
         log.debug("Loading the mushroom body circuit (KC/MBON/DAN, cached)...")
-        mb_bodies, _, _, _, W_mb_full, _, _ = _memo_load("mushroom_body", load_mushroom_body)
+        mb_bodies, _, _, _, W_mb_full, _, _ = _load_maybe_shuffled("mushroom_body", load_mushroom_body, self.shuffle_seed)
         mb_kc_mask = (mb_bodies["role"] == "KC").to_numpy()
         mb_mbon_mask = (mb_bodies["role"] == "MBON").to_numpy()
         mb_is_pam = mb_bodies["type"].astype(str).str.startswith("PAM").to_numpy()
@@ -369,7 +399,7 @@ class FullPolicy:
         # ---- steering: home bias + odour (mushroom + ?-blocks), WTA ---
         mush = mushroom_odor(ram, mario_x, registry=self.registry)
         qblock = question_block_odor(ram)
-        hunger = hunger_multiplier(ram)
+        hunger = hunger_multiplier(ram, override=self.hunger_override)
         odor_gain_eff = c.odour.odour_gain * hunger
         prod_odor = {"R": odor_gain_eff * (mush["R"] + qblock["R"]),
                      "L": odor_gain_eff * (mush["L"] + qblock["L"])}

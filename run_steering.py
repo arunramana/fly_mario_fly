@@ -216,7 +216,8 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
          inject_frame=None, frame_skip=1, savestate=None, mb_weights=None,
          mushroom_offset=None, inject_gap_frame=None, write_telemetry=True,
          retinotopic=False, sigma=0.0, seed=None, telemetry_path=None,
-         event_proximal_dopamine=False, config=None, on_frame=None, should_stop=None):
+         event_proximal_dopamine=False, config=None, on_frame=None, should_stop=None,
+         shuffle_seed=None, hunger_override=None):
     """Run one episode of the full system and return (telemetry, info).
 
     out_mp4: required. Build it from a ProjectConfig with
@@ -271,7 +272,15 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
         after on_frame; a true return ends the episode early (frame count
         and telemetry reflect wherever it stopped, same as reaching
         max_frames). None (default): never called, the episode always
-        runs to death or max_frames. For a Cancel button."""
+        runs to death or max_frames. For a Cancel button.
+    shuffle_seed: None (default) uses the real connectome. An int rebuilds
+        every circuit's weight matrix with edges rewired at random -- same
+        neurons, same in/out degree distribution, same signs (CLAUDE.md
+        invariant 6's control).
+    hunger_override: None (default) reads hunger from Mario's real size, as
+        always. True/False forces hungry/sated regardless of size -- a
+        science change when actually used (CLAUDE.md rule 3), not just a
+        display choice."""
     if out_mp4 is None:
         raise ValueError(
             "main() needs an explicit out_mp4 -- there is no default any "
@@ -302,7 +311,8 @@ def main(out_mp4=None, level="1-1", max_frames=MAX_FRAMES,
     _pc = _dataclasses.replace(_pc, noise=_dataclasses.replace(_pc.noise, sigma=sigma))
     policy = FullPolicy(config=_pc, level=level, retinotopic=retinotopic,
                          frame_skip=frame_skip, mb_weights=mb_weights,
-                         event_proximal_dopamine=event_proximal_dopamine)
+                         event_proximal_dopamine=event_proximal_dopamine,
+                         shuffle_seed=shuffle_seed, hunger_override=hunger_override)
     policy.reset(seed)
 
     # Live sub-objects and masks the telemetry row reads.

@@ -192,3 +192,59 @@ the opposite side of `test_golden.py` from where it falls normally):
 69/69, same result. Together these rule out both "some other test's
 leftover class state was quietly saving the goldens" and "the fix only
 works in whatever order tests happen to run in today."
+
+## C5 — `shuffle_seed` (the shuffled-connectome control)
+
+**What.** `FullPolicy`/`main(shuffle_seed=None)`. `None` (default) loads
+each circuit's real weight matrix as always. An int rebuilds W for
+*every* circuit (jump, steering, takeoff, speed, MDN, DNp02, mushroom
+body) from the same bodies/edges/signs `fly.connectome.circuit.
+build_shuffled` already implements: same neurons, same in/out degree
+distribution, same signs, edges rewired at random (CLAUDE.md invariant
+6). Not cached (CLAUDE.md: skip performance work absent a measured need)
+-- a fresh shuffle per `FullPolicy` construction.
+
+**Why.** CLAUDE.md invariant 6: "the shuffled-connectome control ships
+with the feature, not afterwards." tool/PLAN.md tab 4 needs it as a
+toggle.
+
+**Default that keeps behaviour.** `shuffle_seed=None` -> the exact same
+`_memo_load(...)` call as before, unchanged. Proven, not assumed:
+`shuffle_seed=None` (explicit) and leaving the argument out entirely
+produce byte-identical telemetry.
+
+**Proof.** `tests/test_golden.py` (3/3) unaffected. `tests/
+test_c5_shuffle.py` (new): `shuffle_seed=1` changes TTMn telemetry vs. the
+real connectome; the same seed is deterministic across two separate runs;
+`shuffle_seed=None` explicit == omitted.
+
+## C7 — `hunger_override` (starting power-up needs no new surface)
+
+**What.** `bridge.perception.hunger_multiplier(ram, override=None)`
+gains an `override: bool | None` -- `None` (default) reads RAM as
+always; `True`/`False` forces hungry/sated regardless of Mario's actual
+size. Threaded through `FullPolicy`/`main(hunger_override=None)`. The
+OTHER half of tab 1's character state, starting power-up, needed **no
+new codebase change at all** -- `main()` already has `force_mario_size`/
+`force_size_from_frame`; "start big" is `force_mario_size=1,
+force_size_from_frame=0`, unchanged from before this phase.
+
+**Why.** Hunger has never been settable independent of Mario's real
+size; tab 1's hunger control has nothing else to drive.
+
+**Default that keeps behaviour.** `override=None`/`hunger_override=None`
+reproduce the RAM read exactly (proven, not assumed, below).
+
+**This is a science change when actually used**, per CLAUDE.md rule 3 --
+this entry proves the plumbing is correct, not that a forced-hunger run
+is scientifically meaningful; that needs its own recorded run and
+`docs/RUNS.md` entry (tool/PLAN.md P5's own deliverable) before anyone
+draws a conclusion from one.
+
+**Proof.** `tests/test_golden.py` (3/3) unaffected. `tests/
+test_c7_character_state.py` (new): `hunger_override=False` forces
+`hungry` False every frame, `=True` forces it True every frame, both
+differing from the RAM-driven default; `hunger_override=None` (explicit)
+== omitted; `force_mario_size=1, force_size_from_frame=0` holds
+`mario_size==1` the whole episode (proving the pre-existing mechanism
+already does what "starting power-up" needs, with no new code).
