@@ -17,13 +17,24 @@ class CharacterSettings:
     """Tab 1. `player` only ever changes the DISPLAYED sprite colour
     (tool/core/palette.py) -- never RAM, never the circuit (tool/PLAN.md's
     Luigi note: the RAM poke this used to mean, C6, froze movement and was
-    dropped). Hunger override / starting power-up are C7, not built here
-    (tool/PLAN.md P5)."""
+    dropped). `hunger_override`/`starting_powerup` are C7
+    (tool/CODEBASE_CHANGES.md) -- science changes when actually used
+    (CLAUDE.md rule 3), not display choices."""
     player: str = "mario"
+    hunger_override: bool | None = None  # None: read Mario's real size, as always
+    starting_powerup: bool = False       # True: force_mario_size=1 from frame 0
 
     def __post_init__(self):
         if self.player not in ("mario", "luigi"):
             raise ValueError(f"player must be 'mario' or 'luigi', got {self.player!r}")
+
+
+@dataclass(frozen=True)
+class CircuitSettings:
+    """Tab 4. `shuffle_seed` is CLAUDE.md invariant 6's control -- None
+    (default) is the real connectome; an int rebuilds every circuit's
+    weight matrix with edges rewired at random (C5)."""
+    shuffle_seed: int | None = None
 
 
 @dataclass(frozen=True)
@@ -63,6 +74,7 @@ class RenderSettings:
 @dataclass(frozen=True)
 class ToolSettings:
     character: CharacterSettings = field(default_factory=CharacterSettings)
+    circuits: CircuitSettings = field(default_factory=CircuitSettings)
     fitness: FitnessSettings = field(default_factory=FitnessSettings)
     experiment: ExperimentSettings = field(default_factory=ExperimentSettings)
     render: RenderSettings = field(default_factory=RenderSettings)
