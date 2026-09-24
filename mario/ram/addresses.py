@@ -11,7 +11,18 @@ from __future__ import annotations
 
 ADDR_MARIO_X = 0x0086
 ADDR_MARIO_PAGE = 0x006D
-ADDR_MARIO_Y = 0x00B5
+# Was 0x00B5 -- checked directly against gym_super_mario_bros.smb_env's own
+# source and cross-verified bit-exact against info['y_pos'] over a real
+# 106-frame episode (0 mismatches): 0x00B5 is "_y_viewport", a coarse 0-5
+# viewport-REGION flag (1 = normal, >1 = falling into a hole), not a pixel
+# position -- confirmed empirically too: constant at 1 across a full
+# 689-frame run including 9 escape jumps. 0x03B8 ("_y_pixel" in that same
+# source) is the real vertical pixel position; info['y_pos'] itself is
+# `255 - ram[0x03B8]` in the normal (non-hole) case. The only live
+# consumer (run_steering.inject_mushroom's synthetic-mushroom placement,
+# opt-in via inject_frame=, exercised by no golden) is otherwise
+# unaffected.
+ADDR_MARIO_Y = 0x03B8
 ADDR_MARIO_SIZE = 0x0756       # small=0, big/fiery>=1
 
 ADDR_ENEMY_X = 0x0087
