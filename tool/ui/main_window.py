@@ -238,17 +238,28 @@ class MainWindow(QMainWindow):
             self._process.join(timeout=5)
         self._process = None
         self.run_tab.set_running(False)
+        # The run is over either way (completed, died, or cancelled) -- the
+        # bar should read "no run is in progress", not whatever fraction of
+        # max_frames it happened to reach (found in manual testing: a
+        # cancelled or early-died run left the bar visibly short of full).
+        self.run_tab.progress.setValue(100)
 
         number, slug = self._current_run_number, self._current_run_slug
         seed = self.project.tool_settings.experiment.seeds[0]
         spec = self._make_run_spec(seed, f"{slug}.mp4")
+        was_cancelled = bool(info.get("cancelled"))
         record_run(self.project.name, number, slug, seed, info, spec.to_dict())
         write_run_note(self.project.name, number, slug, seed,
                         self.project.config, self.project.tool_settings, info)
         self.run_tab.refresh_history(list_runs(self.project.name))
-        fitness = fitness_of(self.project.tool_settings.fitness, info)
-        text = (f"Run #{number}: fitness={fitness:.1f}, frames={info.get('n_frames')}, "
-                f"died={info.get('died_or_flagged')}, max_x={info.get('max_x_abs')}")
+        self._load_telemetry_into_plots(slug)
+
+        if was_cancelled:
+            text = f"Run #{number}: CANCELLED at frame {info.get('n_frames')}"
+        else:
+            fitness = fitness_of(self.project.tool_settings.fitness, info)
+            text = (f"Run #{number}: fitness={fitness:.1f}, frames={info.get('n_frames')}, "
+                    f"died={info.get('died_or_flagged')}, max_x={info.get('max_x_abs')}")
         self.run_tab.show_result(text)
         self.statusBar().showMessage(text, 10_000)
 
@@ -273,15 +284,22 @@ class MainWindow(QMainWindow):
 
     # ---- History -------------------------------------------------------
 
-    def load_history_run(self, entry: dict) -> None:
+    def _load_telemetry_into_plots(self, slug: str) -> None:
+        """Shared by _on_run_finished (a run JUST played) and
+        load_history_run (an OLDER run picked from the list) -- found in
+        manual testing that only the latter path existed, so the Plots
+        tab stayed empty after every live Play until the user separately
+        went and re-selected that same run from History."""
         import pandas as pd
-
         from config.output_routing import resolve_telemetry_path
-        slug = entry["slug"]
         telemetry_path = resolve_telemetry_path(self.project.config, f"{slug}_telemetry.csv")
         if telemetry_path.exists():
             tel = pd.read_csv(telemetry_path)
             self.run_tab.plots.set_dataframe(tel)
+
+    def load_history_run(self, entry: dict) -> None:
+        slug = entry["slug"]
+        self._load_telemetry_into_plots(slug)
         from config.output_routing import resolve_run_path
         video_path = resolve_run_path(self.project.config, f"{slug}.mp4")
         if video_path.exists():

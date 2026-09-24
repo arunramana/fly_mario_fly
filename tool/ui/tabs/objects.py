@@ -48,8 +48,12 @@ class ObjectsTab(QWidget):
         layout.addWidget(self.enable_checkbox)
 
         profiles = load_merged(window.project.name)
+        self._kind_boxes = []
         for kind, label in LIVE_KINDS:
-            layout.addWidget(self._kind_box(kind, label, profiles))
+            box = self._kind_box(kind, label, profiles)
+            box.setEnabled(settings.entity_profile.enabled)
+            self._kind_boxes.append(box)
+            layout.addWidget(box)
 
         for kind, reason in GREYED_KINDS:
             box = QGroupBox(kind.name.replace("_", " ").title())
@@ -80,6 +84,8 @@ class ObjectsTab(QWidget):
         settings = self._window.get_tool_settings()
         entity_profile = dataclasses.replace(settings.entity_profile, enabled=checked)
         self._window.set_tool_settings(dataclasses.replace(settings, entity_profile=entity_profile))
+        for box in self._kind_boxes:
+            box.setEnabled(checked)
         self._window.reload_tab("enemies")
 
     def _on_intensity_changed(self, kind: EntityKind, value: float) -> None:

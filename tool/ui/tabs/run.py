@@ -105,11 +105,12 @@ class RunTab(QWidget):
         self.history_list.clear()
         for entry in reversed(entries):
             summary = entry.get("summary", {})
+            cancelled = "  CANCELLED" if summary.get("cancelled") else ""
             text = (
                 f"#{entry['number']:03d}  seed={entry['seed']}  "
                 f"frames={summary.get('n_frames')}  "
                 f"died={summary.get('died_or_flagged')}  "
-                f"max_x={summary.get('max_x_abs')}"
+                f"max_x={summary.get('max_x_abs')}{cancelled}"
             )
             item = QListWidgetItem(text)
             item.setData(Qt.ItemDataRole.UserRole, entry)
@@ -134,10 +135,23 @@ class RunTab(QWidget):
         self.media_player.play()
 
     def show_batch_result(self, result) -> None:
+        seeds = getattr(result, "seeds", [])
         lines = [f"seed {seed}: fitness={fit:.1f}"
-                 for seed, fit in zip(getattr(result, "seeds", []), result.fitnesses)]
+                 for seed, fit in zip(seeds, result.fitnesses)]
         if not lines:
             lines = [f"fitness={fit:.1f}" for fit in result.fitnesses]
-        mean = sum(result.fitnesses) / len(result.fitnesses) if result.fitnesses else 0.0
-        lines.append(f"\nmean={mean:.1f}  min={min(result.fitnesses):.1f}  max={max(result.fitnesses):.1f}")
+
+        # Cancelled runs (info["cancelled"]) never finished, so their
+        # fitness isn't a real outcome to average in -- ground rule 4's
+        # "no control lies" extends to the aggregate stats, not just the
+        # single run they came from.
+        kept = [fit for fit, info in zip(result.fitnesses, result.infos) if not info.get("cancelled")]
+        n_cancelled = len(result.fitnesses) - len(kept)
+        if n_cancelled:
+            lines.append(f"({n_cancelled} cancelled run(s) excluded from the stats below)")
+        if kept:
+            mean = sum(kept) / len(kept)
+            lines.append(f"\nmean={mean:.1f}  min={min(kept):.1f}  max={max(kept):.1f}")
+        else:
+            lines.append("\n(no completed runs to summarise)")
         self.batch_label.setText("\n".join(lines))

@@ -80,6 +80,12 @@ def run_one_streaming(spec, frame_queue, stop_event):
 
     try:
         tel, info = run_one(spec, on_frame=on_frame, should_stop=should_stop)
+        # Found in manual testing: a cancelled run was recorded and shown
+        # exactly like a normal completed one, with nothing distinguishing
+        # it from Cancel having done nothing at all. should_stop() being
+        # True is definitive -- the loop only ever breaks on it, not on a
+        # coincidental natural end at the same frame.
+        info["cancelled"] = stop_event.is_set()
         frame_queue.put(("done", info))
     except Exception as exc:  # the parent process needs to know Play failed, not hang
         frame_queue.put(("error", str(exc)))

@@ -61,15 +61,27 @@ class ParamForm(QWidget):
             widget.toggled.connect(lambda v, p=control.path: self._on_change(p, v))
         elif control.type is int:
             widget = QSpinBox()
-            lo, hi = control.range or (-2_000_000_000, 2_000_000_000)
-            widget.setRange(int(lo), int(hi))
+            # control.range is a MEASURED-ROBUST-BAND hint, not a hard
+            # limit -- Qt's own setRange() clamps setValue() to fit, which
+            # silently displayed a config value outside the band as the
+            # nearest bound (noise.sigma=0.0 showed as 0.04, its range's
+            # own lower edge). The spin box's real range is always wide;
+            # the measured band is advisory only, shown in the tooltip.
+            widget.setRange(-2_000_000_000, 2_000_000_000)
             widget.setValue(int(get_value(self._config, control.path)))
             widget.valueChanged.connect(lambda v, p=control.path: self._on_change(p, v))
         else:
             widget = QDoubleSpinBox()
-            lo, hi = control.range or (-1e9, 1e9)
-            widget.setRange(float(lo), float(hi))
-            widget.setDecimals(4)
+            widget.setRange(-1e9, 1e9)
+            # 4 decimals silently truncated anything finer -- e.g.
+            # odour.alpha_adapt (1/90 = 0.011111111111111112) displayed as
+            # 0.0111, a different, wrong-looking number, not just a
+            # rounded one. 10 is enough for every value this project
+            # actually hand-sets (config/params.py's own docs/SCALARS.md);
+            # QDoubleSpinBox is fundamentally decimal-rounding, so it
+            # still can't be bit-exact for an arbitrary irrational-looking
+            # double (see tool/tests/test_param_form.py's own tolerance).
+            widget.setDecimals(10)
             widget.setSingleStep(0.01)
             widget.setValue(float(get_value(self._config, control.path)))
             widget.valueChanged.connect(lambda v, p=control.path: self._on_change(p, v))

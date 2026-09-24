@@ -91,6 +91,34 @@ def test_tabs_build_and_checkbox_stays_synced(qtbot, clean_project):
     new_objects_tab = window.tabs.widget(2)
     assert new_objects_tab is not objects_tab  # reloaded
     assert new_objects_tab.enable_checkbox.isChecked() is True
+    window.save()  # leave clean: qtbot's teardown close() would else hit the real unsaved-changes prompt
+
+
+def test_kind_inputs_disabled_until_profiles_are_enabled(qtbot, clean_project):
+    """Found in manual testing: the per-kind spin boxes were editable
+    even with the checkbox off, when they can't do anything (ground rule
+    4 -- no control lies)."""
+    from tool.core.project import ToolProject
+    from tool.ui.main_window import MainWindow
+
+    project = ToolProject.create(PROJECT_NAME)
+    window = MainWindow(project)
+    qtbot.addWidget(window)
+
+    enemies_tab = window.tabs.widget(1)
+    objects_tab = window.tabs.widget(2)
+    assert not any(box.isEnabled() for box in enemies_tab._kind_boxes)
+    assert not any(box.isEnabled() for box in objects_tab._kind_boxes)
+
+    enemies_tab.enable_checkbox.setChecked(True)
+    new_objects_tab = window.tabs.widget(2)
+    assert all(box.isEnabled() for box in enemies_tab._kind_boxes)
+    assert all(box.isEnabled() for box in new_objects_tab._kind_boxes)
+
+    enemies_tab.enable_checkbox.setChecked(False)
+    newer_objects_tab = window.tabs.widget(2)
+    assert not any(box.isEnabled() for box in enemies_tab._kind_boxes)
+    assert not any(box.isEnabled() for box in newer_objects_tab._kind_boxes)
     assert window.tabs.currentIndex() == 0  # reload_tab("objects") didn't steal focus
 
     window.save()

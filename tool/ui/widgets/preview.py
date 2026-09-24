@@ -17,14 +17,22 @@ from tool.core.palette import apply as apply_palette
 # (telemetry key, display label, max value for the bar) -- a small, fixed
 # set of per-population activations that already exist as row values,
 # cheap because they're just floats the run already computed.
+#
+# Max values are per-population, not a uniform guess: measured against a
+# real 689-frame run (level 1-1, sigma=0, seed=0, 9 escape jumps) --
+# found in manual testing that a uniform 5.0 pinned TTMn at 100% the
+# instant it fired, since a jump's TTMn value is exactly SPIKE_AMP=50.0
+# (config.jump.spike_amp, "a spike is a full-scale event"), 10x the old
+# assumed ceiling. dna01/dna02 (observed max ~10.4) were also clipped,
+# just less severely.
 _BARS = [
-    ("lc4", "LC4", 5.0),
-    ("lplc2", "LPLC2", 5.0),
-    ("ttmn", "TTMn", 5.0),
-    ("dna01", "DNa01", 5.0),
-    ("dna02", "DNa02", 5.0),
-    ("dnp09", "DNp09", 5.0),
-    ("mdn", "MDN", 5.0),
+    ("lc4", "LC4", 4.0),        # observed max ~3.36
+    ("lplc2", "LPLC2", 6.0),    # observed max ~5.49
+    ("ttmn", "TTMn", 50.0),     # SPIKE_AMP -- a jump spike is a full-scale event
+    ("dna01", "DNa01", 12.0),   # observed max ~10.4
+    ("dna02", "DNa02", 12.0),   # observed max ~10.4
+    ("dnp09", "DNp09", 1.0),    # observed max ~0.94, a bounded [0,1] output
+    ("mdn", "MDN", 12.0),       # same WTA-style circuit shape as dna01/dna02
 ]
 
 
@@ -63,7 +71,7 @@ class PreviewWidget(QWidget):
         self._player = player
 
     def show_frame(self, obs: np.ndarray, row: dict) -> None:
-        displayed = apply_palette(obs, self._player)
+        displayed = apply_palette(obs, self._player, mario_x=row.get("mario_x"))
         pixmap = frame_to_pixmap(displayed)
         self.frame_label.setPixmap(
             pixmap.scaled(512, 480, Qt.AspectRatioMode.KeepAspectRatio)
