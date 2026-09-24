@@ -98,3 +98,28 @@ Profile effect (modified - default fitness), as requested:
 **What we learned.** The requested real-vs-engaging-shuffled comparison isn't answerable from this sample the way it was posed: with a strict "any spike" criterion exactly one network qualifies, and that one network (`shuffle_seed=6`) is a boundary case whose single spike didn't change its outcome in any way -- it behaves identically to the zero-spike networks. There is no shuffled network in this sample of 8 with a real, functioning escape response to compare against the real connectome's own effect.
 
 That absence is itself the finding, and a bigger one than "engaging vs. non-engaging spread": **a working jump/escape circuit looks like the exception for a shuffled connectome here, not the rule** -- 8/8 sampled networks fail identically (same death point, same 0% survival) regardless of the specific random rewiring, which is a stronger and cleaner result than the original section's single-seed finding suggested (that finding undersold it by leaving open the possibility `shuffle_seed=1` was just an unlucky draw). Second, among these non-functioning networks, the profile boost's rescue-via-steering effect (SPEC section 1's separate odour pathway, no jump circuit needed) is itself inconsistent: 2 of 8 networks (`shuffle_seed=1`, `shuffle_seed=7`) are substantially rescued (+375.5, +313.6 fitness), the other 6 are not moved at all (gap=0.0). So even the "does the odour-only rescue work" question doesn't have a uniform answer across shuffled rewirings -- it depends on the specific network, same as everything else about the shuffled condition in this validation. A real follow-up here isn't sweeping more shuffle seeds (this sample already shows the pattern clearly) -- it's asking why the jump circuit fails so consistently across random rewirings when the same level/encounter is entirely survivable by the real connectome, which is a question about the jump circuit's sensitivity to its specific wiring, not about C8a's own per-kind gains.
+
+---
+
+## 029, addendum -- the shared-gain caveat this section's own conclusion needs
+
+Checked 2026-09-24 (`docs/PROPOSAL_c5_gain_calibration.md`, not built):
+`scripts/shuffle_sweep.py`/`scripts/compare_controllers.py` re-tune the
+jump circuit's gain per shuffled network via Diagnostic-4 -- using the
+real circuit's gain on an untuned shuffle "answers nothing about the
+wiring" (that script's own words). The sweep above used `config.jump.g`
+(2.0) unchanged for every one of the 8 shuffled networks, exactly the
+comparison that warning is about.
+
+Existing (stale, dated 2026-09-19, needs a fresh run) results in
+`projects/legacy/telemetry/shuffle_sweep_results.json` show `shuffle_seed`
+1, 6, and 7 need `g=3.0`, not the `2.0` used here -- so those three
+networks' "died at x=285 with zero jump activity" result may simply be
+under-driven, not evidence of a non-functional escape pathway. But
+`shuffle_seed` 3, 4, 5, and 8 have **no confirmed g at any tested value**,
+and `shuffle_seed=2`'s own confirmed g was already exactly 2.0 (what was
+used here) and it still died identically -- so gain mismatch is a real,
+partial confound for this section's "8/8 fail identically" conclusion,
+not a full explanation of it. See `docs/PROPOSAL_c5_gain_calibration.md`
+for the design that would separate the two populations cleanly (not
+built).

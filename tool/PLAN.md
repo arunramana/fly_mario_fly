@@ -18,18 +18,37 @@ profiles (`tool/tests/test_entity_profiles_tab.py`).
   unread looming/danger fields.
 - **C7's own first real recorded run** + `docs/RUNS.md` entry -- flagged
   since P5, still not done (not silently skipped).
-- **The slowdown** -- whether a warm no-video run still hits P0's
-  measured 99fps, or something added across C1-C10/C5/C7/C8a cost real
-  throughput, has not been measured since P0. Being timed now.
-- **Whether the C5 shuffled control is fair** -- `projects/legacy/runs/
-  029_c8a_validation.md`'s sweep found all 8 sampled shuffled networks
-  (`shuffle_seed=1..8`) die at the identical x=285 under the default
-  profile, 0% survival: a working jump/escape circuit looks like the
-  exception for a shuffled connectome at this level, not the rule. If
-  that's a calibration artifact (the shuffled network's gain was never
-  re-tuned the way `scripts/shuffle_sweep.py`/`compare_controllers.py`
-  tune it per network) rather than a real finding about the connectome,
-  every C5 comparison this project has run needs that caveat attached.
+- ~~**The slowdown**~~ -- **measured 2026-09-24, not a real regression.**
+  A warm no-video run (level 1-1, sigma=0, seed=0, `max_frames=1500`,
+  dies at 689 frames -- P0's exact scenario) first read 79fps mean over 5
+  reps (as low as 67.9fps), which would have been a real ~20% regression
+  from P0's 99.2fps. A second pass using `time.process_time()` (CPU time,
+  not wall clock, to filter OS scheduling noise) and 8-10 reps gave a
+  tight, consistent 98.9-105fps -- matching or slightly beating P0's
+  baseline. No stray processes were found running (`Get-Process
+  python*`) during either measurement. Conclusion: the first reading was
+  contaminated by transient system load (most likely disk/cache still
+  settling right after the 144-episode C8a validation sweep that had
+  just finished on this machine), not a genuine cost from C1-C10/C5/C7/
+  C8a -- confirmed by re-measuring cleanly rather than trusting the first,
+  worse number (CLAUDE.md invariant 7's own point: measure the actual
+  phases, don't reason from a plausible-looking first read).
+- **Whether the C5 shuffled control is fair** -- **checked 2026-09-24,
+  proposal written, not built: `docs/PROPOSAL_c5_gain_calibration.md`.**
+  `projects/legacy/runs/029_c8a_validation.md`'s sweep found all 8
+  sampled shuffled networks (`shuffle_seed=1..8`) die at the identical
+  x=285 under the default profile, 0% survival. `scripts/shuffle_sweep.py`
+  and `scripts/compare_controllers.py` both re-tune the jump circuit's
+  gain per shuffled network via Diagnostic-4 (their own docstrings: using
+  the real circuit's gain on an untuned shuffle "answers nothing about
+  the wiring") -- C5's `shuffle_seed` does not do this, using
+  `config.jump.g` unchanged for every shuffle. Existing (stale, needs a
+  fresh run) results in `projects/legacy/telemetry/
+  shuffle_sweep_results.json` show shuffle seeds 1, 6, 7 need `g=3.0` (not
+  the `2.0` used), and seeds 3, 4, 5, 8 have **no confirmed g at any
+  value tested** -- partially, not fully, explaining `029`'s finding (seed
+  2's own confirmed g was already 2.0, matching what was used, and it
+  still died identically). See the proposal for the full design.
 
 Full repo golden gate green throughout every codebase-touching phase:
 74/74 after C5+C7 landed, 82/82 after C8a's own perception-layer tests
