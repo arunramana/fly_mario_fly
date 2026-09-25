@@ -149,22 +149,17 @@ def test_cancelled_run_is_marked_in_index_and_note(qtbot, clean_project):
     window.save()
 
 
-def test_batch_stats_exclude_cancelled_runs(qtbot):
-    from types import SimpleNamespace
-    from PySide6.QtWidgets import QLabel
-    from tool.ui.tabs.run import RunTab
+def test_batch_stats_exclude_cancelled_runs():
+    """Ease-of-use redesign: the dedicated Batch sub-tab/label is gone --
+    a batch's result is one line through format_batch_result(), the same
+    single result_label every other run outcome uses."""
+    from tool.core.batch_summary import format_batch_result
 
     class _FakeResult:
         fitnesses = [10.0, 999.0, 20.0]
         infos = [{"cancelled": False}, {"cancelled": True}, {"cancelled": False}]
 
-    # show_batch_result only touches self.batch_label -- no need to build
-    # a full RunTab (and the MainWindow it requires) just to test it.
-    fake_self = SimpleNamespace(batch_label=QLabel())
-    RunTab.show_batch_result(fake_self, _FakeResult())
-
-    text = fake_self.batch_label.text()
-    summary_line = text.strip().split("\n")[-1]
-    assert "999.0" not in summary_line, "the excluded run's fitness leaked into the summary line"
-    assert "mean=15.0" in text  # (10+20)/2, the 999.0 cancelled outlier excluded
+    text = format_batch_result(_FakeResult())
+    assert "999.0" not in text, "the excluded run's fitness leaked into the summary line"
+    assert "mean fitness=15.0" in text  # (10+20)/2, the 999.0 cancelled outlier excluded
     assert "1 cancelled" in text

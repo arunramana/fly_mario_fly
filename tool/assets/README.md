@@ -10,7 +10,32 @@ Until a file below exists, its card falls back to `placeholder.png`
 (shipped, already generated) — nothing crashes, nothing looks broken,
 you just see a "no image" card instead of the real artwork.
 
-## What to supply
+## Sprites (downloaded 2026-09-24)
+
+`tool/assets/sprites/` holds all 178 SMB1 sprites from the Super Mario Wiki
+(`Category:Super_Mario_Bros._assets`), **original file names kept**. The
+folder is gitignored: it's Nintendo art, kept on this machine only.
+
+`manifest.json` currently maps the cards to:
+
+| Card | Sprite |
+|---|---|
+| Mario | `sprites/SMB Smallmario.png` |
+| Luigi | `sprites/SMB Small Luigi Sprite.png` |
+| Goomba | `sprites/Goomba SMB.png` |
+| Koopa | `sprites/SMB Green Koopa Troopa Sprite.png` |
+| Generic enemy | `sprites/SMB Sprite Spiny.png` |
+| Power-up | `sprites/SMB Supermushroom.png` |
+| `?` block | `sprites/SMB Qblock.png` |
+
+To swap a card's picture, or give a new entity/character one, point its id
+in `manifest.json` at any file in `sprites/`. Small sprites (~16px) are
+enlarged by a whole-number factor with nearest-neighbour sampling in
+`tool/ui/widgets/asset_image.py`, so they stay crisp. GIFs show their
+first frame. The table below is the original "supply your own" layout,
+still supported if you'd rather drop files into `characters/`/`entities/`.
+
+## What to supply (optional alternative)
 
 All PNG, ideally with a transparent background (the card sits on the
 retro theme's sky-blue background, `tool/ui/palette_colors.SKY_BLUE`,

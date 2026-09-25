@@ -16,6 +16,17 @@ from tool.core.tool_settings import ToolSettings
 from tool.core.tool_settings import load as load_tool_settings
 
 
+# "legacy" is the shared reference project every other project is
+# duplicated from (gate.py's own "Duplicate legacy" button,
+# scripts/validate_entity_profiles.py's own PROJECT_NAME) -- editing it
+# in place through the GUI silently drifted a scalar (habituation.
+# hab_give_up, 3 -> -2) invisibly enough that nobody noticed until the
+# golden gate's own config-roundtrip test caught it days later. Read-only
+# in the GUI now; "Duplicate to edit" is the one way to change anything
+# derived from it.
+READ_ONLY_PROJECT_NAMES = frozenset({"legacy"})
+
+
 @dataclass
 class ToolProject:
     name: str
@@ -25,6 +36,10 @@ class ToolProject:
     @property
     def root(self):
         return PROJECTS_ROOT / self.name
+
+    @property
+    def is_read_only(self) -> bool:
+        return self.name in READ_ONLY_PROJECT_NAMES
 
     @classmethod
     def create(cls, name: str, config: ProjectConfig | None = None,
@@ -59,6 +74,15 @@ class ToolProject:
         return ToolProject.create(new_name, config=self.config, tool_settings=self.tool_settings)
 
     def save(self) -> None:
+        # A hard backstop, not the only guard -- tool/ui/main_window.py
+        # disables every editing control for a read-only project so this
+        # should never actually be reached in normal use, but a script or
+        # a missed UI path must not be able to silently overwrite the
+        # shared reference project either.
+        if self.is_read_only:
+            raise PermissionError(
+                f"project {self.name!r} is read-only -- duplicate it first (ToolProject.duplicate)"
+            )
         self.root.mkdir(parents=True, exist_ok=True)
         self.config.save(self.root / "config.json")
         self.tool_settings.save(self.root / "tool.json")

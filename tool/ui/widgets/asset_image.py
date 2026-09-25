@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 
 ASSETS_ROOT = Path(__file__).resolve().parent.parent.parent / "assets"
@@ -29,6 +30,22 @@ def _manifest() -> dict:
     return _manifest_cache
 
 
+# Card icons render at up to 96px, but NES sprites are ~16px, and QIcon never
+# scales an image *up*. Enlarge small sources by a whole-number factor with
+# nearest-neighbour sampling so pixel art stays crisp instead of tiny or blurry.
+_MIN_CARD_PX = 128
+
+
+def _upscale_pixel_art(pixmap: QPixmap) -> QPixmap:
+    longest = max(pixmap.width(), pixmap.height())
+    factor = _MIN_CARD_PX // longest if longest else 1
+    if factor <= 1:
+        return pixmap
+    return pixmap.scaled(pixmap.width() * factor, pixmap.height() * factor,
+                         Qt.AspectRatioMode.IgnoreAspectRatio,
+                         Qt.TransformationMode.FastTransformation)
+
+
 def load_asset(asset_id: str) -> QPixmap:
     rel_path = _manifest().get(asset_id)
     if rel_path:
@@ -36,5 +53,5 @@ def load_asset(asset_id: str) -> QPixmap:
         if path.exists():
             pixmap = QPixmap(str(path))
             if not pixmap.isNull():
-                return pixmap
+                return _upscale_pixel_art(pixmap)
     return QPixmap(str(PLACEHOLDER_PATH))

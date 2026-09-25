@@ -1,27 +1,33 @@
-"""tool/ui/widgets/entity_cards.py -- tool/SPEC_ui_retro.md sections 7/10:
-one picture-card grid + detail panel widget, generic over any list of
-tool.core.entity_registry.EntityKindEntry -- enemies.py and objects.py
-both build one of these rather than each hand-rolling their own per-kind
-layout. Proven generic by tool/tests/test_entity_registry.py's own
-dummy-entry test, which passes an entry neither tab file has ever
-mentioned by name.
+"""tool/ui/widgets/entity_cards.py -- tool/SPEC_ui_retro.md sections 7/10,
+ease-of-use redesign: one picture-card grid + inspector-panel widget,
+generic over any list of tool.core.entity_registry.EntityKindEntry --
+enemies.py and objects.py both build one of these rather than each
+hand-rolling their own per-kind layout. Cards sit in a responsive
+FlowLayout (wraps to fit the window, not a fixed column count) on the
+left; the selected card's own settings show in an inspector panel to the
+RIGHT (a QSplitter), not as full-width rows stacked below the cards.
+Proven generic by tool/tests/test_entity_registry.py's own dummy-entry
+test, which passes an entry neither tab file has ever mentioned by name.
 """
 
 from __future__ import annotations
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QCheckBox, QDoubleSpinBox, QFormLayout, QHBoxLayout, QLabel, QPushButton,
-    QStackedWidget, QVBoxLayout, QWidget,
+    QCheckBox, QFormLayout, QLabel, QScrollArea,
+    QSplitter, QStackedWidget, QWidget,
 )
 
 from tool.core.entity_registry import EntityKindEntry
 from tool.ui.widgets.asset_image import load_asset
+from tool.ui.widgets.card_button import make_card_button
+from tool.ui.widgets.flow_layout import FlowLayout
+from tool.ui.widgets.no_scroll_inputs import NoScrollDoubleSpinBox
 
-CARD_ICON_PX = 64
+CARD_ICON_PX = 96  # bigger cards -- ease-of-use redesign
 
 
-class EntityCardGrid(QWidget):
+class EntityCardGrid(QSplitter):
     """`on_intensity_changed(kind, value)`, `on_sign_changed(kind, checked)`,
     `on_field_changed(kind, field_name, value)` -- called only for LIVE
     entries (greyed ones have no editable field at all, ground rule 4:
@@ -30,7 +36,7 @@ class EntityCardGrid(QWidget):
 
     def __init__(self, entries: list[EntityKindEntry], profiles, enabled: bool,
                  on_intensity_changed, on_sign_changed, on_field_changed, parent=None):
-        super().__init__(parent)
+        super().__init__(Qt.Orientation.Horizontal, parent)
         self._on_intensity_changed = on_intensity_changed
         self._on_sign_changed = on_sign_changed
         self._on_field_changed = on_field_changed
@@ -39,36 +45,55 @@ class EntityCardGrid(QWidget):
         self._valence_checks: dict = {}   # kind -> QCheckBox, live entries only
         self._card_buttons: dict = {}
 
-        layout = QVBoxLayout(self)
-        card_row = QHBoxLayout()
+        card_scroll = QScrollArea()
+        card_scroll.setWidgetResizable(True)
+        # A FlowLayout's own sizeHint() collapses to one card's width (it
+        # has no notion of "how many columns would look good"), which a
+        # QSplitter reads literally and shrinks this pane to fit -- an
+        # explicit minimum width is what actually gets the splitter to
+        # give the grid room to wrap past a single column.
+        card_scroll.setMinimumWidth(3 * (CARD_ICON_PX + 40))
+        card_area = QWidget()
+        card_flow = FlowLayout(card_area, spacing=10)
         self._stack = QStackedWidget()
 
         for index, entry in enumerate(entries):
-            button = QPushButton()
-            button.setCheckable(True)
-            button.setIcon(load_asset(entry.asset_id))
-            button.setIconSize(QSize(CARD_ICON_PX, CARD_ICON_PX))
-            button.setText(entry.display_name)
-            button.setToolTip(entry.display_name if entry.live else f"{entry.display_name} (greyed): {entry.greyed_reason}")
-            button.clicked.connect(lambda _checked, i=index: self._stack.setCurrentIndex(i))
-            card_row.addWidget(button)
+            tooltip = entry.display_name if entry.live else f"{entry.display_name} (greyed): {entry.greyed_reason}"
+            button = make_card_button(entry.display_name, load_asset(entry.asset_id), CARD_ICON_PX, tooltip)
+            button.clicked.connect(lambda _checked, i=index: self._select(i))
+            card_flow.addWidget(button)
             self._card_buttons[entry.kind] = button
 
             page = self._build_page(entry, profiles, enabled)
             self._stack.addWidget(page)
             self._kind_boxes[entry.kind] = page
 
-        card_row.addStretch(1)
-        layout.addLayout(card_row)
-        layout.addWidget(self._stack)
+        card_scroll.setWidget(card_area)
+        self.addWidget(card_scroll)
+        self.addWidget(self._stack)
+        self.setStretchFactor(0, 3)
+        self.setStretchFactor(1, 2)
+        # QSplitter's stretch factor only governs EXTRA space on resize,
+        # not the initial split -- without this, the card side started
+        # too narrow for FlowLayout to ever wrap to more than one column.
+        self.setSizes([700, 400])
 
         if entries:
-            self._card_buttons[entries[0].kind].setChecked(True)
+            self._select(0)
+
+    def _select(self, index: int) -> None:
+        self._stack.setCurrentIndex(index)
+        for i, button in enumerate(self._card_buttons.values()):
+            button.setChecked(i == index)
 
     def _build_page(self, entry: EntityKindEntry, profiles, enabled: bool) -> QWidget:
         page = QWidget()
         form = QFormLayout(page)
         kind = entry.kind
+
+        title = QLabel(entry.display_name)
+        title.setStyleSheet("font-weight: bold;")
+        form.addRow(title)
 
         if not entry.live:
             note = QLabel(entry.greyed_reason)
@@ -79,7 +104,7 @@ class EntityCardGrid(QWidget):
 
         profile = profiles.get(kind)
 
-        intensity_spin = QDoubleSpinBox()
+        intensity_spin = NoScrollDoubleSpinBox()
         intensity_spin.setRange(0.0, 10.0)
         intensity_spin.setSingleStep(0.1)
         intensity_spin.setValue(profile.odours[0].intensity)
@@ -107,14 +132,14 @@ class EntityCardGrid(QWidget):
         # control that lies (ground rule 4), so is_food gates them out,
         # not a hand-listed kind exception.
         if not profile.is_food:
-            looming_spin = QDoubleSpinBox()
+            looming_spin = NoScrollDoubleSpinBox()
             looming_spin.setRange(0.0, 10.0)
             looming_spin.setSingleStep(0.1)
             looming_spin.setValue(profile.looming_salience)
             looming_spin.valueChanged.connect(lambda v, k=kind: self._on_field_changed(k, "looming_salience", v))
             form.addRow("Looming salience", looming_spin)
 
-            danger_spin = QDoubleSpinBox()
+            danger_spin = NoScrollDoubleSpinBox()
             danger_spin.setRange(0.0, 10.0)
             danger_spin.setSingleStep(0.1)
             danger_spin.setValue(profile.danger_weight)

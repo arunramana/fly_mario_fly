@@ -40,14 +40,35 @@ def main(argv=None) -> int:
     app.setApplicationName("fly_mario")
     load_theme(app)
 
-    from tool.ui.gate import ProjectGateDialog
+    # Ease-of-use redesign: a Home button in the main window returns to
+    # this same gate instead of quitting the app -- quitOnLastWindowClosed
+    # would otherwise end the whole application the instant the main
+    # window closes, before a new one gets a chance to open.
+    app.setQuitOnLastWindowClosed(False)
+    state: dict = {"window": None}
 
-    gate = ProjectGateDialog()
-    if gate.exec() != QDialog.DialogCode.Accepted or gate.selected_project is None:
-        return 0
+    def open_window(project) -> None:
+        from tool.ui.main_window import MainWindow
 
-    from tool.ui.main_window import MainWindow
+        window = MainWindow(project)
+        window.home_requested.connect(open_project)
+        # "Duplicate to edit" on a read-only project (tool/core/
+        # project.py): open the new project directly, skipping the gate
+        # -- the user already said exactly which project they want.
+        window.project_switch_requested.connect(open_window)
+        state["window"] = window  # keep a live Python reference; app.py's
+        # own module scope would otherwise let this get garbage-collected
+        # out from under the C++ widget the instant this function returns
+        window.show()
 
-    window = MainWindow(gate.selected_project)
-    window.show()
+    def open_project() -> None:
+        from tool.ui.gate import ProjectGateDialog
+
+        gate = ProjectGateDialog()
+        if gate.exec() != QDialog.DialogCode.Accepted or gate.selected_project is None:
+            app.quit()
+            return
+        open_window(gate.selected_project)
+
+    open_project()
     return app.exec()

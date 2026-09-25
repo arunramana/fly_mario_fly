@@ -70,3 +70,17 @@ def test_set_config_also_never_clamps(qtbot):
         widget = form._widget_by_path[control.path]
         expected = get_value(config, control.path)
         _assert_widget_shows(widget, expected, control.path)
+
+
+def test_a_tiny_scalar_displays_in_scientific_notation_not_a_lying_zero(qtbot):
+    """network.denormal_flush_threshold = 1e-30 -- at any readable fixed-
+    decimal count this rounds to "0.00", silently lying about it being
+    nonzero (ground rule 4). Found live: this is exactly the value a
+    user reported seeing as "0.00"."""
+    from tool.ui.widgets.no_scroll_inputs import ScientificDoubleSpinBox
+
+    form = ParamForm(load_project_config(LEGACY_CONFIG_PATH))
+    widget = form._widget_by_path["network.denormal_flush_threshold"]
+    assert isinstance(widget, ScientificDoubleSpinBox)
+    assert widget.value() == pytest.approx(1e-30)
+    assert "0.00" not in widget.text()

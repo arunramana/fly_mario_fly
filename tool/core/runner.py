@@ -5,6 +5,8 @@ both the Play button (P4) and a batch run (batch.py) go through
 
 from __future__ import annotations
 
+from pathlib import Path
+
 
 def run_one(spec, on_frame=None, should_stop=None):
     """Runs one RunSpec synchronously in whatever process calls this -- a
@@ -13,6 +15,14 @@ def run_one(spec, on_frame=None, should_stop=None):
     (all 49 scalars, not just the scenario) is the only path a run ever
     takes, matching what a plain `python -m tool.core.cli run` and a
     parallel batch both actually execute.
+
+    `RenderSettings.raw_frames` (default on): also records a cheap, no-
+    brain-panel raw-frame video (tool/core/raw_frame_recorder.py) for the
+    Run tab's video player, live-viewable and seekable from the same
+    file. Lives HERE, not in run_one_streaming, so a batch run (which
+    calls run_one directly, no streaming queue) gets one too --
+    "batch runs appear as a group in the run drawer" needs their own
+    recordings, the same as a single Play's.
     """
     import setuptools  # noqa: F401 -- must precede gym, same rule as run_steering.py
     from sim.project_runner import run_from_config
@@ -27,6 +37,19 @@ def run_one(spec, on_frame=None, should_stop=None):
         from tool.core.entity_profiles_store import load_merged
         entity_profiles = load_merged(spec.project_name)
 
+    recorder = None
+    raw_path = None
+    if spec.tool_settings.render.raw_frames:
+        from config.output_routing import resolve_run_path
+        from tool.core.raw_frame_recorder import RawFrameRecorder
+        raw_path = resolve_run_path(spec.config, Path(spec.out_filename).stem + "_raw.mp4")
+        recorder = RawFrameRecorder(raw_path)
+
+    def combined_on_frame(frame, obs, row):
+        recorder.write_frame(obs)
+        if on_frame is not None:
+            on_frame(frame, obs, row)
+
     tel, info = run_from_config(
         spec.config, spec.out_filename,
         seed=spec.seed,
@@ -36,10 +59,13 @@ def run_one(spec, on_frame=None, should_stop=None):
         shuffle_seed=spec.tool_settings.circuits.shuffle_seed,
         hunger_override=character.hunger_override,
         entity_profiles=entity_profiles,
-        on_frame=on_frame,
+        on_frame=combined_on_frame if recorder is not None else on_frame,
         should_stop=should_stop,
         **powerup_kwargs,
     )
+    if recorder is not None:
+        written = recorder.close()
+        info["raw_frames_path"] = str(written) if written else None
     return tel, info
 
 
@@ -57,10 +83,11 @@ def run_one_streaming(spec, frame_queue, stop_event):
     Throttled by `render.live_preview_fps` (tool/PLAN.md P7, tab 6's
     Settings control): the emulator runs at a fixed 60fps regardless, so
     a requested preview fps below that means sending every Nth frame,
-    not skipping simulation steps. Each frame actually sent is also
-    spatially downsampled 2x ("shrunk") -- the preview widget scales
-    whatever it's given up to 512x480 anyway (tool/ui/widgets/preview.py),
-    so full-resolution frames only cost IPC bandwidth for no visible gain.
+    not skipping simulation steps. Frames are sent at full resolution
+    (ease-of-use redesign) -- tool/ui/widgets/preview.py now scales up by
+    a whole-number factor with nearest-neighbour sampling, so pixel art
+    stays crisp; a pre-shrunk source frame would have thrown away the
+    very pixels that scale-up needs.
     """
     fps = spec.tool_settings.render.live_preview_fps
     every_n = max(1, round(60 / max(1, fps)))
@@ -71,7 +98,7 @@ def run_one_streaming(spec, frame_queue, stop_event):
         if counter["n"] % every_n != 0:
             return
         try:
-            frame_queue.put_nowait(("frame", obs[::2, ::2], row))
+            frame_queue.put_nowait(("frame", obs, row))
         except Exception:
             pass  # a full/closed queue drops frames rather than blocking the sim
 

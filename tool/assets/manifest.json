@@ -1,10 +1,14 @@
 {
-  "_comment": "tool/SPEC_ui_retro.md section 9: asset id -> path relative to tool/assets/. Circuit cards are NOT here -- their images are generated (render.brain_panel.highlight_populations, section 8), never user-supplied, so they never need a placeholder fallback. See tool/assets/README.md for what to actually supply.",
-  "mario_card": "characters/mario.png",
-  "luigi_card": "characters/luigi.png",
-  "goomba_card": "entities/goomba.png",
-  "koopa_card": "entities/koopa.png",
-  "enemy_card": "entities/enemy.png",
-  "powerup_card": "entities/powerup.png",
-  "question_block_card": "entities/question_block.png"
+  "_comment": "tool/SPEC_ui_retro.md section 9: asset id -> path relative to tool/assets/. Circuit cards are NOT here -- their images are generated (render.brain_panel.highlight_populations, section 8), never user-supplied, so they never need a placeholder fallback. See tool/assets/README.md for what to actually supply. Card images point at tool/assets/sprites/, the full SMB1 sprite set downloaded from the Super Mario Wiki (Category:Super_Mario_Bros._assets) with original file names kept; that folder is gitignored (Nintendo art stays local). To use another sprite for a card, or add a new entity, point an id at any file in sprites/.",
+  "mario_card": "sprites/SMB Smallmario.png",
+  "luigi_card": "sprites/SMB Small Luigi Sprite.png",
+  "goomba_card": "sprites/Goomba SMB.png",
+  "koopa_card": "sprites/SMB Green Koopa Troopa Sprite.png",
+  "enemy_card": "sprites/SMB Sprite Spiny.png",
+  "powerup_card": "sprites/SMB Supermushroom.png",
+  "question_block_card": "sprites/SMB Qblock.png",
+  "ground_card": "sprites/SMB Ground.png",
+  "used_block_card": "sprites/SMB1 Empty Block.png",
+  "solid_other_card": "sprites/Warp Pipe SMB.png",
+  "pit_card": "derived/pit_gap.png"
 }

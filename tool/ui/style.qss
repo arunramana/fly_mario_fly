@@ -69,6 +69,35 @@ QPushButton:disabled {
     border-color: #555555;
 }
 
+/* Ease-of-use redesign: picture cards (tool/ui/widgets/card_button.py)
+   are QToolButton, not QPushButton -- icon-above-text needs
+   ToolButtonTextUnderIcon, which QPushButton doesn't support. Same
+   look as a QPushButton otherwise, so a card reads as the same kind of
+   clickable thing as every other button in this theme. */
+QToolButton {
+    font-family: "Press Start 2P", sans-serif;
+    font-size: 9pt;
+    background-color: @BRICK_BROWN@;
+    color: @WHITE@;
+    border: 3px solid @BLACK@;
+    padding: 6px;
+}
+
+QToolButton:hover {
+    background-color: @MARIO_RED@;
+}
+
+QToolButton:checked {
+    background-color: @LUIGI_GREEN@;
+    border-color: @WHITE@;
+}
+
+QToolButton:disabled {
+    background-color: #888888;
+    color: #cccccc;
+    border-color: #555555;
+}
+
 /* The header's Play button, restyled and relabelled "START" (section 5's
    own retro/arcade convention) -- not a new, separate screen. */
 QPushButton#startButton {
@@ -88,12 +117,13 @@ QTabWidget::pane {
 }
 
 QTabBar::tab {
+    /* Ease-of-use redesign: bigger tab labels -- was 8pt/8x12 padding. */
     font-family: "Press Start 2P", sans-serif;
     background-color: @BRICK_BROWN@;
     color: @WHITE@;
     border: 2px solid @BLACK@;
-    padding: 8px 12px;
-    font-size: 8pt;
+    padding: 12px 18px;
+    font-size: 11pt;
 }
 
 QTabBar::tab:selected {
@@ -115,4 +145,39 @@ QCheckBox, QRadioButton {
     font-family: "Press Start 2P", sans-serif;
     font-size: 8pt;
     spacing: 8px;
+}
+
+/* Ease-of-use redesign: visible focus outlines -- keyboard/tab
+   navigation must always show where focus actually is. A distinct
+   colour from the checked/hover states above so focus is never
+   confused with either. */
+QPushButton:focus, QCheckBox:focus, QRadioButton:focus {
+    outline: none;
+    border-color: @WHITE@;
+}
+
+QDoubleSpinBox:focus, QSpinBox:focus, QComboBox:focus, QLineEdit:focus,
+QTextEdit:focus, QSlider:focus, QTableWidget:focus {
+    outline: none;
+    border: 2px solid @MARIO_RED@;
+}
+
+/* Ease-of-use redesign: stat chips above the Run tab's player. */
+QLabel#statChip {
+    background-color: @BRICK_BROWN@;
+    color: @WHITE@;
+    border: 2px solid @BLACK@;
+    padding: 4px 10px;
+    font-size: 8pt;
+}
+
+/* Ease-of-use redesign: the read-only reference project's own banner --
+   a warning colour distinct from every other background in this theme,
+   so it reads as "different from a normal project" at a glance. */
+QLabel#readOnlyBanner {
+    background-color: @BRICK_BROWN@;
+    color: @WHITE@;
+    border: 3px solid @MARIO_RED@;
+    padding: 8px;
+    font-size: 9pt;
 }

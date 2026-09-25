@@ -1,9 +1,11 @@
-"""tool/PLAN.md P7: Space plays, Esc cancels, Ctrl+S saves.
+"""tool/PLAN.md P7: Ctrl+Enter plays (ease-of-use redesign moved this off
+Space, which now drives the Run tab's own video-player play/pause
+instead), Esc cancels, Ctrl+S saves.
 
-Space/Ctrl+S: methods are stubbed on the CLASS before construction, not
-the instance after: QShortcut(..., activated=self.play) binds to
-whatever `self.play` resolves to at __init__ time, so patching the
-instance attribute afterwards would leave the shortcut pointed at the
+Ctrl+Enter/Space/Ctrl+S: methods are stubbed on the CLASS before
+construction, not the instance after: QShortcut(..., activated=self.play)
+binds to whatever `self.play` resolves to at __init__ time, so patching
+the instance attribute afterwards would leave the shortcut pointed at the
 original method. Simulated OS-level key presses (QTest.keyClick) do not
 reach a QShortcut under the offscreen QPA platform tool/tests runs
 under -- verified directly: even ApplicationShortcut (not the default
@@ -56,7 +58,10 @@ def _shortcut_for(window, key_sequence: QKeySequence) -> QShortcut:
     return matches[0]
 
 
-def test_space_triggers_play(qtbot, clean_project, monkeypatch):
+def test_ctrl_enter_triggers_play(qtbot, clean_project, monkeypatch):
+    """Ease-of-use redesign: START (a brand new simulation run) moved to
+    Ctrl+Enter -- Space now drives the Run tab's own video-player
+    play/pause instead, so the two "play" actions don't share a key."""
     from tool.core.project import ToolProject
     from tool.ui.main_window import MainWindow
 
@@ -66,8 +71,26 @@ def test_space_triggers_play(qtbot, clean_project, monkeypatch):
     window = MainWindow(project)
     qtbot.addWidget(window)
 
-    _shortcut_for(window, QKeySequence(Qt.Key.Key_Space)).activated.emit()
+    _shortcut_for(window, QKeySequence("Ctrl+Return")).activated.emit()
     assert calls == ["play"]
+
+
+def test_space_triggers_the_video_player_toggle_not_a_new_run(qtbot, clean_project, monkeypatch):
+    from tool.core.project import ToolProject
+    from tool.ui.main_window import MainWindow
+
+    play_calls = []
+    monkeypatch.setattr(MainWindow, "play", lambda self: play_calls.append("play"))
+    project = ToolProject.create(PROJECT_NAME)
+    window = MainWindow(project)
+    qtbot.addWidget(window)
+
+    toggle_calls = []
+    window.run_tab.toggle_playback = lambda: toggle_calls.append("toggle")
+
+    _shortcut_for(window, QKeySequence(Qt.Key.Key_Space)).activated.emit()
+    assert toggle_calls == ["toggle"]
+    assert play_calls == [], "Space must not also start a brand new simulation run"
 
 
 def test_ctrl_s_triggers_save(qtbot, clean_project, monkeypatch):
@@ -131,6 +154,21 @@ def test_escape_cancels_a_running_run_with_focus_in_a_spin_box(qtbot, clean_proj
     assert finished["info"] is not None, "run never finished (or the safety timeout fired first)"
     assert finished["info"]["cancelled"] is True
     assert finished["info"]["n_frames"] < 5000, "a cancelled run must stop well short of max_frames"
+    window.save()
+
+
+def test_ctrl_number_shortcuts_switch_tabs(qtbot, clean_project):
+    """Ease-of-use redesign: Ctrl+1..Ctrl+7 jump straight to a tab."""
+    from tool.core.project import ToolProject
+    from tool.ui.main_window import MainWindow
+
+    project = ToolProject.create(PROJECT_NAME)
+    window = MainWindow(project)
+    qtbot.addWidget(window)
+
+    for i in range(7):
+        _shortcut_for(window, QKeySequence(f"Ctrl+{i + 1}")).activated.emit()
+        assert window.tabs.currentIndex() == i
     window.save()
 
 

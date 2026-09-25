@@ -12,6 +12,7 @@ tool/CODEBASE_CHANGES.md for why this was not assumed safe).
 from __future__ import annotations
 
 import multiprocessing as mp
+import uuid
 from dataclasses import dataclass
 
 from tool.core.fitness import fitness_of
@@ -58,7 +59,12 @@ def run_batch(project, seeds, fitness_settings=None, n_workers: int = 1) -> Batc
             infos = pool.map(_run_one_for_pool, specs)
 
     fitnesses = [fitness_of(fitness_settings, info) for info in infos]
+    # One id shared by every seed in THIS call -- "batch runs appear as a
+    # group in the run drawer" (ease-of-use redesign) needs a way to tell
+    # which runs came from the same batch; nothing else in a run's own
+    # record says so.
+    batch_id = uuid.uuid4().hex[:8]
     for number, spec, info in zip(numbers, specs, infos):
         record_run(project.name, number, spec.out_filename.rsplit(".", 1)[0],
-                   spec.seed, info, spec.to_dict())
+                   spec.seed, info, spec.to_dict(), batch_id=batch_id)
     return BatchResult(numbers=numbers, infos=infos, fitnesses=fitnesses)

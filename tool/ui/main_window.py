@@ -12,10 +12,11 @@ import multiprocessing as mp
 from PySide6.QtCore import QEvent, Qt, QTimer, Signal
 from PySide6.QtGui import QCloseEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
-    QApplication, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton,
-    QTabWidget, QVBoxLayout, QWidget,
+    QApplication, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMenu,
+    QMessageBox, QPushButton, QTabWidget, QToolButton, QVBoxLayout, QWidget,
 )
 
+from tool.core.batch_summary import format_batch_result
 from tool.core.fitness import fitness_of
 from tool.core.run_spec import RunSpec
 from tool.core.run_store import (
@@ -23,6 +24,12 @@ from tool.core.run_store import (
 )
 from tool.core.runner import run_one_streaming
 from tool.core.batch import run_batch
+
+# Ease-of-use redesign, "Presets: move them into a single header menu":
+# tab-key -> menu label, for exactly the tabs that used to carry their
+# own PresetBar (tool/ui/widgets/preset_bar.py, now unused/deleted).
+PRESET_TAB_KEYS = [("character", "Character"), ("circuits", "Circuits"),
+                    ("goal", "Goal"), ("settings", "Settings")]
 
 
 class MainWindow(QMainWindow):
@@ -34,10 +41,23 @@ class MainWindow(QMainWindow):
     # wherever that value's own single writable home actually is.
     config_changed = Signal(object)
 
+    # Ease-of-use redesign: emitted once a Home click has cleared the
+    # unsaved-changes guard and this window is closing -- app.py listens
+    # so it can show the project gate again and open a new MainWindow,
+    # instead of the app ending the way closing the window normally does.
+    home_requested = Signal()
+
+    # "Duplicate to edit" on a read-only project (tool/core/project.py's
+    # READ_ONLY_PROJECT_NAMES) -- carries the newly duplicated ToolProject
+    # so app.py can open it directly, skipping the gate a Home click goes
+    # through (the user already said exactly which project they want).
+    project_switch_requested = Signal(object)
+
     def __init__(self, project, parent=None):
         super().__init__(parent)
         self.project = project
         self._dirty = False
+        self._closing_confirmed = False
         self._process: mp.Process | None = None
         self._queue: mp.Queue | None = None
         self._stop_event: mp.Event | None = None
@@ -55,22 +75,54 @@ class MainWindow(QMainWindow):
         outer = QVBoxLayout(central)
 
         header = QHBoxLayout()
+        # Ease-of-use redesign: returns to the project gate (the
+        # unsaved-changes guard applies exactly like closing the window).
+        home_button = QPushButton("Home")
+        home_button.clicked.connect(self._go_home)
         self.title_label = QLabel(self._title())
-        save_button = QPushButton("Save")
-        save_button.clicked.connect(self.save)
+        # Presets: one header menu next to Save (ease-of-use redesign),
+        # not a top-level QMenuBar entry floating above the header, and
+        # not a per-tab bar (tool/ui/widgets/preset_bar.py, deleted).
+        self.presets_button = self._build_presets_button()
+        self.save_button = QPushButton("Save")
+        self.save_button.clicked.connect(self.save)
         # tool/SPEC_ui_retro.md section 5: restyled and relabelled
         # "START" (the retro/arcade convention), not a new, separate
         # screen -- the project gate is already this app's own "insert
         # coin" step. objectName drives tool/ui/style.qss's
-        # #startButton rule.
+        # #startButton rule. Ctrl+Enter, not Space -- Space now drives
+        # the Run tab's video-player play/pause instead.
         header_play_button = QPushButton("START")
         header_play_button.setObjectName("startButton")
         header_play_button.clicked.connect(self.play)
+        header.addWidget(home_button)
         header.addWidget(self.title_label)
         header.addStretch(1)
-        header.addWidget(save_button)
+        header.addWidget(self.presets_button)
+        header.addWidget(self.save_button)
         header.addWidget(header_play_button)
         outer.addLayout(header)
+
+        # Ease-of-use redesign: a read-only reference project (tool/core/
+        # project.py's READ_ONLY_PROJECT_NAMES, "legacy" today) shows this
+        # banner instead of silently accepting edits nobody would notice
+        # drifted it -- found live: habituation.hab_give_up changed 3 -> -2
+        # with no record of when or why.
+        self.read_only_banner = QLabel(
+            "This is the read-only reference project -- every control below is "
+            "disabled. Duplicate it to make changes."
+        )
+        self.read_only_banner.setObjectName("readOnlyBanner")
+        self.read_only_banner.setWordWrap(True)
+        duplicate_button = QPushButton("Duplicate to edit")
+        duplicate_button.clicked.connect(self._on_duplicate_to_edit)
+        banner_row = QHBoxLayout()
+        banner_row.addWidget(self.read_only_banner, 1)
+        banner_row.addWidget(duplicate_button)
+        self.read_only_banner_row = QWidget()
+        self.read_only_banner_row.setLayout(banner_row)
+        self.read_only_banner_row.setVisible(self.project.is_read_only)
+        outer.addWidget(self.read_only_banner_row)
 
         self.tabs = QTabWidget()
         outer.addWidget(self.tabs)
@@ -101,6 +153,16 @@ class MainWindow(QMainWindow):
 
         self.run_tab.refresh_history(list_runs(self.project.name))
 
+        # Ease-of-use redesign: a read-only reference project disables
+        # every editing control in one shot -- the whole tab widget,
+        # Save, and the Presets menu (loading a preset would also edit
+        # it). Play/batch stay enabled: RUNNING the project is fine, nor
+        # does it ever call ToolProject.save().
+        if self.project.is_read_only:
+            self.tabs.setEnabled(False)
+            self.save_button.setEnabled(False)
+            self.presets_button.setEnabled(False)
+
         # P7 keyboard shortcuts. ApplicationShortcut, not the default
         # WindowShortcut: there is only ever one window open at a time
         # (the project gate closes before this one opens), so window vs.
@@ -111,10 +173,22 @@ class MainWindow(QMainWindow):
         # offscreen never marks a window active the way a real window
         # manager would.
         for shortcut, slot in (
-            (QKeySequence(Qt.Key.Key_Space), self.play),
+            # Ease-of-use redesign: Space now drives the Run tab's video
+            # player play/pause; START (a brand new simulation run)
+            # moved to Ctrl+Enter so the two "play" actions -- watch a
+            # recording vs. run a fresh episode -- don't share a key.
+            (QKeySequence(Qt.Key.Key_Space), lambda: self.run_tab.toggle_playback()),
+            (QKeySequence("Ctrl+Return"), self.play),
+            (QKeySequence("Ctrl+Enter"), self.play),
             (QKeySequence.StandardKey.Save, self.save),
         ):
             sc = QShortcut(shortcut, self, activated=slot)
+            sc.setContext(Qt.ShortcutContext.ApplicationShortcut)
+
+        # Ease-of-use redesign: Ctrl+1..Ctrl+7 jump straight to a tab.
+        for i in range(self.tabs.count()):
+            sc = QShortcut(QKeySequence(f"Ctrl+{i + 1}"), self,
+                            activated=lambda index=i: self.tabs.setCurrentIndex(index))
             sc.setContext(Qt.ShortcutContext.ApplicationShortcut)
 
         # Escape does NOT go through QShortcut (found in real desktop
@@ -190,27 +264,122 @@ class MainWindow(QMainWindow):
             self.character_tab = new_widget
 
     def save(self) -> None:
+        if self.project.is_read_only:
+            # Unreachable in normal use (the Save button is disabled),
+            # but a defensive check here costs nothing and this method is
+            # also what QKeySequence.StandardKey.Save calls directly.
+            return
         self.project.save()
         self._dirty = False
         self.title_label.setText(self._title())
         self.setWindowTitle(self._title())
 
+    def _on_duplicate_to_edit(self) -> None:
+        """The read-only banner's own button: makes an editable copy of
+        this project and switches straight to it -- app.py opens the new
+        MainWindow directly, skipping the project gate, since the user
+        already said exactly which project they want."""
+        name, ok = QInputDialog.getText(self, "Duplicate to edit", "New project name:")
+        name = name.strip()
+        if not ok or not name:
+            return
+        try:
+            new_project = self.project.duplicate(name)
+        except FileExistsError as exc:
+            QMessageBox.warning(self, "Project exists", str(exc))
+            return
+        self._closing_confirmed = True
+        self.project_switch_requested.emit(new_project)
+        self.close()
+
+    def _confirm_discard_or_save(self) -> bool:
+        """Returns True when it's OK to proceed (nothing unsaved, or the
+        user chose Save/Discard); False means Cancel -- the caller must
+        abort. Shared by closeEvent and _go_home so the guard is asked
+        exactly once per action, not once by each."""
+        if not self._dirty:
+            return True
+        reply = QMessageBox.question(
+            self, "Unsaved changes",
+            "This project has unsaved changes. Save before closing?",
+            QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard
+            | QMessageBox.StandardButton.Cancel,
+        )
+        if reply == QMessageBox.StandardButton.Save:
+            self.save()
+            return True
+        return reply == QMessageBox.StandardButton.Discard
+
     def closeEvent(self, event: QCloseEvent) -> None:
-        if self._dirty:
-            reply = QMessageBox.question(
-                self, "Unsaved changes",
-                "This project has unsaved changes. Save before closing?",
-                QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard
-                | QMessageBox.StandardButton.Cancel,
-            )
-            if reply == QMessageBox.StandardButton.Save:
-                self.save()
-            elif reply == QMessageBox.StandardButton.Cancel:
-                event.ignore()
-                return
+        if not self._closing_confirmed and not self._confirm_discard_or_save():
+            event.ignore()
+            return
         if self._process is not None and self._process.is_alive():
             self.cancel()
         event.accept()
+
+    def _go_home(self) -> None:
+        """Ease-of-use redesign: returns to the project gate, same
+        unsaved-changes guard as closing the window -- asked here, once,
+        not again by closeEvent's own guard when self.close() runs below
+        (_closing_confirmed short-circuits it)."""
+        if not self._confirm_discard_or_save():
+            return
+        if self._process is not None and self._process.is_alive():
+            self.cancel()
+        self._closing_confirmed = True
+        self.home_requested.emit()
+        self.close()
+
+    # ---- Presets menu (header) -------------------------------------------
+
+    def _build_presets_button(self) -> QToolButton:
+        """tool/SPEC_ui_retro.md's ease-of-use follow-up: one header
+        button (next to Save, not a separate QMenuBar row above the
+        header) instead of a PresetBar on every tab that had one. Each
+        submenu is populated lazily (aboutToShow) so it always lists
+        whatever presets actually exist on disk right now, not a
+        snapshot from when the window opened."""
+        button = QToolButton()
+        button.setText("Presets")
+        button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        menu = QMenu(button)
+        for key, label in PRESET_TAB_KEYS:
+            submenu = menu.addMenu(label)
+            submenu.aboutToShow.connect(lambda k=key, m=submenu: self._populate_preset_submenu(k, m))
+        button.setMenu(menu)
+        return button
+
+    def _populate_preset_submenu(self, key: str, submenu) -> None:
+        from tool.core.presets import list_presets
+
+        submenu.clear()
+        save_action = submenu.addAction("Save current as...")
+        save_action.triggered.connect(lambda: self._save_preset(key))
+        names = list_presets(key)
+        if names:
+            submenu.addSeparator()
+            for name in names:
+                action = submenu.addAction(name)
+                action.triggered.connect(lambda checked=False, n=name: self._load_preset(key, n))
+
+    def _preset_tab(self, key: str):
+        index, _factory = self._tab_factories[key]
+        return self.tabs.widget(index)
+
+    def _save_preset(self, key: str) -> None:
+        from tool.core.presets import save_preset
+
+        name, ok = QInputDialog.getText(self, "Save preset", "Preset name:")
+        name = name.strip()
+        if not ok or not name:
+            return
+        save_preset(key, name, self._preset_tab(key)._preset_data())
+
+    def _load_preset(self, key: str, name: str) -> None:
+        from tool.core.presets import load_preset
+
+        self._preset_tab(key)._apply_preset(load_preset(key, name))
 
     # ---- Play / Cancel, through a shared stop event ----------------------
 
@@ -276,21 +445,33 @@ class MainWindow(QMainWindow):
         number, slug = self._current_run_number, self._current_run_slug
         seed = self.project.tool_settings.experiment.seeds[0]
         spec = self._make_run_spec(seed, f"{slug}.mp4")
-        was_cancelled = bool(info.get("cancelled"))
         record_run(self.project.name, number, slug, seed, info, spec.to_dict())
         write_run_note(self.project.name, number, slug, seed,
                         self.project.config, self.project.tool_settings, info)
         self.run_tab.refresh_history(list_runs(self.project.name))
-        self._load_telemetry_into_plots(slug)
+        # select_number() fires row_selected -> load_history_run(), the
+        # SAME path a history pick takes -- one place loads a run's data
+        # into the tab, whether it just finished or was picked from the
+        # table (matches "show the result line once": one formatter,
+        # tool/ui/main_window.py's own _format_result_line, either way).
+        if not self.run_tab.run_table.select_number(number):
+            # Defensive: refresh_history's own sort should always place
+            # the just-recorded run somewhere in the table.
+            self.load_history_run({"number": number, "slug": slug, "seed": seed,
+                                    "summary": info, "run_spec": spec.to_dict()})
+        self.statusBar().showMessage(self.run_tab.result_label.text(), 10_000)
 
-        if was_cancelled:
-            text = f"Run #{number}: CANCELLED at frame {info.get('n_frames')}"
-        else:
-            fitness = fitness_of(self.project.tool_settings.fitness, info)
-            text = (f"Run #{number}: fitness={fitness:.1f}, frames={info.get('n_frames')}, "
-                    f"died={info.get('died_or_flagged')}, max_x={info.get('max_x_abs')}")
-        self.run_tab.show_result(text)
-        self.statusBar().showMessage(text, 10_000)
+    @staticmethod
+    def _format_result_line(number: int, info: dict, fitness_settings) -> str:
+        """Shared by a just-finished live run and a row picked from the
+        run table (load_history_run) -- "show the result line once"
+        means the SAME formatting either way, not two slightly different
+        summaries depending on how you got there."""
+        if info.get("cancelled"):
+            return f"Run #{number}: CANCELLED at frame {info.get('n_frames')}"
+        fitness = fitness_of(fitness_settings, info)
+        return (f"Run #{number}: fitness={fitness:.1f}, frames={info.get('n_frames')}, "
+                f"died={info.get('died_or_flagged')}, max_x={info.get('max_x_abs')}")
 
     def _on_run_error(self, message: str) -> None:
         self._poll_timer.stop()
@@ -309,11 +490,14 @@ class MainWindow(QMainWindow):
         n_workers = self.project.tool_settings.render.parallel_workers
         result = run_batch(self.project, seeds=seeds, n_workers=n_workers)
         self.run_tab.refresh_history(list_runs(self.project.name))
-        self.run_tab.show_batch_result(result)
+        # Ease-of-use redesign: "show the result line once" -- a batch's
+        # outcome goes through the same single result_label every other
+        # run outcome does, not a dedicated Batch sub-tab/label.
+        self.run_tab.show_result(format_batch_result(result))
 
     # ---- History -------------------------------------------------------
 
-    def _load_telemetry_into_plots(self, slug: str) -> None:
+    def _load_telemetry(self, slug: str):
         """Shared by _on_run_finished (a run JUST played) and
         load_history_run (an OLDER run picked from the list) -- found in
         manual testing that only the latter path existed, so the Plots
@@ -323,16 +507,42 @@ class MainWindow(QMainWindow):
         from config.output_routing import resolve_telemetry_path
         telemetry_path = resolve_telemetry_path(self.project.config, f"{slug}_telemetry.csv")
         if telemetry_path.exists():
-            tel = pd.read_csv(telemetry_path)
-            self.run_tab.plots.set_dataframe(tel)
+            return pd.read_csv(telemetry_path)
+        return None
 
     def load_history_run(self, entry: dict) -> None:
+        """A row picked from the Run tab's table (ease-of-use redesign) --
+        also the path a just-finished live run takes (_on_run_finished
+        selects its own new row rather than duplicating this logic).
+        Loads that run's video (only if it actually has one -- "no
+        recording" otherwise), plots, Data/Config drawers, and updates
+        the one result line + stat chips to match."""
         slug = entry["slug"]
-        self._load_telemetry_into_plots(slug)
-        from config.output_routing import resolve_run_path
-        video_path = resolve_run_path(self.project.config, f"{slug}.mp4")
-        if video_path.exists():
-            self.run_tab.show_video(video_path)
+        summary = entry.get("summary", {})
+        tel = self._load_telemetry(slug)
+
+        raw_frames_path = summary.get("raw_frames_path")
+        if raw_frames_path is not None:
+            from pathlib import Path
+            if not Path(raw_frames_path).exists():
+                raw_frames_path = None
+
+        from tool.core.tool_settings import FitnessSettings
+        try:
+            fitness_settings = FitnessSettings(**entry["run_spec"]["tool_settings"]["fitness"])
+        except (KeyError, TypeError):
+            fitness_settings = self.project.tool_settings.fitness
+
+        run_config = None
+        run_spec_config = entry.get("run_spec", {}).get("config")
+        if run_spec_config is not None:
+            from config.project_config import from_dict as config_from_dict
+            run_config = config_from_dict(run_spec_config)
+
+        self.run_tab.load_run_data(raw_frames_path, tel, summary, run_config)
+        fitness = None if summary.get("cancelled") else fitness_of(fitness_settings, summary)
+        self.run_tab.set_stats(summary, fitness)
+        self.run_tab.show_result(self._format_result_line(entry["number"], summary, fitness_settings))
 
     def export_history_run(self, entry: dict):
         return export_run_bundle(self.project.name, entry["number"])

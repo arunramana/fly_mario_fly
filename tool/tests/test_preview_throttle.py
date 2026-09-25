@@ -76,10 +76,13 @@ def test_lower_fps_sends_fewer_frames(clean_project):
     assert len(frames_15) < len(frames_60)
 
 
-def test_sent_frames_are_shrunk(clean_project):
+def test_sent_frames_are_full_resolution(clean_project):
+    """Ease-of-use redesign: frames used to be strided 2x before crossing
+    the process boundary; now they cross at full resolution and
+    tool/ui/widgets/preview.py scales up by a whole-number factor with
+    nearest-neighbour sampling instead."""
     queue = _FakeQueue()
-    run_one_streaming(_spec(60, "shrunk.mp4"), queue, _FakeStopEvent())
+    run_one_streaming(_spec(60, "full_res.mp4"), queue, _FakeStopEvent())
     obs, _row = next((m[1], m[2]) for m in queue.items if m[0] == "frame")
-    # NES frame is 240x256 (tool/ui/widgets/preview.py's own minimum size);
-    # the throttle strides it 2x before it ever crosses the process boundary.
-    assert obs.shape[:2] == (120, 128)
+    # NES frame is 240x256 (tool/ui/widgets/preview.py's own minimum size).
+    assert obs.shape[:2] == (240, 256)

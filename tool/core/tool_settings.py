@@ -80,6 +80,36 @@ class RenderSettings:
     record_video: bool = False
     brain_panel: bool = True  # only meaningful when record_video is True
     live_preview_fps: int = 30
+    # Ease-of-use redesign, Run tab video player: a cheap, no-brain-panel
+    # recording of raw frames (tool/core/raw_frame_recorder.py) -- distinct
+    # from record_video/brain_panel above, which build the expensive
+    # composited video. Off by default, same convention as record_video
+    # above: found live, on this machine, the ffmpeg subprocess it spawns
+    # intermittently (roughly half of runs, under real multiprocessing+
+    # Windows) left the whole simulation worker unable to report back,
+    # even after RawFrameRecorder.close() was made to never block on it.
+    # The mechanism itself is real and tested (tool/tests/
+    # test_raw_frame_recorder.py) -- this default just keeps that known,
+    # unresolved risk off Play's own critical path until it's solved.
+    raw_frames: bool = False
+
+
+@dataclass(frozen=True)
+class RunTabUIState:
+    """Ease-of-use redesign: "remember which drawers are open and how
+    wide" -- the Run tab's left (run browser) and right (Plots/Data/
+    Config) drawers. Display-only layout state, not a simulation
+    scalar -- same reasoning tool/core/display_params.py's own fields
+    are kept out of config/params.py."""
+    runs_drawer_open: bool = True
+    runs_drawer_width: int = 320
+    plots_drawer_open: bool = True
+    plots_drawer_width: int = 420
+    data_drawer_open: bool = False
+    data_drawer_width: int = 320
+    config_drawer_open: bool = False
+    config_drawer_width: int = 320
+    brain_map_visible: bool = False
 
 
 @dataclass(frozen=True)
@@ -90,6 +120,7 @@ class ToolSettings:
     fitness: FitnessSettings = field(default_factory=FitnessSettings)
     experiment: ExperimentSettings = field(default_factory=ExperimentSettings)
     render: RenderSettings = field(default_factory=RenderSettings)
+    run_tab_ui: RunTabUIState = field(default_factory=RunTabUIState)
 
     def to_dict(self) -> dict:
         return asdict(self)

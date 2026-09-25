@@ -8,12 +8,10 @@ from __future__ import annotations
 
 import dataclasses
 
-from PySide6.QtWidgets import (
-    QCheckBox, QFormLayout, QGroupBox, QLabel, QSpinBox, QVBoxLayout, QWidget,
-)
+from PySide6.QtWidgets import QCheckBox, QFormLayout, QGroupBox, QLabel, QVBoxLayout, QWidget
 
 from tool.core.tool_settings import RenderSettings
-from tool.ui.widgets.preset_bar import PresetBar
+from tool.ui.widgets.no_scroll_inputs import NoScrollSpinBox
 
 
 class SettingsTab(QWidget):
@@ -23,18 +21,20 @@ class SettingsTab(QWidget):
         layout = QVBoxLayout(self)
         settings = window.get_tool_settings()
 
-        layout.addWidget(PresetBar("settings", self._preset_data, self._apply_preset))
+        # Presets for this tab live in the header's Presets menu now
+        # (ease-of-use redesign) -- _preset_data/_apply_preset below are
+        # unchanged, main_window.py's menu calls them directly.
 
         box = QGroupBox("Rendering / batching")
         form = QFormLayout(box)
 
-        self.workers_spin = QSpinBox()
+        self.workers_spin = NoScrollSpinBox()
         self.workers_spin.setRange(1, 32)
         self.workers_spin.setValue(settings.render.parallel_workers)
         self.workers_spin.valueChanged.connect(self._on_workers_changed)
         form.addRow("Parallel workers", self.workers_spin)
 
-        self.frame_skip_spin = QSpinBox()
+        self.frame_skip_spin = NoScrollSpinBox()
         self.frame_skip_spin.setRange(1, 30)
         self.frame_skip_spin.setValue(settings.render.frame_skip)
         self.frame_skip_spin.valueChanged.connect(self._on_frame_skip_changed)
@@ -50,11 +50,22 @@ class SettingsTab(QWidget):
         self.brain_panel_checkbox.toggled.connect(self._on_brain_panel_changed)
         form.addRow(self.brain_panel_checkbox)
 
-        self.fps_spin = QSpinBox()
+        self.raw_frames_checkbox = QCheckBox("Record raw frames (Run tab video player)")
+        self.raw_frames_checkbox.setChecked(settings.render.raw_frames)
+        self.raw_frames_checkbox.setToolTip(
+            "Off by default: the ffmpeg subprocess this spawns intermittently stalled "
+            "a whole Play on this machine under real testing (tool/core/"
+            "raw_frame_recorder.py's own docstring). The recording itself works and is "
+            "tested; this default just keeps that known risk off Play's usual path."
+        )
+        self.raw_frames_checkbox.toggled.connect(self._on_raw_frames_changed)
+        form.addRow(self.raw_frames_checkbox)
+
+        self.fps_spin = NoScrollSpinBox()
         self.fps_spin.setRange(1, 60)
         self.fps_spin.setValue(settings.render.live_preview_fps)
         self.fps_spin.setToolTip(
-            "runner.py sends every Nth frame (60 / this value), shrunk 2x -- P7"
+            "runner.py sends every Nth frame (60 / this value), full resolution -- P7"
         )
         self.fps_spin.valueChanged.connect(self._on_fps_changed)
         form.addRow("Live preview fps", self.fps_spin)
@@ -87,6 +98,11 @@ class SettingsTab(QWidget):
     def _on_brain_panel_changed(self, checked: bool) -> None:
         settings = self._window.get_tool_settings()
         render = dataclasses.replace(settings.render, brain_panel=checked)
+        self._window.set_tool_settings(dataclasses.replace(settings, render=render))
+
+    def _on_raw_frames_changed(self, checked: bool) -> None:
+        settings = self._window.get_tool_settings()
+        render = dataclasses.replace(settings.render, raw_frames=checked)
         self._window.set_tool_settings(dataclasses.replace(settings, render=render))
 
     def _on_fps_changed(self, value: int) -> None:

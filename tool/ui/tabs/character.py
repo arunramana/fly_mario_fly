@@ -2,7 +2,9 @@
 (tool/SPEC_ui_retro.md section 6; display-only recolour,
 tool/core/palette.py), hunger override and starting power-up (live,
 C7 -- tool/CODEBASE_CHANGES.md), arousal pC1 (not wired, C9, no SPEC yet)
-in the selected card's own panel below.
+in an inspector panel to the right of the cards (ease-of-use redesign --
+was full-width rows below them). Presets for this tab live in the
+header's Presets menu (main_window.py), not a per-tab bar.
 """
 
 from __future__ import annotations
@@ -10,52 +12,58 @@ from __future__ import annotations
 import dataclasses
 
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QFormLayout, QGroupBox, QHBoxLayout, QPushButton,
-    QSlider, QVBoxLayout, QWidget,
+    QCheckBox, QComboBox, QFormLayout, QSplitter, QToolButton,
+    QVBoxLayout, QWidget,
 )
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import Qt
 
 from tool.core.tool_settings import CharacterSettings
 from tool.ui.widgets.asset_image import load_asset
-from tool.ui.widgets.preset_bar import PresetBar
+from tool.ui.widgets.card_button import make_card_button
+from tool.ui.widgets.flow_layout import FlowLayout
+from tool.ui.widgets.no_scroll_inputs import NoScrollSlider
 
 CARD_ICON_PX = 96
-PLAYERS = [("mario", "Mario", "mario_card"), ("luigi", "Luigi (display-only colour swap)", "luigi_card")]
+# Short button text (fits the card); the fuller description is the
+# tooltip -- "Luigi (display-only colour swap)" as a button LABEL
+# doesn't fit a card this width and was clipping (ease-of-use redesign).
+PLAYERS = [("mario", "Mario", "mario_card", "Mario"),
+           ("luigi", "Luigi", "luigi_card", "Luigi (display-only colour swap)")]
 
 
 class CharacterTab(QWidget):
     def __init__(self, window, parent=None):
         super().__init__(parent)
         self._window = window
-        layout = QVBoxLayout(self)
-
-        layout.addWidget(PresetBar("character", self._preset_data, self._apply_preset))
-
         settings = window.get_tool_settings()
 
-        player_box = QGroupBox("Character")
-        card_row = QHBoxLayout()
-        self._player_buttons: dict[str, QPushButton] = {}
-        for player_id, label, asset_id in PLAYERS:
-            button = QPushButton(label)
-            button.setCheckable(True)
+        outer = QSplitter(Qt.Orientation.Horizontal, self)
+        QVBoxLayout(self).addWidget(outer)
+
+        card_area = QWidget()
+        # A FlowLayout's own sizeHint() collapses to one card's width (it
+        # has no notion of "how many columns would look good"), which a
+        # QSplitter reads literally and shrinks this pane to fit -- an
+        # explicit minimum width is what actually gets the splitter to
+        # give the grid room to wrap past a single column.
+        card_area.setMinimumWidth(3 * (CARD_ICON_PX + 40))
+        card_flow = FlowLayout(card_area, spacing=10)
+        self._player_buttons: dict[str, QToolButton] = {}
+        for player_id, label, asset_id, tooltip in PLAYERS:
+            button = make_card_button(label, load_asset(asset_id), CARD_ICON_PX, tooltip)
             button.setAutoExclusive(True)
-            button.setIcon(load_asset(asset_id))
-            button.setIconSize(QSize(CARD_ICON_PX, CARD_ICON_PX))
             button.setChecked(settings.character.player == player_id)
             button.clicked.connect(lambda _checked, p=player_id: self._on_player_changed(p))
-            card_row.addWidget(button)
+            card_flow.addWidget(button)
             self._player_buttons[player_id] = button
-        card_row.addStretch(1)
-        player_box.setLayout(card_row)
-        layout.addWidget(player_box)
+        outer.addWidget(card_area)
 
-        # The selected card's own panel (tool/SPEC_ui_retro.md section 6):
-        # one shared control set, not duplicated per player -- both cards
-        # read/write the same settings.character fields regardless of
-        # which one is currently selected.
-        state_box = QGroupBox("Selected character's internal state (C7 -- a science change when used)")
-        state_form = QFormLayout(state_box)
+        # The inspector panel (tool/SPEC_ui_retro.md section 6, ease-of-
+        # use redesign): one shared control set, not duplicated per
+        # player -- both cards read/write the same settings.character
+        # fields regardless of which one is currently selected.
+        inspector = QWidget()
+        state_form = QFormLayout(inspector)
         self.hunger_combo = QComboBox()
         self.hunger_combo.addItems(["Read from Mario's size (default)", "Force hungry", "Force sated"])
         self.hunger_combo.setCurrentIndex(self._hunger_index(settings.character.hunger_override))
@@ -67,13 +75,18 @@ class CharacterTab(QWidget):
         self.powerup_checkbox.toggled.connect(self._on_powerup_changed)
         state_form.addRow("Starting power-up", self.powerup_checkbox)
 
-        arousal_slider = QSlider(Qt.Orientation.Horizontal)
+        arousal_slider = NoScrollSlider(Qt.Orientation.Horizontal)
         arousal_slider.setEnabled(False)
         arousal_slider.setToolTip("not wired yet (C9)")
         state_form.addRow("Arousal pC1 (not wired -- C9, no SPEC yet)", arousal_slider)
-        layout.addWidget(state_box)
-
-        layout.addStretch(1)
+        outer.addWidget(inspector)
+        outer.setStretchFactor(0, 3)
+        outer.setStretchFactor(1, 2)
+        # QSplitter's stretch factor only governs how EXTRA space is
+        # divided on resize, not the initial split -- without this, Qt's
+        # default initial sizing left the card side too narrow for the
+        # FlowLayout to ever show more than one card per row.
+        outer.setSizes([700, 400])
 
     def _preset_data(self) -> dict:
         return dataclasses.asdict(self._window.get_tool_settings().character)

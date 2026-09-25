@@ -43,10 +43,14 @@ def git_commit() -> str | None:
 
 
 def record_run(project_name: str, number: int, slug: str, seed: int,
-                info: dict, run_spec_snapshot: dict) -> None:
+                info: dict, run_spec_snapshot: dict, batch_id: str | None = None) -> None:
     """`info` is run_steering.main()'s own summary dict -- `mb_weights`
     (a numpy array, not JSON-safe) is dropped from the stored copy; every
-    other key is a plain number/bool/string."""
+    other key is a plain number/bool/string. `batch_id`: None for a
+    single Play; a shared string for every seed of one run_batch() call
+    (tool/core/batch.py) -- "batch runs appear as a group in the run
+    drawer" (ease-of-use redesign) needs this to actually group them,
+    since nothing else in a run's own record says it came from a batch."""
     path = _index_path(project_name)
     path.parent.mkdir(parents=True, exist_ok=True)
     entries = _read_index(project_name)
@@ -56,6 +60,7 @@ def record_run(project_name: str, number: int, slug: str, seed: int,
         "seed": seed,
         "git_commit": git_commit(),
         "time": datetime.now(timezone.utc).isoformat(),
+        "batch_id": batch_id,
         "summary": {k: v for k, v in info.items() if k != "mb_weights"},
         "run_spec": run_spec_snapshot,
     })

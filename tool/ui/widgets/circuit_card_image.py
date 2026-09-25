@@ -21,24 +21,67 @@ from tool.ui.widgets.asset_image import PLACEHOLDER_PATH
 
 GENERATED_DIR = Path(__file__).resolve().parent.parent.parent / "assets" / "generated"
 
+# In-memory cache alongside the on-disk one: every CircuitsTab build
+# (main_window.py, or any test that constructs a MainWindow) calls this
+# once per circuit, and disk-decoding the same 7 PNGs on every single
+# construction measurably added up across a test suite that builds many
+# MainWindows in a row (found running the full tool/tests suite: a
+# previously reliable soft-timeout test started missing it) -- the same
+# class of "reload a cheap, unchanging asset needlessly" cost CLAUDE.md's
+# own run 026 already flagged for render/brain_panel.py's own _font().
+_pixmap_cache: dict[str, QPixmap] = {}
+
 
 def circuit_card_pixmap(entry: CircuitEntry) -> QPixmap:
+    cached = _pixmap_cache.get(entry.circuit_id)
+    if cached is not None:
+        return cached
+
     if not entry.populations:
-        return QPixmap(str(PLACEHOLDER_PATH))
+        pixmap = QPixmap(str(PLACEHOLDER_PATH))
+        _pixmap_cache[entry.circuit_id] = pixmap
+        return pixmap
 
     cache_path = GENERATED_DIR / f"{entry.circuit_id}.png"
     if cache_path.exists():
         pixmap = QPixmap(str(cache_path))
         if not pixmap.isNull():
+            _pixmap_cache[entry.circuit_id] = pixmap
             return pixmap
 
     try:
+        from PIL import ImageEnhance
         from render.brain_panel import highlight_populations
-        image = highlight_populations(list(entry.populations))
+        # radius_scale=4: a sparse population (Speed=1 type, MDN=4
+        # neurons) drawn at the real video's own dot size was all but
+        # invisible once shrunk to a card-sized icon -- found reviewing
+        # every card side by side, not every one actually showed
+        # something. Dense populations (Mushroom body) already read fine
+        # at 1x; a uniform 4x still reads as "cloud of dots," not
+        # "blob," for those too.
+        image = highlight_populations(list(entry.populations), radius_scale=4.0)
+        # Ease-of-use redesign: "brighter highlight on a dark background"
+        # for the card specifically -- render/brain_panel.py's own output
+        # already maxes out per-soma alpha for a static highlight (shared
+        # code that also feeds real run videos, so it isn't tuned for a
+        # small card image); the boost lives here, tool-side only, and
+        # never touches the shared rendering path. CONTRAST alone (no
+        # flat brightness multiply): brightness lifted the dark ambient
+        # background along with the highlight, washing the card into a
+        # uniform grey instead of the punchier bright-dots-on-dark-field
+        # look actually asked for -- contrast pushes already-dark pixels
+        # darker and already-bright ones brighter, which is the same
+        # operation in one step.
+        image = ImageEnhance.Contrast(image).enhance(1.7)
         GENERATED_DIR.mkdir(parents=True, exist_ok=True)
         image.save(cache_path)
     except Exception:
-        return QPixmap(str(PLACEHOLDER_PATH))
+        pixmap = QPixmap(str(PLACEHOLDER_PATH))
+        _pixmap_cache[entry.circuit_id] = pixmap
+        return pixmap
 
     pixmap = QPixmap(str(cache_path))
-    return pixmap if not pixmap.isNull() else QPixmap(str(PLACEHOLDER_PATH))
+    if pixmap.isNull():
+        pixmap = QPixmap(str(PLACEHOLDER_PATH))
+    _pixmap_cache[entry.circuit_id] = pixmap
+    return pixmap

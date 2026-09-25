@@ -7,12 +7,12 @@ from __future__ import annotations
 import dataclasses
 
 from PySide6.QtWidgets import (
-    QComboBox, QDoubleSpinBox, QFormLayout, QGroupBox, QLineEdit,
-    QCheckBox, QSpinBox, QVBoxLayout, QWidget,
+    QComboBox, QFormLayout, QGroupBox, QLineEdit,
+    QCheckBox, QVBoxLayout, QWidget,
 )
 
 from tool.core.tool_settings import ExperimentSettings, FitnessSettings
-from tool.ui.widgets.preset_bar import PresetBar
+from tool.ui.widgets.no_scroll_inputs import NoScrollDoubleSpinBox, NoScrollSpinBox
 
 LEVELS = ["1-1", "1-2", "1-3", "1-4"]
 
@@ -25,8 +25,9 @@ class GoalTab(QWidget):
         config = window.get_config()
         settings = window.get_tool_settings()
 
-        layout.addWidget(PresetBar("goal", self._preset_data, self._apply_preset))
-
+        # Presets for this tab live in the header's Presets menu now
+        # (ease-of-use redesign) -- _preset_data/_apply_preset below are
+        # unchanged, main_window.py's menu calls them directly.
         scenario_box = QGroupBox("Scenario")
         scenario_form = QFormLayout(scenario_box)
         self.level_combo = QComboBox()
@@ -35,7 +36,7 @@ class GoalTab(QWidget):
         self.level_combo.currentTextChanged.connect(self._on_level_changed)
         scenario_form.addRow("Level", self.level_combo)
 
-        self.max_frames_spin = QSpinBox()
+        self.max_frames_spin = NoScrollSpinBox()
         self.max_frames_spin.setRange(1, 100_000)
         self.max_frames_spin.setValue(config.scenario.max_frames)
         self.max_frames_spin.valueChanged.connect(self._on_max_frames_changed)
@@ -49,7 +50,7 @@ class GoalTab(QWidget):
         # live config.noise.sigma via MainWindow.config_changed (not a
         # value snapshotted once at construction, which would go stale
         # the moment the Circuits tab's own widget changed it).
-        self.sigma_spin = QDoubleSpinBox()
+        self.sigma_spin = NoScrollDoubleSpinBox()
         self.sigma_spin.setRange(0.0, 1.0)
         self.sigma_spin.setDecimals(4)
         self.sigma_spin.setSingleStep(0.01)
@@ -83,8 +84,8 @@ class GoalTab(QWidget):
         layout.addStretch(1)
 
     @staticmethod
-    def _fitness_spin(value: float, slot) -> QDoubleSpinBox:
-        spin = QDoubleSpinBox()
+    def _fitness_spin(value: float, slot) -> NoScrollDoubleSpinBox:
+        spin = NoScrollDoubleSpinBox()
         spin.setRange(0.0, 1000.0)
         spin.setDecimals(3)
         spin.setValue(value)
