@@ -219,7 +219,8 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
          mushroom_offset=None, inject_gap_frame=None, write_telemetry=True,
          retinotopic=False, sigma=0.0, seed=None, telemetry_path=None,
          event_proximal_dopamine=False, config=None, on_frame=None, should_stop=None,
-         shuffle_seed=None, hunger_override=None, entity_profiles=None):
+         shuffle_seed=None, hunger_override=None, entity_profiles=None,
+         death_animation_frames=0):
     """Run one episode of the full system and return (telemetry, info).
 
     out_mp4: required. Build it from a ProjectConfig with
@@ -287,7 +288,15 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
         before this parameter existed (docs/SPEC_entity_perception.md,
         C8a). A bridge.entity_profiles.EntityProfiles applies each kind's
         intensity/looming_salience/danger_weight -- a science change when
-        it differs from bridge/profiles/default.json's shipped values."""
+        it differs from bridge/profiles/default.json's shipped values.
+    death_animation_frames: 0 (default): unchanged behaviour, the episode
+        ends the instant `done` is True, as always. On a real death or
+        flag (not a Cancel, not hitting max_frames), a positive value
+        steps this many EXTRA emulator frames afterward, calling on_frame
+        for each so a recording/live preview shows the NES's own death
+        animation -- excluded from telemetry (observer.record is never
+        called for them) and from fitness (`info`/`frame`/`tel` all still
+        reflect the real end of the episode, not the extension)."""
     if out_mp4 is None:
         raise ValueError(
             "main() needs an explicit out_mp4 -- there is no default any "
@@ -385,6 +394,11 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
                 row["frame"] = frame
                 row["mario_x"] = mario_x
                 observer.record(row)
+                # mario_y set AFTER record(): TelemetryObserver.to_dataframe()
+                # only ever reads its own fixed `columns` list, so this never
+                # becomes a CSV column -- it's here purely for on_frame's
+                # Luigi-recolour box (tool/core/palette.py).
+                row["mario_y"] = int(ram[ADDR_MARIO_Y])
                 if record_video:
                     Image.fromarray(obs).save(tmp / f"{frame:05d}.png")
                 if on_frame is not None:
@@ -495,6 +509,7 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
             row["qblock_hit"] = qblock_hit
             row["mario_size"] = mario_size
             observer.record(row)
+            row["mario_y"] = mario_y  # after record() -- see the frame-skip branch's own comment
             if record_video:
                 Image.fromarray(obs).save(tmp / f"{frame:05d}.png")
             if on_frame is not None:
@@ -506,6 +521,32 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
             policy.on_step(frame, SimpleNamespace(done=done), action)
             if should_stop is not None and should_stop():
                 break
+
+        # Display-only death animation (ease-of-use redesign): `done` means
+        # a real death or flag, never a Cancel (should_stop breaks the loop
+        # without setting it) and never hitting max_frames. Reuses the last
+        # real action -- the NES ignores input during this animation
+        # regardless, so what's sent doesn't matter. Nothing here touches
+        # `frame`, `info`, `observer`, or `tel`: fitness and telemetry see
+        # the episode end exactly where it really did.
+        if done and death_animation_frames > 0 and on_frame is not None:
+            death_row = dict(row)
+            for i in range(death_animation_frames):
+                if should_stop is not None and should_stop():
+                    break
+                # nes-py's own NESEnv.step() (not a Gym wrapper -- checked
+                # directly) refuses to step past the `done` it just
+                # returned ("cannot step in a done environment! call
+                # `reset`"), on the reasonable assumption every caller
+                # wants a fresh episode next. We want the OPPOSITE here --
+                # the death animation is the SAME episode's own emulator
+                # state continuing to run -- so this clears just that one
+                # instance flag before every extra step; `env.reset()` is
+                # never called, so no new episode starts.
+                env.unwrapped.done = False
+                obs, _, _, _ = env.step(action)
+                death_row["frame"] = frame + i  # `frame` is already one past the last recorded row
+                on_frame(frame + i, obs, death_row)
 
         if owns_env:
             env.close()  # a caller-supplied env (savestate reuse across episodes) stays open

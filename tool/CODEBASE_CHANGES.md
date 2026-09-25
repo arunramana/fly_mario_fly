@@ -319,3 +319,51 @@ population's highlighted dot covers measurably more pixels at
 `radius_scale=4.0` than at the default. Golden gate (97/97, run once
 after this change) unaffected -- `render/brain_panel.py` is never on the
 golden's own telemetry path.
+
+## C13 -- `mario_y` in every on_frame row + `death_animation_frames`
+
+**What.**
+- Every `row` `run_steering.main()`'s `on_frame` receives now also carries
+  `mario_y` (`int(ram[ADDR_MARIO_Y])`), set AFTER `observer.record(row)`
+  in both the frame-skip repeat branch and the main decision branch --
+  `TelemetryObserver.to_dataframe()` only ever reads its own fixed
+  `columns` tuple, so a key set on the dict after `record()` (which keeps
+  the same dict reference) never becomes a CSV column.
+- `main(death_animation_frames=0)`: on a real death or flag (`done` True
+  -- never a Cancel, which breaks the loop without setting it, and never
+  hitting max_frames), a positive value steps this many EXTRA emulator
+  frames afterward, calling `on_frame` for each with the last real
+  telemetry row's dict (just `"frame"` updated). Reuses the last real
+  action -- the NES ignores input during this animation regardless.
+  Requires `env.unwrapped.done = False` before each extra `env.step()`:
+  nes-py's own `NESEnv.step()` (not a Gym wrapper) refuses to step past a
+  `done` it just returned ("cannot step in a done environment! call
+  `reset`"), on the assumption every caller wants a fresh episode next --
+  checked directly, not assumed, after this raised `ValueError` on the
+  first attempt. `env.reset()` is never called, so no new episode starts;
+  clearing the one instance flag lets the SAME episode's own emulator
+  state keep running.
+
+**Why.** tool/ui/widgets/palette.py's Luigi-recolour box needed Mario's
+real vertical position, not a fixed band (see the paired tool: commit
+restricting it) -- `mario_y` is that value, already computed in
+run_steering.py's own loop but never threaded through `on_frame` before.
+`death_animation_frames` is the Run tab video player's own ask: show the
+NES's own death animation instead of cutting to the last standing frame,
+without letting a display choice touch telemetry or fitness.
+
+**Default that keeps behaviour.** `death_animation_frames=0` (default):
+the new block's `if death_animation_frames > 0` guard is never entered,
+byte-identical to before this existed. `mario_y` is additive on the same
+`row` dict CSV-writing already ignores past its fixed columns -- proven,
+not assumed, below.
+
+**Proof.** `tests/test_golden.py` (3/3) and `tests/test_config_
+roundtrip.py` unaffected. `tests/test_c13_display_extensions.py` (new):
+every `on_frame` row carries `mario_y`, which never appears in `tel.
+columns`; on tests/test_golden.py's own `test_sigma0_baseline` scenario
+(1-1, sigma=0, seed=0, dies at frame 689) `death_animation_frames=90` adds
+exactly 90 more `on_frame` calls (frames 689-778) while `tel`, `n_frames`,
+and `max_x_abs` stay byte-for-byte identical to `death_animation_frames=0`;
+a run that hits max_frames instead of dying gets zero extra frames
+regardless of the setting.
