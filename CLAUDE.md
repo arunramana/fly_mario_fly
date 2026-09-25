@@ -62,6 +62,14 @@ working around it.
    `_font()` reloading from disk every frame instead (see "Use the GPU"
    below). Measure the actual phases before reaching for CuPy.
 
+8. **The fly controls; the code only perceives.** Computation may feed the
+   fly stimuli (looming, gap, odour) but must never decide or force an
+   action: no forced jumps, B holds, cooldown bypasses or long-jump
+   selection. Controller modules (`bridge/controller_modules.py`) are
+   `PerceptionModule`s that change what the circuit sees. Existing control
+   rules that violate this are listed in `docs/CONTROL_AUDIT.md`, to be
+   replaced by circuit or learned mechanisms.
+
 ## Every change ends with a video in `projects/<name>/runs/`
 
 Not optional, and not only when asked. Any sprint that changes what the agent

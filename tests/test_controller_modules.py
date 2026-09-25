@@ -1,80 +1,79 @@
-"""bridge/controller_modules.py: module list built from config; the
-grounded pit module fires only on the ground with a fresh A press."""
+"""bridge/controller_modules.py: module list built from config; perception
+modules feed stimuli and never act."""
 from __future__ import annotations
 
 import dataclasses
 
-from bridge.controller_modules import ActContext, GroundedPitModule, Proposal, build_modules
-from config.params import GroundedPitParams
-from config.project_config import ProjectConfig
+import numpy as np
+
+from bridge.controller_modules import (
+    GapAheadPerceptionModule, PagePerceptionModule, PerceptionContext, Stimulus, build_modules)
+from config.params import GapAheadParams, PagePerceptionParams
+from config.project_config import ProjectConfig, from_json
+from mario.ram import tile_ram
+from mario.ram.addresses import (ADDR_ENEMY_ACTIVE, ADDR_ENEMY_PAGE, ADDR_ENEMY_X,
+                                 ADDR_MARIO_PAGE, ADDR_MARIO_X)
 
 
-def _ctx(dist, state=0, prev_a=False):
-    return ActContext(ram=None, mario_x=0, gap_w=0, distance_to_edge=dist, dlmn_val=0.0, enemy_d_px=None,
-                      player_state=state, prev_press_a=prev_a, jump_hold=0, jump_cooldown=9,
-                      config=ProjectConfig())
+def _cfg(**modules):
+    return dataclasses.replace(ProjectConfig(), modules=dataclasses.replace(ProjectConfig().modules, **modules))
 
 
 def test_modules_come_from_config_not_flags():
     assert build_modules(ProjectConfig()) == []
-    cfg = dataclasses.replace(ProjectConfig(), modules=dataclasses.replace(
-        ProjectConfig().modules, grounded_pit=GroundedPitParams()))
-    assert [m.name for m in build_modules(cfg)] == ["grounded_pit"]
-
-
-def test_grounded_pit_fires_only_on_the_ground_with_a_fresh_press():
-    m = GroundedPitModule(GroundedPitParams())
-    for ctx, fires in ((_ctx(2), True), (_ctx(2, state=1), False), (_ctx(2, prev_a=True), False),
-                       (_ctx(3), False), (_ctx(None), False)):
-        out = Proposal()
-        m.propose(ctx, out)
-        assert out.force_long_jump is fires
-
-
-def test_run_up_holds_b_even_when_not_yet_firing():
-    m = GroundedPitModule(GroundedPitParams())
-    out = Proposal()
-    m.propose(_ctx(4), out)
-    assert out.force_press_b and not out.force_long_jump
+    built = build_modules(_cfg(page_perception=PagePerceptionParams(), gap_ahead=GapAheadParams()))
+    assert [m.name for m in built] == ["page_perception", "gap_ahead"]
+    assert all(m.kind == "perception" for m in built)
 
 
 def test_config_roundtrip_keeps_an_enabled_module():
-    from config.project_config import from_json
-    cfg = dataclasses.replace(ProjectConfig(), modules=dataclasses.replace(
-        ProjectConfig().modules, grounded_pit=GroundedPitParams(trigger_distance_tiles=3)))
-    assert from_json(cfg.to_json()).modules.grounded_pit.trigger_distance_tiles == 3
+    cfg = _cfg(gap_ahead=GapAheadParams(perceive_tiles=3))
+    assert from_json(cfg.to_json()).modules.gap_ahead.perceive_tiles == 3
+    assert from_json(_cfg(page_perception=PagePerceptionParams()).to_json()).modules.page_perception is not None
 
 
-def test_threat_bypass_lifts_only_the_cooldown_near_a_grounded_threat():
-    from bridge.controller_modules import ThreatCooldownBypassModule
-    from config.params import ThreatBypassParams
-    m = ThreatCooldownBypassModule(ThreatBypassParams(distance_px=40))
-    for d, state, prev_a, expect in ((20, 0, False, True), (60, 0, False, False), (20, 1, False, False),
-                                     (20, 0, True, False), (None, 0, False, False), (-5, 0, False, False)):
-        ctx = _ctx(None, state=state, prev_a=prev_a)
-        ctx.enemy_d_px = d
-        out = Proposal()
-        m.propose(ctx, out)
-        assert out.bypass_cooldown is expect
-        assert not (out.force_dnp01 or out.force_long_jump or out.force_press_b)
+def test_perception_modules_only_set_stimuli():
+    stim = Stimulus()
+    PagePerceptionModule(PagePerceptionParams()).perceive(
+        PerceptionContext(ram=None, mario_x=0, gap_w=0, distance_to_edge=None, config=ProjectConfig()), stim)
+    assert stim.page_aware_looming and stim.gap_input is None
+    assert set(dataclasses.asdict(stim)) == {"page_aware_looming", "gap_input"}  # no action fields
 
 
-def test_page_threat_sees_an_enemy_across_a_page_boundary():
-    import numpy as np
-    from bridge.controller_modules import PageAwareThreatModule
-    from config.params import PageAwareThreatParams
-    from mario.ram.addresses import (ADDR_ENEMY_ACTIVE, ADDR_ENEMY_PAGE, ADDR_ENEMY_X,
-                                     ADDR_MARIO_PAGE, ADDR_MARIO_X)
+def _ground_ram(gap_cols, mario_x=0):
+    ram = np.zeros(tile_ram.BUF_END, dtype=np.uint8)
+    ram[tile_ram.ADDR_MARIO_X] = mario_x
+    for col in range(0, 12):
+        if col not in gap_cols:
+            ram[tile_ram.BUF1_ADDR + tile_ram.GROUND_ROW * 16 + col] = tile_ram.GROUND_ID
+    return ram
+
+
+def test_gap_ahead_grows_toward_the_edge_and_matches_gap_width_there():
+    m = GapAheadPerceptionModule(GapAheadParams(perceive_tiles=4))
+    cfg = ProjectConfig()
+    vals = []
+    for mario_col in (0, 1, 2):                      # pit = cols 4-6 (3 wide)
+        ram = _ground_ram({4, 5, 6}, mario_x=mario_col * 16)
+        stim = Stimulus()
+        d = tile_ram.distance_to_gap(ram, 8)
+        m.perceive(PerceptionContext(ram=ram, mario_x=0, gap_w=0, distance_to_edge=d, config=cfg), stim)
+        vals.append(stim.gap_input)
+    assert vals[0] < vals[1] < vals[2]
+    ram = _ground_ram({4, 5, 6}, mario_x=3 * 16)      # at the edge: same as today's gap_width
+    assert tile_ram.gap_width(ram, 8) == 3
+    stim = Stimulus()
+    m.perceive(PerceptionContext(ram=ram, mario_x=0, gap_w=3, distance_to_edge=1, config=cfg), stim)
+    assert stim.gap_input == 3
+
+
+def test_page_aware_distance_sees_an_enemy_across_a_page_boundary():
+    from bridge.perception import enemy_thetas
     ram = np.zeros(0x800, dtype=np.uint8)
-    ram[ADDR_MARIO_PAGE], ram[ADDR_MARIO_X] = 6, 242          # abs 1778
-    ram[ADDR_ENEMY_ACTIVE], ram[ADDR_ENEMY_PAGE], ram[ADDR_ENEMY_X] = 1, 7, 1   # abs 1793: 15px ahead
-    ctx = _ctx(None)
-    ctx.ram = ram
-    m = PageAwareThreatModule(PageAwareThreatParams(trigger_px=40))
-    out = Proposal()
-    m.propose(ctx, out)
-    assert out.force_dnp01 and out.bypass_cooldown
-    ram[ADDR_ENEMY_PAGE] = 6   # same page: the byte alone would say 241px behind
-    out = Proposal()
-    m.propose(ctx, out)
-    assert not out.force_dnp01
+    ram[ADDR_MARIO_PAGE], ram[ADDR_MARIO_X] = 6, 242
+    ram[ADDR_ENEMY_ACTIVE], ram[ADDR_ENEMY_PAGE], ram[ADDR_ENEMY_X] = 1, 7, 1
+    prev = {"L": 0.0, "R": 0.0}
+    _, _, d_plain = enemy_thetas(ram, 242, prev)
+    _, _, d_page = enemy_thetas(ram, 242, prev, page_aware=True)
+    assert d_plain["R"] is None and d_plain["L"] < -200      # read as far BEHIND
+    assert d_page["R"] == 15                                 # actually 15px ahead

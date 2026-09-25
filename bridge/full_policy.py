@@ -34,7 +34,7 @@ from bridge.perception import (
     profiled_enemy_thetas, profiled_odor,
 )
 from bridge.motor import action_index
-from bridge.controller_modules import ActContext, Proposal, build_modules
+from bridge.controller_modules import ActContext, PerceptionContext, Proposal, Stimulus, build_modules
 from mario.entities.registry import KindRegistry
 from config.project_config import ProjectConfig
 from fly.network import dynamics
@@ -123,7 +123,9 @@ class FullPolicy:
         bridge/profiles/default.json's own shipped values (CLAUDE.md
         rule 3), byte-identical to the None path when it doesn't."""
         self.config = config or ProjectConfig()
-        self.modules = build_modules(self.config)  # ordered, from config
+        built = build_modules(self.config)  # ordered, from config
+        self.modules = [m for m in built if m.kind == "control"]
+        self.perception = [m for m in built if m.kind == "perception"]
         self.level = level
         self.retinotopic = retinotopic
         self.frame_skip = frame_skip
@@ -319,7 +321,7 @@ class FullPolicy:
         self.last_info: dict = {}
         self._prev_gap_w = 0  # docs/SPEC_pits.md: rising-edge pit-encounter logging
         self._prev_press_a = False
-        for module in self.modules:
+        for module in self.modules + self.perception:
             module.reset()
 
     def act(self, observation) -> int:
@@ -345,6 +347,13 @@ class FullPolicy:
             log.debug(f"  pit detected -- mario_x={mario_x} gap_width={gap_w} tiles "
                       f"distance_to_edge={distance_to_edge}")
         self._prev_gap_w = gap_w
+        # Perception modules feed the circuit stimuli; they never act.
+        stim = Stimulus()
+        pctx = PerceptionContext(ram=ram, mario_x=mario_x, gap_w=gap_w,
+                                 distance_to_edge=distance_to_edge, config=c)
+        for module in self.perception:
+            module.perceive(pctx, stim)
+        gap_input = gap_w if stim.gap_input is None else stim.gap_input
 
         cur_qblock_cols = {
             (int(ram[tile_ram.ADDR_MARIO_PAGE]) * 256 + mario_x) // 16 + off
@@ -381,10 +390,12 @@ class FullPolicy:
 
         # ---- escape jump + pit-triggered graded takeoff --------------
         if self.entity_profiles is None:
-            theta, dtheta, d_out = enemy_thetas(ram, mario_x, self.prev_theta, registry=self.registry)
+            theta, dtheta, d_out = enemy_thetas(ram, mario_x, self.prev_theta, registry=self.registry,
+                                                   page_aware=stim.page_aware_looming)
         else:
             theta, dtheta, d_out = profiled_enemy_thetas(
-                ram, mario_x, self.prev_theta, registry=self.registry, profiles=self.entity_profiles)
+                ram, mario_x, self.prev_theta, registry=self.registry, profiles=self.entity_profiles,
+                page_aware=stim.page_aware_looming)
         self.prev_theta = theta
         for _side in ("L", "R"):
             if d_out[_side] is not None:
@@ -410,7 +421,7 @@ class FullPolicy:
             Ij[self.j_msk["LC4_L"]] = abs(dtheta["L"]); Ij[self.j_msk["LPLC2_L"]] = theta["L"]
             Ij[self.j_msk["LC4_R"]] = abs(dtheta["R"]); Ij[self.j_msk["LPLC2_R"]] = theta["R"]
         if not refusing:
-            Ij[self.jump_dnp01_mask] += c.takeoff.gap_gain * gap_w
+            Ij[self.jump_dnp01_mask] += c.takeoff.gap_gain * gap_input
 
         for _ in range(self.substeps):
             hj = self.jump_network.step(Ij, noise=self.noise)

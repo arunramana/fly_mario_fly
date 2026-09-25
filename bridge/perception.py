@@ -29,7 +29,7 @@ import numpy as np
 from mario.entities.kinds import EntityKind
 from mario.entities.registry import DEFAULT as DEFAULT_REGISTRY
 from mario.ram import tile_ram
-from mario.ram.addresses import ADDR_MARIO_SIZE
+from mario.ram.addresses import ADDR_ENEMY_PAGE, ADDR_MARIO_PAGE, ADDR_MARIO_SIZE
 from config.params import OdourParams
 from bridge.entity_profiles import EntityProfiles
 
@@ -38,7 +38,16 @@ HUNGER_MULT_HUNGRY = _odour_params.hunger_mult_hungry  # RAM 0x0756==0 (small Ma
 HUNGER_MULT_SATED = _odour_params.hunger_mult_sated    # RAM 0x0756>=1 (big/fiery) -- unboosted, not zeroed
 
 
-def enemy_thetas(ram, mario_x, prev_theta, registry=DEFAULT_REGISTRY):
+def _dx(ram, slot, rec, mario_x, page_aware):
+    """Enemy minus Mario, px. page_aware includes the page bytes, so an enemy
+    just across a 256px page boundary is ahead, not ~230px behind."""
+    if not page_aware:
+        return rec.x - int(mario_x)
+    return ((int(ram[ADDR_ENEMY_PAGE + slot]) * 256 + int(rec.x))
+            - (int(ram[ADDR_MARIO_PAGE]) * 256 + int(mario_x)))
+
+
+def enemy_thetas(ram, mario_x, prev_theta, registry=DEFAULT_REGISTRY, page_aware=False):
     """Nearest active THREAT's theta/dtheta per hemisphere. Enemies ahead of
     Mario (on-screen x >= mario_x) route Right; behind route Left -- our
     convention, SPEC doesn't fix one since retinotopy is skipped (section 2).
@@ -46,10 +55,10 @@ def enemy_thetas(ram, mario_x, prev_theta, registry=DEFAULT_REGISTRY):
     comment."""
     theta = {"L": 0.0, "R": 0.0}
     d_out = {"L": None, "R": None}
-    for rec in registry.enemy_records(ram):
+    for slot, rec in enumerate(registry.enemy_records(ram)):
         if not rec.active or rec.kind == EntityKind.POWERUP:
             continue
-        d = rec.x - int(mario_x)
+        d = _dx(ram, slot, rec, mario_x, page_aware)
         side = "R" if d >= 0 else "L"
         ad = max(abs(d), 1)
         th = 2.0 * np.arctan(rec.width / (2.0 * ad))
@@ -120,7 +129,7 @@ def goomba_odor(ram, mario_x, registry=DEFAULT_REGISTRY):
     return odor
 
 
-def profiled_enemy_thetas(ram, mario_x, prev_theta, registry, profiles: EntityProfiles):
+def profiled_enemy_thetas(ram, mario_x, prev_theta, registry, profiles: EntityProfiles, page_aware=False):
     """C8a (docs/SPEC_entity_perception.md section 1.1): same as
     enemy_thetas, except each entity's raw angular size is scaled by its
     kind's `looming_salience * danger_weight` (the master-knob product)
@@ -134,10 +143,10 @@ def profiled_enemy_thetas(ram, mario_x, prev_theta, registry, profiles: EntityPr
     not None -- enemy_thetas itself is untouched."""
     theta = {"L": 0.0, "R": 0.0}
     d_out = {"L": None, "R": None}
-    for rec in registry.enemy_records(ram):
+    for slot, rec in enumerate(registry.enemy_records(ram)):
         if not rec.active or rec.kind == EntityKind.POWERUP:
             continue
-        d = rec.x - int(mario_x)
+        d = _dx(ram, slot, rec, mario_x, page_aware)
         side = "R" if d >= 0 else "L"
         ad = max(abs(d), 1)
         th_raw = 2.0 * np.arctan(rec.width / (2.0 * ad))

@@ -154,3 +154,16 @@ def question_blocks_near(ram, n_tiles: int = 16) -> list[int]:
                 offsets.append(k)
                 break
     return offsets
+
+
+def upcoming_gap_width(ram, max_tiles: int = 8) -> int:
+    """Width (tiles) of the first pit within the lookahead window, wherever
+    it starts; 0 if there is none. gap_width() only counts a pit that begins
+    right at offset 1."""
+    width = 0
+    for grounded in ground_ahead(ram, max_tiles):
+        if not grounded:
+            width += 1
+        elif width:
+            break
+    return width
