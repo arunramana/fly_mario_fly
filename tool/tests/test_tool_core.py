@@ -67,7 +67,11 @@ def test_project_create_duplicate_save_round_trip(clean_project):
 
 def test_schema_covers_all_scalars_with_ranges():
     controls = all_controls()
-    assert len(controls) == 60 == scalar_count()
+    from config.params import ALL_PARAM_CLASSES
+    import dataclasses
+    # GUI controls cover ALL_PARAM_CLASSES only; controller-module params
+    # (MODULE_PARAM_CLASSES) are set in config JSON, not a tab.
+    assert len(controls) == sum(len(dataclasses.fields(c)) for c in ALL_PARAM_CLASSES)
     assert all(isinstance(c, ControlSpec) for c in controls)
     # Every control's range is EXACTLY what config/params.py's own field
     # metadata says -- None ("genuinely unknown", config/params.py's own

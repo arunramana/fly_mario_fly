@@ -404,6 +404,19 @@ class DemoParams:
                                     "run_steering.py (wide_gap_target_col's lead_tiles default)")
 
 
+# ---- controller modules (bridge/controller_modules.py) -------------------
+# One frozen params dataclass per module; a module is ON because its field
+# in ModulesConfig is set, OFF (None) by default. Not in ALL_PARAM_CLASSES
+# (tool/core/schema.py maps every entry there to a direct ProjectConfig
+# field); counted and documented via MODULE_PARAM_CLASSES instead.
+
+@dataclass(frozen=True)
+class ModulesConfig:
+    """Field order is execution order. Filled in below as modules land."""
+
+
+MODULE_PARAM_CLASSES: tuple = ()
+
 ALL_PARAM_CLASSES = (
     NetworkParams, NoiseParams, JumpParams, Dnp02Params, TakeoffParams, SpeedParams,
     SteeringParams, MdnParams, MushroomBodyParams, HabituationParams, OdourParams,
@@ -413,4 +426,4 @@ ALL_PARAM_CLASSES = (
 
 def scalar_count() -> int:
     """Every field on every dataclass above (docs/SCALARS.md)."""
-    return sum(len(fields(cls)) for cls in ALL_PARAM_CLASSES)
+    return sum(len(fields(cls)) for cls in ALL_PARAM_CLASSES + MODULE_PARAM_CLASSES)

@@ -23,7 +23,7 @@ from typing import get_type_hints
 
 from config.params import (
     Dnp02Params, DemoParams, EntityParams, HabituationParams, InteractionParams,
-    JumpParams, MdnParams, MushroomBodyParams, NetworkParams, NoiseParams,
+    JumpParams, MdnParams, ModulesConfig, MushroomBodyParams, NetworkParams, NoiseParams,
     OdourParams, RetinotopyParams, SpeedParams, SteeringParams, TakeoffParams,
     TerrainParams,
 )
@@ -71,6 +71,7 @@ class ProjectConfig:
     entity: EntityParams = field(default_factory=EntityParams)
     retinotopy: RetinotopyParams = field(default_factory=RetinotopyParams)
     demo: DemoParams = field(default_factory=DemoParams)
+    modules: ModulesConfig = field(default_factory=ModulesConfig)
     scenario: ScenarioParams = field(default_factory=ScenarioParams)
     output: OutputParams = field(default_factory=OutputParams)
 
@@ -106,8 +107,12 @@ def _from_dict(cls, data: dict):
             continue
         field_type = hints[f.name]
         raw = data[f.name]
+        # `Params | None` fields (a controller module: None == off)
+        inner = [t for t in getattr(field_type, "__args__", ()) if is_dataclass(t)]
         if is_dataclass(field_type) and isinstance(raw, dict):
             kwargs[f.name] = _from_dict(field_type, raw)
+        elif inner and isinstance(raw, dict):
+            kwargs[f.name] = _from_dict(inner[0], raw)
         else:
             kwargs[f.name] = raw
     return cls(**kwargs)

@@ -23,6 +23,7 @@ ADDR_MARIO_PAGE = 0x006D
 # opt-in via inject_frame=, exercised by no golden) is otherwise
 # unaffected.
 ADDR_MARIO_Y = 0x03B8
+ADDR_PLAYER_STATE = 0x001D     # 0 == on the ground (1 jumping, 2 falling, 3 climbing)
 ADDR_MARIO_SIZE = 0x0756       # small=0, big/fiery>=1
 
 ADDR_ENEMY_X = 0x0087

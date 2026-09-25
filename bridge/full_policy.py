@@ -34,6 +34,7 @@ from bridge.perception import (
     profiled_enemy_thetas, profiled_odor,
 )
 from bridge.motor import action_index
+from bridge.controller_modules import ActContext, Proposal, build_modules
 from mario.entities.registry import KindRegistry
 from config.project_config import ProjectConfig
 from fly.network import dynamics
@@ -50,7 +51,7 @@ from fly.circuits.load_dnp02_cached import load as load_dnp02
 from fly.circuits.load_mushroom_body_cached import load as load_mushroom_body
 from mario.ram import tile_ram
 from mario.ram.addresses import (
-    ADDR_MARIO_X, ADDR_MARIO_PAGE, ADDR_MARIO_SIZE,
+    ADDR_MARIO_X, ADDR_MARIO_PAGE, ADDR_MARIO_SIZE, ADDR_PLAYER_STATE,
     ADDR_ENEMY_ACTIVE, ADDR_ENEMY_TYPE, N_ENEMY_SLOTS, POWERUP_ID,
 )
 from fly.plasticity.dopamine import event_dopamine
@@ -122,6 +123,7 @@ class FullPolicy:
         bridge/profiles/default.json's own shipped values (CLAUDE.md
         rule 3), byte-identical to the None path when it doesn't."""
         self.config = config or ProjectConfig()
+        self.modules = build_modules(self.config)  # ordered, from config
         self.level = level
         self.retinotopic = retinotopic
         self.frame_skip = frame_skip
@@ -316,6 +318,9 @@ class FullPolicy:
         self.max_x_abs = None
         self.last_info: dict = {}
         self._prev_gap_w = 0  # docs/SPEC_pits.md: rising-edge pit-encounter logging
+        self._prev_press_a = False
+        for module in self.modules:
+            module.reset()
 
     def act(self, observation) -> int:
         c = self.config
@@ -558,28 +563,32 @@ class FullPolicy:
         long_jump = False
         pathway_fired = None
         frames_to_contact = None
-        # docs/SPEC_pits.md, opt-in (False -> gap_override is always False,
-        # byte-identical to before this existed): a pit close enough to
-        # need a decision now overrides the shared cooldown gate and
-        # commits DNp01 directly, rather than waiting for whichever
-        # pathway's own TTMn happens to cross threshold once cooldown
-        # reopens on its own unrelated schedule -- the exact mechanism
-        # docs/SPEC_pits.md's own validation traced the original miss to.
-        gap_override = (c.scenario.graded_pit_response and distance_to_edge is not None
-                         and distance_to_edge <= c.takeoff.long_jump_trigger_distance_tiles)
-        if self.jump_cooldown > 0 and not gap_override:
+        # Controller modules (bridge/controller_modules.py): each observes this
+        # frame, then proposes cooldown bypass / forced commit / forced B.
+        # No modules -> an all-False Proposal -> behaviour unchanged.
+        ctx = ActContext(
+            ram=ram, mario_x=mario_x, gap_w=gap_w, distance_to_edge=distance_to_edge,
+            dlmn_val=dlmn_val, player_state=int(ram[ADDR_PLAYER_STATE]),
+            prev_press_a=self._prev_press_a, jump_hold=self.jump_hold,
+            jump_cooldown=self.jump_cooldown, config=c)
+        prop = Proposal()
+        for module in self.modules:
+            module.observe(ctx)
+        for module in self.modules:
+            module.propose(ctx, prop)
+        if self.jump_cooldown > 0 and not prop.bypass_cooldown:
             self.jump_cooldown -= 1
         elif self.jump_hold == 0:
-            dnp01_ready = ttmn_val >= c.jump.ttmn_press_threshold or gap_override
+            dnp01_ready = ttmn_val >= c.jump.ttmn_press_threshold or prop.force_dnp01
             dnp02_ready = ttmn_val_dnp02 >= c.jump.ttmn_press_threshold
             if dnp01_ready or dnp02_ready:
                 if dnp01_ready and dnp02_ready:
-                    pathway_fired = "DNp01" if (gap_override or self.jump_network.just_spiked.any()) else (
+                    pathway_fired = "DNp01" if (prop.force_dnp01 or self.jump_network.just_spiked.any()) else (
                         "DNp02" if self.dnp02_network.just_spiked.any() else "DNp01")
                 else:
                     pathway_fired = "DNp01" if dnp01_ready else "DNp02"
                 if self.hab_escape.check(mario_x):
-                    long_jump = gap_override or dlmn_val >= c.takeoff.dlmn_recruit_threshold
+                    long_jump = prop.force_long_jump or dlmn_val >= c.takeoff.dlmn_recruit_threshold
                     self.jump_hold = self.long_jump_hold_frames if long_jump else self.jump_hold_frames
                     escape_trigger = True
                     self.n_escape_jumps += 1
@@ -665,12 +674,12 @@ class FullPolicy:
         # run-up on approach to a real pit -- a NES running jump clears more
         # horizontal distance than a standing one, and DNp09's own decision
         # has no notion of an upcoming gap to plan around.
-        if (c.scenario.graded_pit_response and distance_to_edge is not None
-                and distance_to_edge <= c.takeoff.run_up_tiles):
+        if prop.force_press_b:
             press_b = True
         self.mb_prev_dnp09 = dnp09_val
 
         action = action_index(self.direction, press_a, press_b)
+        self._prev_press_a = bool(press_a)
 
         # Read by the telemetry row and by on_step()'s death punishment.
         self.last_info = dict(

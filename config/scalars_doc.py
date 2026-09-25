@@ -14,7 +14,7 @@ from __future__ import annotations
 from dataclasses import fields
 from pathlib import Path
 
-from config.params import ALL_PARAM_CLASSES, scalar_count
+from config.params import ALL_PARAM_CLASSES, MODULE_PARAM_CLASSES, scalar_count
 
 HEADER = """# Scalars
 
@@ -38,7 +38,7 @@ def _provenance_split() -> dict[str, list[str]]:
     there is no second, hand-maintained classification to drift."""
     buckets: dict[str, list[str]] = {b: [] for b in _PROVENANCE_BUCKETS}
     buckets["other"] = []
-    for cls in ALL_PARAM_CLASSES:
+    for cls in ALL_PARAM_CLASSES + MODULE_PARAM_CLASSES:
         for f in fields(cls):
             prov = f.metadata.get("provenance", "")
             key = prov.split(" ", 1)[0].rstrip(":").lower()
@@ -87,7 +87,7 @@ depends on bit-for-bit, not a gain like the rest of this table.
 def generate() -> str:
     lines = [HEADER]
     total = 0
-    for cls in ALL_PARAM_CLASSES:
+    for cls in ALL_PARAM_CLASSES + MODULE_PARAM_CLASSES:
         lines.append(f"## {cls.__name__}\n")
         lines.append("| field | value | range | provenance | home |")
         lines.append("|---|---|---|---|---|")
