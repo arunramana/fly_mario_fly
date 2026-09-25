@@ -57,3 +57,27 @@ def test_toggling_panels_never_changes_the_video_canvas(qapp, tmp_path, monkeypa
     qapp.processEvents()
     assert tab.player.canvas.target_rect().width() % 256 == 0
     tab.close()
+
+
+def test_panels_fill_the_margin_full_height(qapp, tmp_path, monkeypatch):
+    import tool.ui.widgets.run_edge_panel as mod
+    monkeypatch.setattr(mod, "_SETTINGS", _settings(tmp_path))
+    from tool.ui.tabs.run import RunTab
+
+    class Win:
+        def cancel(self): pass
+        def run_batch(self): pass
+    tab = RunTab(Win())
+    tab.resize(1800, 900)
+    tab.show()
+    pix = QPixmap(256, 240)
+    pix.fill()
+    tab.player.canvas.set_pixmap(pix)
+    qapp.processEvents()
+    tab._place_panels()
+    canvas = tab.player.canvas
+    margin = (canvas.width() - canvas.target_rect().width()) // 2
+    assert tab.brain_overlay.width() == margin
+    assert tab.brain_overlay.height() >= canvas.height() - 80
+    assert tab.data_overlay.width() == margin == tab.config_overlay.width()
+    tab.close()

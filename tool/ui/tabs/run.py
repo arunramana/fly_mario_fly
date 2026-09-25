@@ -27,11 +27,13 @@ from PySide6.QtWidgets import (
 from tool.ui.widgets.plots import TelemetryPlots
 from tool.ui.widgets.run_brain_map_overlay import BrainMapOverlayContent
 from tool.ui.widgets.run_data_overlay import DataOverlayContent
-from tool.ui.widgets.run_detail_panels import ConfigDiffPanel
+from tool.ui.widgets.run_detail_panels import ConfigPanelContent
 from tool.ui.widgets.run_edge_panel import EdgePanel
 from tool.ui.widgets.run_player import RunPlayer
-from tool.ui.widgets.run_playlist import RunPlaylist
+from tool.ui.widgets.run_picker import RunPicker
 from tool.ui.widgets.stat_chips import StatChips
+
+MIN_PANEL_W = 200
 
 SHORTCUT_HELP = """Space -- play / pause
 ← / → -- step one frame back / forward
@@ -89,21 +91,16 @@ class RunTab(QWidget):
 
     def _build_player_page(self) -> None:
         page = QWidget()
-        page_layout = QHBoxLayout(page)
+        page_layout = QVBoxLayout(page)
         page_layout.setContentsMargins(0, 0, 0, 0)
         page_layout.setSpacing(0)
 
+        self.playlist = RunPicker()  # top bar: run dropdown + prev/next
+        page_layout.addWidget(self.playlist)
         self.player = RunPlayer()
         # QLabel-era compatibility alias -- see this module's own docstring.
         self.preview = self.player
         page_layout.addWidget(self.player, 1)
-
-        self.playlist = RunPlaylist(page)
-        self.playlist.setVisible(False)
-        self.playlist_toggle_button = QPushButton("Runs")
-        self.playlist_toggle_button.setParent(self.player.canvas)
-        self.playlist_toggle_button.move(10, 44)
-        self.playlist_toggle_button.clicked.connect(self._toggle_playlist)
 
         # Panels are children of the canvas placed by absolute geometry --
         # never in a layout, so they can't move or resize the video.
@@ -112,7 +109,7 @@ class RunTab(QWidget):
         self.brain_overlay = EdgePanel("brain_map", "◀ Brain", self.brain_map_content, QSize(260, 330), canvas)
         self.data_content = DataOverlayContent()
         self.data_overlay = EdgePanel("data", "Data ▶", self.data_content, QSize(260, 150), canvas)
-        self.config_content = ConfigDiffPanel()
+        self.config_content = ConfigPanelContent()
         self.config_overlay = EdgePanel("config", "Config ▶", self.config_content, QSize(260, 220), canvas)
         for panel in (self.brain_overlay, self.data_overlay, self.config_overlay):
             panel.toggled.connect(lambda _open: self._place_panels())
@@ -124,29 +121,36 @@ class RunTab(QWidget):
         self.sub_tabs_page = page
         self.sub_tabs.addTab(page, "▶ Player")
 
-    def _toggle_playlist(self) -> None:
-        anchor_width = self.sub_tabs_page.width()
-        if self.playlist.isVisible():
-            self.playlist.slide_out(anchor_width)
-        else:
-            # The playlist isn't under sub_tabs_page's own layout (it must
-            # be free to slide by absolute position), so nothing else ever
-            # gives it a real height -- it would otherwise show at
-            # whatever tiny default QWidget size it last had.
-            self.playlist.resize(self.playlist.width(), self.sub_tabs_page.height())
-            self.playlist.slide_in(anchor_width)
-
     def _place_panels(self) -> None:
-        """Left: Brain. Right: Data above Config. Below the LIVE badge and
-        Runs button on the left; flush to the edge, overlapping the video
-        (transparently) when the margins are too narrow."""
-        w = self.player.canvas.width()
-        self.brain_overlay.move(0, 96)
-        self.data_overlay.move(w - self.data_overlay.width(), 10)
-        self.config_overlay.move(w - self.config_overlay.width(),
-                                 10 + self.data_overlay.height() + 6)
-        for panel in (self.brain_overlay, self.data_overlay, self.config_overlay):
+        """Left: Brain, full height. Right: Data above Config. Width = the
+        margin beside the video (at least MIN_PANEL_W: narrower windows let
+        the panels overlap the video, transparently). Sizes never touch the
+        canvas, so the video rect is unchanged."""
+        canvas = self.player.canvas
+        w, h = canvas.width(), canvas.height()
+        margin = max(0, (w - canvas.target_rect().width()) // 2)
+        pw = max(margin, MIN_PANEL_W)
+        avail = max(60, h - self.player.transport.sizeHint().height() - 8)
+        tab = self.brain_overlay.tab.sizeHint().height()
+
+        def body(panel, height):
+            panel.content.setFixedSize(QSize(pw, max(20, height - tab)))
+            panel.adjustSize()
+
+        body(self.brain_overlay, avail)
+        data, cfg = self.data_overlay, self.config_overlay
+        if data.is_open() and cfg.is_open():
+            body(data, int(avail * 0.6) - 3)
+            body(cfg, avail - int(avail * 0.6) - 3)
+        else:
+            body(data, avail - tab - 6)
+            body(cfg, avail - tab - 6)
+        self.brain_overlay.move(0, 4)
+        data.move(w - data.width(), 4)
+        cfg.move(w - cfg.width(), 4 + data.height() + 6)
+        for panel in (self.brain_overlay, data, cfg):
             panel.raise_()
+        self._refresh_brain_map()
 
     def _refresh_brain_map(self, *_args) -> None:
         if self.brain_overlay.is_open():
@@ -222,6 +226,7 @@ class RunTab(QWidget):
 
     def set_stats(self, summary: dict | None, fitness: float | None) -> None:
         self._current_summary = summary
+        self.data_content.set_summary(summary)
         self.stat_chips.set_summary(summary, fitness)
 
     def refresh_history(self, entries: list[dict]) -> None:

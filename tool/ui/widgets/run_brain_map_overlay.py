@@ -21,6 +21,7 @@ class BrainMapOverlayContent(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self._label = QLabel("(no run loaded)")
+        self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._label.setScaledContents(False)
         layout.addWidget(self._label)
 

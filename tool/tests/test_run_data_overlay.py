@@ -1,31 +1,38 @@
-"""tool/ui/widgets/run_data_overlay.py -- the Data overlay's compact
-readout: x, buttons, and the top-N active neurons by their own calibrated
-max (tool/ui/widgets/neuron_activity_strip.py's BARS)."""
+"""tool/ui/widgets/run_data_overlay.py -- run summary + every telemetry
+column for the current frame, grouped."""
 from __future__ import annotations
 
-from tool.ui.widgets.run_data_overlay import DataOverlayContent
+from tool.ui.widgets.run_data_overlay import GROUPS, DataOverlayContent
 
 
-def test_no_frame_shows_placeholder(qapp):
-    widget = DataOverlayContent()
-    widget.update_from_row(None)
-    assert "no frame" in widget._lines.text()
+def test_placeholders(qapp):
+    w = DataOverlayContent()
+    text = w.toPlainText()
+    assert "no run selected" in text and "no frame" in text
 
 
-def test_shows_x_and_direction(qapp):
-    widget = DataOverlayContent()
-    widget.update_from_row({"mario_x": 123, "direction": "R", "press_a": True, "press_b": False})
-    text = widget._lines.text()
-    assert "123" in text
-    assert "R" in text
+def test_summary_at_top_then_grouped_columns(qapp):
+    w = DataOverlayContent()
+    w.set_summary({"n_frames": 10, "max_x_abs": 447, "mb_weights": "skip"})
+    w.update_from_row({"frame": 3, "mario_x": 40, "press_a": True, "theta": 0.5, "gap": 2,
+                       "ttmn": 1.0, "hab_escape": 1, "weird_new_col": 7})
+    text = w.toPlainText()
+    assert text.index("n_frames = 10") < text.index("CURRENT FRAME")
+    assert "mb_weights" not in text
+    for heading in ("Position / motion", "Buttons", "Looming", "Gap / terrain", "Neurons", "Cooldown"):
+        assert heading in text
+    assert "mario_x = 40" in text and "press_a = yes" in text
+    assert "Other" in text and "weird_new_col = 7" in text
 
 
-def test_ranks_the_highest_normalized_population_first(qapp):
-    widget = DataOverlayContent()
-    # ttmn's own max is JumpParams().spike_amp (50 by default) -- 40/50 = 0.8,
-    # comfortably higher than lc4's 1.0/4.0 = 0.25, so ttmn should rank first
-    # regardless of raw magnitude.
-    widget.update_from_row({"mario_x": 10, "direction": "R", "lc4": 1.0, "ttmn": 40.0})
-    text = widget._lines.text()
-    top_line = text.splitlines()[3]
-    assert "TTMn" in top_line
+def test_every_telemetry_column_is_grouped():
+    known = {c for _t, cols in GROUPS for c in cols}
+    for col in ("frame", "mario_x", "theta", "dlmn", "gap", "odor_l", "hab_escape", "press_b", "long_jump"):
+        assert col in known
+
+
+def test_updates_on_new_row(qapp):
+    w = DataOverlayContent()
+    w.update_from_row({"mario_x": 1})
+    w.update_from_row({"mario_x": 2})
+    assert "mario_x = 2" in w.toPlainText()

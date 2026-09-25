@@ -66,6 +66,7 @@ class MainWindow(QMainWindow):
         self._poll_timer.timeout.connect(self._poll_queue)
         self._current_run_number: int | None = None
         self._current_run_slug: str | None = None
+        self._current_run_spec: RunSpec | None = None
 
         self.setWindowTitle(self._title())
         self.resize(1100, 800)
@@ -421,6 +422,10 @@ class MainWindow(QMainWindow):
         number = next_run_number(self.project.name)
         slug = f"{number:03d}_play_seed{seed}"
         spec = self._make_run_spec(seed, f"{slug}.mp4")
+        # Kept for _on_run_finished: the run's OWN config snapshot. Rebuilding
+        # the spec at finish time used whatever the project's config had
+        # become by then (edit the level mid-run and a 1-1 run recorded 1-3).
+        self._current_run_spec = spec
         self._current_run_number = number
         self._current_run_slug = slug
 
@@ -469,11 +474,11 @@ class MainWindow(QMainWindow):
         self.run_tab.progress.setValue(100)
 
         number, slug = self._current_run_number, self._current_run_slug
-        seed = self.project.tool_settings.experiment.seeds[0]
-        spec = self._make_run_spec(seed, f"{slug}.mp4")
+        spec = self._current_run_spec
+        seed = spec.seed
         record_run(self.project.name, number, slug, seed, info, spec.to_dict())
         write_run_note(self.project.name, number, slug, seed,
-                        self.project.config, self.project.tool_settings, info)
+                        spec.config, spec.tool_settings, info)
         self.run_tab.refresh_history(list_runs(self.project.name))
         # The SAME path a playlist pick takes (select_history_run) -- one
         # place loads a run's data into the tab, whether it just finished

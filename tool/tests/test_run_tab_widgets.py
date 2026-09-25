@@ -49,17 +49,36 @@ def test_timeline_markers_stored_by_type(qapp):
     assert timeline._markers.get("stomp") is None
 
 
-def test_config_diff_panel_shows_only_differing_fields(qapp):
+def _cfg(**jump):
+    return dataclasses.replace(ProjectConfig(), jump=dataclasses.replace(ProjectConfig().jump, **jump))
+
+
+def test_config_changed_only_shows_only_differing_fields(qapp):
     panel = ConfigDiffPanel()
-    config = dataclasses.replace(ProjectConfig(), jump=dataclasses.replace(ProjectConfig().jump, g=2.7))
-    panel.set_config(config)
+    panel.set_config(_cfg(g=2.7))
+    panel.set_changed_only(True)
     text = panel.toPlainText()
-    assert "jump.g" in text
-    assert "2.7" in text
-    assert "network.alpha" not in text, "unchanged fields must not clutter the diff"
+    assert "[jump]" in text and "g = 2.7" in text
+    assert "[network]" not in text, "unchanged sections must not clutter the diff"
 
 
-def test_config_diff_panel_all_defaults_says_so(qapp):
+def test_config_full_view_lists_everything_and_highlights_changes(qapp):
+    panel = ConfigDiffPanel()
+    panel.set_config(_cfg(g=2.7))
+    text = panel.toPlainText()
+    assert "[network]" in text and "[scenario]" in text and "alpha" in text
+    assert "background-color:#c8a000" in panel.toHtml().replace(" ", "") or "c8a000" in panel.toHtml()
+
+
+def test_config_changed_only_all_defaults_says_so(qapp):
     panel = ConfigDiffPanel()
     panel.set_config(ProjectConfig())
+    panel.set_changed_only(True)
     assert "default" in panel.toPlainText().lower()
+
+
+def test_config_shows_the_runs_own_level_not_the_projects(qapp):
+    cfg = dataclasses.replace(ProjectConfig(), scenario=dataclasses.replace(ProjectConfig().scenario, level="1-3"))
+    panel = ConfigDiffPanel()
+    panel.set_config(cfg)
+    assert "level = 1-3" in panel.toPlainText()
