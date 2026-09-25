@@ -81,17 +81,21 @@ class RenderSettings:
     brain_panel: bool = True  # only meaningful when record_video is True
     live_preview_fps: int = 30
     # Ease-of-use redesign, Run tab video player: a cheap, no-brain-panel
-    # recording of raw frames (tool/core/raw_frame_recorder.py) -- distinct
-    # from record_video/brain_panel above, which build the expensive
-    # composited video. Off by default, same convention as record_video
-    # above: found live, on this machine, the ffmpeg subprocess it spawns
-    # intermittently (roughly half of runs, under real multiprocessing+
-    # Windows) left the whole simulation worker unable to report back,
-    # even after RawFrameRecorder.close() was made to never block on it.
-    # The mechanism itself is real and tested (tool/tests/
-    # test_raw_frame_recorder.py) -- this default just keeps that known,
-    # unresolved risk off Play's own critical path until it's solved.
-    raw_frames: bool = False
+    # per-run recording (tool/core/frame_store.py) -- distinct from
+    # record_video/brain_panel above, which build the expensive composited
+    # video. On by default: an earlier ffmpeg-subprocess implementation
+    # intermittently hung a run on Windows (raw_frames defaulted off while
+    # that was true); frame_store.py has no subprocess at all (palette-
+    # indexed frames in a plain .npz), so that risk is gone -- see
+    # tool/CODEBASE_CHANGES.md for the measured time/disk cost.
+    raw_frames: bool = True
+    # Real death/flag only (not Cancel, not max_frames): how many extra
+    # emulator frames run_steering.main() steps purely for the recording
+    # above, excluded from telemetry and fitness, so the player shows the
+    # NES's own death animation instead of cutting to the last standing
+    # frame. Measured: the animation plays out well within 90 frames (1.5s)
+    # in manual testing; 0 disables the extension entirely.
+    death_animation_frames: int = 90
 
 
 @dataclass(frozen=True)

@@ -36,16 +36,29 @@ def _f(default, range: Range, provenance: str, home: str):
 
 @dataclass(frozen=True)
 class PaletteDisplayParams:
-    """tool/core/palette.py's Luigi-recolour window."""
+    """tool/core/palette.py's Luigi-recolour window. mario_y_offset_px/
+    mario_height_px replaced a fixed rows-140-240 band once ADDR_MARIO_Y
+    was fixed to 0x03B8 (codebase: fix ADDR_MARIO_Y to 0x03B8) and could
+    finally drive a box that actually follows a jump instead of a
+    generous static guess."""
     mario_x_margin_px: float = _f(8.0, None,
                                     "invented (the sprite's own pixels aren't perfectly aligned to "
                                     "mario_x as a left edge in every animation frame)",
                                     "tool/core/palette.py (MARIO_X_MARGIN_PX)")
-    mario_y_min_px: float = _f(140.0, None,
-                                 "measured (a real 689-frame run, level 1-1: near-Mario red pixels "
-                                 "stayed within roughly rows 190-239 in the common case; 140 gives "
-                                 "headroom through a generous jump apex)",
-                                 "tool/core/palette.py (MARIO_Y_MIN)")
+    mario_y_offset_px: float = _f(19.0, None,
+                                    "measured (tool/core/palette.py's own probe script: held right+A "
+                                    "through a full jump arc on a real 1-1 env, compared ram[0x03B8] "
+                                    "each frame against the topmost red-dominant screen row within "
+                                    "Mario's own x-column band; the two track 1:1 with an offset that "
+                                    "ranged 17-22px across the jump's animation frames, ~19px on "
+                                    "average)",
+                                    "tool/core/palette.py (MARIO_Y_OFFSET_PX)")
+    mario_height_px: float = _f(40.0, None,
+                                  "invented (generous: covers small (16px) or big/fiery (32px) "
+                                  "Mario's sprite height plus the ~5px offset variance the same probe "
+                                  "measured across animation frames, the same margin-for-slop role "
+                                  "mario_x_margin_px plays horizontally)",
+                                  "tool/core/palette.py (MARIO_HEIGHT_PX)")
 
 
 @dataclass(frozen=True)

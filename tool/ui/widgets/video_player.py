@@ -5,11 +5,19 @@ video player. Two backing modes:
   preview mechanism (tool/core/runner.py's throttled queue) delivers --
   no seeking, no timeline scrubbing (there's nothing recorded yet to
   scrub through).
-- "seekable": once a run's raw-frame recording exists (tool/core/
-  raw_frame_recorder.py -- during a run for a live one, or immediately
-  for a completed one loaded from history), backed by a real
-  QMediaPlayer against that file: play/pause, frame-step, speed, and a
-  scrubbable timeline with event markers all work.
+- "seekable": once a run's frame recording exists (tool/core/
+  frame_store.py -- during a run for a live one, or immediately for a
+  completed one loaded from history), backed by the whole (N, H, W)
+  palette-index array loaded into memory: play/pause, frame-step, speed,
+  and a scrubbable timeline all work off a plain integer frame index, no
+  media player, no codec, no async position to chase.
+
+A recording may hold more frames than the telemetry DataFrame has rows --
+run_steering.py's death_animation_frames extends the recording past the
+real end of the episode for display only. Telemetry-derived displays
+(activity strip, brain map, the Data drawer) freeze on the last real row
+once playback runs past `len(tel)`; the game view keeps playing the
+actual recorded animation frames.
 
 The "Brain map" toggle renders on demand from the CURRENT frame's
 telemetry row (render.brain_panel.panel_for_row) -- a live per-frame
@@ -18,13 +26,13 @@ render, not a second video.
 
 from __future__ import annotations
 
-from PySide6.QtCore import QUrl, Qt, Signal
+from PySide6.QtCore import QTimer, Qt, Signal
 from PySide6.QtGui import QImage, QPixmap
-from PySide6.QtMultimedia import QMediaPlayer, QVideoSink
 from PySide6.QtWidgets import (
     QComboBox, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget,
 )
 
+from tool.core.frame_store import frames_to_rgb, load_frames
 from tool.core.palette import apply as apply_palette
 from tool.ui.widgets.neuron_activity_strip import NeuronActivityStrip
 from tool.ui.widgets.preview import frame_to_pixmap, integer_scale
@@ -47,10 +55,14 @@ class VideoPlayer(QWidget):
         self._tel = None
         self._panel_ctx = None
         self._n_frames = 0
+        self._frames_idx = None   # (N, H, W) uint8 palette indices
+        self._palette = None      # (K, 3) uint8 RGB
         self._current_frame_index = 0
         self._last_pixmap = QPixmap()
         self._brain_map_on = False
-        self._was_playing_before_scrub = False
+        self._speed = 1.0
+        self._playing = False
+        self._play_accum = 0.0
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -68,21 +80,15 @@ class VideoPlayer(QWidget):
         self.brain_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         views.addWidget(self.brain_label, 1)
 
-        # QVideoSink, not QVideoWidget: delivers decoded QVideoFrames
-        # straight to us (videoFrameChanged) instead of painting them
-        # itself -- QVideoWidget's own smooth-scaled paint would defeat
-        # the whole-number nearest-neighbour scale-up every OTHER frame
-        # source in this app already uses (tool/ui/widgets/preview.py).
-        # game_label (defined above) is the ONE place any frame -- live
-        # or seekable -- actually gets painted.
-        self._video_sink = QVideoSink()
-        self._video_sink.videoFrameChanged.connect(self._on_video_frame)
-        self._media_player = QMediaPlayer()
-        self._media_player.setVideoOutput(self._video_sink)
-        self._media_player.positionChanged.connect(self._on_position_changed)
-        self._media_player.playbackStateChanged.connect(self._on_playback_state_changed)
-
         layout.addLayout(views, 1)
+
+        # A fixed-rate (~60Hz) ticker, not a per-speed interval: 0.25x-4x
+        # is handled by a fractional accumulator (_on_tick) so the timer
+        # itself never has to run faster than the emulator's own frame
+        # rate, whatever the selected speed.
+        self._playback_timer = QTimer(self)
+        self._playback_timer.setInterval(round(1000 / FPS))
+        self._playback_timer.timeout.connect(self._on_tick)
 
         # Lives inside the brain-map view, not as a permanent fixture --
         # it duplicates the per-neuron numbers panel_for_row already
@@ -152,7 +158,7 @@ class VideoPlayer(QWidget):
         there's nothing finished to scrub through."""
         if self._mode != "live":
             self._enter_live_mode()
-        displayed = apply_palette(obs, self._player, mario_x=row.get("mario_x"))
+        displayed = apply_palette(obs, self._player, mario_x=row.get("mario_x"), mario_y=row.get("mario_y"))
         self._last_pixmap = frame_to_pixmap(displayed)
         self.frame_label.setPixmap(integer_scale(self._last_pixmap, self.frame_label.size()))
         self.activity_strip.update_from_row(row)
@@ -162,32 +168,38 @@ class VideoPlayer(QWidget):
 
     def _enter_live_mode(self) -> None:
         self._mode = "live"
+        self._stop_playback()
         self._tel = None
         self._panel_ctx = None
+        self._frames_idx = None
+        self._palette = None
         self.brain_label.setVisible(False)
         self.timeline.set_length(0)
         for button in (self.play_button, self.step_back_button, self.step_forward_button,
                        self.back_1s_button, self.forward_1s_button, self.speed_combo):
             button.setEnabled(False)
 
-    # ---- mode: seekable (a finished run's raw-frame recording) ----------
+    # ---- mode: seekable (a finished run's frame recording) ---------------
 
     def load_run(self, raw_frames_path, tel, info: dict | None = None) -> None:
         """`raw_frames_path=None`: "no recording" -- an older run, or one
         played with raw_frames off. The plots/data drawers still work off
         `tel` either way; only the video half of the tab is unavailable."""
+        self._stop_playback()
         self._tel = tel
         self._info = info or {}
         if tel is not None and len(tel):
             from render.brain_panel import _panel_context
             self._panel_ctx = _panel_context(tel.fillna(0).reset_index(drop=True))
-            self._n_frames = len(tel)
         else:
             self._panel_ctx = None
-            self._n_frames = 0
 
-        if raw_frames_path is None:
+        loaded = load_frames(raw_frames_path) if raw_frames_path is not None else None
+        if loaded is None:
             self._mode = "empty"
+            self._frames_idx = None
+            self._palette = None
+            self._n_frames = len(tel) if tel is not None else 0
             # Found live: a run that WAS just watched live (this._last_
             # pixmap already holds its final frame) must not have that
             # wiped just because there's nothing to SCRUB through --
@@ -205,9 +217,12 @@ class VideoPlayer(QWidget):
             self.readout_label.setText("(no recording for this run)")
             return
 
+        self._frames_idx, self._palette = loaded
+        # The recording may run past the telemetry (death_animation_frames)
+        # -- the actual frame count is the timeline's own length, not
+        # len(tel).
+        self._n_frames = len(self._frames_idx)
         self._mode = "seekable"
-        self._media_player.setSource(QUrl.fromLocalFile(str(raw_frames_path)))
-        self._media_player.pause()
         self.timeline.set_length(self._n_frames)
         self.timeline.set_markers(_event_markers(tel, self._info))
         for button in (self.play_button, self.step_back_button, self.step_forward_button,
@@ -221,10 +236,38 @@ class VideoPlayer(QWidget):
     def toggle_playback(self) -> None:
         if self._mode != "seekable":
             return
-        if self._media_player.playbackState() == QMediaPlayer.PlaybackState.PlayingState:
-            self._media_player.pause()
+        if self._playing:
+            self._stop_playback()
         else:
-            self._media_player.play()
+            self._start_playback()
+
+    def _start_playback(self) -> None:
+        if self._n_frames == 0:
+            return
+        if self._current_frame_index >= self._n_frames - 1:
+            self.seek_frame(0)
+        self._playing = True
+        self._play_accum = 0.0
+        self.play_button.setText("Pause")
+        self._playback_timer.start()
+
+    def _stop_playback(self) -> None:
+        self._playing = False
+        self._playback_timer.stop()
+        self.play_button.setText("Play")
+
+    def _on_tick(self) -> None:
+        self._play_accum += self._speed
+        step = int(self._play_accum)
+        if step <= 0:
+            return
+        self._play_accum -= step
+        new_frame = self._current_frame_index + step
+        if new_frame >= self._n_frames - 1:
+            self.seek_frame(self._n_frames - 1)
+            self._stop_playback()
+        else:
+            self.seek_frame(new_frame)
 
     def step_frame(self, delta: int) -> None:
         if self._mode != "seekable":
@@ -247,42 +290,11 @@ class VideoPlayer(QWidget):
     def seek_frame(self, frame: int) -> None:
         if self._mode != "seekable" or self._n_frames == 0:
             return
-        frame = max(0, min(frame, self._n_frames - 1))
-        self._media_player.setPosition(round(frame / FPS * 1000))
         self._refresh_frame_display(frame)
 
-    def _current_frame(self) -> int:
-        """The media player's OWN reported position -- authoritative
-        during actual continuous playback (its position advances on Qt's
-        own clock, not ours), but `setPosition()` is asynchronous: right
-        after a manual seek/step, this can still read the PREVIOUS
-        position for a beat. step_frame/jump_seconds chain off
-        `self._current_frame_index` instead (our own last-requested
-        frame) specifically to avoid that lag on rapid sequential
-        stepping -- found live, `step_frame` immediately after `seek_frame`
-        read position() as still 0."""
-        return round(self._media_player.position() / 1000 * FPS)
-
     def _on_speed_changed(self, index: int) -> None:
-        self._media_player.setPlaybackRate(SPEEDS[index])
-
-    def _on_playback_state_changed(self, state) -> None:
-        playing = state == QMediaPlayer.PlaybackState.PlayingState
-        self.play_button.setText("Pause" if playing else "Play")
-
-    def _on_position_changed(self, _position_ms: int) -> None:
-        if self._mode == "seekable":
-            self._refresh_frame_display(self._current_frame())
-
-    def _on_video_frame(self, frame) -> None:
-        """QVideoSink's own decoded frame -- painted here, not by
-        QVideoWidget, so the scale-up stays whole-number nearest-
-        neighbour like every other frame source in this app."""
-        if self._mode != "seekable" or not frame.isValid():
-            return
-        image = frame.toImage()
-        self._last_pixmap = QPixmap.fromImage(image)
-        self.frame_label.setPixmap(integer_scale(self._last_pixmap, self.frame_label.size()))
+        self._speed = SPEEDS[index]
+        self._play_accum = 0.0
 
     def _on_brain_map_toggled(self, checked: bool) -> None:
         self._brain_map_on = checked
@@ -290,9 +302,19 @@ class VideoPlayer(QWidget):
         self.activity_strip.setVisible(checked and self._mode != "empty")
         self.brain_map_toggled.emit(checked)
         if self._mode == "seekable":
-            self._refresh_frame_display(self._current_frame())
+            self._refresh_frame_display(self._current_frame_index)
 
     # ---- shared display refresh --------------------------------------
+
+    def _tel_row(self, frame: int) -> dict:
+        """The telemetry row for `frame`, clamped to the last real row
+        once `frame` runs past a death-animation extension -- there's no
+        new circuit data past the real end of the episode, so every
+        telemetry-derived display just freezes there."""
+        if self._tel is None or not len(self._tel):
+            return {}
+        tel_frame = min(frame, len(self._tel) - 1)
+        return self._tel.iloc[tel_frame].to_dict()
 
     def _refresh_frame_display(self, frame: int) -> None:
         frame = max(0, min(frame, max(0, self._n_frames - 1)))
@@ -303,24 +325,28 @@ class VideoPlayer(QWidget):
         self.readout_label.setText(
             f"{_fmt_time(cur_s)} / {_fmt_time(total_s)}  (frame {frame}/{max(0, self._n_frames - 1)})"
         )
-        if self._tel is not None and frame < len(self._tel):
-            row = self._tel.iloc[frame].to_dict()
+        row = self._tel_row(frame)
+        if self._frames_idx is not None and frame < len(self._frames_idx):
+            rgb = frames_to_rgb(self._frames_idx[frame], self._palette)
+            displayed = apply_palette(rgb, self._player, mario_x=row.get("mario_x"), mario_y=row.get("mario_y"))
+            self._last_pixmap = frame_to_pixmap(displayed)
+            self.frame_label.setPixmap(integer_scale(self._last_pixmap, self.frame_label.size()))
+        if row:
             self.activity_strip.update_from_row(row)
-        if self._brain_map_on and self._panel_ctx is not None:
+        if self._brain_map_on and self._panel_ctx is not None and self._tel is not None and len(self._tel):
             from render.brain_panel import panel_for_row
-            image = panel_for_row(self._tel, frame, self._panel_ctx)
+            tel_frame = min(frame, len(self._tel) - 1)
+            image = panel_for_row(self._tel, tel_frame, self._panel_ctx)
             self.brain_label.setPixmap(_pil_to_pixmap(image).scaled(
                 self.brain_label.size(), Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation))
         self.frame_changed.emit(frame)
 
     def current_row(self):
-        if self._tel is None:
+        if self._tel is None or not len(self._tel) or self._mode != "seekable":
             return None
-        frame = self._current_frame() if self._mode == "seekable" else None
-        if frame is None or frame >= len(self._tel):
-            return None
-        return self._tel.iloc[frame]
+        tel_frame = min(self._current_frame_index, len(self._tel) - 1)
+        return self._tel.iloc[tel_frame]
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)

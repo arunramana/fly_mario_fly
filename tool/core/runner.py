@@ -17,12 +17,19 @@ def run_one(spec, on_frame=None, should_stop=None):
     parallel batch both actually execute.
 
     `RenderSettings.raw_frames` (default on): also records a cheap, no-
-    brain-panel raw-frame video (tool/core/raw_frame_recorder.py) for the
+    brain-panel per-run frame recording (tool/core/frame_store.py) for the
     Run tab's video player, live-viewable and seekable from the same
     file. Lives HERE, not in run_one_streaming, so a batch run (which
     calls run_one directly, no streaming queue) gets one too --
     "batch runs appear as a group in the run drawer" needs their own
     recordings, the same as a single Play's.
+
+    `RenderSettings.death_animation_frames` (default 90): on a real death
+    or flag (not a Cancel, not hitting max_frames), run_steering.main()
+    steps this many extra emulator frames purely for on_frame/the
+    recording -- excluded from telemetry and fitness (run_steering.py's
+    own docstring) -- so the player shows the NES's own death animation
+    instead of cutting to the last standing frame.
     """
     import setuptools  # noqa: F401 -- must precede gym, same rule as run_steering.py
     from sim.project_runner import run_from_config
@@ -41,9 +48,9 @@ def run_one(spec, on_frame=None, should_stop=None):
     raw_path = None
     if spec.tool_settings.render.raw_frames:
         from config.output_routing import resolve_run_path
-        from tool.core.raw_frame_recorder import RawFrameRecorder
-        raw_path = resolve_run_path(spec.config, Path(spec.out_filename).stem + "_raw.mp4")
-        recorder = RawFrameRecorder(raw_path)
+        from tool.core.frame_store import FrameStore
+        raw_path = resolve_run_path(spec.config, Path(spec.out_filename).stem + "_raw.npz")
+        recorder = FrameStore()
 
     def combined_on_frame(frame, obs, row):
         recorder.write_frame(obs)
@@ -61,10 +68,11 @@ def run_one(spec, on_frame=None, should_stop=None):
         entity_profiles=entity_profiles,
         on_frame=combined_on_frame if recorder is not None else on_frame,
         should_stop=should_stop,
+        death_animation_frames=spec.tool_settings.render.death_animation_frames,
         **powerup_kwargs,
     )
     if recorder is not None:
-        written = recorder.close()
+        written = recorder.close(raw_path)
         info["raw_frames_path"] = str(written) if written else None
     return tel, info
 
@@ -98,7 +106,22 @@ def run_one_streaming(spec, frame_queue, stop_event):
         if counter["n"] % every_n != 0:
             return
         try:
-            frame_queue.put_nowait(("frame", obs, row))
+            # .copy(): nes-py's own `obs` is ONE persistent buffer, mutated
+            # in place by the C emulator core every step (NESEnv.screen is
+            # assigned once and returned unchanged -- checked directly in
+            # nes_py/nes_env.py) -- never a fresh array. multiprocessing.
+            # Queue pickles asynchronously on its own feeder thread, so by
+            # the time it gets to an entry queued here, the main thread may
+            # already have overwritten -- or, once the episode ends and
+            # env.close() runs, FREED -- that same buffer. Found live: this
+            # raced hard enough to crash the feeder thread with a Windows
+            # access violation while pickling (Python's own faulthandler
+            # caught it mid-episode-cleanup) once a per-frame FrameStore
+            # write gave the main thread enough extra work per frame to
+            # change the timing -- almost certainly the real cause of the
+            # unexplained multiprocessing hangs from the earlier ffmpeg-
+            # recorder investigation too, not just this one.
+            frame_queue.put_nowait(("frame", obs.copy(), row))
         except Exception:
             pass  # a full/closed queue drops frames rather than blocking the sim
 

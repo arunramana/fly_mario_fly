@@ -50,13 +50,14 @@ class SettingsTab(QWidget):
         self.brain_panel_checkbox.toggled.connect(self._on_brain_panel_changed)
         form.addRow(self.brain_panel_checkbox)
 
-        self.raw_frames_checkbox = QCheckBox("Record raw frames (Run tab video player)")
+        self.raw_frames_checkbox = QCheckBox("Record frames (Run tab video player)")
         self.raw_frames_checkbox.setChecked(settings.render.raw_frames)
         self.raw_frames_checkbox.setToolTip(
-            "Off by default: the ffmpeg subprocess this spawns intermittently stalled "
-            "a whole Play on this machine under real testing (tool/core/"
-            "raw_frame_recorder.py's own docstring). The recording itself works and is "
-            "tested; this default just keeps that known risk off Play's usual path."
+            "On by default: palette-indexed frames saved to a compressed .npz, no "
+            "subprocess (tool/core/frame_store.py -- replaced an earlier ffmpeg-based "
+            "recorder that intermittently stalled a Play on this machine). See "
+            "tool/CODEBASE_CHANGES.md for the measured time/disk cost per run; turn "
+            "off only to save that cost on a long batch."
         )
         self.raw_frames_checkbox.toggled.connect(self._on_raw_frames_changed)
         form.addRow(self.raw_frames_checkbox)

@@ -51,11 +51,45 @@ def test_luigi_with_mario_x_restricts_to_a_window_near_mario():
         "a red pixel at mario's own position must still be swapped"
 
 
-def test_luigi_with_mario_x_ignores_red_pixels_above_the_ground_band():
-    """ADDR_MARIO_Y is unusable (constant across a full run, see this
-    module's own docstring) -- the vertical restriction is a fixed band,
-    not a real position, so it must not swap something red at mario_x's
-    column but far above where mario could ever actually be (HUD text)."""
+def test_luigi_with_mario_x_and_y_ignores_red_pixels_outside_the_real_box():
+    """Now that ADDR_MARIO_Y tracks Mario's real vertical position
+    (codebase: fix ADDR_MARIO_Y to 0x03B8), the box follows him -- a red
+    pixel at mario_x's column but far above his real y (HUD text, a red
+    cloud) must not be swapped even when it WOULD have fallen inside the
+    old fixed ground-level band."""
+    frame = np.zeros((240, 256, 3), dtype=np.uint8)
+    frame[10, 100] = [200, 20, 20]
+    recolored = to_luigi(frame, mario_x=100, mario_y=176)  # mario_y=176 -> ground level, row ~195
+    assert np.array_equal(recolored[10, 100], frame[10, 100])
+
+
+def test_luigi_box_follows_mario_y_through_a_jump():
+    """The whole point of using ram[0x03B8]: the box moves. A red pixel at
+    the row a ground-level mario_y would cover must stop being swapped
+    once mario_y says Mario has jumped well clear of it, and a red pixel
+    at the JUMPED-TO row must start being swapped."""
+    ground_row, ground_frame = 210, np.zeros((240, 256, 3), dtype=np.uint8)
+    ground_frame[ground_row, 100] = [200, 20, 20]
+    apex_row, apex_frame = 145, np.zeros((240, 256, 3), dtype=np.uint8)
+    apex_frame[apex_row, 100] = [200, 20, 20]
+
+    # Ground level (mario_y=176, matching this module's own probe).
+    assert not np.array_equal(to_luigi(ground_frame, mario_x=100, mario_y=176)[ground_row, 100],
+                               ground_frame[ground_row, 100]), "swapped at Mario's own ground-level row"
+    assert np.array_equal(to_luigi(apex_frame, mario_x=100, mario_y=176)[apex_row, 100],
+                           apex_frame[apex_row, 100]), "left alone far above Mario while he's on the ground"
+
+    # Jump apex (mario_y=112, matching this module's own probe).
+    assert not np.array_equal(to_luigi(apex_frame, mario_x=100, mario_y=112)[apex_row, 100],
+                               apex_frame[apex_row, 100]), "swapped at Mario's own apex row"
+    assert np.array_equal(to_luigi(ground_frame, mario_x=100, mario_y=112)[ground_row, 100],
+                           ground_frame[ground_row, 100]), "left alone at ground level while he's at the apex"
+
+
+def test_luigi_with_mario_x_but_no_mario_y_falls_back_to_a_ground_box():
+    """A caller with a position but no y (shouldn't happen after this
+    session's row["mario_y"] wiring, but must not crash) still restricts
+    to SOME box rather than silently reverting to a whole-frame swap."""
     frame = np.zeros((240, 256, 3), dtype=np.uint8)
     frame[10, 100] = [200, 20, 20]
     recolored = to_luigi(frame, mario_x=100)

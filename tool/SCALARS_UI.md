@@ -18,7 +18,8 @@ tracked separately in `docs/SCALARS.md`, generated from
 | field | value | range | provenance | home |
 |---|---|---|---|---|
 | `mario_x_margin_px` | `8.0` | unknown | invented (the sprite's own pixels aren't perfectly aligned to mario_x as a left edge in every animation frame) | `tool/core/palette.py (MARIO_X_MARGIN_PX)` |
-| `mario_y_min_px` | `140.0` | unknown | measured (a real 689-frame run, level 1-1: near-Mario red pixels stayed within roughly rows 190-239 in the common case; 140 gives headroom through a generous jump apex) | `tool/core/palette.py (MARIO_Y_MIN)` |
+| `mario_y_offset_px` | `19.0` | unknown | measured (tool/core/palette.py's own probe script: held right+A through a full jump arc on a real 1-1 env, compared ram[0x03B8] each frame against the topmost red-dominant screen row within Mario's own x-column band; the two track 1:1 with an offset that ranged 17-22px across the jump's animation frames, ~19px on average) | `tool/core/palette.py (MARIO_Y_OFFSET_PX)` |
+| `mario_height_px` | `40.0` | unknown | invented (generous: covers small (16px) or big/fiery (32px) Mario's sprite height plus the ~5px offset variance the same probe measured across animation frames, the same margin-for-slop role mario_x_margin_px plays horizontally) | `tool/core/palette.py (MARIO_HEIGHT_PX)` |
 
 ## PreviewBarParams
 
@@ -33,4 +34,4 @@ tracked separately in `docs/SCALARS.md`, generated from
 
 ## Totals
 
-**8 display-only scalars.** Two related values are deliberately NOT here -- they duplicate an existing simulation scalar and are read directly instead: `tool/core/palette.py`'s Mario sprite width reads `config.entity.entity_width_px`; `tool/ui/widgets/preview.py`'s TTMn bar max reads `config.jump.spike_amp`.
+**9 display-only scalars.** Two related values are deliberately NOT here -- they duplicate an existing simulation scalar and are read directly instead: `tool/core/palette.py`'s Mario sprite width reads `config.entity.entity_width_px`; `tool/ui/widgets/preview.py`'s TTMn bar max reads `config.jump.spike_amp`.

@@ -1,17 +1,14 @@
 """tool/ui/widgets/video_player.py -- ease-of-use redesign, Run tab video
 player: live mode (during a Play) vs seekable mode (a finished run's
-raw-frame recording). Exercises the mechanism directly with a synthetic
+frame recording). Exercises the mechanism directly with a synthetic
 telemetry DataFrame, not through a full simulation run.
 """
 from __future__ import annotations
 
-import time
-
 import numpy as np
 import pandas as pd
-import pytest
 
-from tool.core.raw_frame_recorder import RawFrameRecorder
+from tool.core.frame_store import FrameStore
 from tool.ui.widgets.video_player import VideoPlayer, _event_markers
 
 
@@ -33,29 +30,11 @@ def _fake_telemetry(n=30) -> pd.DataFrame:
 
 def _real_recording(tmp_path, n_frames=30):
     obs = np.random.default_rng(0).integers(0, 255, (240, 256, 3), dtype=np.uint8)
-    out_path = tmp_path / "test_raw.mp4"
-    recorder = RawFrameRecorder(out_path)
+    out_path = tmp_path / "test_raw.npz"
+    store = FrameStore()
     for _ in range(n_frames):
-        recorder.write_frame(obs)
-    recorder.close()
-    # close() no longer waits for ffmpeg (tool/core/raw_frame_recorder.py's
-    # own docstring) -- wait for the file size to settle (unchanged across
-    # two checks), not just ">0", since a still-growing/still-flushing
-    # file can otherwise look "ready" mid-write.
-    deadline = time.time() + 15
-    last_size = -1
-    stable_checks = 0
-    while time.time() < deadline:
-        size = out_path.stat().st_size if out_path.exists() else 0
-        if size > 0 and size == last_size:
-            stable_checks += 1
-            if stable_checks >= 3:
-                break
-        else:
-            stable_checks = 0
-        last_size = size
-        time.sleep(0.2)
-    return out_path
+        store.write_frame(obs)
+    return store.close(out_path)
 
 
 def test_starts_in_empty_mode(qapp):
@@ -123,6 +102,48 @@ def test_step_frame_and_jump_seconds(qapp, tmp_path):
     assert player._current_frame_index == 11
     player.step_frame(-1)
     assert player._current_frame_index == 10
+
+
+def test_recording_longer_than_telemetry_still_plays_with_frozen_tel_rows(qapp, tmp_path):
+    """death_animation_frames: the recording can outlast the telemetry
+    (tel has 30 rows, the recording has 40 frames -- 10 display-only death
+    -animation frames). Seeking past row 29 must still show a real
+    recorded frame and must not crash reading telemetry -- it freezes on
+    the last real row instead."""
+    raw_path = _real_recording(tmp_path, n_frames=40)
+    player = VideoPlayer()
+    player.load_run(raw_path, _fake_telemetry(n=30), {"died_or_flagged": True})
+    assert player._n_frames == 40, "the recording's own length wins, not len(tel)"
+
+    player.seek_frame(35)
+    assert player._current_frame_index == 35
+    assert not player.frame_label.pixmap().isNull()
+    row = player.current_row()
+    assert row is not None and row["frame"] == 29, "frozen on the last real telemetry row"
+
+
+def test_playback_timer_advances_frames_at_1x(qapp, tmp_path):
+    raw_path = _real_recording(tmp_path, n_frames=30)
+    player = VideoPlayer()
+    player.load_run(raw_path, _fake_telemetry(), {"died_or_flagged": False})
+    player.toggle_playback()
+    assert player._playing
+    for _ in range(5):
+        player._on_tick()
+    assert player._current_frame_index == 5, "1x speed should advance exactly one frame per tick"
+    player.toggle_playback()
+    assert not player._playing
+
+
+def test_playback_stops_at_the_last_frame(qapp, tmp_path):
+    raw_path = _real_recording(tmp_path, n_frames=5)
+    player = VideoPlayer()
+    player.load_run(raw_path, _fake_telemetry(), {"died_or_flagged": False})
+    player.toggle_playback()
+    for _ in range(10):
+        player._on_tick()
+    assert player._current_frame_index == 4
+    assert not player._playing, "playback must stop itself at the last frame, not loop or error"
 
 
 def test_event_markers_from_telemetry_and_summary():
