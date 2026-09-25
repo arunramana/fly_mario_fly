@@ -426,13 +426,52 @@ class GapAheadParams:
 
 
 @dataclass(frozen=True)
+class MotorDirectParams:
+    """bridge/controller_modules.py's MotorDirectModule: A follows a leaky
+    integrator of the motor neurons' own activity instead of fixed hold and
+    cooldown counters."""
+    decay: float = _f(0.95, None,
+        "invented (per-frame decay of the motor drive, tau ~20 frames: the low-pass of "
+        "a motor neuron pool; replaces jump_hold_frames/jump_cooldown_frames)",
+        "bridge/controller_modules.py (MotorDirectModule)")
+    a_threshold: float = _f(0.3, None,
+        "invented (A is down while the drive is above this; motor threshold, like "
+        "ttmn_press_threshold)", "bridge/controller_modules.py (MotorDirectModule)")
+    ttmn_gain: float = _f(1.0, None,
+        "invented (drive added per frame per unit of TTMn/spike_amp)",
+        "bridge/controller_modules.py (MotorDirectModule)")
+    dlmn_gain: float = _f(0.05, None,
+        "invented (drive added per frame per unit of DLMn: sustained DLMn lengthens the "
+        "hold, a graded long jump instead of the binary choice)",
+        "bridge/controller_modules.py (MotorDirectModule)")
+
+
+@dataclass(frozen=True)
+class MbonReadoutParams:
+    """bridge/controller_modules.py's MbonReadoutModule: per-MBON weights onto
+    each motor pathway (from the real MBON -> X -> target connectome counts)
+    instead of one scalar MBON mean. Fractions are current per unit of the
+    weighted MBON mean; the negative sign matches the existing DNa02 path."""
+    dnp01_frac: float = _f(0.005, None, "invented (same order as mbon_dna02_frac_*)",
+                           "bridge/controller_modules.py (MbonReadoutModule)")
+    dlmn_frac: float = _f(0.005, None, "invented (same order as mbon_dna02_frac_*)",
+                          "bridge/controller_modules.py (MbonReadoutModule)")
+    dnp09_frac: float = _f(0.005, None, "invented (same order as mbon_dna02_frac_*)",
+                           "bridge/controller_modules.py (MbonReadoutModule)")
+    mdn_frac: float = _f(0.005, None, "invented (same order as mbon_dna02_frac_*)",
+                         "bridge/controller_modules.py (MbonReadoutModule)")
+
+
+@dataclass(frozen=True)
 class ModulesConfig:
     """Field order is execution order; None == module off."""
     page_perception: PagePerceptionParams | None = None
     gap_ahead: GapAheadParams | None = None
+    motor_direct: MotorDirectParams | None = None
+    mbon_readout: MbonReadoutParams | None = None
 
 
-MODULE_PARAM_CLASSES: tuple = (PagePerceptionParams, GapAheadParams)
+MODULE_PARAM_CLASSES: tuple = (PagePerceptionParams, GapAheadParams, MotorDirectParams, MbonReadoutParams)
 
 ALL_PARAM_CLASSES = (
     NetworkParams, NoiseParams, JumpParams, Dnp02Params, TakeoffParams, SpeedParams,

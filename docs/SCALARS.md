@@ -163,22 +163,40 @@ disagree.
 |---|---|---|---|---|
 | `perceive_tiles` | `4` | unknown | invented (perceptual range of the anticipatory gap input, mechanical, not a circuit gain; the current itself is still gap_gain x width) | `bridge/controller_modules.py (GapAheadPerceptionModule)` |
 
+## MotorDirectParams
+
+| field | value | range | provenance | home |
+|---|---|---|---|---|
+| `decay` | `0.95` | unknown | invented (per-frame decay of the motor drive, tau ~20 frames: the low-pass of a motor neuron pool; replaces jump_hold_frames/jump_cooldown_frames) | `bridge/controller_modules.py (MotorDirectModule)` |
+| `a_threshold` | `0.3` | unknown | invented (A is down while the drive is above this; motor threshold, like ttmn_press_threshold) | `bridge/controller_modules.py (MotorDirectModule)` |
+| `ttmn_gain` | `1.0` | unknown | invented (drive added per frame per unit of TTMn/spike_amp) | `bridge/controller_modules.py (MotorDirectModule)` |
+| `dlmn_gain` | `0.05` | unknown | invented (drive added per frame per unit of DLMn: sustained DLMn lengthens the hold, a graded long jump instead of the binary choice) | `bridge/controller_modules.py (MotorDirectModule)` |
+
+## MbonReadoutParams
+
+| field | value | range | provenance | home |
+|---|---|---|---|---|
+| `dnp01_frac` | `0.005` | unknown | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
+| `dlmn_frac` | `0.005` | unknown | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
+| `dnp09_frac` | `0.005` | unknown | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
+| `mdn_frac` | `0.005` | unknown | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
+
 
 ## Totals
 
-**63 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
+**71 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
 more (`DemoParams.mushroom_offset`, `DemoParams.wide_gap_lead_tiles`,
 `TerrainParams.refusal_gap_margin_tiles`) only matter in an opt-in
 injection demo -- the first is untested by any golden, the other two are
 exercised by `tests/test_golden.py::test_017_reprise`'s own
 `inject_gap_frame`, so "opt-in" here means "off by default", not
-"untested". The other 57 are live in every default run.
+"untested". The other 65 are live in every default run.
 
 A range of `unknown` means genuinely unknown, not left blank: an invented
 bound would be scaffolding that looks like data. Only `JumpParams.g` and
 `NoiseParams.sigma` have a characterised range.
 
-By category (the first word of each provenance): **41 invented**, **22 measured**, **0 connectome-derived** (of 63).
+By category (the first word of each provenance): **49 invented**, **22 measured**, **0 connectome-derived** (of 71).
 
 None are connectome-derived. The connectome determines each circuit's
 weight matrix `W`; every scalar here sits outside it, as a gain on it, a
