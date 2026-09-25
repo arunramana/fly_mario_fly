@@ -178,8 +178,13 @@ def _pop_mask(df, pop_name: str):
     return df.type.isin(POP_TYPES.get(pop_name, [pop_name]))
 
 
-def _draw_brain(act: dict, norm: dict, pops: list) -> Image.Image:
-    """The silhouette and live glow only; all text goes in the strip."""
+def _draw_brain(act: dict, norm: dict, pops: list, radius_scale: float = 1.0) -> Image.Image:
+    """The silhouette and live glow only; all text goes in the strip.
+    `radius_scale`: unchanged (1.0) for the real per-frame video path;
+    highlight_populations's own card use raises it, since a sparse
+    population (Speed=1 type, MDN=4 neurons) drawn at the video's own dot
+    size all but disappears once a card shrinks the 512x720 canvas down
+    to a ~160px icon."""
     c = _build()
     im = c["bg"].copy()
     d = ImageDraw.Draw(im, "RGBA")
@@ -189,7 +194,7 @@ def _draw_brain(act: dict, norm: dict, pops: list) -> Image.Image:
         a = float(np.clip(act.get(t, 0.0) / max(norm.get(t, 1.0), 1e-9), 0, 1))
         r, g, b = COL[t]
         alpha = int(45 + 210 * a)
-        rad = 1.6 + 4.2 * a + (2.5 if t in ("DNp01", "TTMn") else 0)
+        rad = (1.6 + 4.2 * a + (2.5 if t in ("DNp01", "TTMn") else 0)) * radius_scale
         if a > 0.35:
             for uu, vv in zip(u, v):
                 d.ellipse([uu - rad * 2.4, vv - rad * 2.4,
@@ -199,16 +204,18 @@ def _draw_brain(act: dict, norm: dict, pops: list) -> Image.Image:
     return im
 
 
-def highlight_populations(pops: list[str]) -> Image.Image:
+def highlight_populations(pops: list[str], radius_scale: float = 1.0) -> Image.Image:
     """tool/SPEC_ui_retro.md section 8: a circuit card's static brain-map
     image -- "highlight these populations at full brightness," not a
     per-frame telemetry composite. Thin wrapper over `_draw_brain` with
     every population clamped to its own maximum (act=norm=1.0 each), so
     the whole point-cloud lights up regardless of what a real run's
-    activity happened to reach. Generate once per card, not per frame --
-    these are static images (cache the result, don't call this in a
-    render loop)."""
-    return _draw_brain({p: 1.0 for p in pops}, {p: 1.0 for p in pops}, pops)
+    activity happened to reach. `radius_scale` > 1.0 is for a small card
+    thumbnail, where the video's own dot size would be near-invisible for
+    a sparse population -- see `_draw_brain`'s own docstring. Generate
+    once per card, not per frame -- these are static images (cache the
+    result, don't call this in a render loop)."""
+    return _draw_brain({p: 1.0 for p in pops}, {p: 1.0 for p in pops}, pops, radius_scale=radius_scale)
 
 
 def _draw_strip(act: dict, norm: dict, pops: list, spike: bool, caption: str,
@@ -323,18 +330,16 @@ def panel(act: dict, norm: dict, spike: bool = False, caption: str = "",
     return im
 
 
-def render_run(tel: pd.DataFrame, frames_dir, out_path, fps: int = 60,
-               caption: str = "") -> Path:
-    """Composite the brain panel beside each emulator frame and encode an mp4."""
-    frames = sorted(Path(frames_dir).glob("*.png"))
-    if not frames:
-        sys.exit(f"No frames in {frames_dir}")
-    tel = tel.fillna(0).reset_index(drop=True)
-    n = min(len(tel), len(frames))
-
-    # The Giant Fiber's membrane resets to zero the instant it spikes, so mem
-    # alone makes it go dark exactly when it fires. Hold the spike for a few
-    # frames so the flash is visible at 60fps.
+def _panel_context(tel: pd.DataFrame) -> dict:
+    """Everything `panel_for_row` needs that depends on the WHOLE series,
+    not just one row: per-population normalisation (each population's own
+    observed max) and the Giant Fiber's held-spike overlay (its membrane
+    resets to zero the instant it spikes, so `mem` alone makes it go dark
+    exactly when it fires -- held a few frames so the flash is visible at
+    60fps). Computed once per run, not once per frame -- shared by
+    render_run's own loop and the Run tab's on-demand player (ease-of-use
+    redesign, ""brain map" rendered live from the telemetry row of the
+    current frame, no brain video needed")."""
     gf = np.maximum(tel["mem"].to_numpy() / 0.5, 0.0)
     sp = tel["spike"].to_numpy().astype(float)
     hold = sp.copy()
@@ -346,7 +351,6 @@ def render_run(tel: pd.DataFrame, frames_dir, out_path, fps: int = 60,
             "LPLC2": max(tel["lplc2"].max(), 1e-9),
             "DNp01": 1.0,
             "TTMn": max(tel["ttmn"].max(), 1e-9)}
-
     has_steer = "dna01" in tel.columns and "dna02" in tel.columns
     has_terrain = "dnp09" in tel.columns and "dlmn" in tel.columns
     populations = ORDER + (STEERING_ORDER if has_steer else []) + (TERRAIN_ORDER if has_terrain else [])
@@ -356,46 +360,68 @@ def render_run(tel: pd.DataFrame, frames_dir, out_path, fps: int = 60,
     if has_terrain:
         norm["DNp09"] = max(tel["dnp09"].max(), 1e-9)
         norm["DLMn"] = max(tel["dlmn"].max(), 1e-9)
-    has_climb = "climb" in tel.columns
-    has_conflict = "conflict" in tel.columns
-    has_gap = "gap" in tel.columns
-    has_long_jump = "long_jump" in tel.columns
-    has_odor = "odor_l" in tel.columns and "odor_r" in tel.columns
-    has_hunger = "hungry" in tel.columns
-    has_direction = "direction" in tel.columns
-    has_orn_adapt = "orn_a_l" in tel.columns and "orn_a_r" in tel.columns
-    has_aversive = "avers_l" in tel.columns and "avers_r" in tel.columns
-    has_refuse = "refusing" in tel.columns
-    has_teams = "r_team" in tel.columns and "l_team" in tel.columns
+    return {
+        "gf": gf, "norm": norm, "populations": populations,
+        "has_steer": has_steer, "has_terrain": has_terrain,
+        "has_climb": "climb" in tel.columns, "has_conflict": "conflict" in tel.columns,
+        "has_gap": "gap" in tel.columns, "has_long_jump": "long_jump" in tel.columns,
+        "has_odor": "odor_l" in tel.columns and "odor_r" in tel.columns,
+        "has_hunger": "hungry" in tel.columns, "has_direction": "direction" in tel.columns,
+        "has_orn_adapt": "orn_a_l" in tel.columns and "orn_a_r" in tel.columns,
+        "has_aversive": "avers_l" in tel.columns and "avers_r" in tel.columns,
+        "has_refuse": "refusing" in tel.columns,
+        "has_teams": "r_team" in tel.columns and "l_team" in tel.columns,
+    }
+
+
+def panel_for_row(tel: pd.DataFrame, i: int, ctx: dict, caption: str = "") -> Image.Image:
+    """One frame's panel, from a telemetry DataFrame's own row `i` and the
+    whole-series context `_panel_context` built once. The one place both
+    render_run's video-encoding loop and the Run tab's on-demand,
+    single-frame "Brain map" view build a panel from -- same computation,
+    never duplicated."""
+    row = tel.iloc[i]
+    act = {"LC4": row.lc4, "LPLC2": row.lplc2, "DNp01": ctx["gf"][i], "TTMn": row.ttmn}
+    if ctx["has_steer"]:
+        act["DNa01"] = row.dna01
+        act["DNa02"] = row.dna02
+    if ctx["has_terrain"]:
+        act["DNp09"] = row.dnp09
+        act["DLMn"] = row.dlmn
+    return panel(
+        act, ctx["norm"], spike=bool(row.spike), caption=caption, populations=ctx["populations"],
+        climb=bool(row.climb) if ctx["has_climb"] else False,
+        conflict=bool(row.conflict) if ctx["has_conflict"] else False,
+        pit=bool(row.gap > 0) if ctx["has_gap"] else False,
+        long_jump=bool(row.long_jump) if ctx["has_long_jump"] else False,
+        odor_l=float(row.odor_l) if ctx["has_odor"] else None,
+        odor_r=float(row.odor_r) if ctx["has_odor"] else None,
+        hungry=bool(row.hungry) if ctx["has_hunger"] else None,
+        steer_left=bool(row.direction == "L") if ctx["has_direction"] else False,
+        orn_a_l=float(row.orn_a_l) if ctx["has_orn_adapt"] else None,
+        orn_a_r=float(row.orn_a_r) if ctx["has_orn_adapt"] else None,
+        avers_l=float(row.avers_l) if ctx["has_aversive"] else None,
+        avers_r=float(row.avers_r) if ctx["has_aversive"] else None,
+        refusing=bool(row.refusing) if ctx["has_refuse"] else False,
+        r_team=float(row.r_team) if ctx["has_teams"] else None,
+        l_team=float(row.l_team) if ctx["has_teams"] else None,
+    )
+
+
+def render_run(tel: pd.DataFrame, frames_dir, out_path, fps: int = 60,
+               caption: str = "") -> Path:
+    """Composite the brain panel beside each emulator frame and encode an mp4."""
+    frames = sorted(Path(frames_dir).glob("*.png"))
+    if not frames:
+        sys.exit(f"No frames in {frames_dir}")
+    tel = tel.fillna(0).reset_index(drop=True)
+    n = min(len(tel), len(frames))
+    ctx = _panel_context(tel)
 
     tmp = Path(out_path).parent / "_composite_tmp"
     tmp.mkdir(parents=True, exist_ok=True)
     for i in range(n):
-        row = tel.iloc[i]
-        act = {"LC4": row.lc4, "LPLC2": row.lplc2, "DNp01": gf[i], "TTMn": row.ttmn}
-        if has_steer:
-            act["DNa01"] = row.dna01
-            act["DNa02"] = row.dna02
-        if has_terrain:
-            act["DNp09"] = row.dnp09
-            act["DLMn"] = row.dlmn
-        p = panel(act, norm, spike=bool(row.spike), caption=caption,
-                  populations=populations,
-                  climb=bool(row.climb) if has_climb else False,
-                  conflict=bool(row.conflict) if has_conflict else False,
-                  pit=bool(row.gap > 0) if has_gap else False,
-                  long_jump=bool(row.long_jump) if has_long_jump else False,
-                  odor_l=float(row.odor_l) if has_odor else None,
-                  odor_r=float(row.odor_r) if has_odor else None,
-                  hungry=bool(row.hungry) if has_hunger else None,
-                  steer_left=bool(row.direction == "L") if has_direction else False,
-                  orn_a_l=float(row.orn_a_l) if has_orn_adapt else None,
-                  orn_a_r=float(row.orn_a_r) if has_orn_adapt else None,
-                  avers_l=float(row.avers_l) if has_aversive else None,
-                  avers_r=float(row.avers_r) if has_aversive else None,
-                  refusing=bool(row.refusing) if has_refuse else False,
-                  r_team=float(row.r_team) if has_teams else None,
-                  l_team=float(row.l_team) if has_teams else None)
+        p = panel_for_row(tel, i, ctx, caption=caption)
         # NEAREST: pixel art, any filter invents colours (module docstring).
         game = Image.open(frames[i]).resize((EMU_W_SCALED, EMU_H_SCALED), Image.NEAREST)
         out = Image.new("RGB", (CANVAS_W, CANVAS_H), SURFACE)

@@ -50,3 +50,32 @@ def test_highlight_populations_renders_every_circuit_card_s_population_set():
                  ["DNp09"], ["DLMn"], ["MDN"], ["KC", "MBON", "DAN"]):
         image = brain_panel.highlight_populations(pops)
         assert image.size == (BRAIN_W, BRAIN_H)
+
+
+def test_radius_scale_makes_a_sparse_population_actually_visible():
+    """Found reviewing every circuit card side by side: a sparse
+    population (DNp09=1 type, MDN=4 neurons) drawn at the real video's
+    own dot size covered so few pixels it read as blank once shrunk to a
+    card icon. radius_scale=1.0 (the video's own default) must NOT be
+    what a card uses -- a higher scale must cover meaningfully more
+    pixels for the same sparse population."""
+    import numpy as np
+
+    # The background is a soft glow, not pure black -- count pixels close
+    # to MDN's own highlight colour specifically, not "any nonzero RGB".
+    target = np.array(brain_panel.COL["MDN"])
+
+    def _lit_pixel_count(image) -> int:
+        arr = np.array(image).astype(int)
+        close = (np.abs(arr - target) < 20).all(axis=2)
+        return int(close.sum())
+
+    default = brain_panel.highlight_populations(["MDN"], radius_scale=1.0)
+    scaled = brain_panel.highlight_populations(["MDN"], radius_scale=4.0)
+    lit_default = _lit_pixel_count(default)
+    lit_scaled = _lit_pixel_count(scaled)
+    assert lit_default > 0, "MDN should already show some pixels at radius_scale=1.0"
+    assert lit_scaled > lit_default * 5, (
+        f"radius_scale=4.0 only lit {lit_scaled}px vs {lit_default}px at 1.0 -- "
+        "not meaningfully more visible"
+    )

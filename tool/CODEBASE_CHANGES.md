@@ -285,3 +285,37 @@ own asserted `EXPECTED_KC`/`EXPECTED_MBON`/`EXPECTED_DAN`; `highlight_
 populations` renders without crashing for each of the six circuit cards'
 own population lists. Full golden gate (97/97) unaffected -- this module
 is never on the golden's own telemetry path.
+
+## C12 — `render/brain_panel.py`: `panel_for_row` + `radius_scale`
+
+**What.** `render_run`'s per-frame body (build a `_panel_context` once,
+then draw one `PIL.Image` per telemetry row) is now two standalone
+functions, `_panel_context(tel)` and `panel_for_row(tel, i, ctx,
+caption="")`, instead of code living only inside `render_run`'s own loop.
+`_draw_brain`/`highlight_populations` also gain an additive `radius_scale:
+float = 1.0` parameter that scales each highlighted soma's dot radius.
+
+**Why.** The Run tab's video player needs a live "Brain map" toggle that
+renders one frame on demand from whatever telemetry row the player is
+currently showing -- the same drawing code `render_run` already used to
+bake a whole video, but callable for a single row without encoding
+anything. `radius_scale` is separate: `tool/ui/widgets/circuit_card_image.
+py`'s ~160px circuit cards were shrinking sparse populations (Speed=1
+neuron, MDN=4 neurons) to single dark pixels, invisible against the brain
+silhouette -- the user's own explicit "make the circuit brain-map
+highlights visible on every card."
+
+**Default that keeps behaviour.** `radius_scale=1.0` reproduces the exact
+prior radius at every call site that doesn't pass it (`render_run`
+itself, unchanged). `panel_for_row`/`_panel_context` are new code, not a
+rewrite of `render_run`'s loop -- `render_run` still exists and still
+produces the same bytes it always did.
+
+**Proof.** `tests/test_panel_for_row.py` (new): `panel_for_row(tel, i,
+ctx)` for every `i` produces byte-identical output to what `render_run`'s
+own inline loop drew for that row before the refactor. `tests/
+test_brain_panel_populations.py`'s new `radius_scale` test: a sparse
+population's highlighted dot covers measurably more pixels at
+`radius_scale=4.0` than at the default. Golden gate (97/97, run once
+after this change) unaffected -- `render/brain_panel.py` is never on the
+golden's own telemetry path.
