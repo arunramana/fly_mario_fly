@@ -1,9 +1,8 @@
 """tool/ui/widgets/run_brain_map_overlay.py -- Run tab / player redesign:
 the Brain map overlay's content -- render.brain_panel.panel_for_row on
 demand for the player's current frame, the same live per-frame render the
-old drawer-based Brain map toggle used, just inside a movable/resizable/
-dockable overlay (tool/ui/widgets/run_overlay.py) instead of a fixed
-side-by-side panel.
+old drawer-based Brain map toggle used, now inside the Player's left edge
+panel (tool/ui/widgets/run_edge_panel.py) instead of a side-by-side panel.
 """
 
 from __future__ import annotations

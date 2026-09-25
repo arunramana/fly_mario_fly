@@ -1,7 +1,7 @@
 """Run tab / player redesign, smaller pieces still used directly: the
 scrub timeline (clicking seeks, markers draw) and the Config overlay's
 diff panel. CollapsibleDrawer/DataPanel/RunTable (the old drawer-based
-design) are gone -- see tool/ui/widgets/run_overlay.py, run_data_
+design) are gone -- see tool/ui/widgets/run_edge_panel.py, run_data_
 overlay.py, and run_playlist.py for their replacements' own tests.
 """
 from __future__ import annotations

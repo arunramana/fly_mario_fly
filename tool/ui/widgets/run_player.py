@@ -46,6 +46,7 @@ def _icon(name: str):
 class RunPlayer(QWidget):
     frame_changed = Signal(int)
     fullscreen_toggled = Signal(bool)
+    canvas_resized = Signal()
     live_row = Signal(dict)  # emitted from show_frame -- lets overlays track a live run too
 
     def __init__(self, parent=None):
@@ -148,6 +149,7 @@ class RunPlayer(QWidget):
         if obj is self.canvas:
             if event.type() == QEvent.Type.Resize:
                 self._reposition_children()
+                self.canvas_resized.emit()
             elif event.type() in (QEvent.Type.MouseMove, QEvent.Type.Enter):
                 self._show_bar_briefly()
         return super().eventFilter(obj, event)

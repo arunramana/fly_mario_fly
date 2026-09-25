@@ -235,13 +235,17 @@ QLabel#liveBadge {
    the video. The Data overlay is a "see-through readout" by request --
    translucent black, not the theme's own sky-blue, so it reads on top of
    any frame without fighting the video for attention. */
-QWidget#overlayTitleBar {
-    background-color: @BRICK_BROWN@;
-    border-bottom: 2px solid @BLACK@;
+/* Player edge panels: semi-transparent dark, over the video's margins. */
+QWidget#edgePanel { background-color: rgba(10, 10, 10, 175); }
+QPushButton#edgePanelTab { min-height: 20px; padding: 3px 10px; font-size: 8pt; }
+QWidget#edgePanel QTextEdit {
+    background-color: transparent; color: @WHITE@; border: none;
+    font-family: "Consolas", "Courier New", monospace; font-size: 9pt;
 }
+QWidget#edgePanel QLabel { background-color: transparent; color: @WHITE@; }
 
 QWidget#dataOverlayContent {
-    background-color: rgba(10, 10, 10, 180);
+    background-color: transparent;
 }
 
 QWidget#dataOverlayContent QLabel {

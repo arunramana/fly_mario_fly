@@ -19,6 +19,7 @@ bookmarks, looping a section.
 
 from __future__ import annotations
 
+from PySide6.QtCore import QSize
 from PySide6.QtWidgets import (
     QHBoxLayout, QLabel, QMessageBox, QProgressBar, QPushButton, QTabWidget, QVBoxLayout, QWidget,
 )
@@ -27,7 +28,7 @@ from tool.ui.widgets.plots import TelemetryPlots
 from tool.ui.widgets.run_brain_map_overlay import BrainMapOverlayContent
 from tool.ui.widgets.run_data_overlay import DataOverlayContent
 from tool.ui.widgets.run_detail_panels import ConfigDiffPanel
-from tool.ui.widgets.run_overlay import OverlayPanel
+from tool.ui.widgets.run_edge_panel import EdgePanel
 from tool.ui.widgets.run_player import RunPlayer
 from tool.ui.widgets.run_playlist import RunPlaylist
 from tool.ui.widgets.stat_chips import StatChips
@@ -104,12 +105,21 @@ class RunTab(QWidget):
         self.playlist_toggle_button.move(10, 44)
         self.playlist_toggle_button.clicked.connect(self._toggle_playlist)
 
+        # Panels are children of the canvas placed by absolute geometry --
+        # never in a layout, so they can't move or resize the video.
+        canvas = self.player.canvas
         self.brain_map_content = BrainMapOverlayContent()
-        self.brain_overlay = OverlayPanel("brain_map", "Brain map", self.brain_map_content, parent=self.player.canvas)
+        self.brain_overlay = EdgePanel("brain_map", "◀ Brain", self.brain_map_content, QSize(260, 330), canvas)
         self.data_content = DataOverlayContent()
-        self.data_overlay = OverlayPanel("data", "Data", self.data_content, parent=self.player.canvas)
+        self.data_overlay = EdgePanel("data", "Data ▶", self.data_content, QSize(260, 150), canvas)
         self.config_content = ConfigDiffPanel()
-        self.config_overlay = OverlayPanel("config", "Config", self.config_content, parent=self.player.canvas)
+        self.config_overlay = EdgePanel("config", "Config ▶", self.config_content, QSize(260, 220), canvas)
+        for panel in (self.brain_overlay, self.data_overlay, self.config_overlay):
+            panel.toggled.connect(lambda _open: self._place_panels())
+        self.brain_overlay.toggled.connect(self._refresh_brain_map)
+        self.player.canvas_resized.connect(self._place_panels)
+        self._place_panels()
+        self._refresh_brain_map()
 
         self.sub_tabs_page = page
         self.sub_tabs.addTab(page, "▶ Player")
@@ -126,20 +136,30 @@ class RunTab(QWidget):
             self.playlist.resize(self.playlist.width(), self.sub_tabs_page.height())
             self.playlist.slide_in(anchor_width)
 
-    def toggle_brain_map(self) -> None:
-        self.brain_overlay.toggle_visible(self.player.canvas)
-        if self.brain_overlay.isVisible():
-            # It may have sat hidden through an entire load_run_data() call
-            # (nothing refreshes an invisible widget's own content there --
-            # see that method's own isVisible() guard), so becoming visible
-            # again must catch it up to the player's actual current frame.
+    def _place_panels(self) -> None:
+        """Left: Brain. Right: Data above Config. Below the LIVE badge and
+        Runs button on the left; flush to the edge, overlapping the video
+        (transparently) when the margins are too narrow."""
+        w = self.player.canvas.width()
+        self.brain_overlay.move(0, 96)
+        self.data_overlay.move(w - self.data_overlay.width(), 10)
+        self.config_overlay.move(w - self.config_overlay.width(),
+                                 10 + self.data_overlay.height() + 6)
+        for panel in (self.brain_overlay, self.data_overlay, self.config_overlay):
+            panel.raise_()
+
+    def _refresh_brain_map(self, *_args) -> None:
+        if self.brain_overlay.is_open():
             self.brain_map_content.update_frame(self.player._current_frame_index)
 
+    def toggle_brain_map(self) -> None:
+        self.brain_overlay.toggle()
+
     def toggle_data_overlay(self) -> None:
-        self.data_overlay.toggle_visible(self.player.canvas)
+        self.data_overlay.toggle()
 
     def toggle_config_overlay(self) -> None:
-        self.config_overlay.toggle_visible(self.player.canvas)
+        self.config_overlay.toggle()
 
     def show_shortcut_help(self) -> None:
         QMessageBox.information(self, "Player shortcuts", SHORTCUT_HELP)
@@ -174,7 +194,7 @@ class RunTab(QWidget):
         row = self.player.current_row()
         row_dict = row.to_dict() if row is not None else None
         self.data_content.update_from_row(row_dict)
-        if self.brain_overlay.isVisible():
+        if self.brain_overlay.is_open():
             self.brain_map_content.update_frame(frame)
 
     def _on_live_row(self, row: dict) -> None:
@@ -227,7 +247,6 @@ class RunTab(QWidget):
             self.plots.set_dataframe(tel)
         self.config_content.set_config(run_config)
         self.brain_map_content.set_telemetry(tel)
-        if self.brain_overlay.isVisible():
-            self.brain_map_content.update_frame(0)
+        self._refresh_brain_map()
         row = self.player.current_row()
         self.data_content.update_from_row(row.to_dict() if row is not None else None)

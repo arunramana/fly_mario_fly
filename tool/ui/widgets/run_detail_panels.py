@@ -1,6 +1,6 @@
 """tool/ui/widgets/run_detail_panels.py -- Run tab / player redesign:
 Config (the run's settings compared with the defaults), now the Config
-overlay's content (tool/ui/widgets/run_overlay.py) rather than a fixed
+overlay's content (tool/ui/widgets/run_edge_panel.py) rather than a fixed
 right-hand drawer. The old DataPanel (a full text dump of the frame row
 plus run summary) is gone -- tool/ui/widgets/run_data_overlay.py's
 compact "see-through readout" replaces it, per the redesign's own ask.
