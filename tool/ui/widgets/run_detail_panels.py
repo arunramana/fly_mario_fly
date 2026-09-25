@@ -1,8 +1,11 @@
-"""tool/ui/widgets/run_detail_panels.py -- ease-of-use redesign, Run tab
-right-hand drawers: Data (the current frame's telemetry row plus the run
-summary) and Config (the run's settings compared with the defaults).
-Plain read-only text panels -- there is nothing here a user edits; a
-FINISHED run's own recorded settings are history, not a live control.
+"""tool/ui/widgets/run_detail_panels.py -- Run tab / player redesign:
+Config (the run's settings compared with the defaults), now the Config
+overlay's content (tool/ui/widgets/run_overlay.py) rather than a fixed
+right-hand drawer. The old DataPanel (a full text dump of the frame row
+plus run summary) is gone -- tool/ui/widgets/run_data_overlay.py's
+compact "see-through readout" replaces it, per the redesign's own ask.
+Plain read-only text -- there is nothing here a user edits; a FINISHED
+run's own recorded settings are history, not a live control.
 """
 
 from __future__ import annotations
@@ -10,31 +13,6 @@ from __future__ import annotations
 import dataclasses
 
 from PySide6.QtWidgets import QTextEdit
-
-
-class DataPanel(QTextEdit):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setReadOnly(True)
-        self.set_content(None, None)
-
-    def set_content(self, row, summary: dict | None) -> None:
-        lines = ["<b>Run summary</b>"]
-        if summary:
-            for key in sorted(summary):
-                if key == "mb_weights":
-                    continue
-                lines.append(f"{key} = {summary[key]}")
-        else:
-            lines.append("(no run selected)")
-
-        lines.append("<br><b>Current frame</b>")
-        if row is not None:
-            for key, value in row.items():
-                lines.append(f"{key} = {value}")
-        else:
-            lines.append("(no frame)")
-        self.setHtml("<br>".join(str(line) for line in lines))
 
 
 class ConfigDiffPanel(QTextEdit):

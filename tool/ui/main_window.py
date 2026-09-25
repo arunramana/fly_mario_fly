@@ -75,26 +75,28 @@ class MainWindow(QMainWindow):
         outer = QVBoxLayout(central)
 
         header = QHBoxLayout()
-        # Ease-of-use redesign: returns to the project gate (the
-        # unsaved-changes guard applies exactly like closing the window).
+        # Run tab / header redesign: navigation on the left (Home, project
+        # name, unsaved marker -- title_label already carries both), the
+        # three actions on the right. All four buttons share ONE QSS rule
+        # (tool/ui/style.qss's `[headerButton="true"]` selector) -- same
+        # size/padding/font for every one of them, set via a Qt dynamic
+        # property rather than an objectName so a QPushButton and a
+        # QToolButton (Presets) can match the same rule.
         home_button = QPushButton("Home")
         home_button.clicked.connect(self._go_home)
         self.title_label = QLabel(self._title())
-        # Presets: one header menu next to Save (ease-of-use redesign),
-        # not a top-level QMenuBar entry floating above the header, and
-        # not a per-tab bar (tool/ui/widgets/preset_bar.py, deleted).
         self.presets_button = self._build_presets_button()
         self.save_button = QPushButton("Save")
         self.save_button.clicked.connect(self.save)
-        # tool/SPEC_ui_retro.md section 5: restyled and relabelled
-        # "START" (the retro/arcade convention), not a new, separate
-        # screen -- the project gate is already this app's own "insert
-        # coin" step. objectName drives tool/ui/style.qss's
-        # #startButton rule. Ctrl+Enter, not Space -- Space now drives
-        # the Run tab's video-player play/pause instead.
+        # START: Ctrl+Enter, not Space -- Space drives the Run tab's own
+        # video-player play/pause instead. Stands out by colour only
+        # (`headerAccent`), never by size -- see style.qss's own comment.
         header_play_button = QPushButton("START")
-        header_play_button.setObjectName("startButton")
         header_play_button.clicked.connect(self.play)
+        self.header_buttons = (home_button, self.presets_button, self.save_button, header_play_button)
+        for button in self.header_buttons:
+            button.setProperty("headerButton", True)
+        header_play_button.setProperty("headerAccent", True)
         header.addWidget(home_button)
         header.addWidget(self.title_label)
         header.addStretch(1)
@@ -160,8 +162,8 @@ class MainWindow(QMainWindow):
         # does it ever call ToolProject.save().
         if self.project.is_read_only:
             self.tabs.setEnabled(False)
-            self.save_button.setEnabled(False)
             self.presets_button.setEnabled(False)
+        self._update_save_enabled()
 
         # P7 keyboard shortcuts. ApplicationShortcut, not the default
         # WindowShortcut: there is only ever one window open at a time
@@ -181,6 +183,22 @@ class MainWindow(QMainWindow):
             (QKeySequence("Ctrl+Return"), self.play),
             (QKeySequence("Ctrl+Enter"), self.play),
             (QKeySequence.StandardKey.Save, self.save),
+            # Run tab / player redesign: transport, event nav, fullscreen,
+            # overlay toggles, and the shortcut-help list -- all centralised
+            # here (not registered a second time inside RunPlayer itself)
+            # so _shortcut_for's "exactly one QShortcut per key sequence"
+            # assumption (tool/tests/test_shortcuts.py) stays true.
+            (QKeySequence(Qt.Key.Key_Left), lambda: self.run_tab.step_frame(-1)),
+            (QKeySequence(Qt.Key.Key_Right), lambda: self.run_tab.step_frame(1)),
+            (QKeySequence("Shift+Left"), lambda: self.run_tab.jump_seconds(-1)),
+            (QKeySequence("Shift+Right"), lambda: self.run_tab.jump_seconds(1)),
+            (QKeySequence(Qt.Key.Key_N), lambda: self.run_tab.next_event()),
+            (QKeySequence(Qt.Key.Key_P), lambda: self.run_tab.prev_event()),
+            (QKeySequence(Qt.Key.Key_F), lambda: self.run_tab.toggle_fullscreen()),
+            (QKeySequence(Qt.Key.Key_B), lambda: self.run_tab.toggle_brain_map()),
+            (QKeySequence(Qt.Key.Key_D), lambda: self.run_tab.toggle_data_overlay()),
+            (QKeySequence(Qt.Key.Key_C), lambda: self.run_tab.toggle_config_overlay()),
+            (QKeySequence(Qt.Key.Key_Question), lambda: self.run_tab.show_shortcut_help()),
         ):
             sc = QShortcut(shortcut, self, activated=slot)
             sc.setContext(Qt.ShortcutContext.ApplicationShortcut)
@@ -238,6 +256,13 @@ class MainWindow(QMainWindow):
         self._dirty = True
         self.title_label.setText(self._title())
         self.setWindowTitle(self._title())
+        self._update_save_enabled()
+
+    def _update_save_enabled(self) -> None:
+        """Header redesign: Save is disabled when there's nothing to save
+        (not dirty) or the project is read-only -- either way, clicking
+        it would do nothing, so it shouldn't invite the click."""
+        self.save_button.setEnabled(self._dirty and not self.project.is_read_only)
 
     def on_player_changed(self, player: str) -> None:
         self.run_tab.preview.set_player(player)
@@ -273,6 +298,7 @@ class MainWindow(QMainWindow):
         self._dirty = False
         self.title_label.setText(self._title())
         self.setWindowTitle(self._title())
+        self._update_save_enabled()
 
     def _on_duplicate_to_edit(self) -> None:
         """The read-only banner's own button: makes an editable copy of
@@ -449,16 +475,14 @@ class MainWindow(QMainWindow):
         write_run_note(self.project.name, number, slug, seed,
                         self.project.config, self.project.tool_settings, info)
         self.run_tab.refresh_history(list_runs(self.project.name))
-        # select_number() fires row_selected -> load_history_run(), the
-        # SAME path a history pick takes -- one place loads a run's data
-        # into the tab, whether it just finished or was picked from the
-        # table (matches "show the result line once": one formatter,
-        # tool/ui/main_window.py's own _format_result_line, either way).
-        if not self.run_tab.run_table.select_number(number):
-            # Defensive: refresh_history's own sort should always place
-            # the just-recorded run somewhere in the table.
-            self.load_history_run({"number": number, "slug": slug, "seed": seed,
-                                    "summary": info, "run_spec": spec.to_dict()})
+        # The SAME path a playlist pick takes (select_history_run) -- one
+        # place loads a run's data into the tab, whether it just finished
+        # or was picked from the playlist (matches "show the result line
+        # once": one formatter, tool/ui/main_window.py's own
+        # _format_result_line, either way).
+        self.run_tab.select_run(number)
+        self.load_history_run({"number": number, "slug": slug, "seed": seed,
+                                "summary": info, "run_spec": spec.to_dict()})
         self.statusBar().showMessage(self.run_tab.result_label.text(), 10_000)
 
     @staticmethod
@@ -510,13 +534,23 @@ class MainWindow(QMainWindow):
             return pd.read_csv(telemetry_path)
         return None
 
+    def select_history_run(self, number: int) -> None:
+        """A run picked from the Run tab's playlist (run_playlist.py's
+        run_selected signal, connected in run.py) -- resolves the run
+        number to its own recorded entry and loads it exactly like
+        _on_run_finished does for a just-finished run."""
+        for entry in list_runs(self.project.name):
+            if entry["number"] == number:
+                self.load_history_run(entry)
+                return
+
     def load_history_run(self, entry: dict) -> None:
-        """A row picked from the Run tab's table (ease-of-use redesign) --
-        also the path a just-finished live run takes (_on_run_finished
-        selects its own new row rather than duplicating this logic).
-        Loads that run's video (only if it actually has one -- "no
-        recording" otherwise), plots, Data/Config drawers, and updates
-        the one result line + stat chips to match."""
+        """A run picked from the Run tab's playlist (via select_history_run)
+        -- also the path a just-finished live run takes (_on_run_finished
+        calls this directly rather than duplicating this logic). Loads
+        that run's video (only if it actually has one -- "no recording"
+        otherwise), plots, and the Brain map/Data/Config overlays, and
+        updates the one result line + stat chips to match."""
         slug = entry["slug"]
         summary = entry.get("summary", {})
         tel = self._load_telemetry(slug)

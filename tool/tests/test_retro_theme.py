@@ -32,6 +32,11 @@ def test_every_palette_colour_actually_appears_in_the_applied_stylesheet(qapp):
         assert value in stylesheet, f"{name} ({value}) never made it into the applied stylesheet"
 
 
-def test_start_button_object_name_matches_the_qss_selector():
+def test_header_button_property_selector_and_start_accent_exist():
+    """Run tab / header redesign: Home, Presets, Save and START share one
+    property-based QSS selector (same size/padding/font); START's own
+    colour-only accent is a separate, minimal rule under the same base
+    selector -- see tool/ui/main_window.py's own header construction."""
     style_text = STYLE_QSS_PATH.read_text(encoding="utf-8")
-    assert "#startButton" in style_text
+    assert '[headerButton="true"]' in style_text
+    assert '[headerAccent="true"]' in style_text

@@ -69,9 +69,12 @@ def test_a_normal_project_shows_no_banner_and_stays_editable(qtbot):
 
     assert window.read_only_banner_row.isHidden()
     assert window.tabs.isEnabled()
-    assert window.save_button.isEnabled()
+    assert not window.save_button.isEnabled(), "nothing changed yet -- Save has nothing to do"
+    window.mark_dirty()
+    assert window.save_button.isEnabled(), "editable and changed -- not blocked by read-only"
     assert window.presets_button.isEnabled()
     window.save()
+    assert not window.save_button.isEnabled(), "clean again immediately after saving"
     shutil.rmtree(PROJECTS_ROOT / name, ignore_errors=True)
 
 

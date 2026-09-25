@@ -1,40 +1,57 @@
-"""tool/ui/tabs/run.py -- tab 7: the video player (ease-of-use redesign),
-plus a collapsible run browser (left) and Plots/Data/Config drawers
-(right). Play lives only in the header now (main_window.py's START
-button, Ctrl+Enter; Space drives the PLAYER's own play/pause instead) --
-this tab keeps Cancel (there's no header equivalent) and the batch
+"""tool/ui/tabs/run.py -- tab 7: Run tab / player redesign. Two sub-tabs,
+"▶ Player" (the video, its auto-hiding transport, the run playlist,
+and the Brain map/Data/Config overlays) and "Plots" (the telemetry grid,
+playhead synced to the player). Play lives only in the header
+(main_window.py's START button, Ctrl+Enter; Space drives the player's own
+play/pause) -- this tab keeps Cancel (no header equivalent) and the batch
 button.
 
-`self.preview`/`self.preview.frame_label` stay as aliases for
-`self.video_player` -- tool/tests monkeypatches
-`window.run_tab.preview.show_frame` directly (the exact call site
-main_window.py's poll loop uses) and reads `.frame_label.pixmap()`,
-unaffected by this tab's own internal reshuffle.
+`self.preview`/`self.preview.frame_label`/`self.preview.show_frame` stay
+as aliases for `self.player` -- tool/tests monkeypatches `window.run_tab.
+preview.show_frame` directly (the exact call site main_window.py's poll
+loop uses) and reads `.frame_label.pixmap()`, unaffected by this tab's own
+internal reshuffle.
+
+Explicitly deferred, not built here (by request, so a future sprint knows
+this was a choice, not an oversight): A/B comparison, clip export,
+bookmarks, looping a section.
 """
 
 from __future__ import annotations
 
-import dataclasses
-
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QHBoxLayout, QLabel, QProgressBar, QPushButton, QSplitter, QVBoxLayout, QWidget,
+    QHBoxLayout, QLabel, QMessageBox, QProgressBar, QPushButton, QTabWidget, QVBoxLayout, QWidget,
 )
 
-from tool.core.tool_settings import RunTabUIState
-from tool.ui.widgets.collapsible_drawer import CollapsibleDrawer
 from tool.ui.widgets.plots import TelemetryPlots
-from tool.ui.widgets.run_detail_panels import ConfigDiffPanel, DataPanel
-from tool.ui.widgets.run_table import RunTable
+from tool.ui.widgets.run_brain_map_overlay import BrainMapOverlayContent
+from tool.ui.widgets.run_data_overlay import DataOverlayContent
+from tool.ui.widgets.run_detail_panels import ConfigDiffPanel
+from tool.ui.widgets.run_overlay import OverlayPanel
+from tool.ui.widgets.run_player import RunPlayer
+from tool.ui.widgets.run_playlist import RunPlaylist
 from tool.ui.widgets.stat_chips import StatChips
-from tool.ui.widgets.video_player import VideoPlayer
+
+SHORTCUT_HELP = """Space -- play / pause
+← / → -- step one frame back / forward
+Shift+← / Shift+→ -- jump 1 second back / forward
+N / P -- next / previous event (jump, climb, stomp, death/flag)
+F -- fullscreen
+B -- toggle the Brain map overlay
+D -- toggle the Data overlay
+C -- toggle the Config overlay
+? -- this list
+Ctrl+Enter -- START a new run
+Ctrl+S -- Save
+Ctrl+1..7 -- switch tabs
+Escape -- cancel a running run"""
 
 
 class RunTab(QWidget):
     def __init__(self, window, parent=None):
         super().__init__(parent)
         self._window = window
-        ui_state = window.get_tool_settings().run_tab_ui
+        self._current_summary: dict | None = None
         layout = QVBoxLayout(self)
 
         controls = QHBoxLayout()
@@ -46,167 +63,171 @@ class RunTab(QWidget):
         self.progress = QProgressBar()
         controls.addWidget(self.cancel_button)
         controls.addWidget(self.batch_button)
-        controls.addWidget(self.progress, 1)
+        controls.addWidget(self.progress)
         layout.addLayout(controls)
 
-        # Compact result chips (ease-of-use redesign) + the one full-
-        # sentence result line (still used by main_window.py's show_result
-        # for a batch summary or an error, which don't fit a chip well).
         self.stat_chips = StatChips()
         layout.addWidget(self.stat_chips)
         self.result_label = QLabel("")
         self.result_label.setWordWrap(True)
         layout.addWidget(self.result_label)
 
-        body = QSplitter(Qt.Orientation.Horizontal)
+        self.sub_tabs = QTabWidget()
+        layout.addWidget(self.sub_tabs, 1)
 
-        # ---- left drawer: run browser ---------------------------------
-        runs_side = QWidget()
-        runs_layout = QVBoxLayout(runs_side)
-        runs_layout.setContentsMargins(4, 4, 4, 4)
-        nav_row = QHBoxLayout()
-        self.prev_run_button = QPushButton("< Prev run")
-        self.prev_run_button.clicked.connect(lambda: self.run_table.select_adjacent(-1))
-        self.next_run_button = QPushButton("Next run >")
-        self.next_run_button.clicked.connect(lambda: self.run_table.select_adjacent(1))
-        nav_row.addWidget(self.prev_run_button)
-        nav_row.addWidget(self.next_run_button)
-        runs_layout.addLayout(nav_row)
-        self.run_table = RunTable()
-        self.run_table.row_selected.connect(self._on_row_selected)
-        runs_layout.addWidget(self.run_table, 1)
-        self.export_button = QPushButton("Export selected run's bundle")
-        self.export_button.clicked.connect(self._on_export_clicked)
-        runs_layout.addWidget(self.export_button)
-        self.runs_drawer = CollapsibleDrawer(
-            "Runs", runs_side, open=ui_state.runs_drawer_open, width=ui_state.runs_drawer_width)
-        self.runs_drawer.toggled.connect(lambda _open: self._save_ui_state())
-        body.addWidget(self.runs_drawer)
-
-        # ---- centre: the player itself, "as large as fits" -------------
-        self.video_player = VideoPlayer()
-        self.video_player.set_player(window.get_tool_settings().character.player)
-        self.video_player.frame_changed.connect(self._on_frame_changed)
-        self.video_player.brain_map_toggled.connect(self._on_brain_map_toggled)
-        self.video_player.brain_map_button.setChecked(ui_state.brain_map_visible)
-        body.addWidget(self.video_player)
-        body.setStretchFactor(1, 1)  # the player claims whatever space the drawers don't
-        # Backward-compatible aliases: tool/tests monkeypatches
-        # window.run_tab.preview.show_frame directly and reads
-        # .frame_label.pixmap() -- both still resolve correctly since
-        # VideoPlayer keeps that exact method/attribute name.
-        self.preview = self.video_player
-        self.activity_strip = self.video_player.activity_strip
-
-        # ---- right drawers: Plots / Data / Config -----------------------
+        self._build_player_page()
         self.plots = TelemetryPlots()
-        self.plots.seek_requested.connect(self.video_player.seek_frame)
-        self.plots_drawer = CollapsibleDrawer(
-            "Plots", self.plots, open=ui_state.plots_drawer_open, width=ui_state.plots_drawer_width)
-        self.plots_drawer.toggled.connect(lambda _open: self._save_ui_state())
-        body.addWidget(self.plots_drawer)
+        self.plots.seek_requested.connect(self._on_plot_seek)
+        self.sub_tabs.addTab(self.plots, "Plots")
 
-        self.data_panel = DataPanel()
-        self.data_drawer = CollapsibleDrawer(
-            "Data", self.data_panel, open=ui_state.data_drawer_open, width=ui_state.data_drawer_width)
-        self.data_drawer.toggled.connect(lambda _open: self._save_ui_state())
-        body.addWidget(self.data_drawer)
+        self.player.frame_changed.connect(self._on_frame_changed)
+        self.player.live_row.connect(self._on_live_row)
+        self.playlist.run_selected.connect(self._on_playlist_run_selected)
 
-        self.config_panel = ConfigDiffPanel()
-        self.config_drawer = CollapsibleDrawer(
-            "Config", self.config_panel, open=ui_state.config_drawer_open,
-            width=ui_state.config_drawer_width)
-        self.config_drawer.toggled.connect(lambda _open: self._save_ui_state())
-        body.addWidget(self.config_drawer)
+    # ---- Player sub-tab: video + playlist + overlays --------------------
 
-        layout.addWidget(body, 1)
+    def _build_player_page(self) -> None:
+        page = QWidget()
+        page_layout = QHBoxLayout(page)
+        page_layout.setContentsMargins(0, 0, 0, 0)
+        page_layout.setSpacing(0)
 
-        self._current_summary: dict | None = None
-        self._current_fitness: float | None = None
+        self.player = RunPlayer()
+        # QLabel-era compatibility alias -- see this module's own docstring.
+        self.preview = self.player
+        page_layout.addWidget(self.player, 1)
 
-    # ---- header/keyboard entry points --------------------------------
+        self.playlist = RunPlaylist(page)
+        self.playlist.setVisible(False)
+        self.playlist_toggle_button = QPushButton("Runs")
+        self.playlist_toggle_button.setParent(self.player.canvas)
+        self.playlist_toggle_button.move(10, 44)
+        self.playlist_toggle_button.clicked.connect(self._toggle_playlist)
+
+        self.brain_map_content = BrainMapOverlayContent()
+        self.brain_overlay = OverlayPanel("brain_map", "Brain map", self.brain_map_content, parent=self.player.canvas)
+        self.data_content = DataOverlayContent()
+        self.data_overlay = OverlayPanel("data", "Data", self.data_content, parent=self.player.canvas)
+        self.config_content = ConfigDiffPanel()
+        self.config_overlay = OverlayPanel("config", "Config", self.config_content, parent=self.player.canvas)
+
+        self.sub_tabs_page = page
+        self.sub_tabs.addTab(page, "▶ Player")
+
+    def _toggle_playlist(self) -> None:
+        anchor_width = self.sub_tabs_page.width()
+        if self.playlist.isVisible():
+            self.playlist.slide_out(anchor_width)
+        else:
+            # The playlist isn't under sub_tabs_page's own layout (it must
+            # be free to slide by absolute position), so nothing else ever
+            # gives it a real height -- it would otherwise show at
+            # whatever tiny default QWidget size it last had.
+            self.playlist.resize(self.playlist.width(), self.sub_tabs_page.height())
+            self.playlist.slide_in(anchor_width)
+
+    def toggle_brain_map(self) -> None:
+        self.brain_overlay.toggle_visible(self.player.canvas)
+        if self.brain_overlay.isVisible():
+            # It may have sat hidden through an entire load_run_data() call
+            # (nothing refreshes an invisible widget's own content there --
+            # see that method's own isVisible() guard), so becoming visible
+            # again must catch it up to the player's actual current frame.
+            self.brain_map_content.update_frame(self.player._current_frame_index)
+
+    def toggle_data_overlay(self) -> None:
+        self.data_overlay.toggle_visible(self.player.canvas)
+
+    def toggle_config_overlay(self) -> None:
+        self.config_overlay.toggle_visible(self.player.canvas)
+
+    def show_shortcut_help(self) -> None:
+        QMessageBox.information(self, "Player shortcuts", SHORTCUT_HELP)
+
+    def _on_playlist_run_selected(self, number: int) -> None:
+        self._window.select_history_run(number)
+
+    # ---- transport delegation (main_window.py's keyboard shortcuts) ------
 
     def toggle_playback(self) -> None:
-        self.video_player.toggle_playback()
+        self.player.toggle_playback()
 
-    # ---- run lifecycle (main_window.py calls these) -------------------
+    def step_frame(self, delta: int) -> None:
+        self.player.step_frame(delta)
+
+    def jump_seconds(self, delta: float) -> None:
+        self.player.jump_seconds(delta)
+
+    def next_event(self) -> None:
+        self.player.next_event()
+
+    def prev_event(self) -> None:
+        self.player.prev_event()
+
+    def toggle_fullscreen(self) -> None:
+        self.player.toggle_fullscreen()
+
+    # ---- frame -> Plots/overlays sync -------------------------------------
+
+    def _on_frame_changed(self, frame: int) -> None:
+        self.plots.set_playhead(frame)
+        row = self.player.current_row()
+        row_dict = row.to_dict() if row is not None else None
+        self.data_content.update_from_row(row_dict)
+        if self.brain_overlay.isVisible():
+            self.brain_map_content.update_frame(frame)
+
+    def _on_live_row(self, row: dict) -> None:
+        self.data_content.update_from_row(row)
+
+    def _on_plot_seek(self, frame: int) -> None:
+        self.player.seek_frame(frame)
+        self.sub_tabs.setCurrentIndex(0)
+
+    # ---- run lifecycle (main_window.py's own calls) -----------------------
 
     def set_running(self, running: bool) -> None:
         self.cancel_button.setEnabled(running)
         self.batch_button.setEnabled(not running)
+        self.player.set_live(running)
 
     def set_progress(self, frame: int, max_frames: int) -> None:
         pct = int(100 * frame / max_frames) if max_frames else 0
         self.progress.setValue(min(100, pct))
 
     def show_result(self, text: str, is_error: bool = False) -> None:
-        """Non-blocking: a label, not a dialog -- a run finishing must
-        never pop a modal (nothing dismisses one in an automated/
-        offscreen run, and it interrupts a fluid Play -> Play cycle).
-        Chips carry the at-a-glance numbers now; this stays for the
-        fuller sentence (and errors/batch summaries, which don't fit a
-        chip well)."""
         color = "red" if is_error else "black"
         self.result_label.setStyleSheet(f"color: {color}")
         self.result_label.setText(text)
 
     def set_stats(self, summary: dict | None, fitness: float | None) -> None:
         self._current_summary = summary
-        self._current_fitness = fitness
         self.stat_chips.set_summary(summary, fitness)
 
     def refresh_history(self, entries: list[dict]) -> None:
-        self.run_table.set_entries(entries)
+        from tool.core.fitness import fitness_of
+        fitness_settings = self._window.project.tool_settings.fitness
+        enriched = []
+        for entry in entries:
+            summary = entry.get("summary", {})
+            fitness = None if summary.get("cancelled") else fitness_of(fitness_settings, summary)
+            enriched.append({**entry, "fitness": fitness})
+        self.playlist.set_entries(enriched)
+
+    def select_run(self, number: int) -> bool:
+        return self.playlist.select_number(number)
 
     def load_run_data(self, raw_frames_path, tel, info: dict, run_config=None) -> None:
-        """Feeds the player, plots, and both text drawers from one
-        completed run -- the single place all of a run's own displays get
-        updated together, so they can never show data from two different
-        runs at once."""
-        self._current_summary = info
-        self.video_player.load_run(raw_frames_path, tel, info)
+        """Feeds the player, plots, and overlays from one completed run --
+        the single place all of a run's own displays get updated
+        together, so they can never show data from two different runs
+        at once."""
+        self.player.load_run(raw_frames_path, tel, info)
         if tel is not None:
             self.plots.set_dataframe(tel)
-        self.config_panel.set_config(run_config)
-        self._refresh_data_panel()
-
-    def _refresh_data_panel(self) -> None:
-        row = self.video_player.current_row()
-        self.data_panel.set_content(row, self._current_summary)
-
-    # ---- internal wiring ------------------------------------------------
-
-    def _on_frame_changed(self, frame: int) -> None:
-        self.plots.set_playhead(frame)
-        self._refresh_data_panel()
-
-    def _on_brain_map_toggled(self, _checked: bool) -> None:
-        self._save_ui_state()
-
-    def _on_row_selected(self, entry: dict) -> None:
-        self._window.load_history_run(entry)
-
-    def _on_export_clicked(self) -> None:
-        number = self.run_table.selected_number()
-        if number is None:
-            self.show_result("Select a run in the table to export.", is_error=True)
-            return
-        path = self._window.export_history_run({"number": number})
-        self.show_result(f"Exported #{number:03d} to {path}")
-
-    def _save_ui_state(self) -> None:
-        """"Remember which drawers are open and how wide" -- persisted
-        into ToolSettings (tool.json), not just this session's memory."""
-        settings = self._window.get_tool_settings()
-        new_state = RunTabUIState(
-            runs_drawer_open=self.runs_drawer.is_open(),
-            runs_drawer_width=self.runs_drawer.width_when_open(),
-            plots_drawer_open=self.plots_drawer.is_open(),
-            plots_drawer_width=self.plots_drawer.width_when_open(),
-            data_drawer_open=self.data_drawer.is_open(),
-            data_drawer_width=self.data_drawer.width_when_open(),
-            config_drawer_open=self.config_drawer.is_open(),
-            config_drawer_width=self.config_drawer.width_when_open(),
-            brain_map_visible=self.video_player.brain_map_button.isChecked(),
-        )
-        self._window.set_tool_settings(dataclasses.replace(settings, run_tab_ui=new_state))
+        self.config_content.set_config(run_config)
+        self.brain_map_content.set_telemetry(tel)
+        if self.brain_overlay.isVisible():
+            self.brain_map_content.update_frame(0)
+        row = self.player.current_row()
+        self.data_content.update_from_row(row.to_dict() if row is not None else None)

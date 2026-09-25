@@ -1,6 +1,6 @@
 """End-to-end: a real death, through tool/core/runner.py's run_one() with
 raw_frames + death_animation_frames both on (the shipped defaults), loaded
-into the actual VideoPlayer. Each piece (frame_store.py, run_steering.py's
+into the actual RunPlayer. Each piece (frame_store.py, run_steering.py's
 extension, the player's own longer-than-telemetry handling) has its own
 unit tests; this is the one test proving they still fit together.
 """
@@ -36,16 +36,16 @@ def test_a_real_death_records_and_plays_back_its_own_animation(qapp):
         real_frames = info["n_frames"]
         assert real_frames == len(tel)
 
-        from tool.ui.widgets.video_player import VideoPlayer
-        player = VideoPlayer()
+        from tool.ui.widgets.run_player import RunPlayer
+        player = RunPlayer()
         player.load_run(info["raw_frames_path"], tel, info)
         assert player._mode == "seekable"
         assert player._n_frames == real_frames + 90, "the recording should carry the death animation too"
 
         # Well past the real episode: the game view still has a real
-        # recorded frame, and the Data drawer freezes on the last real row.
+        # recorded frame, and the Data overlay freezes on the last real row.
         player.seek_frame(real_frames + 50)
-        assert not player.frame_label.pixmap().isNull()
+        assert not player.canvas.pixmap().isNull()
         row = player.current_row()
         assert row is not None and row["frame"] == real_frames - 1
     finally:

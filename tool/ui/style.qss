@@ -63,6 +63,11 @@ QPushButton:checked {
     border-color: @WHITE@;
 }
 
+QPushButton:pressed {
+    background-color: @BRICK_BROWN@;
+    border-color: @WHITE@;
+}
+
 QPushButton:disabled {
     background-color: #888888;
     color: #cccccc;
@@ -98,16 +103,50 @@ QToolButton:disabled {
     border-color: #555555;
 }
 
-/* The header's Play button, restyled and relabelled "START" (section 5's
-   own retro/arcade convention) -- not a new, separate screen. */
-QPushButton#startButton {
-    background-color: @MARIO_RED@;
-    font-size: 12pt;
-    min-height: 44px;
-    min-width: 120px;
+/* Run tab / header redesign: Home, Presets, Save and START are the same
+   widget kind of thing (a header action), so they share this ONE rule --
+   same size, padding and font regardless of QPushButton vs QToolButton.
+   Set via `widget.setProperty("headerButton", True)`, not an objectName,
+   so one selector covers both widget classes. START stands out by colour
+   only (the `headerAccent` property below), never by size -- found in
+   manual testing: a bigger START read as "the real button" and made the
+   other three look disabled even when they weren't. */
+QPushButton[headerButton="true"], QToolButton[headerButton="true"] {
+    font-family: "Press Start 2P", sans-serif;
+    font-size: 9pt;
+    background-color: @BRICK_BROWN@;
+    color: @WHITE@;
+    border: 3px solid @BLACK@;
+    min-height: 32px;
+    padding: 8px 14px;
 }
 
-QPushButton#startButton:hover {
+QPushButton[headerButton="true"]:hover, QToolButton[headerButton="true"]:hover {
+    background-color: @MARIO_RED@;
+}
+
+QPushButton[headerButton="true"]:pressed, QToolButton[headerButton="true"]:pressed {
+    background-color: @BRICK_BROWN@;
+    border-color: @WHITE@;
+}
+
+QPushButton[headerButton="true"]:disabled, QToolButton[headerButton="true"]:disabled {
+    background-color: #888888;
+    color: #cccccc;
+    border-color: #555555;
+}
+
+QPushButton[headerButton="true"]:focus, QToolButton[headerButton="true"]:focus {
+    outline: none;
+    border-color: @WHITE@;
+}
+
+/* START only: colour, not size (see the rule block's own comment above). */
+QPushButton[headerButton="true"][headerAccent="true"] {
+    background-color: @MARIO_RED@;
+}
+
+QPushButton[headerButton="true"][headerAccent="true"]:hover {
     background-color: @LUIGI_GREEN@;
 }
 
@@ -169,6 +208,47 @@ QLabel#statChip {
     border: 2px solid @BLACK@;
     padding: 4px 10px;
     font-size: 8pt;
+}
+
+/* Run tab / player redesign: the auto-hiding transport bar sits ON TOP of
+   the video (a child of the canvas, not its own layout row), so it needs
+   its own background rather than the theme's sky-blue showing through. */
+QWidget#transportBar {
+    background-color: rgba(20, 20, 20, 200);
+    border-top: 2px solid @BLACK@;
+}
+
+QWidget#transportBar QLabel {
+    color: @WHITE@;
+    background-color: transparent;
+}
+
+QLabel#liveBadge {
+    background-color: @MARIO_RED@;
+    color: @WHITE@;
+    font-size: 9pt;
+    padding: 4px 10px;
+    border: 2px solid @BLACK@;
+}
+
+/* Run tab / player redesign: overlay panels (Brain map/Data/Config) over
+   the video. The Data overlay is a "see-through readout" by request --
+   translucent black, not the theme's own sky-blue, so it reads on top of
+   any frame without fighting the video for attention. */
+QWidget#overlayTitleBar {
+    background-color: @BRICK_BROWN@;
+    border-bottom: 2px solid @BLACK@;
+}
+
+QWidget#dataOverlayContent {
+    background-color: rgba(10, 10, 10, 180);
+}
+
+QWidget#dataOverlayContent QLabel {
+    background-color: transparent;
+    color: @WHITE@;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 10pt;
 }
 
 /* Ease-of-use redesign: the read-only reference project's own banner --
