@@ -1,61 +1,43 @@
 # What this file does, in plain English:
-# Trains the "mushroom body" (the fly's learning centre) by playing 500
-# episodes of level 1-1 (or a number given on the command line), 1,200
-# frames each, no video, from the same saved start, carrying the learned
-# weights over from one episode to the next. Writes per-episode progress to
-# projects/legacy/telemetry/mb_training_curve.csv, final weights beside it.
+# Command-line way to train the fly's mushroom body (learning centre). It is
+# only a thin wrapper: the real work, and the recording of every episode in
+# the tool's run store, is tool/core/training.py -- the same code the tool's
+# Train button runs. It refuses to train into the read-only "legacy" project.
 """
-train_mushroom_body.py -- SPEC_mushroom_body.md section 6: 500 episodes
-from an identical savestate, x-progress per episode as the learning curve.
-headless, frame_skip=1 (013's own finding: frame_skip changes behaviour
-chaotically -- not used for training here).
+train_mushroom_body.py -- SPEC_mushroom_body.md section 6, now through the
+tool's run store (CLAUDE.md: headless scripts never bypass it).
 
-    .venv/Scripts/python.exe -m scripts.train_mushroom_body [n_episodes]
+    .venv/Scripts/python.exe -m scripts.train_mushroom_body <project> [episodes] \
+        [--frame-cap 3000] [--shuffled N] [--checkpoint real_ep050.npy]
 """
+import argparse
 import sys
+
 sys.path.insert(0, ".")
-import csv
-import time
-
-import run_steering as rs
-
-N_EPISODES = int(sys.argv[1]) if len(sys.argv) > 1 else 500
-LEVEL = "1-1"
-MAX_FRAMES = 1200
-WARMUP_FRAMES = 60
 
 if __name__ == "__main__":
-    env = rs.make_env(LEVEL)
-    mb_weights = None
-    rows = []
-    t_start = time.time()
-    with open("projects/legacy/telemetry/mb_training_curve.csv", "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["episode", "max_x_abs", "n_frames", "died", "n_escape_jumps",
-                          "n_dnp01_fired", "n_dnp02_fired", "wall_s"])
-        for ep in range(N_EPISODES):
-            t0 = time.time()
-            tel, info = rs.main(
-                out_mp4="IGNORED", level=LEVEL, max_frames=MAX_FRAMES,
-                record_video=False, frame_skip=1,
-                savestate={"env": env, "warmup_frames": WARMUP_FRAMES},
-                mb_weights=mb_weights,
-            )
-            mb_weights = info["mb_weights"]
-            dt = time.time() - t0
-            row = [ep, info["max_x_abs"], info["n_frames"], info["died_or_flagged"],
-                   info["n_escape_jumps"], info["n_dnp01_fired"], info["n_dnp02_fired"], dt]
-            writer.writerow(row)
-            f.flush()
-            rows.append(row)
-            if ep % 25 == 0 or ep == N_EPISODES - 1:
-                recent = [r[1] for r in rows[-25:]]
-                print(f"episode {ep:4d}: max_x={info['max_x_abs']:5d} "
-                      f"frames={info['n_frames']:4d} died={info['died_or_flagged']} "
-                      f"(recent-25 mean max_x={sum(recent)/len(recent):.1f}) "
-                      f"[{dt:.2f}s/ep, {time.time()-t_start:.0f}s total]", flush=True)
-    env.close()
-    import numpy as np
-    np.save("projects/legacy/telemetry/mb_trained_weights.npy", mb_weights)
-    print(f"\nDone: {N_EPISODES} episodes in {time.time()-t_start:.1f}s. "
-          f"Saved projects/legacy/telemetry/mb_training_curve.csv and mb_trained_weights.npy")
+    import setuptools  # noqa: F401 -- must precede gym
+    from tool.core.project import ToolProject
+    from tool.core.tool_settings import TrainingSettings
+    from tool.core.training import run_training
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("project")
+    ap.add_argument("episodes", type=int, nargs="?", default=200)
+    ap.add_argument("--frame-cap", type=int, default=3000)
+    ap.add_argument("--shuffled", type=int, default=0, help="number of shuffled control networks")
+    ap.add_argument("--learning-rate", type=float, default=None)
+    ap.add_argument("--event-proximal", action="store_true")
+    ap.add_argument("--checkpoint", default=None)
+    a = ap.parse_args()
+    settings = TrainingSettings(episodes=a.episodes, frame_cap=a.frame_cap,
+                                learning_rate=a.learning_rate, event_proximal=a.event_proximal,
+                                include_shuffled=a.shuffled > 0, n_shuffled=max(a.shuffled, 1),
+                                checkpoint=a.checkpoint)
+
+    def emit(kind, payload):
+        if kind == "episode":
+            print(f"{payload['network']:>12} ep {payload['episode']:4d}  max_x={payload['max_x']:5d}"
+                  f"  (run #{payload['number']})", flush=True)
+
+    print(run_training(ToolProject.open(a.project), settings, emit=emit))

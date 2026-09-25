@@ -166,10 +166,89 @@ class GapAheadPerceptionModule:
         stim.gap_input = width * (n - d + 1) / n
 
 
+class MotorDirectModule:
+    """MOTOR. Replaces the fixed jump-hold and cooldown counters (docs/
+    CONTROL_AUDIT.md rows 1-3) with a readout of the motor neurons
+    themselves: A is held while a leaky integral of the TTMn ONSET (its rise
+    -- motor neurons are phasic, and a saturated TTMn pool stays high long
+    after the muscle has fired) plus a DLMn term (sustained DLMn = a longer,
+    graded jump instead of a binary long-jump choice) stays above
+    `a_threshold`. Nothing is forced: the code
+    only low-passes what the circuit's own output neurons are doing, as a
+    muscle does. There is no cooldown -- a new commit needs a fresh rising
+    edge of the motor output, so the Giant Fiber's own refractoriness is
+    the only limit. Habituation still suppresses the commit (its bookkeeping
+    is unchanged) and a suppressed press contributes no drive."""
+    name = "motor_direct"
+    kind = "motor"
+
+    def __init__(self, params):
+        self.params = params
+        self.reset()
+
+    def reset(self) -> None:
+        self.drive = 0.0
+        self.prev_ratio = 0.0
+        self.was_ready = False
+        self.suppressed = False
+
+    def rising(self, ready: bool) -> bool:
+        """True on the frame the motor output first crosses threshold."""
+        edge = ready and not self.was_ready
+        if not ready:
+            self.suppressed = False
+        self.was_ready = ready
+        return edge
+
+    def update(self, ttmn_ratio: float, dlmn_val: float) -> bool:
+        """Advance the integrator one frame; return whether A is down."""
+        p = self.params
+        rise = max(0.0, ttmn_ratio - self.prev_ratio)
+        self.prev_ratio = ttmn_ratio
+        drive_in = 0.0 if self.suppressed else p.ttmn_gain * rise + p.dlmn_gain * dlmn_val
+        self.drive = self.drive * p.decay + drive_in
+        if self.drive < 1e-12:
+            self.drive = 0.0
+        return self.drive >= p.a_threshold
+
+
+class MbonReadoutModule:
+    """READOUT. The mushroom body used to act through one scalar (the mean
+    of all MBON activity). This gives each MBON its own connectome-derived
+    weight onto each motor pathway (fly/circuits/mbon_pathway_weights.py:
+    direct MBON->target synapses plus two-hop MBON->X->target paths), so
+    learning that depresses particular MBONs changes particular pathways
+    (jump, long jump, speed, backing up) differently. Output: a bias current
+    per pathway, negative like the existing MBON->DNa02 path (the MBONs'
+    dominant partners are GABAergic)."""
+    name = "mbon_readout"
+    kind = "readout"
+    PATHWAYS = ("dnp01", "dlmn", "dnp09", "mdn")
+
+    def __init__(self, params):
+        self.params = params
+        self.weights = None  # set by FullPolicy once the MBON ids are known
+
+    def reset(self) -> None:
+        pass
+
+    def readout(self, h_mbon) -> dict:
+        """{pathway: (weighted MBON activity, bias current it drives)}."""
+        p = self.params
+        frac = {"dnp01": p.dnp01_frac, "dlmn": p.dlmn_frac, "dnp09": p.dnp09_frac, "mdn": p.mdn_frac}
+        out = {}
+        for g in self.PATHWAYS:
+            value = float(self.weights[g] @ h_mbon)
+            out[g] = (value, -frac[g] * value)
+        return out
+
+
 # Config field name (in ProjectConfig.modules) -> module class. Field order
 # in ModulesConfig is the execution order.
 MODULE_CLASSES: dict[str, type] = {"page_perception": PagePerceptionModule,
-                                    "gap_ahead": GapAheadPerceptionModule}
+                                    "gap_ahead": GapAheadPerceptionModule,
+                                    "motor_direct": MotorDirectModule,
+                                    "mbon_readout": MbonReadoutModule}
 
 
 def register(name: str):

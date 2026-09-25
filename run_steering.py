@@ -213,6 +213,17 @@ def poke_wide_gap(ram, target_col: int, width_tiles=REFUSAL_GAP_TILES + REFUSAL_
         ram[buf_addr + tile_ram.GROUND_ROW * 16 + (col % 16)] = tile_ram.EMPTY_ID
 
 
+def policy_extra_columns(policy) -> tuple:
+    """Telemetry columns that exist only when an optional module is on, so
+    runs without it stay byte-identical to the goldens."""
+    cols = []
+    if getattr(policy, "motor", None) is not None:
+        cols.append("motor_drive")
+    if getattr(policy, "readout", None) is not None:
+        cols += [f"mbon_{g}" for g in policy.readout.PATHWAYS]
+    return tuple(cols)
+
+
 def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
          force_mario_size=None, force_size_from_frame=None, record_video=True,
          inject_frame=None, frame_skip=1, savestate=None, mb_weights=None,
@@ -379,7 +390,7 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
             "r_team", "l_team", "dna01_l", "dna01_r",
             "dna02_l", "dna02_r", "is_r_mask_sum", "is_l_mask_sum",
             "press_a", "lc4_l", "lc4_r", "lplc2_l", "lplc2_r",
-        ))
+        ) + policy_extra_columns(policy))
 
         frame = 0
         done = False
@@ -508,6 +519,7 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
             row["refusing"] = refusing
             row["qblock_hit"] = qblock_hit
             row["mario_size"] = mario_size
+            row.update(info_f["extras"])
             observer.record(row)
             row["mario_y"] = mario_y  # after record() -- see the frame-skip branch's own comment
             if record_video:

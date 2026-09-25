@@ -167,9 +167,9 @@ disagree.
 
 | field | value | range | provenance | home |
 |---|---|---|---|---|
-| `decay` | `0.95` | unknown | invented (per-frame decay of the motor drive, tau ~20 frames: the low-pass of a motor neuron pool; replaces jump_hold_frames/jump_cooldown_frames) | `bridge/controller_modules.py (MotorDirectModule)` |
+| `decay` | `0.9` | unknown | invented (per-frame decay of the motor drive, tau ~10 frames: the low-pass of a motor neuron pool; replaces jump_hold_frames/jump_cooldown_frames) | `bridge/controller_modules.py (MotorDirectModule)` |
 | `a_threshold` | `0.3` | unknown | invented (A is down while the drive is above this; motor threshold, like ttmn_press_threshold) | `bridge/controller_modules.py (MotorDirectModule)` |
-| `ttmn_gain` | `1.0` | unknown | invented (drive added per frame per unit of TTMn/spike_amp) | `bridge/controller_modules.py (MotorDirectModule)` |
+| `ttmn_gain` | `1.0` | unknown | invented (drive added per unit of TTMn rise, in units of the press threshold) | `bridge/controller_modules.py (MotorDirectModule)` |
 | `dlmn_gain` | `0.05` | unknown | invented (drive added per frame per unit of DLMn: sustained DLMn lengthens the hold, a graded long jump instead of the binary choice) | `bridge/controller_modules.py (MotorDirectModule)` |
 
 ## MbonReadoutParams

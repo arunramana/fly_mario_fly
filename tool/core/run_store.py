@@ -43,18 +43,25 @@ def git_commit() -> str | None:
 
 
 def record_run(project_name: str, number: int, slug: str, seed: int,
-                info: dict, run_spec_snapshot: dict, batch_id: str | None = None) -> None:
+                info: dict, run_spec_snapshot: dict, batch_id: str | None = None,
+                extra: dict | None = None) -> None:
     """`info` is run_steering.main()'s own summary dict -- `mb_weights`
     (a numpy array, not JSON-safe) is dropped from the stored copy; every
     other key is a plain number/bool/string. `batch_id`: None for a
     single Play; a shared string for every seed of one run_batch() call
     (tool/core/batch.py) -- "batch runs appear as a group in the run
     drawer" (ease-of-use redesign) needs this to actually group them,
-    since nothing else in a run's own record says it came from a batch."""
+    since nothing else in a run's own record says it came from a batch.
+    `extra`: further top-level keys on the entry -- training runs add
+    `group` ("Training · real") and `training` (network/episode/max_x/...)
+    so the player's dropdown and the Learning tab can group them.
+    Training entries store a compact `run_spec` ({"ref": <number>, ...}),
+    resolved by `resolve_run_spec`, so 600 episodes don't each carry a
+    full config snapshot in an index that is rewritten on every record."""
     path = _index_path(project_name)
     path.parent.mkdir(parents=True, exist_ok=True)
     entries = _read_index(project_name)
-    entries.append({
+    entry = {
         "number": number,
         "slug": slug,
         "seed": seed,
@@ -63,12 +70,56 @@ def record_run(project_name: str, number: int, slug: str, seed: int,
         "batch_id": batch_id,
         "summary": {k: v for k, v in info.items() if k != "mb_weights"},
         "run_spec": run_spec_snapshot,
-    })
+    }
+    if extra:
+        entry.update(extra)
+    entries.append(entry)
     path.write_text(json.dumps(entries, indent=2, sort_keys=True, default=str), encoding="utf-8")
 
 
 def list_runs(project_name: str) -> list[dict]:
     return _read_index(project_name)
+
+
+def patch_run(project_name: str, number: int, summary: dict | None = None,
+              extra: dict | None = None) -> None:
+    """Update one recorded run in place: merge `summary` into its summary
+    (e.g. raw_frames_path=None when its frames are deleted) and `extra`
+    into the entry itself."""
+    entries = _read_index(project_name)
+    for e in entries:
+        if e["number"] == number:
+            if summary:
+                e["summary"].update(summary)
+            if extra:
+                e.update(extra)
+            break
+    else:
+        raise ValueError(f"no run #{number} recorded for project {project_name!r}")
+    _index_path(project_name).write_text(
+        json.dumps(entries, indent=2, sort_keys=True, default=str), encoding="utf-8")
+
+
+def resolve_run_spec(entry: dict, entries: list[dict] | None = None,
+                     project_name: str | None = None) -> dict:
+    """The full RunSpec dict for an entry, following a compact
+    {"ref": <number>, "overrides": {...}} to the run whose spec it shares.
+    Overrides: `shuffle_seed`, `learning_rate`, `max_frames`."""
+    spec = entry.get("run_spec") or {}
+    if "ref" not in spec:
+        return spec
+    if entries is None:
+        entries = _read_index(project_name)
+    base = next(e for e in entries if e["number"] == spec["ref"])
+    full = json.loads(json.dumps(resolve_run_spec(base, entries)))
+    ov = spec.get("overrides", {})
+    if "shuffle_seed" in ov:
+        full["tool_settings"]["circuits"]["shuffle_seed"] = ov["shuffle_seed"]
+    if ov.get("learning_rate") is not None:
+        full["config"]["mushroom_body"]["learning_rate"] = ov["learning_rate"]
+    if "max_frames" in ov:
+        full["config"]["scenario"]["max_frames"] = ov["max_frames"]
+    return full
 
 
 def write_run_note(project_name: str, number: int, slug: str, seed: int,
@@ -123,7 +174,7 @@ def export_run_bundle(project_name: str, number: int) -> Path:
     }
 
     with zipfile.ZipFile(bundle_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("config.json", json.dumps(entry["run_spec"], indent=2, sort_keys=True))
+        zf.writestr("config.json", json.dumps(resolve_run_spec(entry, entries), indent=2, sort_keys=True))
         for arcname, path in candidates.items():
             if path is not None and path.exists():
                 zf.write(path, arcname)

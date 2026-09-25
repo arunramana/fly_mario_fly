@@ -126,6 +126,8 @@ class FullPolicy:
         built = build_modules(self.config)  # ordered, from config
         self.modules = [m for m in built if m.kind == "control"]
         self.perception = [m for m in built if m.kind == "perception"]
+        self.motor = next((m for m in built if m.kind == "motor"), None)
+        self.readout = next((m for m in built if m.kind == "readout"), None)
         self.level = level
         self.retinotopic = retinotopic
         self.frame_skip = frame_skip
@@ -258,6 +260,7 @@ class FullPolicy:
         mb_pam_idx = np.where(mb_pam_mask)[0]
         mb_punish_idx = np.where(mb_punish_mask)[0]
         self.n_kc, self.n_mbon = len(self.mb_kc_idx), len(self.mb_mbon_idx)
+        self.mb_mbon_body_ids = mb_bodies["bodyId"].to_numpy()[self.mb_mbon_idx]
         # Copy a passed-in `mb_weights`: depress() mutates in place, and
         # the caller's matrix must survive the episode unchanged.
         self.W_kc_mbon = (mb_weights.copy() if mb_weights is not None
@@ -316,12 +319,23 @@ class FullPolicy:
         self.mb_prev_dnp09 = 0.0
         self.mb_bias_dnp02 = 0.0
         self.h_mbon = np.zeros(self.n_mbon)
+        # MbonReadoutModule: per-pathway bias currents, computed from the
+        # previous frame's MBON activity (one-frame delay, like mb_bias_dnp02).
+        self.mb_pathway_bias = {g: 0.0 for g in ("dnp01", "dlmn", "dnp09", "mdn")}
+        self.mb_pathway_readout = dict(self.mb_pathway_bias)
+        if self.readout is not None:
+            from fly.circuits.mbon_pathway_weights import load_readout_weights
+            w = load_readout_weights(self.mb_mbon_body_ids)
+            if self.shuffle_seed is not None:  # invariant 6: the control rewires the readout too
+                rng = np.random.default_rng(self.shuffle_seed)
+                w = {g: rng.permutation(v) for g, v in w.items()}
+            self.readout.weights = w
         self.prev_mario_x_abs = None
         self.max_x_abs = None
         self.last_info: dict = {}
         self._prev_gap_w = 0  # docs/SPEC_pits.md: rising-edge pit-encounter logging
         self._prev_press_a = False
-        for module in self.modules + self.perception:
+        for module in self.modules + self.perception + [m for m in (self.motor, self.readout) if m]:
             module.reset()
 
     def act(self, observation) -> int:
@@ -422,11 +436,13 @@ class FullPolicy:
             Ij[self.j_msk["LC4_R"]] = abs(dtheta["R"]); Ij[self.j_msk["LPLC2_R"]] = theta["R"]
         if not refusing:
             Ij[self.jump_dnp01_mask] += c.takeoff.gap_gain * gap_input
+        Ij[self.jump_dnp01_mask] += self.mb_pathway_bias["dnp01"]
 
         for _ in range(self.substeps):
             hj = self.jump_network.step(Ij, noise=self.noise)
             It = np.zeros(self.Kt)
             It[self.takeoff_dnp01_mask] = hj[self.jump_dnp01_mask]
+            It[self.dlmn_mask] += self.mb_pathway_bias["dlmn"]
             h_takeoff = self.takeoff_network.step(It, noise=self.noise)
         self.takeoff_network.flush_denormals(c.network.denormal_flush_threshold)
         ttmn_val = max(hj[self.j_msk["TTMn_L"]].mean(), hj[self.j_msk["TTMn_R"]].mean())
@@ -503,6 +519,10 @@ class FullPolicy:
             self.W_kc_mbon = depress(self.W_kc_mbon, dopamine_reward, self.mb_elig,
                                       c.mushroom_body.learning_rate)
 
+        if self.readout is not None:
+            pair = self.readout.readout(self.h_mbon)
+            self.mb_pathway_readout = {g: v[0] for g, v in pair.items()}
+            self.mb_pathway_bias = {g: v[1] for g, v in pair.items()}
         mbon_agg = float(self.h_mbon.mean())
         mb_bias_r = -self.MBON_DNA02_FRAC["R"] * mbon_agg
         mb_bias_l = -self.MBON_DNA02_FRAC["L"] * mbon_agg
@@ -592,15 +612,17 @@ class FullPolicy:
         elif self.jump_hold == 0:
             dnp01_ready = ttmn_val >= c.jump.ttmn_press_threshold or prop.force_dnp01
             dnp02_ready = ttmn_val_dnp02 >= c.jump.ttmn_press_threshold
-            if dnp01_ready or dnp02_ready:
+            motor_edge = self.motor is None or self.motor.rising(dnp01_ready or dnp02_ready)
+            if (dnp01_ready or dnp02_ready) and motor_edge:
                 if dnp01_ready and dnp02_ready:
                     pathway_fired = "DNp01" if (prop.force_dnp01 or self.jump_network.just_spiked.any()) else (
                         "DNp02" if self.dnp02_network.just_spiked.any() else "DNp01")
                 else:
                     pathway_fired = "DNp01" if dnp01_ready else "DNp02"
                 if self.hab_escape.check(mario_x):
-                    long_jump = prop.force_long_jump or dlmn_val >= c.takeoff.dlmn_recruit_threshold
-                    self.jump_hold = self.long_jump_hold_frames if long_jump else self.jump_hold_frames
+                    if self.motor is None:
+                        long_jump = prop.force_long_jump or dlmn_val >= c.takeoff.dlmn_recruit_threshold
+                        self.jump_hold = self.long_jump_hold_frames if long_jump else self.jump_hold_frames
                     escape_trigger = True
                     self.n_escape_jumps += 1
                     if pathway_fired == "DNp01":
@@ -624,6 +646,8 @@ class FullPolicy:
                         log.debug(f"  gap_width={gap_w} DLMn={dlmn_val:.2f} >= "
                                   f"{c.takeoff.dlmn_recruit_threshold} -> LONG JUMP (hold={self.jump_hold})")
                 else:
+                    if self.motor is not None:
+                        self.motor.suppressed = True
                     log.debug(f"  escape HABITUATED (level={self.hab_escape.hab_level}) -- suppressed")
 
         conflict = escape_trigger and (climb_trigger or self.climb_hold > 0)
@@ -637,6 +661,7 @@ class FullPolicy:
         if self.mdn_backup_hold == 0:
             Im = np.zeros(self.Km)
             Im[self.mdn_mask] = c.mdn.mdn_drive if self.hab_escape.hab_level >= self.hab_escape.give_up else 0.0
+            Im[self.mdn_mask] += self.mb_pathway_bias["mdn"]
             for _ in range(self.substeps):
                 h_mdn = self.mdn_network.step(Im, noise=self.noise)
             self.mdn_network.flush_denormals(c.network.denormal_flush_threshold)
@@ -656,6 +681,10 @@ class FullPolicy:
 
         # ---- resolve one shared A button -------------------------------
         press_a = self.jump_hold > 0 or self.climb_hold > 0
+        if self.motor is not None:
+            motor_a = self.motor.update(
+                max(ttmn_val, ttmn_val_dnp02) / c.jump.ttmn_press_threshold, dlmn_val)
+            press_a = press_a or motor_a
         if self.jump_hold > 0:
             self.jump_hold -= 1
             if self.jump_hold == 0:
@@ -675,7 +704,8 @@ class FullPolicy:
         else:
             odor_brake = min(c.speed.walk_drive, max(0.0, odor_l_eff + odor_r_eff - c.steering.home_bias))
             Ip[self.dnp09_mask] = (c.speed.walk_drive
-                                    - (c.speed.walk_suppression if busy else 0.0) - odor_brake)
+                                    - (c.speed.walk_suppression if busy else 0.0) - odor_brake
+                                    + self.mb_pathway_bias["dnp09"])
         for _ in range(self.substeps):
             h_speed = self.speed_network.step(Ip, noise=self.noise)
         self.speed_network.flush_denormals(c.network.denormal_flush_threshold)
@@ -708,6 +738,12 @@ class FullPolicy:
             refusing=refusing, qblock_hit=qblock_hit, stomp=stomp, mario_size=mario_size,
             max_x_abs=self.max_x_abs,
         )
+        extras = {}
+        if self.motor is not None:
+            extras["motor_drive"] = self.motor.drive
+        if self.readout is not None:
+            extras.update({f"mbon_{g}": v for g, v in self.mb_pathway_readout.items()})
+        self.last_info["extras"] = extras
         return action
 
     def on_step(self, step: int, observation, action) -> None:

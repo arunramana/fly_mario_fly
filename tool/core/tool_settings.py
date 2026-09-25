@@ -117,6 +117,24 @@ class RunTabUIState:
 
 
 @dataclass(frozen=True)
+class TrainingSettings:
+    """Goal tab's Train button (tool/core/training.py). Reward and
+    punishment both flow through the mushroom body's own learning rate
+    (MushroomBodyParams.learning_rate: `None` keeps the project's value);
+    `event_proximal` switches the reward from "any forward progress" to
+    "only a ? block / stomp" (FullPolicy's event_proximal_dopamine).
+    `checkpoint`: a file name under projects/<name>/checkpoints/ to start
+    the real network from instead of fresh weights."""
+    episodes: int = 200
+    frame_cap: int = 3000
+    learning_rate: float | None = None
+    event_proximal: bool = False
+    include_shuffled: bool = False
+    n_shuffled: int = 2
+    checkpoint: str | None = None
+
+
+@dataclass(frozen=True)
 class ToolSettings:
     character: CharacterSettings = field(default_factory=CharacterSettings)
     circuits: CircuitSettings = field(default_factory=CircuitSettings)
@@ -125,6 +143,7 @@ class ToolSettings:
     experiment: ExperimentSettings = field(default_factory=ExperimentSettings)
     render: RenderSettings = field(default_factory=RenderSettings)
     run_tab_ui: RunTabUIState = field(default_factory=RunTabUIState)
+    training: TrainingSettings = field(default_factory=TrainingSettings)
 
     def to_dict(self) -> dict:
         return asdict(self)

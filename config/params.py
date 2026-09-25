@@ -430,15 +430,15 @@ class MotorDirectParams:
     """bridge/controller_modules.py's MotorDirectModule: A follows a leaky
     integrator of the motor neurons' own activity instead of fixed hold and
     cooldown counters."""
-    decay: float = _f(0.95, None,
-        "invented (per-frame decay of the motor drive, tau ~20 frames: the low-pass of "
+    decay: float = _f(0.9, None,
+        "invented (per-frame decay of the motor drive, tau ~10 frames: the low-pass of "
         "a motor neuron pool; replaces jump_hold_frames/jump_cooldown_frames)",
         "bridge/controller_modules.py (MotorDirectModule)")
     a_threshold: float = _f(0.3, None,
         "invented (A is down while the drive is above this; motor threshold, like "
         "ttmn_press_threshold)", "bridge/controller_modules.py (MotorDirectModule)")
     ttmn_gain: float = _f(1.0, None,
-        "invented (drive added per frame per unit of TTMn/spike_amp)",
+        "invented (drive added per unit of TTMn rise, in units of the press threshold)",
         "bridge/controller_modules.py (MotorDirectModule)")
     dlmn_gain: float = _f(0.05, None,
         "invented (drive added per frame per unit of DLMn: sustained DLMn lengthens the "
