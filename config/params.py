@@ -128,6 +128,25 @@ class TakeoffParams:
     gap_lookahead_tiles: int = _f(8, None,
                                     "invented (perceptual range, mechanical, not a circuit gain)",
                                     "run_steering.py (GAP_LOOKAHEAD_TILES)")
+    # docs/SPEC_pits.md, opt-in behind config.scenario.graded_pit_response
+    # (False keeps every golden byte-identical -- see that flag's own
+    # docstring in config/project_config.py).
+    long_jump_trigger_distance_tiles: int = _f(2, None,
+                                                 "invented (mechanical launch-distance threshold: "
+                                                 "docs/SPEC_pits.md's own validation found the ORIGINAL "
+                                                 "threshold-only trigger firing only once the shared "
+                                                 "jump_cooldown/jump_hold timer happened to reopen, by "
+                                                 "which point Mario's own column had already advanced 2 "
+                                                 "of a 3-tile pit's own footprint -- 2 tiles of solid "
+                                                 "ground still ahead gives the 35-frame hold's arc "
+                                                 "somewhere to land)",
+                                                 "bridge/full_policy.py (FullPolicy.act's gap_override)")
+    run_up_tiles: int = _f(4, None,
+                             "invented (mechanical run-up distance: wider than "
+                             "long_jump_trigger_distance_tiles so B is already held by the time the "
+                             "jump itself launches -- a NES running jump clears more horizontal "
+                             "distance than a standing one)",
+                             "bridge/full_policy.py (FullPolicy.act's press_b override)")
 
 
 @dataclass(frozen=True)

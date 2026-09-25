@@ -38,6 +38,12 @@ class ScenarioParams:
     seed: int | None = None
     inject_gap_frame: int | None = None
     retinotopic: bool = False
+    # docs/SPEC_pits.md, opt-in (default False keeps every golden byte-
+    # identical): a strong gap signal overrides the escape jump's own
+    # cooldown, the long jump triggers by distance to the pit edge rather
+    # than only whichever pathway's TTMn happens to cross threshold, and
+    # Mario holds B for a run-up on approach.
+    graded_pit_response: bool = False
 
 
 @dataclass(frozen=True)

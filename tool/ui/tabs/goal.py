@@ -69,6 +69,15 @@ class GoalTab(QWidget):
         self.learning_checkbox.setChecked(settings.experiment.learning_enabled)
         self.learning_checkbox.toggled.connect(self._on_learning_changed)
         scenario_form.addRow("Learning", self.learning_checkbox)
+
+        self.graded_pits_checkbox = QCheckBox("Graded pit response (docs/SPEC_pits.md)")
+        self.graded_pits_checkbox.setChecked(config.scenario.graded_pit_response)
+        self.graded_pits_checkbox.setToolTip(
+            "Opt-in controller scaffolding, not circuit behaviour: overrides the jump "
+            "cooldown near a pit, launches the long jump by distance, holds B for a run-up. "
+            "A science change when on (CLAUDE.md rule 3).")
+        self.graded_pits_checkbox.toggled.connect(self._on_graded_pits_changed)
+        scenario_form.addRow("Pits", self.graded_pits_checkbox)
         layout.addWidget(scenario_box)
 
         fitness_box = QGroupBox("Fitness weights (points/distance/time)")
@@ -95,6 +104,11 @@ class GoalTab(QWidget):
     def _on_level_changed(self, level: str) -> None:
         config = self._window.get_config()
         scenario = dataclasses.replace(config.scenario, level=level)
+        self._window.set_config(dataclasses.replace(config, scenario=scenario))
+
+    def _on_graded_pits_changed(self, checked: bool) -> None:
+        config = self._window.get_config()
+        scenario = dataclasses.replace(config.scenario, graded_pit_response=checked)
         self._window.set_config(dataclasses.replace(config, scenario=scenario))
 
     def _on_max_frames_changed(self, value: int) -> None:

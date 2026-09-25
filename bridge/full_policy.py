@@ -315,6 +315,7 @@ class FullPolicy:
         self.prev_mario_x_abs = None
         self.max_x_abs = None
         self.last_info: dict = {}
+        self._prev_gap_w = 0  # docs/SPEC_pits.md: rising-edge pit-encounter logging
 
     def act(self, observation) -> int:
         c = self.config
@@ -327,10 +328,18 @@ class FullPolicy:
 
         # ---- terrain sensing: SPEC_terrain.md section 1 --------------
         gap_w = tile_ram.gap_width(ram, c.takeoff.gap_lookahead_tiles)
+        distance_to_edge = tile_ram.distance_to_gap(ram, c.takeoff.gap_lookahead_tiles)
         wall_ahead = tile_ram.solid_ahead(ram)
         refusing = gap_w > c.terrain.refusal_gap_tiles
         if refusing:
             self.n_refusals += 1
+        # docs/SPEC_pits.md: log exactly what the detector sees on the rising
+        # edge of a real pit encounter -- diagnostic only (log output isn't
+        # telemetry), always on regardless of graded_pit_response.
+        if gap_w > 0 and self._prev_gap_w == 0:
+            log.debug(f"  pit detected -- mario_x={mario_x} gap_width={gap_w} tiles "
+                      f"distance_to_edge={distance_to_edge}")
+        self._prev_gap_w = gap_w
 
         cur_qblock_cols = {
             (int(ram[tile_ram.ADDR_MARIO_PAGE]) * 256 + mario_x) // 16 + off
@@ -549,19 +558,28 @@ class FullPolicy:
         long_jump = False
         pathway_fired = None
         frames_to_contact = None
-        if self.jump_cooldown > 0:
+        # docs/SPEC_pits.md, opt-in (False -> gap_override is always False,
+        # byte-identical to before this existed): a pit close enough to
+        # need a decision now overrides the shared cooldown gate and
+        # commits DNp01 directly, rather than waiting for whichever
+        # pathway's own TTMn happens to cross threshold once cooldown
+        # reopens on its own unrelated schedule -- the exact mechanism
+        # docs/SPEC_pits.md's own validation traced the original miss to.
+        gap_override = (c.scenario.graded_pit_response and distance_to_edge is not None
+                         and distance_to_edge <= c.takeoff.long_jump_trigger_distance_tiles)
+        if self.jump_cooldown > 0 and not gap_override:
             self.jump_cooldown -= 1
         elif self.jump_hold == 0:
-            dnp01_ready = ttmn_val >= c.jump.ttmn_press_threshold
+            dnp01_ready = ttmn_val >= c.jump.ttmn_press_threshold or gap_override
             dnp02_ready = ttmn_val_dnp02 >= c.jump.ttmn_press_threshold
             if dnp01_ready or dnp02_ready:
                 if dnp01_ready and dnp02_ready:
-                    pathway_fired = "DNp01" if self.jump_network.just_spiked.any() else (
+                    pathway_fired = "DNp01" if (gap_override or self.jump_network.just_spiked.any()) else (
                         "DNp02" if self.dnp02_network.just_spiked.any() else "DNp01")
                 else:
                     pathway_fired = "DNp01" if dnp01_ready else "DNp02"
                 if self.hab_escape.check(mario_x):
-                    long_jump = dlmn_val >= c.takeoff.dlmn_recruit_threshold
+                    long_jump = gap_override or dlmn_val >= c.takeoff.dlmn_recruit_threshold
                     self.jump_hold = self.long_jump_hold_frames if long_jump else self.jump_hold_frames
                     escape_trigger = True
                     self.n_escape_jumps += 1
@@ -643,6 +661,13 @@ class FullPolicy:
         self.speed_network.flush_denormals(c.network.denormal_flush_threshold)
         dnp09_val = h_speed[self.dnp09_mask].mean()
         press_b = dnp09_val >= c.speed.dnp09_speed_threshold
+        # docs/SPEC_pits.md, opt-in (False leaves press_b untouched): hold a
+        # run-up on approach to a real pit -- a NES running jump clears more
+        # horizontal distance than a standing one, and DNp09's own decision
+        # has no notion of an upcoming gap to plan around.
+        if (c.scenario.graded_pit_response and distance_to_edge is not None
+                and distance_to_edge <= c.takeoff.run_up_tiles):
+            press_b = True
         self.mb_prev_dnp09 = dnp09_val
 
         action = action_index(self.direction, press_a, press_b)

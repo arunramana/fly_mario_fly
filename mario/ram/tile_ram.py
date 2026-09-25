@@ -111,6 +111,21 @@ def gap_width(ram, max_tiles: int = 8) -> int:
     return width
 
 
+def distance_to_gap(ram, max_tiles: int = 8) -> int | None:
+    """Tile-offset (1-indexed, matching ground_ahead's own convention) of
+    the NEAREST non-ground tile ahead of Mario -- how many tiles until a
+    pit starts, not how wide it is. gap_width() only ever reads offset 1
+    (it's 0 for every tile Mario hasn't reached the edge of yet); this
+    reuses the same ground_ahead() scan to answer "is one coming up" while
+    Mario is still several tiles of solid ground away from it
+    (docs/SPEC_pits.md: distance-triggered long jump). None if every tile
+    in the lookahead window is ground -- no gap within range."""
+    for offset, grounded in enumerate(ground_ahead(ram, max_tiles), start=1):
+        if not grounded:
+            return offset
+    return None
+
+
 def solid_ahead(ram) -> bool:
     """Is the column directly in front of Mario (offset 1) blocked at body
     height -- a wall or pipe to climb rather than a pit (SPEC_terrain.md

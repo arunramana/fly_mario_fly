@@ -53,6 +53,8 @@ disagree.
 | `dlmn_recruit_threshold` | `1.0` | unknown | measured (scripts/tune_terrain.py: sits between the width-1 and width-2 DLMn end-of-frame means) | `run_steering.py (DLMN_RECRUIT_THRESHOLD)` |
 | `long_jump_hold_frames` | `35` | unknown | invented (mechanical output-interface constant) | `run_steering.py (LONG_JUMP_HOLD_FRAMES)` |
 | `gap_lookahead_tiles` | `8` | unknown | invented (perceptual range, mechanical, not a circuit gain) | `run_steering.py (GAP_LOOKAHEAD_TILES)` |
+| `long_jump_trigger_distance_tiles` | `2` | unknown | invented (mechanical launch-distance threshold: docs/SPEC_pits.md's own validation found the ORIGINAL threshold-only trigger firing only once the shared jump_cooldown/jump_hold timer happened to reopen, by which point Mario's own column had already advanced 2 of a 3-tile pit's own footprint -- 2 tiles of solid ground still ahead gives the 35-frame hold's arc somewhere to land) | `bridge/full_policy.py (FullPolicy.act's gap_override)` |
+| `run_up_tiles` | `4` | unknown | invented (mechanical run-up distance: wider than long_jump_trigger_distance_tiles so B is already held by the time the jump itself launches -- a NES running jump clears more horizontal distance than a standing one) | `bridge/full_policy.py (FullPolicy.act's press_b override)` |
 
 ## SpeedParams
 
@@ -153,19 +155,19 @@ disagree.
 
 ## Totals
 
-**60 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
+**62 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
 more (`DemoParams.mushroom_offset`, `DemoParams.wide_gap_lead_tiles`,
 `TerrainParams.refusal_gap_margin_tiles`) only matter in an opt-in
 injection demo -- the first is untested by any golden, the other two are
 exercised by `tests/test_golden.py::test_017_reprise`'s own
 `inject_gap_frame`, so "opt-in" here means "off by default", not
-"untested". The other 54 are live in every default run.
+"untested". The other 56 are live in every default run.
 
 A range of `unknown` means genuinely unknown, not left blank: an invented
 bound would be scaffolding that looks like data. Only `JumpParams.g` and
 `NoiseParams.sigma` have a characterised range.
 
-By category (the first word of each provenance): **38 invented**, **22 measured**, **0 connectome-derived** (of 60).
+By category (the first word of each provenance): **40 invented**, **22 measured**, **0 connectome-derived** (of 62).
 
 None are connectome-derived. The connectome determines each circuit's
 weight matrix `W`; every scalar here sits outside it, as a gain on it, a

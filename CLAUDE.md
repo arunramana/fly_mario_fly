@@ -36,12 +36,13 @@ working around it.
 3. **Every hand-set scalar gets flagged and counted — no fixed budget.**
    Each one gets a typed, ranged home in `config/params.py` and a row in
    `docs/SCALARS.md` (generated from it, never written by hand). There
-   are **49**: 29 invented (placed currents, mechanical hold durations),
-   20 measured (simulated against the real weight matrix and picked by a
+   are **62**: 40 invented (placed currents, mechanical hold durations),
+   22 measured (simulated against the real weight matrix and picked by a
    sweep), **0 connectome-derived**. The connectome determines each
    circuit's weight matrix, never a scalar controlling how hard a circuit
-   pushes on it. (This used to claim "exactly two"; that stopped being
-   true after the first prototype.)
+   pushes on it. (This used to claim "exactly two", then "49"; neither
+   stayed true past the next prototype -- check `docs/SCALARS.md`'s own
+   generated total, not this number, before relying on it for anything.)
 
 4. **The circuit is recurrent, not feedforward.** Lateral connection within the
    detector populations is 3–9.5x their drive onto the Giant Fiber. Model it as
