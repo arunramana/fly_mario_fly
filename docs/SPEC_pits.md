@@ -123,24 +123,26 @@ output for exactly that stretch.
 - **The fatal pit at x=1360 is cleared** — `gap_width` runs 3 -> 2 -> 1 ->
   0 with `long_jump=True` firing well before the edge, matching section
   3-4's own design, not the old late/short-hold pattern.
-- The run continues to **frame 1023, max_x_abs=1430** before dying again
-  — NOT to a pit (`gap_width=0` for the entire tail) but to enemy contact
-  (two active Goombas confirmed via the entity registry at the death
-  frame). "Gap=0 for the entire tail" means the last ~8 frames; the
-  cleared pit itself sits just before them. max_x_abs is 1430 vs the
-  baseline's 1432 -- essentially the same peak reached by a very
-  different path (14 escape jumps vs 9, qblock hits 19 vs 7), not
-  investigated further here.
-- **This is a partial result, reported as such**: the specific pit-
-  timing failure this spec targeted is fixed and validated; the run does
-  not reach the flag, because a second, unrelated failure mode (enemy
-  contact) sits at nearly the same overall distance. Fixing that is out
-  of this spec's scope.
+- The run continues to **frame 1023, max_x_abs=1430** and dies -- to the
+  **same 3-tile pit**, not an enemy. An earlier version of this section
+  called it an enemy death (gap=0 in the last frames, two Goombas in the
+  registry); that was wrong. Mario's y climbs 176 -> 253 over the last 15
+  frames (falling), and both Goombas are behind him (screen x 12-40 vs
+  Mario at 129-150). gap_width reads 0 because Mario is already over the
+  pit columns. Diagnosis: the gap_override commit fired at frame 990,
+  while Mario was still airborne from the previous hop, so the long jump's
+  A-hold ran out during the fall and landing -- A never came up and back
+  down on the ground, so there was no takeoff before the edge. The
+  override needs to wait for ground contact (and re-press A); not fixed
+  here.
+- **Partial result**: the frame-689 failure (jump late because the timer
+  had not reopened) is gone; the pit still kills, one attempt later, by a
+  different mechanism.
 
 ## 7. Explicitly out of scope
 
 Width prediction ahead of the refusal check (section 4's own limitation),
-the enemy-contact death that now follows the cleared pit, any change to
+making the override ground-aware (section 6), any change to
 `jump_cooldown_frames`/`jump_hold_frames`/`long_jump_hold_frames`
 themselves (the sweep that motivated this spec already showed retuning
 that knob alone doesn't help), and anything not listed above.

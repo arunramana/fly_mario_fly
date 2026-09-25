@@ -47,9 +47,9 @@ def test_off_dies_at_the_known_pit_frame_689():
     assert info["max_x_abs"] == 1432
 
 
-def test_on_clears_the_original_fatal_pit():
-    """With graded_pit_response on, the run must survive well past frame
-    689/x=1432 -- the specific pit that killed the baseline is cleared."""
+def test_on_survives_past_the_original_death_frame():
+    """graded_pit_response on survives past frame 689 (one more pit
+    attempt). It does NOT clear the pit -- docs/SPEC_pits.md section 6."""
     tel, info = _run(graded=True, max_frames=3000)
     # The baseline dies AT the pit, frame 689 -- surviving far past that
     # (whatever the eventual outcome) is direct proof it no longer kills
@@ -62,10 +62,10 @@ def test_on_clears_the_original_fatal_pit():
 
 def test_on_reproduces_the_validated_second_death():
     """docs/SPEC_pits.md section 6's own validation result, pinned as a
-    regression check: the run now dies later, further, and to an enemy
-    (gap=0 throughout the tail), not a pit."""
+    regression check: the run now dies later at the same pit
+    (falling: gap reads 0 once Mario is over it)."""
     tel, info = _run(graded=True, max_frames=3000)
     assert info["died_or_flagged"] is True
     assert info["n_frames"] == 1023
     assert info["max_x_abs"] == 1430
-    assert (tel["gap"].iloc[-8:] == 0).all(), "the second death is not pit-caused"
+    assert (tel["gap"].iloc[-8:] == 0).all(), "gap reads 0 once over the pit"
