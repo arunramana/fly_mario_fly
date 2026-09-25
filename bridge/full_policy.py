@@ -568,7 +568,7 @@ class FullPolicy:
         # No modules -> an all-False Proposal -> behaviour unchanged.
         ctx = ActContext(
             ram=ram, mario_x=mario_x, gap_w=gap_w, distance_to_edge=distance_to_edge,
-            dlmn_val=dlmn_val, player_state=int(ram[ADDR_PLAYER_STATE]),
+            dlmn_val=dlmn_val, enemy_d_px=d_out["R"], player_state=int(ram[ADDR_PLAYER_STATE]),
             prev_press_a=self._prev_press_a, jump_hold=self.jump_hold,
             jump_cooldown=self.jump_cooldown, config=c)
         prop = Proposal()

@@ -33,6 +33,18 @@
     "mdn_drive": 2.0,
     "mdn_threshold": 1.0
   },
+  "modules": {
+    "grounded_pit": {
+      "run_up_tiles": 4,
+      "trigger_distance_tiles": 2
+    },
+    "page_threat": {
+      "trigger_px": 40
+    },
+    "threat_bypass": {
+      "distance_px": 40
+    }
+  },
   "mushroom_body": {
     "kc_features_per_cell": 3,
     "kc_projection_seed": 0,
@@ -68,10 +80,10 @@
     "hex1_spread_floor": 0.5
   },
   "scenario": {
-    "graded_pit_response": true,
+    "graded_pit_response": false,
     "inject_gap_frame": null,
     "level": "1-1",
-    "max_frames": 3000,
+    "max_frames": 4000,
     "retinotopic": false,
     "seed": null
   },

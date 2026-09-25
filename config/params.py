@@ -411,11 +411,43 @@ class DemoParams:
 # field); counted and documented via MODULE_PARAM_CLASSES instead.
 
 @dataclass(frozen=True)
+class GroundedPitParams:
+    """bridge/controller_modules.py's GroundedPitModule (SCAFFOLDING)."""
+    trigger_distance_tiles: int = _f(2, None,
+        "invented (launch when the pit edge is this many tiles ahead; same value the "
+        "SPEC_pits validation used)", "bridge/controller_modules.py (GroundedPitModule)")
+    run_up_tiles: int = _f(4, None,
+        "invented (hold B from this many tiles out; wider than the trigger so the jump "
+        "launches at running speed)", "bridge/controller_modules.py (GroundedPitModule)")
+
+
+@dataclass(frozen=True)
+class ThreatBypassParams:
+    """bridge/controller_modules.py's ThreatCooldownBypassModule (SCAFFOLDING)."""
+    distance_px: int = _f(40, None,
+        "invented (an enemy this close ahead, on the ground, lifts the jump cooldown; ~2.5 "
+        "tiles = roughly 8-10 frames of closing at running speed)",
+        "bridge/controller_modules.py (ThreatCooldownBypassModule)")
+
+
+@dataclass(frozen=True)
+class PageAwareThreatParams:
+    """bridge/controller_modules.py's PageAwareThreatModule (SCAFFOLDING)."""
+    trigger_px: int = _f(40, None,
+        "invented (jump when a ground enemy is this many px ahead, page-corrected; about 10 "
+        "frames of closing at running speed, enough to clear the ground before contact)",
+        "bridge/controller_modules.py (PageAwareThreatModule)")
+
+
+@dataclass(frozen=True)
 class ModulesConfig:
-    """Field order is execution order. Filled in below as modules land."""
+    """Field order is execution order; None == module off."""
+    grounded_pit: GroundedPitParams | None = None
+    threat_bypass: ThreatBypassParams | None = None
+    page_threat: PageAwareThreatParams | None = None
 
 
-MODULE_PARAM_CLASSES: tuple = ()
+MODULE_PARAM_CLASSES: tuple = (GroundedPitParams, ThreatBypassParams, PageAwareThreatParams)
 
 ALL_PARAM_CLASSES = (
     NetworkParams, NoiseParams, JumpParams, Dnp02Params, TakeoffParams, SpeedParams,

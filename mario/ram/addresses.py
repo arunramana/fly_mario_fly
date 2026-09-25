@@ -27,7 +27,8 @@ ADDR_PLAYER_STATE = 0x001D     # 0 == on the ground (1 jumping, 2 falling, 3 cli
 ADDR_MARIO_SIZE = 0x0756       # small=0, big/fiery>=1
 
 ADDR_ENEMY_X = 0x0087
-ADDR_ENEMY_Y = 0x00B6
+ADDR_ENEMY_Y = 0x00CF
+ADDR_ENEMY_PAGE = 0x006E       # Enemy_PageLoc + slot: which 256px page the enemy's x byte is on
 ADDR_ENEMY_ACTIVE = 0x000F
 ADDR_ENEMY_TYPE = 0x0016
 N_ENEMY_SLOTS = 5

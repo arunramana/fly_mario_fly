@@ -152,22 +152,41 @@ disagree.
 | `mushroom_offset` | `-40` | unknown | invented (spawn position for the synthetic mushroom-injection demo, behind Mario so it competes with HOME_BIAS's rightward pull) | `run_steering.py (MUSHROOM_OFFSET)` |
 | `wide_gap_lead_tiles` | `10` | unknown | invented (docs/CODE_AUDIT.md section H: how many tiles ahead of Mario the synthetic wide-gap demo places its fixed gap column -- exercised by tests/test_golden.py::test_017_reprise via inject_gap_frame, not purely a demo-only value the way mushroom_offset is) | `run_steering.py (wide_gap_target_col's lead_tiles default)` |
 
+## GroundedPitParams
+
+| field | value | range | provenance | home |
+|---|---|---|---|---|
+| `trigger_distance_tiles` | `2` | unknown | invented (launch when the pit edge is this many tiles ahead; same value the SPEC_pits validation used) | `bridge/controller_modules.py (GroundedPitModule)` |
+| `run_up_tiles` | `4` | unknown | invented (hold B from this many tiles out; wider than the trigger so the jump launches at running speed) | `bridge/controller_modules.py (GroundedPitModule)` |
+
+## ThreatBypassParams
+
+| field | value | range | provenance | home |
+|---|---|---|---|---|
+| `distance_px` | `40` | unknown | invented (an enemy this close ahead, on the ground, lifts the jump cooldown; ~2.5 tiles = roughly 8-10 frames of closing at running speed) | `bridge/controller_modules.py (ThreatCooldownBypassModule)` |
+
+## PageAwareThreatParams
+
+| field | value | range | provenance | home |
+|---|---|---|---|---|
+| `trigger_px` | `40` | unknown | invented (jump when a ground enemy is this many px ahead, page-corrected; about 10 frames of closing at running speed, enough to clear the ground before contact) | `bridge/controller_modules.py (PageAwareThreatModule)` |
+
 
 ## Totals
 
-**62 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
+**66 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
 more (`DemoParams.mushroom_offset`, `DemoParams.wide_gap_lead_tiles`,
 `TerrainParams.refusal_gap_margin_tiles`) only matter in an opt-in
 injection demo -- the first is untested by any golden, the other two are
 exercised by `tests/test_golden.py::test_017_reprise`'s own
 `inject_gap_frame`, so "opt-in" here means "off by default", not
-"untested". The other 56 are live in every default run.
+"untested". The other 60 are live in every default run.
 
 A range of `unknown` means genuinely unknown, not left blank: an invented
 bound would be scaffolding that looks like data. Only `JumpParams.g` and
 `NoiseParams.sigma` have a characterised range.
 
-By category (the first word of each provenance): **40 invented**, **22 measured**, **0 connectome-derived** (of 62).
+By category (the first word of each provenance): **44 invented**, **22 measured**, **0 connectome-derived** (of 66).
 
 None are connectome-derived. The connectome determines each circuit's
 weight matrix `W`; every scalar here sits outside it, as a gain on it, a
