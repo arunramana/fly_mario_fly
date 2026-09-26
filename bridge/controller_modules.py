@@ -168,6 +168,20 @@ class GapAheadPerceptionModule:
         stim.gap_input = width * (n - d + 1) / n
 
 
+class Dnp02RefractoryModule:
+    """CIRCUIT. Carries the DNp02 refractory period (config.params.
+    Dnp02RefractoryParams); FullPolicy applies it to the DNp02 network's
+    spiking cells. Neither perceives nor acts."""
+    name = "dnp02_refractory"
+    kind = "circuit"
+
+    def __init__(self, params):
+        self.params = params
+
+    def reset(self) -> None:
+        pass
+
+
 class MbSpatialInputModule:
     """PERCEPTION. Two extra Kenyon-cell inputs, both 0..1 "closeness" like
     looming: the next pit edge (1 at the edge, 0 beyond the takeoff
@@ -288,6 +302,7 @@ MODULE_CLASSES: dict[str, type] = {"page_perception": PagePerceptionModule,
                                     "gap_ahead": GapAheadPerceptionModule,
                                     "motor_direct": MotorDirectModule,
                                     "mb_spatial_inputs": MbSpatialInputModule,
+                                    "dnp02_refractory": Dnp02RefractoryModule,
                                     "mbon_readout": MbonReadoutModule}
 
 

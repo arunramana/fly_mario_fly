@@ -426,6 +426,21 @@ class GapAheadParams:
 
 
 @dataclass(frozen=True)
+class Dnp02RefractoryParams:
+    """bridge/controller_modules.py's Dnp02RefractoryModule (CIRCUIT). Gives
+    the DNp02 spiking cells an absolute refractory period. In the real DNp02
+    subgraph DNp02 R -> pIP1 R (0.876) -> DNp02 R (0.0244) closes a loop whose
+    feedback drive (1.465 per step at saturation) is 4.4x what re-fires
+    DNp02 (threshold/alpha = 0.33), so one spike latches the pathway on for
+    the rest of the run; the refractory period lets pIP1 decay between spikes
+    (it needs >= ~5 steps to fall below the ~11 that still sustains the loop)."""
+    refractory_steps: int = _f(8, (1, 50),
+        "invented (absolute refractory period of the DNp02 spiking cells, in network substeps: "
+        "10 substeps = 1 frame = 16.7 ms; must exceed ~5 for pIP1 to decay below the level "
+        "that re-fires DNp02)", "fly/network/integrator.py (refractory_steps)")
+
+
+@dataclass(frozen=True)
 class MbSpatialInputParams:
     """bridge/controller_modules.py's MbSpatialInputModule (PERCEPTION). No
     scalars: presence in ModulesConfig adds two Kenyon-cell inputs -- how
@@ -478,11 +493,12 @@ class ModulesConfig:
     gap_ahead: GapAheadParams | None = None
     motor_direct: MotorDirectParams | None = None
     mb_spatial_inputs: MbSpatialInputParams | None = None
+    dnp02_refractory: Dnp02RefractoryParams | None = None
     mbon_readout: MbonReadoutParams | None = None
 
 
 MODULE_PARAM_CLASSES: tuple = (PagePerceptionParams, GapAheadParams, MotorDirectParams, MbonReadoutParams,
-                                     MbSpatialInputParams)
+                                     MbSpatialInputParams, Dnp02RefractoryParams)
 
 ALL_PARAM_CLASSES = (
     NetworkParams, NoiseParams, JumpParams, Dnp02Params, TakeoffParams, SpeedParams,

@@ -41,6 +41,13 @@ class Integrator:
         self.spike_amp = clip if spike_amp is None else spike_amp
         self.mem = np.zeros(len(self.spike_idx))
         self.just_spiked = np.zeros(len(self.spike_idx), dtype=bool)
+        # Absolute refractory period, in steps, for the spiking sub-population
+        # (0 = off: the update is exactly the original). After a spike the
+        # cell cannot fire again for this many steps and its membrane is held
+        # at 0. Without it a spike whose downstream partner feeds back above
+        # threshold re-fires every step forever (the DNp02 <-> pIP1 latch).
+        self.refractory_steps = 0
+        self._refractory_left = np.zeros(len(self.spike_idx), dtype=int)
 
     def phi(self, x: np.ndarray) -> np.ndarray:
         return np.clip(x, 0.0, self.clip)
@@ -60,6 +67,12 @@ class Integrator:
             spike_drive = np.maximum(drive[self.spike_idx], 0.0)
             self.mem = (1.0 - self.alpha) * self.mem + self.alpha * spike_drive
             spiking = self.mem >= self.spike_threshold
+            if self.refractory_steps:
+                resting = self._refractory_left > 0
+                spiking = spiking & ~resting
+                self.mem = np.where(resting, 0.0, self.mem)
+                self._refractory_left = np.where(
+                    spiking, self.refractory_steps, np.maximum(self._refractory_left - 1, 0))
             spike_out = np.where(spiking, self.spike_amp, 0.0)
             self.mem = np.where(spiking, 0.0, self.mem)
             h_new[self.spike_idx] = spike_out

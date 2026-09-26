@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QSplitter, QToolButton, QVBoxLayout, QWidget,
 )
 
-from config.params import GapAheadParams, MbonReadoutParams, MbSpatialInputParams, MotorDirectParams, PagePerceptionParams
+from config.params import GapAheadParams, MbonReadoutParams, Dnp02RefractoryParams, MbSpatialInputParams, MotorDirectParams, PagePerceptionParams
 from config.project_config import from_dict as config_from_dict
 from tool.core.circuit_manifest import CIRCUIT_REGISTRY, OTHER_ENTRY
 from tool.ui.widgets.card_button import make_card_button
@@ -42,6 +42,10 @@ MODULE_TOGGLES = [
     ("mb_spatial_inputs", MbSpatialInputParams, "MB spatial inputs (perception)",
      "Two extra Kenyon-cell inputs: closeness of the next pit edge and of the nearest enemy "
      "ahead (page-corrected), so learning can key on where danger is."),
+    ("dnp02_refractory", Dnp02RefractoryParams, "DNp02 refractory period (circuit)",
+     "An absolute refractory period on the DNp02 spiking cells. Without it the real "
+     "DNp02 <-> pIP1 feedback loop latches on after one spike and DNp02 stays saturated "
+     "all run (docs/RUNS.md, test3 run 9). Changes circuit dynamics when on."),
     ("motor_direct", MotorDirectParams, "MotorDirect (motor)",
      "A follows a leaky integral of the motor neurons' own activity instead of the fixed "
      "jump-hold / cooldown counters (docs/CONTROL_AUDIT.md rows 1-3)."),
