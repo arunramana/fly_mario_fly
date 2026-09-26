@@ -85,18 +85,25 @@ COL = {"LC4": (57, 135, 229), "LPLC2": (25, 158, 112),
        "DNa01": (168, 121, 224), "DNa02": (222, 178, 60),
        "DNp09": (99, 200, 226), "DLMn": (240, 140, 200),
        "MDN": (120, 200, 255), "KC": (200, 200, 90),
-       "MBON": (230, 150, 60), "DAN": (180, 90, 200)}
+       "MBON": (230, 150, 60), "DAN": (180, 90, 200),
+       "MBONmid": (255, 205, 130)}
 LABEL = {"LC4": "LC4  looming", "LPLC2": "LPLC2  looming",
          "DNp01": "DNp01  Giant Fiber", "TTMn": "TTMn  jump muscle",
          "DNa01": "DNa01  steering", "DNa02": "DNa02  steering",
          "DNp09": "DNp09  forward walking", "DLMn": "DLMn  wing downstroke",
          "MDN": "MDN  backward walking", "KC": "KC  mushroom body input",
-         "MBON": "MBON  mushroom body output", "DAN": "DAN  dopamine (PAM/PPL/PPM)"}
+         "MBON": "MBON  mushroom body output", "DAN": "DAN  dopamine (PAM/PPL/PPM)",
+         "MBONmid": "MBON→motor intermediates"}
 ORDER = ["LC4", "LPLC2", "DNp01", "TTMn"]
 # DNa01/DNa02/DNp09/DLMn are drawn only when the telemetry carries them
 # (run_steering.py). DLMn spans two connectome types; POP_TYPES maps the
 # one panel key to both.
 STEERING_ORDER = ["DNa01", "DNa02"]
+# Drawn only when the telemetry carries the MbonReadoutModule's columns:
+# the MBONs themselves and the intermediate neurons between them and the
+# motor pathways (fly/circuits/mbon_pathway_weights.py).
+MBON_ORDER = ["MBON", "MBONmid"]
+MBON_READOUT_COLS = ("mbon_dnp01", "mbon_dlmn", "mbon_dnp09", "mbon_mdn")
 TERRAIN_ORDER = ["DNp09", "DLMn"]
 POP_TYPES = {"DLMn": ["DLMn c-f", "DLMn a, b"]}
 
@@ -173,6 +180,9 @@ def _pop_mask(df, pop_name: str):
     of PAM/PPL/PPM)."""
     if pop_name == "DAN":
         return df.type.astype(str).str.match(DAN_TYPE_RE)
+    if pop_name == "MBONmid":
+        from fly.circuits.mbon_pathway_weights import intermediate_ids
+        return df.bodyId.isin(intermediate_ids())
     if pop_name in POP_CLASS:
         return df["class"] == POP_CLASS[pop_name]
     return df.type.isin(POP_TYPES.get(pop_name, [pop_name]))
@@ -222,7 +232,7 @@ def _draw_strip(act: dict, norm: dict, pops: list, spike: bool, caption: str,
                  climb: bool, conflict: bool, pit: bool, long_jump: bool,
                  odor_l, odor_r, hungry, steer_left: bool,
                  orn_a_l, orn_a_r, avers_l, avers_r, refusing: bool,
-                 r_team, l_team) -> Image.Image:
+                 r_team, l_team, mbon_readout=None) -> Image.Image:
     """The LEFT_W x STRIP_H text strip below the brain: header, banners
     (a wrapped row of tags, since they are rare), readouts, legend."""
     c = _build()
@@ -287,6 +297,11 @@ def _draw_strip(act: dict, norm: dict, pops: list, spike: bool, caption: str,
                font=fs, fill=(120, 200, 160))
         y += 16
 
+    if mbon_readout:
+        d.text((16, y), "MBON readout  " + "  ".join(f"{k}={v:.3f}" for k, v in mbon_readout.items()),
+               font=fs, fill=COL["MBON"])
+        y += 16
+
     # Legend is always bottom-anchored so it is never clipped. It can
     # overlap the readouts only when every banner fires at once, which no
     # real frame has done.
@@ -312,7 +327,8 @@ def panel(act: dict, norm: dict, spike: bool = False, caption: str = "",
           steer_left: bool = False, orn_a_l: float | None = None,
           orn_a_r: float | None = None, avers_l: float | None = None,
           avers_r: float | None = None, refusing: bool = False,
-          r_team: float | None = None, l_team: float | None = None) -> Image.Image:
+          r_team: float | None = None, l_team: float | None = None,
+          mbon_readout: dict | None = None) -> Image.Image:
     """One frame of the LEFT column (LEFT_W x CANVAS_H): the brain
     silhouette stacked on the telemetry strip. act/norm are {population:
     value}. `populations` defaults to the original jump-circuit four;
@@ -323,7 +339,8 @@ def panel(act: dict, norm: dict, spike: bool = False, caption: str = "",
     brain = _draw_brain(act, norm, pops)
     strip = _draw_strip(act, norm, pops, spike, caption, climb, conflict, pit,
                          long_jump, odor_l, odor_r, hungry, steer_left,
-                         orn_a_l, orn_a_r, avers_l, avers_r, refusing, r_team, l_team)
+                         orn_a_l, orn_a_r, avers_l, avers_r, refusing, r_team, l_team,
+                         mbon_readout)
     im = Image.new("RGB", (LEFT_W, CANVAS_H), SURFACE)
     im.paste(brain, (0, 0))
     im.paste(strip, (0, BRAIN_H))
@@ -360,7 +377,14 @@ def _panel_context(tel: pd.DataFrame) -> dict:
     if has_terrain:
         norm["DNp09"] = max(tel["dnp09"].max(), 1e-9)
         norm["DLMn"] = max(tel["dlmn"].max(), 1e-9)
+    has_mbon = all(c in tel.columns for c in MBON_READOUT_COLS)
+    if has_mbon:
+        populations = populations + MBON_ORDER
+        mbon_mean = tel[list(MBON_READOUT_COLS)].mean(axis=1)
+        norm["MBON"] = max(float(tel["mbon_agg"].max()), 1e-9)
+        norm["MBONmid"] = max(float(mbon_mean.max()), 1e-9)
     return {
+        "has_mbon": has_mbon,
         "gf": gf, "norm": norm, "populations": populations,
         "has_steer": has_steer, "has_terrain": has_terrain,
         "has_climb": "climb" in tel.columns, "has_conflict": "conflict" in tel.columns,
@@ -388,8 +412,13 @@ def panel_for_row(tel: pd.DataFrame, i: int, ctx: dict, caption: str = "") -> Im
     if ctx["has_terrain"]:
         act["DNp09"] = row.dnp09
         act["DLMn"] = row.dlmn
+    mbon_readout = None
+    if ctx["has_mbon"]:
+        mbon_readout = {c[5:]: float(row[c]) for c in MBON_READOUT_COLS}
+        act["MBON"] = float(row.mbon_agg)
+        act["MBONmid"] = sum(mbon_readout.values()) / len(mbon_readout)
     return panel(
-        act, ctx["norm"], spike=bool(row.spike), caption=caption, populations=ctx["populations"],
+        act, ctx["norm"], mbon_readout=mbon_readout, spike=bool(row.spike), caption=caption, populations=ctx["populations"],
         climb=bool(row.climb) if ctx["has_climb"] else False,
         conflict=bool(row.conflict) if ctx["has_conflict"] else False,
         pit=bool(row.gap > 0) if ctx["has_gap"] else False,

@@ -20,11 +20,32 @@ def label_for(entry: dict) -> str:
         outcome = "died"
     else:
         outcome = "survived"
+    training = entry.get("training")
+    if training:
+        max_x = summary.get("max_x_abs", training.get("max_x"))
+        max_x = f"{max_x:.0f}" if isinstance(max_x, (int, float)) else "?"
+        if training.get("flag"):
+            outcome = "flag"
+        elif training.get("died"):
+            outcome = "died"
+        head = "baseline" if training["network"] == "baseline" else f"ep {training['episode']}"
+        frames = "" if summary.get("raw_frames_path") else " · telemetry only"
+        return f"#{entry['number']} · {head} · x {max_x} · {outcome}{frames}"
     fitness = entry.get("fitness")
     fit = f"{fitness:.0f}" if isinstance(fitness, (int, float)) else "--"
     max_x = summary.get("max_x_abs")
     max_x = f"{max_x:.0f}" if isinstance(max_x, (int, float)) else "?"
     return f"#{entry['number']} · seed {entry.get('seed', '?')} · x {max_x} · fit {fit} · {outcome}"
+
+
+def _is_training_group(entry: dict) -> bool:
+    return str(entry.get("group", "")).startswith("Training")
+
+
+def _group_key(group: str):
+    """"Training · real" first, then "Training · shuffled 1", 2, ... in order."""
+    tail = group.rsplit(" ", 1)[-1]
+    return (0, 0) if group.endswith("real") else (1, int(tail) if tail.isdigit() else 0)
 
 
 class RunPicker(QWidget):
@@ -55,17 +76,28 @@ class RunPicker(QWidget):
         self.combo.blockSignals(True)
         self.combo.clear()
         seen: set[str] = set()
-        for entry in ordered:
+        # Plain runs and the training baseline first (newest first), then
+        # each "Training · ..." group under its own header.
+        groups = sorted({e["group"] for e in ordered if _is_training_group(e)}, key=_group_key)
+        for entry in [e for e in ordered if not _is_training_group(e)]:
             batch = entry.get("batch_id")
             if batch and batch not in seen:
                 seen.add(batch)
-                self.combo.addItem(f"── batch {batch} ──")
-                item = self.combo.model().item(self.combo.count() - 1)
-                item.setFlags(Qt.ItemFlag.NoItemFlags)
+                self._add_header(f"── batch {batch} ──")
             self.combo.addItem(label_for(entry), entry["number"])
+        for group in groups:
+            self._add_header(f"── {group} ──")
+            for entry in ordered:
+                if entry.get("group") == group:
+                    self.combo.addItem(label_for(entry), entry["number"])
         self.combo.blockSignals(False)
         if current is not None:
             self.select_number(current)
+
+    def _add_header(self, text: str) -> None:
+        self.combo.addItem(text)
+        item = self.combo.model().item(self.combo.count() - 1)
+        item.setFlags(Qt.ItemFlag.NoItemFlags)
 
     def current_number(self) -> int | None:
         return self.combo.currentData() if self.combo.count() else None

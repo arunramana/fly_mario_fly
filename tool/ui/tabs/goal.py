@@ -11,6 +11,8 @@ from PySide6.QtWidgets import (
     QCheckBox, QVBoxLayout, QWidget,
 )
 
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton
+
 from tool.core.tool_settings import ExperimentSettings, FitnessSettings
 from tool.ui.widgets.no_scroll_inputs import NoScrollDoubleSpinBox, NoScrollSpinBox
 
@@ -90,7 +92,95 @@ class GoalTab(QWidget):
         fitness_form.addRow("Time", self.time_spin)
         layout.addWidget(fitness_box)
 
+        layout.addWidget(self._build_training_box(settings.training))
         layout.addStretch(1)
+
+    # ---- Training (tool/core/training.py) --------------------------------
+
+    def _build_training_box(self, t) -> QGroupBox:
+        box = QGroupBox("Train the mushroom body (background worker)")
+        form = QFormLayout(box)
+        self.train_episodes_spin = NoScrollSpinBox()
+        self.train_episodes_spin.setRange(1, 5000)
+        self.train_episodes_spin.setValue(t.episodes)
+        self.train_episodes_spin.valueChanged.connect(lambda v: self._set_training(episodes=v))
+        form.addRow("Episodes", self.train_episodes_spin)
+        self.train_frame_cap_spin = NoScrollSpinBox()
+        self.train_frame_cap_spin.setRange(60, 100_000)
+        self.train_frame_cap_spin.setValue(t.frame_cap)
+        self.train_frame_cap_spin.valueChanged.connect(lambda v: self._set_training(frame_cap=v))
+        form.addRow("Frame cap per episode", self.train_frame_cap_spin)
+        self.train_lr_spin = NoScrollDoubleSpinBox()
+        self.train_lr_spin.setDecimals(5)
+        self.train_lr_spin.setRange(0.0, 1.0)
+        self.train_lr_spin.setSingleStep(0.0005)
+        self.train_lr_spin.setSpecialValueText("project value")
+        self.train_lr_spin.setValue(t.learning_rate or 0.0)
+        self.train_lr_spin.setToolTip(
+            "Learning rate: how far one unit of dopamine (reward for progress, "
+            "punishment on death) depresses an eligible KC->MBON synapse. "
+            "Minimum = keep the project's own value.")
+        self.train_lr_spin.valueChanged.connect(
+            lambda v: self._set_training(learning_rate=(v if v > 0 else None)))
+        form.addRow("Reward / punishment strength", self.train_lr_spin)
+        self.train_event_checkbox = QCheckBox("Reward only ? blocks and stomps (event-proximal), not any progress")
+        self.train_event_checkbox.setChecked(t.event_proximal)
+        self.train_event_checkbox.toggled.connect(lambda v: self._set_training(event_proximal=v))
+        form.addRow(self.train_event_checkbox)
+        self.train_shuffled_checkbox = QCheckBox("Include shuffled controls (invariant 6)")
+        self.train_shuffled_checkbox.setChecked(t.include_shuffled)
+        self.train_shuffled_checkbox.toggled.connect(lambda v: self._set_training(include_shuffled=v))
+        form.addRow(self.train_shuffled_checkbox)
+        self.train_n_shuffled_spin = NoScrollSpinBox()
+        self.train_n_shuffled_spin.setRange(1, 10)
+        self.train_n_shuffled_spin.setValue(t.n_shuffled)
+        self.train_n_shuffled_spin.valueChanged.connect(lambda v: self._set_training(n_shuffled=v))
+        form.addRow("Number of shuffled networks", self.train_n_shuffled_spin)
+        self.train_checkpoint_combo = QComboBox()
+        self.train_checkpoint_combo.currentIndexChanged.connect(self._on_checkpoint_changed)
+        form.addRow("Start from", self.train_checkpoint_combo)
+        self.refresh_checkpoints()
+        row = QHBoxLayout()
+        self.train_button = QPushButton("Train")
+        self.train_button.clicked.connect(self._window.start_training)
+        self.train_cancel_button = QPushButton("Cancel training")
+        self.train_cancel_button.setEnabled(False)
+        self.train_cancel_button.clicked.connect(self._window.cancel_training)
+        self.train_status = QLabel("")
+        row.addWidget(self.train_button)
+        row.addWidget(self.train_cancel_button)
+        row.addWidget(self.train_status, 1)
+        form.addRow(row)
+        return box
+
+    def _set_training(self, **changes) -> None:
+        settings = self._window.get_tool_settings()
+        self._window.set_tool_settings(dataclasses.replace(
+            settings, training=dataclasses.replace(settings.training, **changes)))
+
+    def refresh_checkpoints(self) -> None:
+        """Lists projects/<name>/checkpoints/real_epNNN.npy as "start from
+        checkpoint N" (fresh weights when none is chosen)."""
+        from tool.core.training import list_checkpoints
+        current = self._window.get_tool_settings().training.checkpoint
+        combo = self.train_checkpoint_combo
+        combo.blockSignals(True)
+        combo.clear()
+        combo.addItem("fresh weights", None)
+        for name in list_checkpoints(self._window.project.name):
+            n = int(name.rsplit("_ep", 1)[1].split(".")[0])
+            combo.addItem(f"checkpoint {n}", name)
+        index = combo.findData(current)
+        combo.setCurrentIndex(max(0, index))
+        combo.blockSignals(False)
+
+    def _on_checkpoint_changed(self, _index: int) -> None:
+        self._set_training(checkpoint=self.train_checkpoint_combo.currentData())
+
+    def set_training_state(self, running: bool, status: str = "") -> None:
+        self.train_button.setEnabled(not running)
+        self.train_cancel_button.setEnabled(running)
+        self.train_status.setText(status)
 
     @staticmethod
     def _fitness_spin(value: float, slot) -> NoScrollDoubleSpinBox:

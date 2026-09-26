@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QLabel, QMessageBox, QProgressBar, QPushButton, QTabWidget, QVBoxLayout, QWidget,
 )
 
+from tool.ui.widgets.learning_chart import LearningChart
 from tool.ui.widgets.plots import TelemetryPlots
 from tool.ui.widgets.run_brain_map_overlay import BrainMapOverlayContent
 from tool.ui.widgets.run_data_overlay import DataOverlayContent
@@ -82,6 +83,9 @@ class RunTab(QWidget):
         self.plots = TelemetryPlots()
         self.plots.seek_requested.connect(self._on_plot_seek)
         self.sub_tabs.addTab(self.plots, "Plots")
+        self.learning = LearningChart()
+        self.learning.point_selected.connect(self._on_learning_point)
+        self.sub_tabs.addTab(self.learning, "Learning")
 
         self.player.frame_changed.connect(self._on_frame_changed)
         self.player.live_row.connect(self._on_live_row)
@@ -171,6 +175,13 @@ class RunTab(QWidget):
     def _on_playlist_run_selected(self, number: int) -> None:
         self._window.select_history_run(number)
 
+    def _on_learning_point(self, number: int) -> None:
+        """A point on the Learning chart: load that episode in the Player
+        ("telemetry only" if its frames weren't kept)."""
+        self.playlist.select_number(number)
+        self._window.select_history_run(number)
+        self.sub_tabs.setCurrentIndex(0)
+
     # ---- transport delegation (main_window.py's keyboard shortcuts) ------
 
     def toggle_playback(self) -> None:
@@ -238,6 +249,7 @@ class RunTab(QWidget):
             fitness = None if summary.get("cancelled") else fitness_of(fitness_settings, summary)
             enriched.append({**entry, "fitness": fitness})
         self.playlist.set_entries(enriched)
+        self.learning.set_entries(entries)
 
     def select_run(self, number: int) -> bool:
         return self.playlist.select_number(number)

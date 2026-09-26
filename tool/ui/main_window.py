@@ -64,6 +64,12 @@ class MainWindow(QMainWindow):
         self._poll_timer = QTimer(self)
         self._poll_timer.setInterval(33)  # ~30fps preview polling
         self._poll_timer.timeout.connect(self._poll_queue)
+        self._train_process: mp.Process | None = None
+        self._train_queue: mp.Queue | None = None
+        self._train_stop: mp.Event | None = None
+        self._train_timer = QTimer(self)
+        self._train_timer.setInterval(500)
+        self._train_timer.timeout.connect(self._poll_training)
         self._current_run_number: int | None = None
         self._current_run_slug: str | None = None
         self._current_run_spec: RunSpec | None = None
@@ -341,7 +347,7 @@ class MainWindow(QMainWindow):
         if not self._closing_confirmed and not self._confirm_discard_or_save():
             event.ignore()
             return
-        if self._process is not None and self._process.is_alive():
+        if (self._process is not None and self._process.is_alive()) or self.training_active():
             self.cancel()
         event.accept()
 
@@ -352,7 +358,7 @@ class MainWindow(QMainWindow):
         (_closing_confirmed short-circuits it)."""
         if not self._confirm_discard_or_save():
             return
-        if self._process is not None and self._process.is_alive():
+        if (self._process is not None and self._process.is_alive()) or self.training_active():
             self.cancel()
         self._closing_confirmed = True
         self.home_requested.emit()
@@ -418,6 +424,9 @@ class MainWindow(QMainWindow):
     def play(self) -> None:
         if self._process is not None and self._process.is_alive():
             return
+        if self.training_active():
+            self.statusBar().showMessage("Training is running -- cancel it first.", 5000)
+            return
         seed = self.project.tool_settings.experiment.seeds[0]
         number = next_run_number(self.project.name)
         slug = f"{number:03d}_play_seed{seed}"
@@ -441,6 +450,75 @@ class MainWindow(QMainWindow):
     def cancel(self) -> None:
         if self._stop_event is not None:
             self._stop_event.set()
+        self.cancel_training()
+
+    # ---- Training (Goal tab's Train button) --------------------------------
+
+    @property
+    def goal_tab(self):
+        """The Goal tab (rebuilt by reload_tab, so looked up, not stored)."""
+        index, _factory = self._tab_factories["goal"]
+        return self.tabs.widget(index)
+
+    def training_active(self) -> bool:
+        return self._train_process is not None and self._train_process.is_alive()
+
+    def start_training(self) -> None:
+        """Spawns tool.core.training.run_training in a child process on the
+        window's live project (unsaved edits included). Every episode is
+        recorded through the run store by the worker; this window only
+        refreshes the dropdown and the Learning chart as they arrive."""
+        if self.training_active() or (self._process is not None and self._process.is_alive()):
+            return
+        if self.project.is_read_only:
+            self.statusBar().showMessage("Read-only project: duplicate it to train.", 5000)
+            return
+        from tool.core.training import run_training_streaming
+        ctx = mp.get_context("spawn")
+        self._train_queue = ctx.Queue()
+        self._train_stop = ctx.Event()
+        self._train_process = ctx.Process(
+            target=run_training_streaming,
+            args=(self.project, self.project.tool_settings.training, self._train_queue, self._train_stop))
+        self._train_process.start()
+        self._train_timer.start()
+        self.goal_tab.set_training_state(True, "starting...")
+        self.run_tab.cancel_button.setEnabled(True)
+        self.run_tab.sub_tabs.setCurrentWidget(self.run_tab.learning)
+
+    def cancel_training(self) -> None:
+        if self._train_stop is not None and self.training_active():
+            self._train_stop.set()
+            self.goal_tab.set_training_state(True, "cancelling after this frame...")
+
+    def _poll_training(self) -> None:
+        if self._train_queue is None:
+            return
+        changed = False
+        while not self._train_queue.empty():
+            kind, payload = self._train_queue.get_nowait()
+            if kind == "phase":
+                self.goal_tab.set_training_state(True, f"training: {payload}")
+            elif kind == "episode":
+                changed = True
+                self.goal_tab.set_training_state(
+                    True, f"{payload['network']} episode {payload['episode']}: max_x {payload['max_x']}")
+            elif kind in ("finished", "error"):
+                self._train_timer.stop()
+                if self._train_process is not None:
+                    self._train_process.join(timeout=5)
+                self._train_process = None
+                if kind == "error":
+                    status = f"failed: {payload}"
+                else:
+                    status = "cancelled" if payload.get("cancelled") else "done"
+                self.goal_tab.set_training_state(False, status)
+                self.goal_tab.refresh_checkpoints()
+                self.run_tab.cancel_button.setEnabled(False)
+                changed = True
+                break
+        if changed:
+            self.run_tab.refresh_history(list_runs(self.project.name))
 
     def _poll_queue(self) -> None:
         if self._queue is None:
@@ -566,14 +644,19 @@ class MainWindow(QMainWindow):
             if not Path(raw_frames_path).exists():
                 raw_frames_path = None
 
+        if entry.get("training") and raw_frames_path is None:
+            summary = {**summary, "telemetry_only": True}
+
+        from tool.core.run_store import resolve_run_spec
         from tool.core.tool_settings import FitnessSettings
+        run_spec = resolve_run_spec(entry, project_name=self.project.name)
         try:
-            fitness_settings = FitnessSettings(**entry["run_spec"]["tool_settings"]["fitness"])
+            fitness_settings = FitnessSettings(**run_spec["tool_settings"]["fitness"])
         except (KeyError, TypeError):
             fitness_settings = self.project.tool_settings.fitness
 
         run_config = None
-        run_spec_config = entry.get("run_spec", {}).get("config")
+        run_spec_config = run_spec.get("config")
         if run_spec_config is not None:
             from config.project_config import from_dict as config_from_dict
             run_config = config_from_dict(run_spec_config)

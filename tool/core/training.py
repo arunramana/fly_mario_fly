@@ -84,6 +84,7 @@ class _Network:
         self.next_episode = first_episode
         self.best_max_x = -1
         self.best_number: int | None = None
+        self.held: tuple | None = None           # (number, FrameStore, slug): latest episode, unwritten
         self.reasons: dict[int, set] = {}        # run number -> why its frames are kept
         self.paths: dict[int, Path] = {}         # run number -> npz on disk
 
@@ -181,6 +182,9 @@ def run_training(project, settings, emit=lambda *a: None, should_stop=lambda: Fa
         net_cfg = ep_config(settings.learning_rate)
         cancelled = False
         for i in range(settings.episodes):
+            if should_stop():
+                cancelled = True
+                break
             ep = net.next_episode
             number = next_run_number(name)
             slug = f"{number:03d}_train_{net.tag}_ep{ep:03d}"
@@ -212,6 +216,7 @@ def run_training(project, settings, emit=lambda *a: None, should_stop=lambda: Fa
                              "episode": ep, "max_x": info["max_x_abs"]})
             if cancelled:
                 break
+        _flush_held(name, net, base_cfg)
         if cancelled:
             break
     env.close()
@@ -230,6 +235,7 @@ def _apply_keep_policy(name, net, number, reasons, recorder, info, base_cfg, slu
         net.best_number = number
         if prev_best is not None:
             _drop_reason(name, net, prev_best, "best")
+    net.held = None if reasons else (number, recorder, slug)
     if reasons:
         net.reasons[number] = reasons
         path = resolve_run_path(base_cfg, slug + "_raw.npz")
@@ -237,6 +243,20 @@ def _apply_keep_policy(name, net, number, reasons, recorder, info, base_cfg, slu
         if written:
             net.paths[number] = Path(written)
             patch_run(name, number, summary={"raw_frames_path": written})
+
+
+def _flush_held(name, net, base_cfg):
+    """Training stopped (count reached or Cancel): the latest episode is the
+    last one, so its frames are kept even if they had no other reason."""
+    if net.held is None:
+        return
+    number, recorder, slug = net.held
+    net.held = None
+    written = _write_frames(recorder, resolve_run_path(base_cfg, slug + "_raw.npz"))
+    if written:
+        net.reasons[number] = {"last"}
+        net.paths[number] = Path(written)
+        patch_run(name, number, summary={"raw_frames_path": written})
 
 
 def _drop_reason(name, net, number, reason):
@@ -267,11 +287,11 @@ def _base_spec(project, cfg, seed, out_filename) -> dict:
                    seed=seed, out_filename=out_filename).to_dict()
 
 
-def run_training_streaming(project_name: str, settings, event_queue, stop_event) -> None:
-    """Child-process entry point (GUI spawns it, like runner.run_one_streaming)."""
+def run_training_streaming(project, settings, event_queue, stop_event) -> None:
+    """Child-process entry point (the GUI spawns it, like runner.
+    run_one_streaming). `project` is the window's live ToolProject, so
+    unsaved config edits (a module toggle) are what trains."""
     try:
-        from tool.core.project import ToolProject
-        project = ToolProject.open(project_name)
         t0 = time.time()
         result = run_training(project, settings,
                               emit=lambda kind, payload: event_queue.put((kind, payload)),

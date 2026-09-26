@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QSplitter, QToolButton, QVBoxLayout, QWidget,
 )
 
+from config.params import GapAheadParams, MbonReadoutParams, MotorDirectParams, PagePerceptionParams
 from config.project_config import from_dict as config_from_dict
 from tool.core.circuit_manifest import CIRCUIT_REGISTRY, OTHER_ENTRY
 from tool.ui.widgets.card_button import make_card_button
@@ -27,6 +28,24 @@ from tool.ui.widgets.circuit_card_image import circuit_card_pixmap
 from tool.ui.widgets.flow_layout import FlowLayout
 from tool.ui.widgets.no_scroll_inputs import NoScrollSpinBox
 from tool.ui.widgets.param_form import ParamForm
+
+# (ModulesConfig field, params class, label, tooltip) -- a checkbox per
+# controller module (bridge/controller_modules.py); checked = present in
+# config.modules (with default params, edit them in config.json), unchecked =
+# None. Legacy is read-only: main_window disables every tab for it.
+MODULE_TOGGLES = [
+    ("page_perception", PagePerceptionParams, "Page-aware looming (perception)",
+     "Enemy distance uses the page byte, so a Goomba just across a 256px boundary is ahead, "
+     "not ~230px behind. Changes what the fly sees, never an action."),
+    ("gap_ahead", GapAheadParams, "Gap ahead (perception)",
+     "Feeds the existing gap input from a few tiles away, scaled up as the edge approaches."),
+    ("motor_direct", MotorDirectParams, "MotorDirect (motor)",
+     "A follows a leaky integral of the motor neurons' own activity instead of the fixed "
+     "jump-hold / cooldown counters (docs/CONTROL_AUDIT.md rows 1-3)."),
+    ("mbon_readout", MbonReadoutParams, "Per-MBON readout (mushroom body)",
+     "Each MBON gets its own connectome-derived weight onto DNp01 / DLMn / DNp09 / MDN "
+     "instead of one scalar mean, so learning acts on specific pathways."),
+]
 
 CARD_ICON_PX = 160  # large, readable brain-map images -- ease-of-use redesign
 
@@ -53,6 +72,18 @@ class CircuitsTab(QWidget):
         shuffle_form.addRow("Shuffle seed", self.shuffle_seed_spin)
         layout.addWidget(shuffle_box)
 
+        modules_box = QGroupBox("Controller modules (docs/CONTROL_AUDIT.md)")
+        modules_layout = QVBoxLayout(modules_box)
+        self.module_checkboxes: dict[str, QCheckBox] = {}
+        for field_name, params_cls, label, tip in MODULE_TOGGLES:
+            box = QCheckBox(label)
+            box.setToolTip(tip)
+            box.setChecked(getattr(window.get_config().modules, field_name) is not None)
+            box.toggled.connect(lambda checked, f=field_name, c=params_cls: self._on_module_toggled(f, c, checked))
+            modules_layout.addWidget(box)
+            self.module_checkboxes[field_name] = box
+        layout.addWidget(modules_box)
+
         # tool/SPEC_ui_retro.md section 3, "one home per setting": ONE
         # ParamForm, covering every group -- so _widget_by_path still has
         # every scalar (noise.sigma among them) no matter which card is
@@ -61,6 +92,9 @@ class CircuitsTab(QWidget):
         # form -- there is still exactly one writable widget per scalar.
         self.param_form = ParamForm(window.get_config())
         self.param_form.changed.connect(self._on_config_changed)
+        # The form holds its own config snapshot; without this a later scalar
+        # edit would re-emit it and silently undo a module toggle made elsewhere.
+        window.config_changed.connect(self._sync_param_form)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
 
@@ -118,6 +152,15 @@ class CircuitsTab(QWidget):
             second_line = "No populations tracked in the live-brain map."
         self._description_label.setText(f"{entry.description}\n{second_line}")
         self.param_form.show_only_groups(set(entry.groups))
+
+    def _sync_param_form(self, config) -> None:
+        if config is not self.param_form._config:
+            self.param_form.set_config(config)
+
+    def _on_module_toggled(self, field_name: str, params_cls, checked: bool) -> None:
+        config = self._window.get_config()
+        modules = dataclasses.replace(config.modules, **{field_name: params_cls() if checked else None})
+        self._window.set_config(dataclasses.replace(config, modules=modules))
 
     def _on_shuffle_toggled(self, checked: bool) -> None:
         self.shuffle_seed_spin.setEnabled(checked)

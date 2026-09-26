@@ -19,6 +19,7 @@ len(tel); the game view keeps playing the actual recorded frames.
 from __future__ import annotations
 
 from PySide6.QtCore import QEvent, QTimer, Qt, Signal
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from tool.core.frame_store import frames_to_rgb, load_frames
@@ -212,12 +213,18 @@ class RunPlayer(QWidget):
             self._frames_idx = None
             self._palette = None
             self._n_frames = len(tel) if tel is not None else 0
-            if self.canvas.pixmap().isNull():
+            if self._info.get("telemetry_only"):
+                # A training episode whose frames weren't kept: say so, and
+                # drop the previous run's last frame instead of leaving it up.
+                self.canvas.set_pixmap(QPixmap())
+                self.canvas.setText("Telemetry only -- frames weren't kept for this episode")
+            elif self.canvas.pixmap().isNull():
                 self.canvas.setText("(no recording for this run)")
             self.timeline.set_length(0)
             for button in (self.play_button, self.step_back_button, self.step_forward_button, self.speed_combo):
                 button.setEnabled(False)
-            self.readout_label.setText("(no recording for this run)")
+            self.readout_label.setText(
+                "telemetry only" if self._info.get("telemetry_only") else "(no recording for this run)")
             return
 
         self._frames_idx, self._palette = loaded

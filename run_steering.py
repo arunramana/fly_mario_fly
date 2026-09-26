@@ -220,7 +220,7 @@ def policy_extra_columns(policy) -> tuple:
     if getattr(policy, "motor", None) is not None:
         cols.append("motor_drive")
     if getattr(policy, "readout", None) is not None:
-        cols += [f"mbon_{g}" for g in policy.readout.PATHWAYS]
+        cols += [f"mbon_{g}" for g in policy.readout.PATHWAYS] + ["mbon_agg"]
     return tuple(cols)
 
 

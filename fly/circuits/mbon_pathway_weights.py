@@ -20,6 +20,7 @@ import numpy as np
 
 log = logging.getLogger(__name__)
 CACHE = Path(__file__).resolve().parents[3] / "data" / "derived" / "mbon_readout_weights.npz"
+TOP_MID = 8
 GROUPS = {"dnp01": r"^DNp01$", "dlmn": r"^DLMn", "dnp09": r"^DNp09$", "mdn": r"^MDN$"}
 
 
@@ -52,10 +53,25 @@ def _compute(mbon_ids: np.ndarray) -> dict[str, np.ndarray]:
     hop["path"] = hop.w1 * hop.w2
     for (g, pre), val in hop.groupby(["group", "pre"])["path"].sum().items():
         result[g][index[int(pre)]] += val
-    for g in result:
+    # The intermediates the brain overlay lights up: for each target group,
+    # the TOP_MID neurons X carrying the most MBON->X->target weight.
+    by_mid = hop.groupby(["group", "mid"])["path"].sum().reset_index()
+    mids = np.unique(np.concatenate([
+        d.nlargest(TOP_MID, "path")["mid"].to_numpy() for _, d in by_mid.groupby("group")]))
+    result["mid_ids"] = mids.astype(np.int64)
+    for g in GROUPS:
         total = result[g].sum()
         result[g] = result[g] / total if total > 0 else np.full(len(mbon_ids), 1.0 / len(mbon_ids))
     return result
+
+
+def intermediate_ids() -> np.ndarray:
+    """Body ids of the cached intermediates (empty until a readout run has
+    computed the cache) -- brain_panel's "MBONmid" population."""
+    if not CACHE.exists():
+        return np.empty(0, dtype=np.int64)
+    z = np.load(CACHE)
+    return z["mid_ids"] if "mid_ids" in z.files else np.empty(0, dtype=np.int64)
 
 
 def load_readout_weights(mbon_ids) -> dict[str, np.ndarray]:
@@ -63,10 +79,10 @@ def load_readout_weights(mbon_ids) -> dict[str, np.ndarray]:
     mbon_ids = np.asarray(mbon_ids, dtype=np.int64)
     if CACHE.exists():
         z = np.load(CACHE)
-        if np.array_equal(z["mbon_ids"], mbon_ids):
+        if np.array_equal(z["mbon_ids"], mbon_ids) and "mid_ids" in z.files:
             return {g: z[g] for g in GROUPS}
     log.info("computing MBON readout weights (one streaming pass)...")
     result = _compute(mbon_ids)
     CACHE.parent.mkdir(parents=True, exist_ok=True)
     np.savez(CACHE, mbon_ids=mbon_ids, **result)
-    return result
+    return {g: result[g] for g in GROUPS}

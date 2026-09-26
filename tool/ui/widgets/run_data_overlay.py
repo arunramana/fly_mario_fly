@@ -25,6 +25,8 @@ GROUPS = [
     ("Neurons", ["mem", "spike", "ttmn", "ttmn_dnp02", "spike_dnp02", "dna01", "dna02",
                  "dna01_l", "dna01_r", "dna02_l", "dna02_r", "dnp09", "dlmn", "r_team", "l_team",
                  "is_r_mask_sum", "is_l_mask_sum"]),
+    ("Motor / MBON readout", ["motor_drive", "mbon_agg", "mbon_dnp01", "mbon_dlmn",
+                              "mbon_dnp09", "mbon_mdn"]),
     ("Cooldown / hold (recorded part)", ["pathway_fired", "hab_escape", "hab_climb"]),
 ]
 SUMMARY_SKIP = {"mb_weights"}

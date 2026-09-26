@@ -743,6 +743,7 @@ class FullPolicy:
             extras["motor_drive"] = self.motor.drive
         if self.readout is not None:
             extras.update({f"mbon_{g}": v for g, v in self.mb_pathway_readout.items()})
+            extras["mbon_agg"] = float(self.h_mbon.mean())
         self.last_info["extras"] = extras
         return action
 
