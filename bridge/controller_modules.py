@@ -182,6 +182,20 @@ class Dnp02RefractoryModule:
         pass
 
 
+class Dnp01RefractoryModule:
+    """CIRCUIT. Carries the DNp01 (Giant Fiber) refractory period; FullPolicy
+    applies it to the jump network's spiking cells. Independent of
+    Dnp02RefractoryModule."""
+    name = "dnp01_refractory"
+    kind = "circuit"
+
+    def __init__(self, params):
+        self.params = params
+
+    def reset(self) -> None:
+        pass
+
+
 class MbSpatialInputModule:
     """PERCEPTION. Two extra Kenyon-cell inputs, both 0..1 "closeness" like
     looming: the next pit edge (1 at the edge, 0 beyond the takeoff
@@ -303,6 +317,7 @@ MODULE_CLASSES: dict[str, type] = {"page_perception": PagePerceptionModule,
                                     "motor_direct": MotorDirectModule,
                                     "mb_spatial_inputs": MbSpatialInputModule,
                                     "dnp02_refractory": Dnp02RefractoryModule,
+                                    "dnp01_refractory": Dnp01RefractoryModule,
                                     "mbon_readout": MbonReadoutModule}
 
 

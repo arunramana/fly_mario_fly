@@ -247,9 +247,11 @@ class FullPolicy:
             populations={"L": self.dnp02_l_mask, "R": self.dnp02_r_mask,
                          "TTMn_L": self.dnp02_ttmn_l, "TTMn_R": self.dnp02_ttmn_r})
 
-        refractory = next((m for m in built if m.kind == "circuit"), None)
-        if refractory is not None:
-            self.dnp02_network.integrator.refractory_steps = refractory.params.refractory_steps
+        for m in built:
+            if m.name == "dnp02_refractory":
+                self.dnp02_network.integrator.refractory_steps = m.params.refractory_steps
+            elif m.name == "dnp01_refractory":
+                self.jump_network.integrator.refractory_steps = m.params.refractory_steps
 
         log.debug("Loading the mushroom body circuit (KC/MBON/DAN, cached)...")
         mb_bodies, _, _, _, W_mb_full, _, _ = _load_maybe_shuffled("mushroom_body", load_mushroom_body, self.shuffle_seed)

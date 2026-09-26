@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QSplitter, QToolButton, QVBoxLayout, QWidget,
 )
 
-from config.params import GapAheadParams, MbonReadoutParams, Dnp02RefractoryParams, MbSpatialInputParams, MotorDirectParams, PagePerceptionParams
+from config.params import GapAheadParams, MbonReadoutParams, Dnp01RefractoryParams, Dnp02RefractoryParams, MbSpatialInputParams, MotorDirectParams, PagePerceptionParams
 from config.project_config import from_dict as config_from_dict
 from tool.core.circuit_manifest import CIRCUIT_REGISTRY, OTHER_ENTRY
 from tool.ui.widgets.card_button import make_card_button
@@ -46,6 +46,9 @@ MODULE_TOGGLES = [
      "An absolute refractory period on the DNp02 spiking cells. Without it the real "
      "DNp02 <-> pIP1 feedback loop latches on after one spike and DNp02 stays saturated "
      "all run (docs/RUNS.md, test3 run 9). Changes circuit dynamics when on."),
+    ("dnp01_refractory", Dnp01RefractoryParams, "DNp01 refractory period (circuit)",
+     "An absolute refractory period on the DNp01 (Giant Fiber) spiking cells, switched "
+     "independently of the DNp02 one. Changes circuit dynamics when on."),
     ("motor_direct", MotorDirectParams, "MotorDirect (motor)",
      "A follows a leaky integral of the motor neurons' own activity instead of the fixed "
      "jump-hold / cooldown counters (docs/CONTROL_AUDIT.md rows 1-3)."),

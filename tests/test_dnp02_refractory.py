@@ -45,3 +45,39 @@ def test_refractory_zero_is_bitwise_the_original_update():
         I = rng.random(6)
         ha, hb = a.step(ha, W, 1.2, I), b.step(hb, W, 1.2, I)
     assert np.array_equal(ha, hb) and np.array_equal(a.mem, b.mem)
+
+
+def test_dnp01_refractory_is_a_separate_toggle_on_the_jump_network():
+    from config.params import Dnp01RefractoryParams
+    base = ProjectConfig()
+    only01 = FullPolicy(config=dataclasses.replace(
+        base, modules=ModulesConfig(dnp01_refractory=Dnp01RefractoryParams(refractory_steps=6))))
+    assert only01.jump_network.integrator.refractory_steps == 6
+    assert only01.dnp02_network.integrator.refractory_steps == 0           # independent of DNp02's
+    only02 = FullPolicy(config=dataclasses.replace(
+        base, modules=ModulesConfig(dnp02_refractory=Dnp02RefractoryParams())))
+    assert only02.jump_network.integrator.refractory_steps == 0
+    assert only02.dnp02_network.integrator.refractory_steps == 8
+    assert FullPolicy(config=base).jump_network.integrator.refractory_steps == 0   # default off
+
+
+def test_dnp01_refractory_spaces_giant_fiber_spikes_but_still_fires():
+    from config.params import Dnp01RefractoryParams
+
+    def spikes(cfg):
+        p = FullPolicy(config=cfg)
+        net, gf = p.jump_network, np.where(p.jump_dnp01_mask)[0]
+        I = np.zeros(net.W.shape[0])
+        I[gf] = 5.0                                     # strong, sustained looming-like drive
+        out = []
+        for _ in range(100):
+            net.step(I)
+            out.append(bool(net.just_spiked.any()))
+        return out
+    off = spikes(ProjectConfig())
+    on = spikes(dataclasses.replace(
+        ProjectConfig(), modules=ModulesConfig(dnp01_refractory=Dnp01RefractoryParams(refractory_steps=8))))
+    assert sum(off) > 0 and sum(on) > 0                # still fires for a real input
+    assert sum(on) < sum(off)                          # but no faster than the refractory period allows
+    idx = [i for i, s in enumerate(on) if s]
+    assert all(b - a >= 9 for a, b in zip(idx, idx[1:]))

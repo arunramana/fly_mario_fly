@@ -192,22 +192,28 @@ disagree.
 |---|---|---|---|---|
 | `refractory_steps` | `8` | 1-50 | invented (absolute refractory period of the DNp02 spiking cells, in network substeps: 10 substeps = 1 frame = 16.7 ms; must exceed ~5 for pIP1 to decay below the level that re-fires DNp02) | `fly/network/integrator.py (refractory_steps)` |
 
+## Dnp01RefractoryParams
+
+| field | value | range | provenance | home |
+|---|---|---|---|---|
+| `refractory_steps` | `8` | 1-50 | invented (absolute refractory period of the DNp01 spiking cells, in network substeps: 10 substeps = 1 frame = 16.7 ms) | `fly/network/integrator.py (refractory_steps)` |
+
 
 ## Totals
 
-**72 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
+**73 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
 more (`DemoParams.mushroom_offset`, `DemoParams.wide_gap_lead_tiles`,
 `TerrainParams.refusal_gap_margin_tiles`) only matter in an opt-in
 injection demo -- the first is untested by any golden, the other two are
 exercised by `tests/test_golden.py::test_017_reprise`'s own
 `inject_gap_frame`, so "opt-in" here means "off by default", not
-"untested". The other 66 are live in every default run.
+"untested". The other 67 are live in every default run.
 
 A range of `unknown` means genuinely unknown, not left blank: an invented
 bound would be scaffolding that looks like data. Only `JumpParams.g` and
 `NoiseParams.sigma` have a characterised range.
 
-By category (the first word of each provenance): **50 invented**, **22 measured**, **0 connectome-derived** (of 72).
+By category (the first word of each provenance): **51 invented**, **22 measured**, **0 connectome-derived** (of 73).
 
 None are connectome-derived. The connectome determines each circuit's
 weight matrix `W`; every scalar here sits outside it, as a gain on it, a

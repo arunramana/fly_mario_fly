@@ -441,6 +441,17 @@ class Dnp02RefractoryParams:
 
 
 @dataclass(frozen=True)
+class Dnp01RefractoryParams:
+    """bridge/controller_modules.py's Dnp01RefractoryModule (CIRCUIT): the
+    same absolute refractory period as Dnp02RefractoryParams, applied to the
+    jump circuit's DNp01 (Giant Fiber) spiking cells. A separate toggle: the
+    two pathways are separate networks and are switched independently."""
+    refractory_steps: int = _f(8, (1, 50),
+        "invented (absolute refractory period of the DNp01 spiking cells, in network substeps: "
+        "10 substeps = 1 frame = 16.7 ms)", "fly/network/integrator.py (refractory_steps)")
+
+
+@dataclass(frozen=True)
 class MbSpatialInputParams:
     """bridge/controller_modules.py's MbSpatialInputModule (PERCEPTION). No
     scalars: presence in ModulesConfig adds two Kenyon-cell inputs -- how
@@ -494,11 +505,13 @@ class ModulesConfig:
     motor_direct: MotorDirectParams | None = None
     mb_spatial_inputs: MbSpatialInputParams | None = None
     dnp02_refractory: Dnp02RefractoryParams | None = None
+    dnp01_refractory: Dnp01RefractoryParams | None = None
     mbon_readout: MbonReadoutParams | None = None
 
 
 MODULE_PARAM_CLASSES: tuple = (PagePerceptionParams, GapAheadParams, MotorDirectParams, MbonReadoutParams,
-                                     MbSpatialInputParams, Dnp02RefractoryParams)
+                                     MbSpatialInputParams, Dnp02RefractoryParams,
+                                     Dnp01RefractoryParams)
 
 ALL_PARAM_CLASSES = (
     NetworkParams, NoiseParams, JumpParams, Dnp02Params, TakeoffParams, SpeedParams,
