@@ -273,7 +273,10 @@ class FullPolicy:
         # bit-for-bit, not a gain; golden-safe because their defaults (7,
         # 3, 0) are exactly what was hardcoded here before.
         _mb_rng = np.random.default_rng(c.mushroom_body.kc_projection_seed)
-        n_mb_sensory = c.mushroom_body.n_mb_sensory
+        # MbSpatialInputModule adds 2 inputs (pit-edge and enemy closeness);
+        # off -> exactly the original 7, so the goldens are untouched.
+        self.mb_spatial = any(m.name == "mb_spatial_inputs" for m in built)
+        n_mb_sensory = c.mushroom_body.n_mb_sensory + (2 if self.mb_spatial else 0)
         self.mb_proj = np.zeros((self.n_kc, n_mb_sensory))
         for _i in range(self.n_kc):
             _feats = _mb_rng.choice(n_mb_sensory, size=c.mushroom_body.kc_features_per_cell,
@@ -364,7 +367,8 @@ class FullPolicy:
         # Perception modules feed the circuit stimuli; they never act.
         stim = Stimulus()
         pctx = PerceptionContext(ram=ram, mario_x=mario_x, gap_w=gap_w,
-                                 distance_to_edge=distance_to_edge, config=c)
+                                 distance_to_edge=distance_to_edge, config=c,
+                                 registry=self.registry)
         for module in self.perception:
             module.perceive(pctx, stim)
         gap_input = gap_w if stim.gap_input is None else stim.gap_input
@@ -491,7 +495,8 @@ class FullPolicy:
         # ---- mushroom body: KC coding, MBON readout, dopamine ---------
         mb_sensory = np.array([theta["L"], theta["R"], odor_l_eff, odor_r_eff,
                                 float(gap_w), self.mb_prev_dnp09,
-                                1.0 if hunger == HUNGER_MULT_HUNGRY else 0.0])
+                                1.0 if hunger == HUNGER_MULT_HUNGRY else 0.0]
+                               + (list(stim.mb_extra) if self.mb_spatial else []))
         mb_raw = self.mb_proj @ mb_sensory
         k_active = max(1, int(round(c.mushroom_body.kc_sparsity * self.n_kc)))
         mb_top = np.argpartition(mb_raw, -k_active)[-k_active:]

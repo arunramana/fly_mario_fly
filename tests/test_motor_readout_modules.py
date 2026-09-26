@@ -79,3 +79,35 @@ def test_brain_panel_shows_mbon_readout_only_when_columns_exist():
     assert panel_for_row(tel, 40, ctx).size[0] > 0
     plain = tel.drop(columns=[c for c in tel.columns if c.startswith("mbon_")])
     assert not _panel_context(plain)["has_mbon"]
+
+
+def test_mb_spatial_inputs_off_keeps_seven_kc_features_and_on_adds_two():
+    import setuptools  # noqa: F401
+    from bridge.full_policy import FullPolicy
+    from config.params import MbSpatialInputParams
+    off = FullPolicy(config=ProjectConfig())
+    assert off.mb_proj.shape[1] == 7 and not off.mb_spatial
+    cfg = dataclasses.replace(ProjectConfig(), modules=ModulesConfig(mb_spatial_inputs=MbSpatialInputParams()))
+    on = FullPolicy(config=cfg)
+    assert on.mb_proj.shape[1] == 9 and on.mb_spatial
+
+
+def test_mb_spatial_perception_values():
+    from bridge.controller_modules import MbSpatialInputModule, PerceptionContext, Stimulus
+    from config.params import MbSpatialInputParams
+
+    class NoEnemies:
+        def enemy_records(self, ram):
+            return []
+    m = MbSpatialInputModule(MbSpatialInputParams())
+    cfg = ProjectConfig()
+    look = cfg.takeoff.gap_lookahead_tiles
+
+    def edge_at(d):
+        s = Stimulus()
+        m.perceive(PerceptionContext(ram=None, mario_x=0, gap_w=0, distance_to_edge=d,
+                                     config=cfg, registry=NoEnemies()), s)
+        return s.mb_extra
+    assert edge_at(None) == (0.0, 0.0)
+    assert edge_at(1)[0] == 1.0                      # at the edge: full strength
+    assert 0 < edge_at(look)[0] < edge_at(1)[0]      # weaker farther away

@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QSplitter, QToolButton, QVBoxLayout, QWidget,
 )
 
-from config.params import GapAheadParams, MbonReadoutParams, MotorDirectParams, PagePerceptionParams
+from config.params import GapAheadParams, MbonReadoutParams, MbSpatialInputParams, MotorDirectParams, PagePerceptionParams
 from config.project_config import from_dict as config_from_dict
 from tool.core.circuit_manifest import CIRCUIT_REGISTRY, OTHER_ENTRY
 from tool.ui.widgets.card_button import make_card_button
@@ -39,6 +39,9 @@ MODULE_TOGGLES = [
      "not ~230px behind. Changes what the fly sees, never an action."),
     ("gap_ahead", GapAheadParams, "Gap ahead (perception)",
      "Feeds the existing gap input from a few tiles away, scaled up as the edge approaches."),
+    ("mb_spatial_inputs", MbSpatialInputParams, "MB spatial inputs (perception)",
+     "Two extra Kenyon-cell inputs: closeness of the next pit edge and of the nearest enemy "
+     "ahead (page-corrected), so learning can key on where danger is."),
     ("motor_direct", MotorDirectParams, "MotorDirect (motor)",
      "A follows a leaky integral of the motor neurons' own activity instead of the fixed "
      "jump-hold / cooldown counters (docs/CONTROL_AUDIT.md rows 1-3)."),

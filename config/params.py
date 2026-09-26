@@ -426,6 +426,15 @@ class GapAheadParams:
 
 
 @dataclass(frozen=True)
+class MbSpatialInputParams:
+    """bridge/controller_modules.py's MbSpatialInputModule (PERCEPTION). No
+    scalars: presence in ModulesConfig adds two Kenyon-cell inputs -- how
+    close the next pit edge is and how close the nearest enemy ahead is
+    (page-corrected) -- so the mushroom body can learn *where* danger is,
+    not only that a gap or looming exists."""
+
+
+@dataclass(frozen=True)
 class MotorDirectParams:
     """bridge/controller_modules.py's MotorDirectModule: A follows a leaky
     integrator of the motor neurons' own activity instead of fixed hold and
@@ -468,10 +477,12 @@ class ModulesConfig:
     page_perception: PagePerceptionParams | None = None
     gap_ahead: GapAheadParams | None = None
     motor_direct: MotorDirectParams | None = None
+    mb_spatial_inputs: MbSpatialInputParams | None = None
     mbon_readout: MbonReadoutParams | None = None
 
 
-MODULE_PARAM_CLASSES: tuple = (PagePerceptionParams, GapAheadParams, MotorDirectParams, MbonReadoutParams)
+MODULE_PARAM_CLASSES: tuple = (PagePerceptionParams, GapAheadParams, MotorDirectParams, MbonReadoutParams,
+                                     MbSpatialInputParams)
 
 ALL_PARAM_CLASSES = (
     NetworkParams, NoiseParams, JumpParams, Dnp02Params, TakeoffParams, SpeedParams,

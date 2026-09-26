@@ -98,6 +98,7 @@ class PerceptionContext:
     gap_w: int
     distance_to_edge: int | None
     config: object
+    registry: object = None
 
 
 @dataclass
@@ -106,6 +107,7 @@ class Stimulus:
     change what the fly SEES. Defaults reproduce the unmodified perception."""
     page_aware_looming: bool = False   # enemy distance uses page bytes (into enemy_thetas)
     gap_input: float | None = None     # replaces gap_w in the existing gap current onto DNp01
+    mb_extra: tuple = ()               # extra Kenyon-cell inputs (MbSpatialInputModule)
 
 
 class PerceptionModule(Protocol):
@@ -164,6 +166,43 @@ class GapAheadPerceptionModule:
             return
         width = tile_ram.upcoming_gap_width(ctx.ram, ctx.config.takeoff.gap_lookahead_tiles)
         stim.gap_input = width * (n - d + 1) / n
+
+
+class MbSpatialInputModule:
+    """PERCEPTION. Two extra Kenyon-cell inputs, both 0..1 "closeness" like
+    looming: the next pit edge (1 at the edge, 0 beyond the takeoff
+    lookahead) and the nearest enemy ahead by PAGE-CORRECTED distance (1 at
+    contact, 0 at 128 px). Without them the mushroom body sees only gap width
+    (0 until Mario stands at the edge) and theta, so it cannot learn to act
+    before a pit or Goomba is close. Off by default (n_mb_sensory stays 7 and
+    every golden is unchanged)."""
+    name = "mb_spatial_inputs"
+    kind = "perception"
+    N_INPUTS = 2
+    ENEMY_RANGE_PX = 128.0
+
+    def __init__(self, params):
+        self.params = params
+
+    def reset(self) -> None:
+        pass
+
+    def perceive(self, ctx: PerceptionContext, stim: Stimulus) -> None:
+        from bridge.perception import _dx
+        from mario.entities.kinds import EntityKind
+        look = ctx.config.takeoff.gap_lookahead_tiles
+        d = ctx.distance_to_edge
+        edge = 0.0 if d is None or d > look else (look - d + 1) / look
+        nearest = None
+        if ctx.registry is not None:
+            for slot, rec in enumerate(ctx.registry.enemy_records(ctx.ram)):
+                if not rec.active or rec.kind == EntityKind.POWERUP:
+                    continue
+                dx = _dx(ctx.ram, slot, rec, ctx.mario_x, True)
+                if dx >= 0 and (nearest is None or dx < nearest):
+                    nearest = dx
+        enemy = 0.0 if nearest is None else max(0.0, 1.0 - nearest / self.ENEMY_RANGE_PX)
+        stim.mb_extra = (float(edge), float(enemy))
 
 
 class MotorDirectModule:
@@ -248,6 +287,7 @@ class MbonReadoutModule:
 MODULE_CLASSES: dict[str, type] = {"page_perception": PagePerceptionModule,
                                     "gap_ahead": GapAheadPerceptionModule,
                                     "motor_direct": MotorDirectModule,
+                                    "mb_spatial_inputs": MbSpatialInputModule,
                                     "mbon_readout": MbonReadoutModule}
 
 

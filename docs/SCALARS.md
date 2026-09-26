@@ -181,6 +181,11 @@ disagree.
 | `dnp09_frac` | `0.005` | unknown | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
 | `mdn_frac` | `0.005` | unknown | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
 
+## MbSpatialInputParams
+
+| field | value | range | provenance | home |
+|---|---|---|---|---|
+
 
 ## Totals
 
