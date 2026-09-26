@@ -80,6 +80,14 @@ class GoalTab(QWidget):
             "A science change when on (CLAUDE.md rule 3).")
         self.graded_pits_checkbox.toggled.connect(self._on_graded_pits_changed)
         scenario_form.addRow("Pits", self.graded_pits_checkbox)
+        self.start_state_combo = QComboBox()
+        self.start_state_combo.currentIndexChanged.connect(self._on_start_state_changed)
+        scenario_form.addRow("Start from", self.start_state_combo)
+        from tool.core.savestates import FRESH_BRAIN_NOTE
+        note = QLabel(FRESH_BRAIN_NOTE)
+        note.setWordWrap(True)
+        scenario_form.addRow(note)
+        self.refresh_states()
         layout.addWidget(scenario_box)
 
         fitness_box = QGroupBox("Fitness weights (points/distance/time)")
@@ -190,6 +198,24 @@ class GoalTab(QWidget):
         spin.setValue(value)
         spin.valueChanged.connect(slot)
         return spin
+
+    def refresh_states(self) -> None:
+        """"power-on" plus the project's saved states (Player > Save state here)."""
+        from tool.core.savestates import list_states
+        current = self._window.get_tool_settings().experiment.start_state
+        combo = self.start_state_combo
+        combo.blockSignals(True)
+        combo.clear()
+        combo.addItem("power-on", None)
+        for name in list_states(self._window.project.name):
+            combo.addItem(f"saved state: {name}", name)
+        combo.setCurrentIndex(max(0, combo.findData(current)))
+        combo.blockSignals(False)
+
+    def _on_start_state_changed(self, _index: int) -> None:
+        settings = self._window.get_tool_settings()
+        experiment = dataclasses.replace(settings.experiment, start_state=self.start_state_combo.currentData())
+        self._window.set_tool_settings(dataclasses.replace(settings, experiment=experiment))
 
     def _on_level_changed(self, level: str) -> None:
         config = self._window.get_config()

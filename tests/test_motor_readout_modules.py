@@ -111,3 +111,18 @@ def test_mb_spatial_perception_values():
     assert edge_at(None) == (0.0, 0.0)
     assert edge_at(1)[0] == 1.0                      # at the edge: full strength
     assert 0 < edge_at(look)[0] < edge_at(1)[0]      # weaker farther away
+
+
+def test_motor_direct_releases_a_for_a_frame_on_landing_and_starts_fresh():
+    m = MotorDirectModule(MotorDirectParams())
+    assert m.params.release_on_landing is True                       # default on
+    m.update(0.0, 0.0, player_state=0)
+    for _ in range(3):
+        m.update(10.0, 0.0, player_state=1)                          # airborne, drive high
+    assert m.update(0.0, 0.0, player_state=1) is True
+    assert m.update(5.0, 0.0, player_state=0) is False               # landed: A released this frame
+    assert m.drive == 0.0                                            # so the next jump is a new press
+    off = MotorDirectModule(MotorDirectParams(release_on_landing=False))
+    for _ in range(3):
+        off.update(10.0, 0.0, player_state=1)
+    assert off.update(0.0, 0.0, player_state=0) is True              # off: unchanged behaviour

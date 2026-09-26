@@ -617,6 +617,32 @@ class MainWindow(QMainWindow):
             return pd.read_csv(telemetry_path)
         return None
 
+    def save_state_here(self) -> None:
+        """Player's "Save state here": the current run at the current frame
+        becomes a project save state (tool/core/savestates.py)."""
+        number = self.run_tab.playlist.current_number()
+        entry = next((e for e in list_runs(self.project.name) if e["number"] == number), None)
+        if entry is None:
+            self.statusBar().showMessage("No run selected.", 5000)
+            return
+        frame = self.run_tab.player._current_frame_index
+        from PySide6.QtWidgets import QApplication
+        from tool.core.savestates import FRESH_BRAIN_NOTE, capture_from_run
+        try:
+            if not entry.get("summary", {}).get("actions_path") and not entry.get("training"):
+                self.statusBar().showMessage(f"Run #{number} has no action log: re-simulating it...", 0)
+                QApplication.processEvents()
+            result = capture_from_run(self.project.name, entry, frame)
+        except (ValueError, OSError) as exc:
+            self.statusBar().showMessage(f"Could not save a state: {exc}", 10_000)
+            return
+        goal = self.goal_tab
+        if hasattr(goal, "refresh_states"):
+            goal.refresh_states()
+        how = " (re-simulated)" if result["resimulated"] else ""
+        self.statusBar().showMessage(
+            f"Saved state {result['name']!r} at frame {result['frame']}{how}. {FRESH_BRAIN_NOTE}", 12_000)
+
     def select_history_run(self, number: int) -> None:
         """A run picked from the Run tab's playlist (run_playlist.py's
         run_selected signal, connected in run.py) -- resolves the run

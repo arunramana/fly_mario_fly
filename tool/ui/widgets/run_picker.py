@@ -50,6 +50,7 @@ def _group_key(group: str):
 
 class RunPicker(QWidget):
     run_selected = Signal(int)  # run number
+    save_state_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -68,6 +69,14 @@ class RunPicker(QWidget):
         row.addWidget(self.prev_button)
         row.addWidget(self.combo, 1)
         row.addWidget(self.next_button)
+        from tool.core.savestates import FRESH_BRAIN_NOTE
+        self.save_state_button = QPushButton("Save state here")
+        self.save_state_button.setToolTip(
+            "Save the emulator state at the current frame into the project (instant when the run "
+            "recorded its action log; older runs are re-simulated). Pick it under Goal > Start from. "
+            + FRESH_BRAIN_NOTE)
+        self.save_state_button.clicked.connect(self.save_state_requested)
+        row.addWidget(self.save_state_button)
 
     def set_entries(self, entries: list[dict]) -> None:
         current = self.current_number()

@@ -57,6 +57,49 @@ MODULE_TOGGLES = [
      "instead of one scalar mean, so learning acts on specific pathways."),
 ]
 
+# Editable parameters per module: (param, kind, lo, hi, step, tooltip). Shown
+# only while the module is on. Tooltips say what each value is compared with.
+_REFRACTORY_TIP = (
+    "Absolute refractory period of the spiking cells, in network substeps (10 per frame, so 10 = "
+    "16.7 ms). Compared against how fast the downstream partner decays: pIP1 needs ~5 substeps "
+    "to fall below the ~11 that still re-fires DNp02. {extra}")
+MODULE_PARAM_UI: dict[str, list] = {
+    "gap_ahead": [("perceive_tiles", "int", 1, 16, 1,
+                   "How many tiles ahead the pit-edge input starts. Compared against the distance "
+                   "to the nearest non-ground tile (tiles): inside this range the gap input is "
+                   "width x (n - d + 1) / n, reaching today's full strength at the edge. The "
+                   "current itself is still takeoff.gap_gain x that value.")],
+    "motor_direct": [
+        ("decay", "float", 0.0, 0.999, 0.01,
+         "Per-frame multiplier on the motor drive (time constant = 1 / (1 - decay) frames; 0.9 = "
+         "10). Compared against a_threshold: A stays down until the decaying drive falls below it."),
+        ("a_threshold", "float", 0.01, 20.0, 0.05,
+         "A is down while the DRIVE is at or above this. The drive is the leaky integral of TTMn's "
+         "RISE (in units of jump.ttmn_press_threshold) plus DLMn -- NOT TTMn's level, so this is "
+         "not comparable with ttmn_press_threshold. A level would stay saturated at 50 for as "
+         "long as DNp02 is latched."),
+        ("ttmn_gain", "float", 0.0, 10.0, 0.1,
+         "Drive added per unit of TTMn rise, where TTMn is measured as a multiple of "
+         "jump.ttmn_press_threshold (3.0): a 0 -> 50 rise is about 16.7 units."),
+        ("dlmn_gain", "float", 0.0, 1.0, 0.01,
+         "Drive added per frame per unit of DLMn activity (0 to ~8 on a pit). Sustained DLMn "
+         "lengthens the hold: a graded long jump instead of a binary choice."),
+        ("release_on_landing", "bool", 0, 1, 1,
+         "Release A for one frame when Mario lands (RAM 0x001D returns to 0) and clear the drive, "
+         "so the next jump is a fresh press -- the NES ignores a held A. Compared against the "
+         "previous frame's player state.")],
+    "dnp02_refractory": [("refractory_steps", "int", 1, 50, 1, _REFRACTORY_TIP.format(
+        extra="Also compared against dnp02.spike_threshold / alpha (0.33), the drive that re-fires DNp02."))],
+    "dnp01_refractory": [("refractory_steps", "int", 1, 50, 1, _REFRACTORY_TIP.format(
+        extra="For DNp01 it sets the minimum spacing between Giant Fiber spikes."))],
+    "mbon_readout": [(f"{p}_frac", "float", 0.0, 0.1, 0.001,
+                      f"Bias current onto {label} per unit of the connectome-weighted MBON activity "
+                      "(negative sign, like the existing MBON->DNa02 path). Compared against "
+                      "mushroom_body.mbon_dna02_frac_l/r (0.0038 / 0.0063) -- same order of size.")
+                     for p, label in (("dnp01", "DNp01 (jump)"), ("dlmn", "DLMn (long jump)"),
+                                      ("dnp09", "DNp09 (speed)"), ("mdn", "MDN (backing up)"))],
+}
+
 CARD_ICON_PX = 160  # large, readable brain-map images -- ease-of-use redesign
 
 
@@ -92,6 +135,7 @@ class CircuitsTab(QWidget):
             box.toggled.connect(lambda checked, f=field_name, c=params_cls: self._on_module_toggled(f, c, checked))
             modules_layout.addWidget(box)
             self.module_checkboxes[field_name] = box
+            modules_layout.addWidget(self._build_module_editors(field_name))
         layout.addWidget(modules_box)
 
         # tool/SPEC_ui_retro.md section 3, "one home per setting": ONE
@@ -163,6 +207,54 @@ class CircuitsTab(QWidget):
         self._description_label.setText(f"{entry.description}\n{second_line}")
         self.param_form.show_only_groups(set(entry.groups))
 
+    def _build_module_editors(self, field_name: str) -> QWidget:
+        """Editable parameters of one module, shown while it is on."""
+        from PySide6.QtWidgets import QDoubleSpinBox, QSpinBox
+        from tool.ui.widgets.no_scroll_inputs import NoScrollDoubleSpinBox
+        container = QWidget()
+        form = QFormLayout(container)
+        form.setContentsMargins(24, 0, 0, 4)
+        self.module_editors = getattr(self, "module_editors", {})
+        self.module_editor_boxes = getattr(self, "module_editor_boxes", {})
+        params = getattr(self._window.get_config().modules, field_name)
+        specs = MODULE_PARAM_UI.get(field_name, [])
+        if not specs:
+            note = QLabel("No parameters: switching it on is the whole setting.")
+            form.addRow(note)
+        for name, kind, lo, hi, step, tip in specs:
+            if kind == "bool":
+                w = QCheckBox()
+                w.setChecked(bool(getattr(params, name)) if params is not None else True)
+                w.toggled.connect(lambda v, f=field_name, n=name: self._set_module_param(f, n, bool(v)))
+            elif kind == "int":
+                w = NoScrollSpinBox()
+                w.setRange(int(lo), int(hi))
+                w.setValue(int(getattr(params, name)) if params is not None else int(lo))
+                w.valueChanged.connect(lambda v, f=field_name, n=name: self._set_module_param(f, n, int(v)))
+            else:
+                w = NoScrollDoubleSpinBox()
+                w.setDecimals(4)
+                w.setRange(float(lo), float(hi))
+                w.setSingleStep(float(step))
+                w.setValue(float(getattr(params, name)) if params is not None else float(lo))
+                w.valueChanged.connect(lambda v, f=field_name, n=name: self._set_module_param(f, n, float(v)))
+            w.setToolTip(tip)
+            label = QLabel(f"{name}  [{lo}\u2013{hi}]" if kind != "bool" else name)
+            label.setToolTip(tip)
+            form.addRow(label, w)
+            self.module_editors[(field_name, name)] = w
+        container.setVisible(params is not None)
+        self.module_editor_boxes[field_name] = container
+        return container
+
+    def _set_module_param(self, field_name: str, name: str, value) -> None:
+        config = self._window.get_config()
+        params = getattr(config.modules, field_name)
+        if params is None or getattr(params, name) == value:
+            return
+        modules = dataclasses.replace(config.modules, **{field_name: dataclasses.replace(params, **{name: value})})
+        self._window.set_config(dataclasses.replace(config, modules=modules))
+
     def _sync_param_form(self, config) -> None:
         if config is not self.param_form._config:
             self.param_form.set_config(config)
@@ -171,6 +263,16 @@ class CircuitsTab(QWidget):
         config = self._window.get_config()
         modules = dataclasses.replace(config.modules, **{field_name: params_cls() if checked else None})
         self._window.set_config(dataclasses.replace(config, modules=modules))
+        box = self.module_editor_boxes.get(field_name)
+        if box is not None:
+            box.setVisible(checked)
+            params = getattr(modules, field_name)
+            for (f, name), w in self.module_editors.items():   # show the fresh defaults
+                if f == field_name and params is not None:
+                    w.blockSignals(True)
+                    value = getattr(params, name)
+                    w.setChecked(bool(value)) if isinstance(w, QCheckBox) else w.setValue(value)
+                    w.blockSignals(False)
 
     def _on_shuffle_toggled(self, checked: bool) -> None:
         self.shuffle_seed_spin.setEnabled(checked)

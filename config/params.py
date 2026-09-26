@@ -479,6 +479,10 @@ class MotorDirectParams:
         "invented (drive added per frame per unit of DLMn: sustained DLMn lengthens the "
         "hold, a graded long jump instead of the binary choice)",
         "bridge/controller_modules.py (MotorDirectModule)")
+    release_on_landing: bool = _f(True, None,
+        "invented (mechanical: A is released for one frame when Mario lands, RAM 0x001D back to 0, "
+        "so the next jump is a fresh button press -- the NES only jumps on a new press)",
+        "bridge/controller_modules.py (MotorDirectModule)")
 
 
 @dataclass(frozen=True)

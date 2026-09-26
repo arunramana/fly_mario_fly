@@ -171,6 +171,7 @@ disagree.
 | `a_threshold` | `0.3` | unknown | invented (A is down while the drive is above this; motor threshold, like ttmn_press_threshold) | `bridge/controller_modules.py (MotorDirectModule)` |
 | `ttmn_gain` | `1.0` | unknown | invented (drive added per unit of TTMn rise, in units of the press threshold) | `bridge/controller_modules.py (MotorDirectModule)` |
 | `dlmn_gain` | `0.05` | unknown | invented (drive added per frame per unit of DLMn: sustained DLMn lengthens the hold, a graded long jump instead of the binary choice) | `bridge/controller_modules.py (MotorDirectModule)` |
+| `release_on_landing` | `True` | unknown | invented (mechanical: A is released for one frame when Mario lands, RAM 0x001D back to 0, so the next jump is a fresh button press -- the NES only jumps on a new press) | `bridge/controller_modules.py (MotorDirectModule)` |
 
 ## MbonReadoutParams
 
@@ -201,19 +202,19 @@ disagree.
 
 ## Totals
 
-**73 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
+**74 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
 more (`DemoParams.mushroom_offset`, `DemoParams.wide_gap_lead_tiles`,
 `TerrainParams.refusal_gap_margin_tiles`) only matter in an opt-in
 injection demo -- the first is untested by any golden, the other two are
 exercised by `tests/test_golden.py::test_017_reprise`'s own
 `inject_gap_frame`, so "opt-in" here means "off by default", not
-"untested". The other 67 are live in every default run.
+"untested". The other 68 are live in every default run.
 
 A range of `unknown` means genuinely unknown, not left blank: an invented
 bound would be scaffolding that looks like data. Only `JumpParams.g` and
 `NoiseParams.sigma` have a characterised range.
 
-By category (the first word of each provenance): **51 invented**, **22 measured**, **0 connectome-derived** (of 73).
+By category (the first word of each provenance): **52 invented**, **22 measured**, **0 connectome-derived** (of 74).
 
 None are connectome-derived. The connectome determines each circuit's
 weight matrix `W`; every scalar here sits outside it, as a gain on it, a

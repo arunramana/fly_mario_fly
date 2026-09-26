@@ -231,8 +231,15 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
          retinotopic=False, sigma=0.0, seed=None, telemetry_path=None,
          event_proximal_dopamine=False, config=None, on_frame=None, should_stop=None,
          shuffle_seed=None, hunger_override=None, entity_profiles=None,
-         death_animation_frames=0):
+         death_animation_frames=0, start_actions=None, record_actions=False):
     """Run one episode of the full system and return (telemetry, info).
+
+    start_actions: a saved-state prefix (uint8 action indices). The emulator
+    replays these from reset before frame 0, so the run starts from that
+    game state; the brain starts fresh (neural state is not restored).
+    nes-py has one in-process Backup slot and no state export, so a saved
+    state is the deterministic action log that reaches it.
+    record_actions: also return info["actions"], one action per stepped frame.
 
     out_mp4: required. Build it from a ProjectConfig with
         config.output_routing.resolve_run_path, or use
@@ -369,6 +376,12 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
                 obs = env.reset()
         env.unwrapped._backup()
         obs = env.reset()  # land on the just-made backup, not the tail of warmup
+    if start_actions is not None:
+        for _a in start_actions:
+            obs, _, _d, _ = env.step(int(_a))
+            if _d:
+                raise ValueError("the saved state's action log ended the episode")
+    actions = []
 
     injected = False
     gap_target_col = None       # fixed once, on inject_gap_frame
@@ -414,6 +427,7 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
                     Image.fromarray(obs).save(tmp / f"{frame:05d}.png")
                 if on_frame is not None:
                     on_frame(frame, obs, row)
+                actions.append(action)
                 obs, reward, done, info = env.step(action)
                 frame += 1
                 if should_stop is not None and should_stop():
@@ -527,6 +541,7 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
             if on_frame is not None:
                 on_frame(frame, obs, row)
 
+            actions.append(action)
             obs, reward, done, info = env.step(action)
             frame += 1
             # Death-triggered punishment (SPEC_mushroom_body.md section 3).
@@ -591,7 +606,7 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
                                     caption=f"{level}: aversive+attractive odour, DNp09 brake, "
                                             "refusal rule, DNp01 vs DNp02, pit->DLMn long jump, "
                                             "DNa01/DNa02 steering, contact climb")
-    return tel, dict(n_escape_jumps=n_escape_jumps, n_long_jumps=n_long_jumps,
+    result = dict(n_escape_jumps=n_escape_jumps, n_long_jumps=n_long_jumps,
                       n_dnp01_fired=n_dnp01_fired, n_dnp02_fired=n_dnp02_fired,
                       n_climb_hops=n_climb_hops, n_climb_jumps=n_climb_jumps,
                       n_conflicts=n_conflicts, n_frames=frame, died_or_flagged=done,
@@ -601,6 +616,9 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
                       seed=seed, sigma=sigma,
                       score=info.get("score"), coins=info.get("coins"),
                       time=info.get("time"), flag_get=info.get("flag_get"))
+    if record_actions:
+        result["actions"] = np.asarray(actions, dtype=np.uint8)
+    return tel, result
 
 
 LEVEL_RUNS = [

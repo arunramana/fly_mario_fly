@@ -36,7 +36,7 @@ working around it.
 3. **Every hand-set scalar gets flagged and counted — no fixed budget.**
    Each one gets a typed, ranged home in `config/params.py` and a row in
    `docs/SCALARS.md` (generated from it, never written by hand). There
-   are **73**: 51 invented (placed currents, mechanical hold durations),
+   are **74**: 52 invented (placed currents, mechanical hold durations),
    22 measured (simulated against the real weight matrix and picked by a
    sweep), **0 connectome-derived**. The connectome determines each
    circuit's weight matrix, never a scalar controlling how hard a circuit
@@ -184,3 +184,11 @@ exists, not what a for loop does.
 
 Scope is set per sprint by the relevant `docs/SPEC_*.md`. Build only what
 that spec covers.
+
+## Testing (Arun, 2026-09-26)
+
+Keep test runs proportional to the change. The full suites take many minutes.
+
+- **Tool-only changes** (anything under `tool/`): run only the affected `tool/tests` files.
+- **Changes outside `tool/`** (simulation, circuits, config, bridge, mario): run the full `tests/`, including the goldens.
+- **Full `tool/tests`:** only when Arun asks, or once before a release.

@@ -153,3 +153,65 @@ def test_run_033_appears_and_loads_in_the_player(qtbot):
     window.select_history_run(33)
     assert window.run_tab.player._n_frames > 1000          # its frames and telemetry loaded
     assert "flag" in window.run_tab.result_label.text() or "max_x=3157" in window.run_tab.result_label.text()
+
+
+def test_module_parameters_are_editable_only_while_on_with_tooltips(qtbot):
+    from tool.core.project import ToolProject
+    from tool.ui.main_window import MainWindow
+    from tool.ui.tabs.circuits import MODULE_PARAM_UI
+    shutil.rmtree(PROJECTS_ROOT / NAME, ignore_errors=True)
+    try:
+        window = MainWindow(ToolProject.create(NAME))
+        qtbot.addWidget(window)
+        window._closing_confirmed = True
+        c = window.tabs.widget(3)
+        assert c.module_editor_boxes["motor_direct"].isHidden()
+        c.module_checkboxes["motor_direct"].setChecked(True)
+        assert not c.module_editor_boxes["motor_direct"].isHidden()
+        c.module_editors[("motor_direct", "a_threshold")].setValue(1.5)
+        assert window.get_config().modules.motor_direct.a_threshold == 1.5
+        c.module_editors[("motor_direct", "release_on_landing")].setChecked(False)
+        assert window.get_config().modules.motor_direct.release_on_landing is False
+        tip = c.module_editors[("motor_direct", "a_threshold")].toolTip()
+        assert "RISE" in tip and "ttmn_press_threshold" in tip           # says what it is compared against
+        for f in ("gap_ahead", "dnp02_refractory", "dnp01_refractory", "mbon_readout"):
+            c.module_checkboxes[f].setChecked(True)
+        c.module_editors[("dnp02_refractory", "refractory_steps")].setValue(12)
+        assert window.get_config().modules.dnp02_refractory.refractory_steps == 12
+        assert window.get_config().modules.dnp01_refractory.refractory_steps == 8
+        for field, specs in MODULE_PARAM_UI.items():                     # every param has range + tooltip
+            for name, kind, lo, hi, step, tip in specs:
+                assert lo < hi and len(tip) > 40
+        # the values survive an edit through the scalar form
+        c.param_form._on_change("noise.sigma", 0.02)
+        assert window.get_config().modules.motor_direct.a_threshold == 1.5
+        c.module_checkboxes["motor_direct"].setChecked(False)
+        assert c.module_editor_boxes["motor_direct"].isHidden()
+    finally:
+        shutil.rmtree(PROJECTS_ROOT / NAME, ignore_errors=True)
+
+
+def test_save_state_button_and_start_from_dropdown(qtbot):
+    import numpy as np
+    from tool.core.project import ToolProject
+    from tool.core.savestates import FRESH_BRAIN_NOTE, list_states, save_state
+    from tool.ui.main_window import MainWindow
+    shutil.rmtree(PROJECTS_ROOT / NAME, ignore_errors=True)
+    try:
+        window = MainWindow(ToolProject.create(NAME))
+        qtbot.addWidget(window)
+        window._closing_confirmed = True
+        assert window.run_tab.playlist.save_state_button.text() == "Save state here"
+        assert FRESH_BRAIN_NOTE in window.run_tab.playlist.save_state_button.toolTip()
+        goal = window.goal_tab
+        assert goal.start_state_combo.itemText(0) == "power-on"
+        save_state(NAME, "demo", np.zeros(5, dtype=np.uint8), "1-1", 5)
+        goal.refresh_states()
+        assert goal.start_state_combo.findData("demo") > 0
+        goal.start_state_combo.setCurrentIndex(goal.start_state_combo.findData("demo"))
+        assert window.get_tool_settings().experiment.start_state == "demo"
+        goal.start_state_combo.setCurrentIndex(0)
+        assert window.get_tool_settings().experiment.start_state is None
+        assert list_states(NAME) == ["demo"]
+    finally:
+        shutil.rmtree(PROJECTS_ROOT / NAME, ignore_errors=True)

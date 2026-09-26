@@ -44,6 +44,19 @@ def run_one(spec, on_frame=None, should_stop=None):
         from tool.core.entity_profiles_store import load_merged
         entity_profiles = load_merged(spec.project_name)
 
+    # A saved state (Goal tab "Start from") is replayed before frame 0 --
+    # see tool/core/savestates.py. The brain starts fresh.
+    start_state = None
+    name = spec.tool_settings.experiment.start_state
+    if name:
+        from tool.core.savestates import load_state
+        start_state = load_state(spec.project_name, name)
+        if start_state["level"] != spec.config.scenario.level:
+            raise ValueError(f"saved state {name!r} is for level {start_state['level']}, "
+                             f"but this run is level {spec.config.scenario.level}")
+    # RAM pokes cannot be replayed, so such runs record no action log.
+    replayable = not (powerup_kwargs or spec.config.scenario.inject_gap_frame is not None)
+
     recorder = None
     raw_path = None
     if spec.tool_settings.render.raw_frames:
@@ -69,8 +82,23 @@ def run_one(spec, on_frame=None, should_stop=None):
         on_frame=combined_on_frame if recorder is not None else on_frame,
         should_stop=should_stop,
         death_animation_frames=spec.tool_settings.render.death_animation_frames,
+        start_actions=start_state["actions"] if start_state else None,
+        record_actions=replayable,
         **powerup_kwargs,
     )
+    actions = info.pop("actions", None)
+    if actions is not None:
+        import numpy as np
+        from config.output_routing import resolve_run_path
+        prefix = start_state["actions"] if start_state else np.empty(0, dtype=np.uint8)
+        path = resolve_run_path(spec.config, Path(spec.out_filename).stem + "_actions.npy")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        np.save(path, np.concatenate([prefix, actions]).astype(np.uint8))
+        info["actions_path"] = str(path)
+        info["actions_prefix_len"] = int(len(prefix))
+    if start_state:
+        info["start_state"] = {"name": start_state["name"], "frame": start_state["frame"],
+                               "source_run": start_state["source_run"]}
     if recorder is not None:
         written = recorder.close(raw_path)
         info["raw_frames_path"] = str(written) if written else None

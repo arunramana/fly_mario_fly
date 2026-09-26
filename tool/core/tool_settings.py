@@ -67,6 +67,9 @@ class ExperimentSettings:
     argument name."""
     seeds: tuple[int, ...] = (0,)
     learning_enabled: bool = False
+    # A name under projects/<name>/savestates/ (tool/core/savestates.py), or
+    # None = power-on. Recorded in every run's snapshot; the brain starts fresh.
+    start_state: str | None = None
 
 
 @dataclass(frozen=True)

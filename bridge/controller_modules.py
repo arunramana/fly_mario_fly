@@ -258,6 +258,7 @@ class MotorDirectModule:
         self.prev_ratio = 0.0
         self.was_ready = False
         self.suppressed = False
+        self.prev_player_state = 0
 
     def rising(self, ready: bool) -> bool:
         """True on the frame the motor output first crosses threshold."""
@@ -267,9 +268,19 @@ class MotorDirectModule:
         self.was_ready = ready
         return edge
 
-    def update(self, ttmn_ratio: float, dlmn_val: float) -> bool:
-        """Advance the integrator one frame; return whether A is down."""
+    def update(self, ttmn_ratio: float, dlmn_val: float, player_state: int | None = None) -> bool:
+        """Advance the integrator one frame; return whether A is down.
+        `player_state` (RAM 0x001D): on the frame it returns to 0 (landed)
+        A is released and the drive cleared, so the next jump is a new press
+        (SMB ignores a held A). Skipped when release_on_landing is off."""
         p = self.params
+        if p.release_on_landing and player_state is not None:
+            landed = self.prev_player_state != 0 and player_state == 0
+            self.prev_player_state = player_state
+            if landed:
+                self.drive = 0.0
+                self.prev_ratio = ttmn_ratio
+                return False
         rise = max(0.0, ttmn_ratio - self.prev_ratio)
         self.prev_ratio = ttmn_ratio
         drive_in = 0.0 if self.suppressed else p.ttmn_gain * rise + p.dlmn_gain * dlmn_val

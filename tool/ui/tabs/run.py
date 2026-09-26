@@ -90,6 +90,7 @@ class RunTab(QWidget):
         self.player.frame_changed.connect(self._on_frame_changed)
         self.player.live_row.connect(self._on_live_row)
         self.playlist.run_selected.connect(self._on_playlist_run_selected)
+        self.playlist.save_state_requested.connect(lambda: window.save_state_here())
 
     # ---- Player sub-tab: video + playlist + overlays --------------------
 

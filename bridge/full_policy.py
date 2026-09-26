@@ -694,7 +694,8 @@ class FullPolicy:
         press_a = self.jump_hold > 0 or self.climb_hold > 0
         if self.motor is not None:
             motor_a = self.motor.update(
-                max(ttmn_val, ttmn_val_dnp02) / c.jump.ttmn_press_threshold, dlmn_val)
+                max(ttmn_val, ttmn_val_dnp02) / c.jump.ttmn_press_threshold, dlmn_val,
+                player_state=int(ram[ADDR_PLAYER_STATE]))
             press_a = press_a or motor_a
         if self.jump_hold > 0:
             self.jump_hold -= 1
