@@ -34,16 +34,18 @@
     "mdn_threshold": 1.0
   },
   "modules": {
-    "grounded_pit": {
-      "run_up_tiles": 4,
-      "trigger_distance_tiles": 2
+    "gap_ahead": {
+      "perceive_tiles": 4
     },
-    "page_threat": {
-      "trigger_px": 40
+    "mb_spatial_inputs": {},
+    "mbon_readout": null,
+    "motor_direct": {
+      "a_threshold": 0.3,
+      "decay": 0.9,
+      "dlmn_gain": 0.05,
+      "ttmn_gain": 1.0
     },
-    "threat_bypass": {
-      "distance_px": 40
-    }
+    "page_perception": {}
   },
   "mushroom_body": {
     "kc_features_per_cell": 3,
