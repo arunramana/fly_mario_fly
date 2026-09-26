@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QLabel, QMessageBox, QProgressBar, QPushButton, QTabWidget, QVBoxLayout, QWidget,
 )
 
+from tool.ui.widgets.controller_pad import ControllerPad
 from tool.ui.widgets.learning_chart import LearningChart
 from tool.ui.widgets.plots import TelemetryPlots
 from tool.ui.widgets.run_brain_map_overlay import BrainMapOverlayContent
@@ -42,6 +43,7 @@ Shift+← / Shift+→ -- jump 1 second back / forward
 N / P -- next / previous event (jump, climb, stomp, death/flag)
 F -- fullscreen
 B -- toggle the Brain map overlay
+I -- toggle the controller overlay (◀ ▶ B A)
 D -- toggle the Data overlay
 C -- toggle the Config overlay
 ? -- this list
@@ -116,6 +118,9 @@ class RunTab(QWidget):
         self.data_overlay = EdgePanel("data", "Data ▶", self.data_content, QSize(260, 150), canvas)
         self.config_content = ConfigPanelContent()
         self.config_overlay = EdgePanel("config", "Config ▶", self.config_content, QSize(260, 220), canvas)
+        # The controller pad: a child of the canvas like the panels, placed over
+        # the bottom strip of the VIDEO rect; on by default, toggled with I.
+        self.controller_pad = ControllerPad(canvas)
         for panel in (self.brain_overlay, self.data_overlay, self.config_overlay):
             panel.toggled.connect(lambda _open: self._place_panels())
         self.brain_overlay.toggled.connect(self._refresh_brain_map)
@@ -155,6 +160,13 @@ class RunTab(QWidget):
         cfg.move(w - cfg.width(), 4 + data.height() + 6)
         for panel in (self.brain_overlay, data, cfg):
             panel.raise_()
+        # Pad: the bottom strip of the video itself, never resizing anything.
+        video = canvas.target_rect()
+        pad_w = int(min(video.width() * 0.5, 280))
+        pad_h = int(min(video.height() * 0.14, 56))
+        self.controller_pad.setGeometry(video.x() + (video.width() - pad_w) // 2,
+                                        video.y() + video.height() - pad_h - 6, pad_w, pad_h)
+        self.controller_pad.raise_()
         self._refresh_brain_map()
 
     def _refresh_brain_map(self, *_args) -> None:
@@ -163,6 +175,9 @@ class RunTab(QWidget):
 
     def toggle_brain_map(self) -> None:
         self.brain_overlay.toggle()
+
+    def toggle_controller_overlay(self) -> None:
+        self.controller_pad.setVisible(self.controller_pad.isHidden())
 
     def toggle_data_overlay(self) -> None:
         self.data_overlay.toggle()
@@ -209,11 +224,13 @@ class RunTab(QWidget):
         self.plots.set_playhead(frame)
         row = self.player.current_row()
         row_dict = row.to_dict() if row is not None else None
+        self.controller_pad.set_from_row(row_dict)
         self.data_content.update_from_row(row_dict)
         if self.brain_overlay.is_open():
             self.brain_map_content.update_frame(frame)
 
     def _on_live_row(self, row: dict) -> None:
+        self.controller_pad.set_from_row(row)          # the pad shows during live runs too
         self.data_content.update_from_row(row)
 
     def _on_plot_seek(self, frame: int) -> None:

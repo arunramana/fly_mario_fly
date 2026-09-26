@@ -203,6 +203,7 @@ class MainWindow(QMainWindow):
             (QKeySequence(Qt.Key.Key_P), lambda: self.run_tab.prev_event()),
             (QKeySequence(Qt.Key.Key_F), lambda: self.run_tab.toggle_fullscreen()),
             (QKeySequence(Qt.Key.Key_B), lambda: self.run_tab.toggle_brain_map()),
+            (QKeySequence(Qt.Key.Key_I), lambda: self.run_tab.toggle_controller_overlay()),
             (QKeySequence(Qt.Key.Key_D), lambda: self.run_tab.toggle_data_overlay()),
             (QKeySequence(Qt.Key.Key_C), lambda: self.run_tab.toggle_config_overlay()),
             (QKeySequence(Qt.Key.Key_Question), lambda: self.run_tab.show_shortcut_help()),
