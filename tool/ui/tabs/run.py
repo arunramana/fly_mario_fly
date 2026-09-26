@@ -262,7 +262,14 @@ class RunTab(QWidget):
         self.player.load_run(raw_frames_path, tel, info)
         if tel is not None:
             self.plots.set_dataframe(tel)
-        self.config_content.set_config(run_config)
+        # Summary before Config, and Config guarded: a config that cannot be
+        # rendered must never leave the other panels showing the previous run.
+        self.data_content.set_summary(info)
+        try:
+            self.config_content.set_config(run_config)
+        except Exception as exc:  # noqa: BLE001 -- display only; never block the rest
+            self.config_content.panel.setHtml(
+                f"<i>(config could not be shown: {type(exc).__name__}: {exc})</i>")
         self.brain_map_content.set_telemetry(tel)
         self._refresh_brain_map()
         row = self.player.current_row()

@@ -82,3 +82,66 @@ def test_config_shows_the_runs_own_level_not_the_projects(qapp):
     panel = ConfigDiffPanel()
     panel.set_config(cfg)
     assert "level = 1-3" in panel.toPlainText()
+
+
+# ---- modules on/off in the Config diff, and load_run_data ordering ----------
+
+def _with_modules(**mods):
+    from config.params import ModulesConfig
+    return dataclasses.replace(ProjectConfig(), modules=ModulesConfig(**mods))
+
+
+def test_diff_reports_a_whole_module_as_off_to_set_and_back():
+    from config.params import GapAheadParams
+    from tool.ui.widgets.run_detail_panels import _diff_dataclass
+    on, off = _with_modules(gap_ahead=GapAheadParams()), ProjectConfig()
+    diffs = {p: (v, d) for p, v, d in _diff_dataclass(on, off)}
+    assert list(diffs) == ["modules.gap_ahead"]                      # not modules.gap_ahead.perceive_tiles
+    assert diffs["modules.gap_ahead"] == (GapAheadParams(), None)
+    back = {p: (v, d) for p, v, d in _diff_dataclass(off, on)}
+    assert back["modules.gap_ahead"] == (None, GapAheadParams())
+
+
+def test_config_panel_renders_off_arrow_and_arrow_off(qapp):
+    from config.params import GapAheadParams
+    panel = ConfigDiffPanel()
+    panel.set_config(_with_modules(gap_ahead=GapAheadParams(perceive_tiles=4)))
+    panel.set_changed_only(True)
+    assert "gap_ahead: off → {'perceive_tiles': 4}" in panel.toPlainText()
+    # a config whose module is off, compared with defaults that have it on
+    # (default() is the shipped one, so emulate with the reverse helper)
+    from tool.ui.widgets.run_detail_panels import _row
+    import html
+    assert "{'perceive_tiles': 4} → off" in html.unescape(
+        _row("gap_ahead", None, GapAheadParams(perceive_tiles=4), True))
+
+
+def test_load_run_data_with_perception_modules_on_updates_every_panel(qtbot):
+    import pandas as pd
+    from config.params import GapAheadParams, PagePerceptionParams
+    from tool.core.project import ToolProject
+    from tool.ui.main_window import MainWindow
+    from config.output_routing import PROJECTS_ROOT
+    import shutil
+    name = "_load_run_modules_test"
+    shutil.rmtree(PROJECTS_ROOT / name, ignore_errors=True)
+    try:
+        window = MainWindow(ToolProject.create(name))
+        qtbot.addWidget(window)
+        window._closing_confirmed = True
+        tab = window.run_tab
+        tel = pd.read_csv(PROJECTS_ROOT / "win_attempt" / "telemetry" / "033_first_win_telemetry.csv").head(40)
+        cfg = _with_modules(gap_ahead=GapAheadParams(), page_perception=PagePerceptionParams())
+        info = {"n_frames": 40, "max_x_abs": 123, "died_or_flagged": True}
+        tab.load_run_data(None, tel, info, cfg)
+        text = tab.config_content.panel.toPlainText()
+        assert "gap_ahead" in text and "page_perception" in text and "→" in text
+        assert tab.data_content._summary == info                      # summary updated by load_run_data itself
+        assert tab.brain_map_content._panel_ctx is not None            # later panels still refreshed
+        # a config that cannot be rendered must not leave the rest stale
+        tab.load_run_data(None, tel, {"n_frames": 40, "max_x_abs": 7}, object())
+        assert "config could not be shown" in tab.config_content.panel.toPlainText()
+        assert tab.data_content._summary["max_x_abs"] == 7
+        assert tab.brain_map_content._panel_ctx is not None
+    finally:
+        shutil.rmtree(PROJECTS_ROOT / name, ignore_errors=True)

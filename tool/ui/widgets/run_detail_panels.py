@@ -82,11 +82,30 @@ class ConfigPanelContent(QWidget):
         self.panel.set_config(config)
 
 
+def _fmt(x) -> str:
+    """None reads as "off" (an optional module/field that is not enabled); a
+    nested dataclass reads as its plain dict."""
+    if x is None:
+        return "off"
+    if dataclasses.is_dataclass(x):
+        return str(dataclasses.asdict(x))
+    return str(x)
+
+
+def _whole_field_changed(value, default) -> bool:
+    """One side is None (off) and the other is set: the whole field differs,
+    so it is reported as one change, not recursed into."""
+    return (value is None) != (default is None)
+
+
 def _row(name, value, default, changed) -> str:
-    text = f"{html.escape(str(name))} = {html.escape(str(value))}"
+    if changed and _whole_field_changed(value, default):
+        text = f"{html.escape(str(name))}: {html.escape(_fmt(default))} → {html.escape(_fmt(value))}"
+        return f"<span style='background-color:#c8a000;color:black'>&nbsp;{text}&nbsp;</span>"
+    text = f"{html.escape(str(name))} = {html.escape(_fmt(value))}"
     if changed:
         return (f"<span style='background-color:#c8a000;color:black'>&nbsp;{text}"
-                f" (default {html.escape(str(default))})&nbsp;</span>")
+                f" (default {html.escape(_fmt(default))})&nbsp;</span>")
     return text
 
 
@@ -94,7 +113,9 @@ def _flatten(obj, default, prefix):
     for f in dataclasses.fields(obj):
         v, d = getattr(obj, f.name), getattr(default, f.name)
         path = f"{prefix}.{f.name}"
-        if dataclasses.is_dataclass(v):
+        if _whole_field_changed(v, d):
+            yield path, v, d
+        elif dataclasses.is_dataclass(v) and dataclasses.is_dataclass(d):
             yield from _flatten(v, d, path)
         else:
             yield path, v, d
@@ -106,7 +127,9 @@ def _diff_dataclass(obj, default, prefix: str = "") -> list[tuple[str, object, o
         value = getattr(obj, f.name)
         default_value = getattr(default, f.name)
         path = f"{prefix}{f.name}"
-        if dataclasses.is_dataclass(value):
+        if _whole_field_changed(value, default_value):
+            diffs.append((path, value, default_value))
+        elif dataclasses.is_dataclass(value) and dataclasses.is_dataclass(default_value):
             diffs.extend(_diff_dataclass(value, default_value, prefix=f"{path}."))
         elif value != default_value:
             diffs.append((path, value, default_value))
