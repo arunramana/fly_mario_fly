@@ -86,14 +86,14 @@ COL = {"LC4": (57, 135, 229), "LPLC2": (25, 158, 112),
        "DNp09": (99, 200, 226), "DLMn": (240, 140, 200),
        "MDN": (120, 200, 255), "KC": (200, 200, 90),
        "MBON": (230, 150, 60), "DAN": (180, 90, 200),
-       "MBONmid": (255, 205, 130)}
+       "MBONmid": (255, 205, 130), "pC1": (255, 120, 190)}
 LABEL = {"LC4": "LC4  looming", "LPLC2": "LPLC2  looming",
          "DNp01": "DNp01  Giant Fiber", "TTMn": "TTMn  jump muscle",
          "DNa01": "DNa01  steering", "DNa02": "DNa02  steering",
          "DNp09": "DNp09  forward walking", "DLMn": "DLMn  wing downstroke",
          "MDN": "MDN  backward walking", "KC": "KC  mushroom body input",
          "MBON": "MBON  mushroom body output", "DAN": "DAN  dopamine (PAM/PPL/PPM)",
-         "MBONmid": "MBON→motor intermediates"}
+         "MBONmid": "MBON→motor intermediates", "pC1": "pC1  arousal"}
 ORDER = ["LC4", "LPLC2", "DNp01", "TTMn"]
 # DNa01/DNa02/DNp09/DLMn are drawn only when the telemetry carries them
 # (run_steering.py). DLMn spans two connectome types; POP_TYPES maps the
@@ -180,6 +180,8 @@ def _pop_mask(df, pop_name: str):
     of PAM/PPL/PPM)."""
     if pop_name == "DAN":
         return df.type.astype(str).str.match(DAN_TYPE_RE)
+    if pop_name == "pC1":
+        return df.type.astype(str).str.match(r"^pC1")
     if pop_name == "MBONmid":
         from fly.circuits.mbon_pathway_weights import intermediate_ids
         return df.bodyId.isin(intermediate_ids())
@@ -377,6 +379,10 @@ def _panel_context(tel: pd.DataFrame) -> dict:
     if has_terrain:
         norm["DNp09"] = max(tel["dnp09"].max(), 1e-9)
         norm["DLMn"] = max(tel["dlmn"].max(), 1e-9)
+    has_arousal = "pc1_h" in tel.columns
+    if has_arousal:
+        populations = populations + ["pC1"]
+        norm["pC1"] = max(float(tel["pc1_h"].max()), 1e-9)
     has_mbon = all(c in tel.columns for c in MBON_READOUT_COLS)
     if has_mbon:
         populations = populations + MBON_ORDER
@@ -384,6 +390,7 @@ def _panel_context(tel: pd.DataFrame) -> dict:
         norm["MBON"] = max(float(tel["mbon_agg"].max()), 1e-9)
         norm["MBONmid"] = max(float(mbon_mean.max()), 1e-9)
     return {
+        "has_arousal": has_arousal,
         "has_mbon": has_mbon,
         "gf": gf, "norm": norm, "populations": populations,
         "has_steer": has_steer, "has_terrain": has_terrain,
@@ -412,6 +419,8 @@ def panel_for_row(tel: pd.DataFrame, i: int, ctx: dict, caption: str = "") -> Im
     if ctx["has_terrain"]:
         act["DNp09"] = row.dnp09
         act["DLMn"] = row.dlmn
+    if ctx["has_arousal"]:
+        act["pC1"] = float(row.pc1_h)
     mbon_readout = None
     if ctx["has_mbon"]:
         mbon_readout = {c[5:]: float(row[c]) for c in MBON_READOUT_COLS}

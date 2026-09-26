@@ -182,6 +182,20 @@ class Dnp02RefractoryModule:
         pass
 
 
+class ArousalModule:
+    """CIRCUIT. Carries the pC1 arousal settings (config.params.ArousalParams);
+    FullPolicy loads the cached pC1 weights and adds the drive to each circuit's
+    input. Neither perceives nor acts (docs/SPEC_arousal_pc1.md)."""
+    name = "arousal"
+    kind = "circuit"
+
+    def __init__(self, params):
+        self.params = params
+
+    def reset(self) -> None:
+        pass
+
+
 class Dnp01RefractoryModule:
     """CIRCUIT. Carries the DNp01 (Giant Fiber) refractory period; FullPolicy
     applies it to the jump network's spiking cells. Independent of
@@ -329,6 +343,7 @@ MODULE_CLASSES: dict[str, type] = {"page_perception": PagePerceptionModule,
                                     "mb_spatial_inputs": MbSpatialInputModule,
                                     "dnp02_refractory": Dnp02RefractoryModule,
                                     "dnp01_refractory": Dnp01RefractoryModule,
+                                    "arousal": ArousalModule,
                                     "mbon_readout": MbonReadoutModule}
 
 

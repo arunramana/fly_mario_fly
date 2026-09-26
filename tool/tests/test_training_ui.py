@@ -215,3 +215,39 @@ def test_save_state_button_and_start_from_dropdown(qtbot):
         assert list_states(NAME) == ["demo"]
     finally:
         shutil.rmtree(PROJECTS_ROOT / NAME, ignore_errors=True)
+
+
+def test_character_arousal_slider_is_wired_to_the_module_and_live(qtbot):
+    from tool.core.project import ToolProject
+    from tool.ui.main_window import MainWindow
+    shutil.rmtree(PROJECTS_ROOT / NAME, ignore_errors=True)
+    try:
+        window = MainWindow(ToolProject.create(NAME))
+        qtbot.addWidget(window)
+        window._closing_confirmed = True
+        character, circuits = window.tabs.widget(0), window.tabs.widget(3)
+        assert window.get_config().modules.arousal is None and character.arousal_slider.isEnabled()
+        character.arousal_slider.setValue(40)                                  # >0 switches the module on
+        assert window.get_config().modules.arousal.arousal == 0.4
+        assert circuits.module_checkboxes["arousal"].isChecked()                # the Circuits tab follows the slider
+        assert window.get_config().modules.arousal.arousal_max_h == 10.0        # default from the decision
+        assert window.get_config().modules.arousal.two_hop is False
+        # Circuits edit -> slider follows
+        circuits.module_editors[("arousal", "arousal")].setValue(0.75)
+        assert character.arousal_slider.value() == 75
+        circuits.module_editors[("arousal", "arousal_max_h")].setValue(20.0)
+        assert window.get_config().modules.arousal.arousal_max_h == 20.0
+        circuits.module_editors[("arousal", "two_hop")].setChecked(True)
+        assert window.get_config().modules.arousal.two_hop is True
+        # live: the shared value a running worker reads follows the slider
+        import multiprocessing as mp
+
+        class Alive:
+            def is_alive(self): return True
+        window._arousal_value = mp.get_context("spawn").Value("d", 0.0)
+        window._process = Alive()
+        character.arousal_slider.setValue(90)
+        assert abs(window._arousal_value.value - 0.9) < 1e-9
+        window._process = None
+    finally:
+        shutil.rmtree(PROJECTS_ROOT / NAME, ignore_errors=True)

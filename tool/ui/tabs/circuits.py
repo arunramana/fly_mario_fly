@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QSplitter, QToolButton, QVBoxLayout, QWidget,
 )
 
-from config.params import GapAheadParams, MbonReadoutParams, Dnp01RefractoryParams, Dnp02RefractoryParams, MbSpatialInputParams, MotorDirectParams, PagePerceptionParams
+from config.params import ArousalParams, GapAheadParams, MbonReadoutParams, Dnp01RefractoryParams, Dnp02RefractoryParams, MbSpatialInputParams, MotorDirectParams, PagePerceptionParams
 from config.project_config import from_dict as config_from_dict
 from tool.core.circuit_manifest import CIRCUIT_REGISTRY, OTHER_ENTRY
 from tool.ui.widgets.card_button import make_card_button
@@ -49,6 +49,10 @@ MODULE_TOGGLES = [
     ("dnp01_refractory", Dnp01RefractoryParams, "DNp01 refractory period (circuit)",
      "An absolute refractory period on the DNp01 (Giant Fiber) spiking cells, switched "
      "independently of the DNp02 one. Changes circuit dynamics when on."),
+    ("arousal", ArousalParams, "Arousal (pC1)",
+     "A steady drive into the pC1 arousal neurons, delivered through their real synapses "
+     "(share of each target's total input) to DNp09, DNa01/02, MDN, pIP1 ... Set the level with "
+     "the Character tab's Arousal slider. docs/SPEC_arousal_pc1.md"),
     ("motor_direct", MotorDirectParams, "MotorDirect (motor)",
      "A follows a leaky integral of the motor neurons' own activity instead of the fixed "
      "jump-hold / cooldown counters (docs/CONTROL_AUDIT.md rows 1-3)."),
@@ -64,6 +68,18 @@ _REFRACTORY_TIP = (
     "16.7 ms). Compared against how fast the downstream partner decays: pIP1 needs ~5 substeps "
     "to fall below the ~11 that still re-fires DNp02. {extra}")
 MODULE_PARAM_UI: dict[str, list] = {
+    "arousal": [
+        ("arousal", "float", 0.0, 1.0, 0.05,
+         "Arousal level, 0-1 (also the Character tab slider). pC1 activity = arousal x arousal_max_h. "
+         "0 = no injection: the run is identical to one without the module."),
+        ("arousal_max_h", "float", 0.0, 50.0, 1.0,
+         "pC1 activity at arousal 1, in network h units. Compared against the network clip (50, the "
+         "most a neuron can reach) and against typical driven activity: DNp09 sits near 1 at rest, so "
+         "10 gives DNp09 about +0.3 (direct only)."),
+        ("two_hop", "bool", 0, 1, 1,
+         "Also drive through one intermediate neuron (pC1 -> X -> target, signed by X's transmitter). "
+         "Off = direct pC1 synapses only. Roughly doubles the steering effect and lowers the Giant "
+         "Fiber's response to looming; the intermediates' own dynamics are not simulated.")],
     "gap_ahead": [("perceive_tiles", "int", 1, 16, 1,
                    "How many tiles ahead the pit-edge input starts. Compared against the distance "
                    "to the nearest non-ground tile (tiles): inside this range the gap input is "
@@ -149,6 +165,7 @@ class CircuitsTab(QWidget):
         # The form holds its own config snapshot; without this a later scalar
         # edit would re-emit it and silently undo a module toggle made elsewhere.
         window.config_changed.connect(self._sync_param_form)
+        window.config_changed.connect(self._sync_module_editors)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
 
@@ -217,6 +234,7 @@ class CircuitsTab(QWidget):
         self.module_editors = getattr(self, "module_editors", {})
         self.module_editor_boxes = getattr(self, "module_editor_boxes", {})
         params = getattr(self._window.get_config().modules, field_name)
+        shown = params if params is not None else next(c for f, c, *_ in MODULE_TOGGLES if f == field_name)()
         specs = MODULE_PARAM_UI.get(field_name, [])
         if not specs:
             note = QLabel("No parameters: switching it on is the whole setting.")
@@ -224,19 +242,19 @@ class CircuitsTab(QWidget):
         for name, kind, lo, hi, step, tip in specs:
             if kind == "bool":
                 w = QCheckBox()
-                w.setChecked(bool(getattr(params, name)) if params is not None else True)
+                w.setChecked(bool(getattr(shown, name)))
                 w.toggled.connect(lambda v, f=field_name, n=name: self._set_module_param(f, n, bool(v)))
             elif kind == "int":
                 w = NoScrollSpinBox()
                 w.setRange(int(lo), int(hi))
-                w.setValue(int(getattr(params, name)) if params is not None else int(lo))
+                w.setValue(int(getattr(shown, name)))
                 w.valueChanged.connect(lambda v, f=field_name, n=name: self._set_module_param(f, n, int(v)))
             else:
                 w = NoScrollDoubleSpinBox()
                 w.setDecimals(4)
                 w.setRange(float(lo), float(hi))
                 w.setSingleStep(float(step))
-                w.setValue(float(getattr(params, name)) if params is not None else float(lo))
+                w.setValue(float(getattr(shown, name)))
                 w.valueChanged.connect(lambda v, f=field_name, n=name: self._set_module_param(f, n, float(v)))
             w.setToolTip(tip)
             label = QLabel(f"{name}  [{lo}\u2013{hi}]" if kind != "bool" else name)
@@ -254,6 +272,26 @@ class CircuitsTab(QWidget):
             return
         modules = dataclasses.replace(config.modules, **{field_name: dataclasses.replace(params, **{name: value})})
         self._window.set_config(dataclasses.replace(config, modules=modules))
+
+    def _sync_module_editors(self, config) -> None:
+        """Module parameter widgets follow the config (a slider or preset can
+        switch a module on or change a value from elsewhere)."""
+        for (field_name, name), w in getattr(self, "module_editors", {}).items():
+            params = getattr(config.modules, field_name)
+            box = self.module_editor_boxes.get(field_name)
+            if box is not None:
+                box.setVisible(params is not None)
+            cb = self.module_checkboxes.get(field_name)
+            if cb is not None and cb.isChecked() != (params is not None):
+                cb.blockSignals(True)
+                cb.setChecked(params is not None)
+                cb.blockSignals(False)
+            if params is None:
+                continue
+            value = getattr(params, name)
+            w.blockSignals(True)
+            w.setChecked(bool(value)) if isinstance(w, QCheckBox) else w.setValue(value)
+            w.blockSignals(False)
 
     def _sync_param_form(self, config) -> None:
         if config is not self.param_form._config:

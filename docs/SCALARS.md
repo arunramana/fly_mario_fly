@@ -199,22 +199,30 @@ disagree.
 |---|---|---|---|---|
 | `refractory_steps` | `8` | 1-50 | invented (absolute refractory period of the DNp01 spiking cells, in network substeps: 10 substeps = 1 frame = 16.7 ms) | `fly/network/integrator.py (refractory_steps)` |
 
+## ArousalParams
+
+| field | value | range | provenance | home |
+|---|---|---|---|---|
+| `arousal` | `0.0` | 0.0-1.0 | invented (the Character-tab slider: 0 = off, 1 = pC1 at arousal_max_h; a state, like hunger, not a gain on a circuit) | `bridge/full_policy.py (arousal)` |
+| `arousal_max_h` | `10.0` | 0.0-50.0 | invented (pC1 activity, in network h units, at arousal 1; 50 is the network clip) | `bridge/full_policy.py (arousal_max_h)` |
+| `two_hop` | `False` | unknown | invented (mechanical: also drive through one intermediate neuron, Dale-signed; off = direct pC1 synapses only) | `fly/circuits/pc1_arousal_weights.py (two_hop)` |
+
 
 ## Totals
 
-**74 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
+**77 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
 more (`DemoParams.mushroom_offset`, `DemoParams.wide_gap_lead_tiles`,
 `TerrainParams.refusal_gap_margin_tiles`) only matter in an opt-in
 injection demo -- the first is untested by any golden, the other two are
 exercised by `tests/test_golden.py::test_017_reprise`'s own
 `inject_gap_frame`, so "opt-in" here means "off by default", not
-"untested". The other 68 are live in every default run.
+"untested". The other 71 are live in every default run.
 
 A range of `unknown` means genuinely unknown, not left blank: an invented
 bound would be scaffolding that looks like data. Only `JumpParams.g` and
 `NoiseParams.sigma` have a characterised range.
 
-By category (the first word of each provenance): **52 invented**, **22 measured**, **0 connectome-derived** (of 74).
+By category (the first word of each provenance): **55 invented**, **22 measured**, **0 connectome-derived** (of 77).
 
 None are connectome-derived. The connectome determines each circuit's
 weight matrix `W`; every scalar here sits outside it, as a gain on it, a

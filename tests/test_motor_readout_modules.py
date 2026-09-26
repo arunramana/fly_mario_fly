@@ -126,3 +126,32 @@ def test_motor_direct_releases_a_for_a_frame_on_landing_and_starts_fresh():
     for _ in range(3):
         off.update(10.0, 0.0, player_state=1)
     assert off.update(0.0, 0.0, player_state=0) is True              # off: unchanged behaviour
+
+
+def test_arousal_zero_is_bitwise_unchanged_and_a_drive_moves_the_targets():
+    import setuptools  # noqa: F401
+    from bridge.full_policy import FullPolicy
+    from config.params import ArousalParams
+
+    def steps(params, n=20):
+        cfg = dataclasses.replace(ProjectConfig(), modules=ModulesConfig(arousal=params))
+        p = FullPolicy(config=cfg)
+        ram = np.zeros(0x800, dtype=np.uint8)
+        from types import SimpleNamespace
+        out = []
+        for _ in range(n):
+            p.act(SimpleNamespace(ram=ram))
+            out.append((p.last_info["r_team"], p.last_info["dnp09_val"], p.last_info["l_team"]))
+        return np.array(out), p
+    base, _ = steps(None)
+    zero, pz = steps(ArousalParams(arousal=0.0))
+    assert np.array_equal(base, zero)                                  # arousal 0: identical
+    assert pz.last_info["extras"]["pc1_h"] == 0.0
+    on, p = steps(ArousalParams(arousal=1.0, arousal_max_h=10.0))
+    assert on[-1, 1] > base[-1, 1] and on[-1, 0] > base[-1, 0]         # DNp09 and the R team rise with arousal
+    assert p.last_info["extras"]["pc1_h"] == 10.0
+    live = FullPolicy(config=dataclasses.replace(ProjectConfig(), modules=ModulesConfig(arousal=ArousalParams(arousal=0.0))))
+    live.arousal_source = lambda: 0.5                                  # the live slider overrides the config
+    from types import SimpleNamespace
+    live.act(SimpleNamespace(ram=np.zeros(0x800, dtype=np.uint8)))
+    assert live.last_info["extras"]["arousal"] == 0.5

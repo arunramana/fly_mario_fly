@@ -452,6 +452,23 @@ class Dnp01RefractoryParams:
 
 
 @dataclass(frozen=True)
+class ArousalParams:
+    """bridge/controller_modules.py's ArousalModule (CIRCUIT), docs/
+    SPEC_arousal_pc1.md: a steady drive into the pC1 arousal population,
+    delivered to each circuit through pC1's real synapses (share of the target's
+    total input). arousal 0 = no injection at all (behaviour identical)."""
+    arousal: float = _f(0.0, (0.0, 1.0),
+        "invented (the Character-tab slider: 0 = off, 1 = pC1 at arousal_max_h; a state, like "
+        "hunger, not a gain on a circuit)", "bridge/full_policy.py (arousal)")
+    arousal_max_h: float = _f(10.0, (0.0, 50.0),
+        "invented (pC1 activity, in network h units, at arousal 1; 50 is the network clip)",
+        "bridge/full_policy.py (arousal_max_h)")
+    two_hop: bool = _f(False, None,
+        "invented (mechanical: also drive through one intermediate neuron, Dale-signed; "
+        "off = direct pC1 synapses only)", "fly/circuits/pc1_arousal_weights.py (two_hop)")
+
+
+@dataclass(frozen=True)
 class MbSpatialInputParams:
     """bridge/controller_modules.py's MbSpatialInputModule (PERCEPTION). No
     scalars: presence in ModulesConfig adds two Kenyon-cell inputs -- how
@@ -510,12 +527,13 @@ class ModulesConfig:
     mb_spatial_inputs: MbSpatialInputParams | None = None
     dnp02_refractory: Dnp02RefractoryParams | None = None
     dnp01_refractory: Dnp01RefractoryParams | None = None
+    arousal: ArousalParams | None = None
     mbon_readout: MbonReadoutParams | None = None
 
 
 MODULE_PARAM_CLASSES: tuple = (PagePerceptionParams, GapAheadParams, MotorDirectParams, MbonReadoutParams,
                                      MbSpatialInputParams, Dnp02RefractoryParams,
-                                     Dnp01RefractoryParams)
+                                     Dnp01RefractoryParams, ArousalParams)
 
 ALL_PARAM_CLASSES = (
     NetworkParams, NoiseParams, JumpParams, Dnp02Params, TakeoffParams, SpeedParams,

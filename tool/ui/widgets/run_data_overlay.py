@@ -27,6 +27,8 @@ GROUPS = [
                  "is_r_mask_sum", "is_l_mask_sum"]),
     ("Motor / MBON readout", ["motor_drive", "mbon_agg", "mbon_dnp01", "mbon_dlmn",
                               "mbon_dnp09", "mbon_mdn"]),
+    ("Arousal (pC1)", ["arousal", "pc1_h", "pc1_drive_steer_r", "pc1_drive_steer_l",
+                       "pc1_drive_dnp09", "pc1_drive_gf"]),
     ("Cooldown / hold (recorded part)", ["pathway_fired", "hab_escape", "hab_climb"]),
 ]
 SUMMARY_SKIP = {"mb_weights"}

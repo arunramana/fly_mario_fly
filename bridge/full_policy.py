@@ -247,6 +247,27 @@ class FullPolicy:
             populations={"L": self.dnp02_l_mask, "R": self.dnp02_r_mask,
                          "TTMn_L": self.dnp02_ttmn_l, "TTMn_R": self.dnp02_ttmn_r})
 
+        # pC1 arousal (docs/SPEC_arousal_pc1.md): per-circuit constant currents
+        # g * w * h, computed once here. `arousal_source` (set by the caller) is a
+        # callable returning the slider level each frame, so it can move mid-run.
+        self.arousal_module = next((m for m in built if m.name == "arousal"), None)
+        self.arousal_source = None
+        self.pc1_gw = None
+        if self.arousal_module is not None:
+            from fly.circuits.pc1_arousal_weights import load_arousal_weights
+            ids = {"jump": j_bodies["bodyId"], "steering": s_bodies["bodyId"], "takeoff": t_bodies["bodyId"],
+                   "speed": p_bodies["bodyId"], "mdn": m_bodies["bodyId"], "dnp02": dp_bodies["bodyId"]}
+            weights = load_arousal_weights({k: v.to_numpy() for k, v in ids.items()})
+            nets = {"jump": self.jump_network, "steering": self.steering_network,
+                    "takeoff": self.takeoff_network, "speed": self.speed_network,
+                    "mdn": self.mdn_network, "dnp02": self.dnp02_network}
+            two_hop = self.arousal_module.params.two_hop
+            self.pc1_gw = {}
+            for name, net in nets.items():
+                v = weights[name]["direct"] + (weights[name]["hop"] if two_hop else 0.0)
+                if self.shuffle_seed is not None:   # invariant 6: same weights dealt to random neurons
+                    v = np.random.default_rng(self.shuffle_seed).permutation(v)
+                self.pc1_gw[name] = net.g * v
         for m in built:
             if m.name == "dnp02_refractory":
                 self.dnp02_network.integrator.refractory_steps = m.params.refractory_steps
@@ -428,6 +449,7 @@ class FullPolicy:
                     self.d_history[_side].pop(0)
             else:
                 self.d_history[_side].clear()
+        pc1_h = self._pc1_h()
         Ij = np.zeros(self.Kj)
         if self.retinotopic:
             rt = self._rt
@@ -447,12 +469,16 @@ class FullPolicy:
         if not refusing:
             Ij[self.jump_dnp01_mask] += c.takeoff.gap_gain * gap_input
         Ij[self.jump_dnp01_mask] += self.mb_pathway_bias["dnp01"]
+        if pc1_h:
+            Ij += self.pc1_gw["jump"] * pc1_h
 
         for _ in range(self.substeps):
             hj = self.jump_network.step(Ij, noise=self.noise)
             It = np.zeros(self.Kt)
             It[self.takeoff_dnp01_mask] = hj[self.jump_dnp01_mask]
             It[self.dlmn_mask] += self.mb_pathway_bias["dlmn"]
+            if pc1_h:
+                It += self.pc1_gw["takeoff"] * pc1_h
             h_takeoff = self.takeoff_network.step(It, noise=self.noise)
         self.takeoff_network.flush_denormals(c.network.denormal_flush_threshold)
         ttmn_val = max(hj[self.j_msk["TTMn_L"]].mean(), hj[self.j_msk["TTMn_R"]].mean())
@@ -464,6 +490,8 @@ class FullPolicy:
         Idp = np.zeros(self.Kdp)
         Idp[self.dnp02_lc4_l] = self.dnp02_ema["L"]; Idp[self.dnp02_lc4_r] = self.dnp02_ema["R"]
         Idp[self.dnp02_idx] += self.mb_bias_dnp02
+        if pc1_h:
+            Idp += self.pc1_gw["dnp02"] * pc1_h
         for _ in range(self.substeps):
             h_dnp02 = self.dnp02_network.step(Idp, noise=self.noise)
         self.dnp02_network.flush_denormals(c.network.denormal_flush_threshold)
@@ -546,6 +574,8 @@ class FullPolicy:
             Is[self.l_mask] += c.takeoff.gap_gain * gap_w
         Is[self.dna02_all & self.r_mask] += mb_bias_r
         Is[self.dna02_all & self.l_mask] += mb_bias_l
+        if pc1_h:
+            Is += self.pc1_gw["steering"] * pc1_h
         for _ in range(self.substeps):
             h_steer = self.steering_network.step(Is, noise=self.noise)
         self.steering_network.flush_denormals(c.network.denormal_flush_threshold)
@@ -673,6 +703,8 @@ class FullPolicy:
             Im = np.zeros(self.Km)
             Im[self.mdn_mask] = c.mdn.mdn_drive if self.hab_escape.hab_level >= self.hab_escape.give_up else 0.0
             Im[self.mdn_mask] += self.mb_pathway_bias["mdn"]
+            if pc1_h:
+                Im += self.pc1_gw["mdn"] * pc1_h
             for _ in range(self.substeps):
                 h_mdn = self.mdn_network.step(Im, noise=self.noise)
             self.mdn_network.flush_denormals(c.network.denormal_flush_threshold)
@@ -718,6 +750,8 @@ class FullPolicy:
             Ip[self.dnp09_mask] = (c.speed.walk_drive
                                     - (c.speed.walk_suppression if busy else 0.0) - odor_brake
                                     + self.mb_pathway_bias["dnp09"])
+        if pc1_h:
+            Ip += self.pc1_gw["speed"] * pc1_h
         for _ in range(self.substeps):
             h_speed = self.speed_network.step(Ip, noise=self.noise)
         self.speed_network.flush_denormals(c.network.denormal_flush_threshold)
@@ -756,8 +790,29 @@ class FullPolicy:
         if self.readout is not None:
             extras.update({f"mbon_{g}": v for g, v in self.mb_pathway_readout.items()})
             extras["mbon_agg"] = float(self.h_mbon.mean())
+        if self.arousal_module is not None:
+            extras.update(self._pc1_extras(pc1_h))
         self.last_info["extras"] = extras
         return action
+
+    def _arousal_level(self) -> float:
+        if self.arousal_module is None:
+            return 0.0
+        level = self.arousal_source() if self.arousal_source is not None else self.arousal_module.params.arousal
+        return float(min(1.0, max(0.0, level)))
+
+    def _pc1_h(self) -> float:
+        """pC1 activity this frame (0 -> no injection anywhere, so the run is unchanged)."""
+        self._arousal_now = self._arousal_level()
+        return self._arousal_now * self.arousal_module.params.arousal_max_h if self.arousal_module else 0.0
+
+    def _pc1_extras(self, h: float) -> dict:
+        gw = self.pc1_gw
+        return {"arousal": self._arousal_now, "pc1_h": h,
+                "pc1_drive_steer_r": float(gw["steering"][self.r_mask].mean() * h),
+                "pc1_drive_steer_l": float(gw["steering"][self.l_mask].mean() * h),
+                "pc1_drive_dnp09": float(gw["speed"][self.dnp09_mask].mean() * h),
+                "pc1_drive_gf": float(gw["jump"][self.jump_dnp01_mask].mean() * h)}
 
     def on_step(self, step: int, observation, action) -> None:
         """FullPolicy is also registered as an Episode observer, so it sees

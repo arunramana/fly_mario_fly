@@ -70,6 +70,7 @@ class MainWindow(QMainWindow):
         self._train_timer = QTimer(self)
         self._train_timer.setInterval(500)
         self._train_timer.timeout.connect(self._poll_training)
+        self._arousal_value = None   # a shared mp.Value while a run is playing (live slider)
         self._current_run_number: int | None = None
         self._current_run_slug: str | None = None
         self._current_run_spec: RunSpec | None = None
@@ -442,11 +443,21 @@ class MainWindow(QMainWindow):
         ctx = mp.get_context("spawn")
         self._queue = ctx.Queue()
         self._stop_event = ctx.Event()
-        self._process = ctx.Process(target=run_one_streaming, args=(spec, self._queue, self._stop_event))
+        arousal = spec.config.modules.arousal
+        self._arousal_value = ctx.Value("d", arousal.arousal if arousal else 0.0)
+        self._process = ctx.Process(target=run_one_streaming,
+                                    args=(spec, self._queue, self._stop_event, self._arousal_value))
         self._process.start()
         self.run_tab.set_running(True)
         self.run_tab.progress.setValue(0)
         self._poll_timer.start()
+
+    def set_arousal_live(self, level: float) -> None:
+        """The Character tab's Arousal slider, applied to the run in progress
+        (the policy reads the shared value every frame; the per-frame level is
+        in the `arousal` telemetry column)."""
+        if self._arousal_value is not None and self._process is not None and self._process.is_alive():
+            self._arousal_value.value = float(level)
 
     def cancel(self) -> None:
         if self._stop_event is not None:

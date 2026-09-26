@@ -221,6 +221,8 @@ def policy_extra_columns(policy) -> tuple:
         cols.append("motor_drive")
     if getattr(policy, "readout", None) is not None:
         cols += [f"mbon_{g}" for g in policy.readout.PATHWAYS] + ["mbon_agg"]
+    if getattr(policy, "arousal_module", None) is not None:
+        cols += ["arousal", "pc1_h", "pc1_drive_steer_r", "pc1_drive_steer_l", "pc1_drive_dnp09", "pc1_drive_gf"]
     return tuple(cols)
 
 
@@ -231,7 +233,8 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
          retinotopic=False, sigma=0.0, seed=None, telemetry_path=None,
          event_proximal_dopamine=False, config=None, on_frame=None, should_stop=None,
          shuffle_seed=None, hunger_override=None, entity_profiles=None,
-         death_animation_frames=0, start_actions=None, record_actions=False):
+         death_animation_frames=0, start_actions=None, record_actions=False,
+         arousal_source=None):
     """Run one episode of the full system and return (telemetry, info).
 
     start_actions: a saved-state prefix (uint8 action indices). The emulator
@@ -349,6 +352,7 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
                          shuffle_seed=shuffle_seed, hunger_override=hunger_override,
                          entity_profiles=entity_profiles)
     policy.reset(seed)
+    policy.arousal_source = arousal_source   # a callable -> slider level, read every frame (None = the config's value)
 
     # Live sub-objects and masks the telemetry row reads.
     j_msk, jump_network = policy.j_msk, policy.jump_network

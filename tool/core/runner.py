@@ -8,7 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 
 
-def run_one(spec, on_frame=None, should_stop=None):
+def run_one(spec, on_frame=None, should_stop=None, arousal_source=None):
     """Runs one RunSpec synchronously in whatever process calls this -- a
     fresh one (a single Play), or a warm pool worker (batch.py). Routes
     through sim.project_runner.run_from_config so C1's config= plumbing
@@ -83,6 +83,7 @@ def run_one(spec, on_frame=None, should_stop=None):
         should_stop=should_stop,
         death_animation_frames=spec.tool_settings.render.death_animation_frames,
         start_actions=start_state["actions"] if start_state else None,
+        arousal_source=arousal_source,
         record_actions=replayable,
         **powerup_kwargs,
     )
@@ -105,7 +106,7 @@ def run_one(spec, on_frame=None, should_stop=None):
     return tel, info
 
 
-def run_one_streaming(spec, frame_queue, stop_event):
+def run_one_streaming(spec, frame_queue, stop_event, arousal_value=None):
     """Runs one RunSpec, streaming ("frame", obs, row) tuples onto
     `frame_queue` and stopping early if `stop_event` is set -- meant to
     run in a child process the GUI spawns for Play (tool/PLAN.md P4).
@@ -157,7 +158,8 @@ def run_one_streaming(spec, frame_queue, stop_event):
         return stop_event.is_set()
 
     try:
-        tel, info = run_one(spec, on_frame=on_frame, should_stop=should_stop)
+        source = (lambda: arousal_value.value) if arousal_value is not None else None
+        tel, info = run_one(spec, on_frame=on_frame, should_stop=should_stop, arousal_source=source)
         # Found in manual testing: a cancelled run was recorded and shown
         # exactly like a normal completed one, with nothing distinguishing
         # it from Cancel having done nothing at all. should_stop() being

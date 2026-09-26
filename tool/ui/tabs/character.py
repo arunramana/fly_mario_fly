@@ -12,11 +12,12 @@ from __future__ import annotations
 import dataclasses
 
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QFormLayout, QSplitter, QToolButton,
+    QCheckBox, QComboBox, QFormLayout, QHBoxLayout, QLabel, QSplitter, QToolButton,
     QVBoxLayout, QWidget,
 )
 from PySide6.QtCore import Qt
 
+from config.params import ArousalParams
 from tool.core.tool_settings import CharacterSettings
 from tool.ui.widgets.asset_image import load_asset
 from tool.ui.widgets.card_button import make_card_button
@@ -75,10 +76,25 @@ class CharacterTab(QWidget):
         self.powerup_checkbox.toggled.connect(self._on_powerup_changed)
         state_form.addRow("Starting power-up", self.powerup_checkbox)
 
-        arousal_slider = NoScrollSlider(Qt.Orientation.Horizontal)
-        arousal_slider.setEnabled(False)
-        arousal_slider.setToolTip("not wired yet (C9)")
-        state_form.addRow("Arousal pC1 (not wired -- C9, no SPEC yet)", arousal_slider)
+        # docs/SPEC_arousal_pc1.md: a steady drive into the pC1 arousal neurons.
+        # Above 0 it switches the Arousal module on (Circuits tab); it is also
+        # sent live to a run in progress (MainWindow.set_arousal_live).
+        self.arousal_slider = NoScrollSlider(Qt.Orientation.Horizontal)
+        self.arousal_slider.setRange(0, 100)
+        arousal = window.get_config().modules.arousal
+        self.arousal_slider.setValue(int(round((arousal.arousal if arousal else 0.0) * 100)))
+        self.arousal_slider.setToolTip(
+            "Arousal (pC1), 0-100%. pC1 activity = arousal x arousal_max_h (Circuits tab, default 10), "
+            "delivered to DNp09, DNa01/02, MDN, pIP1 ... through pC1's real synapses (share of the "
+            "target's total input). 0 = off: the run is unchanged. Live: moving it during a run applies "
+            "immediately. docs/SPEC_arousal_pc1.md")
+        self.arousal_label = QLabel(f"{self.arousal_slider.value()}%")
+        self.arousal_slider.valueChanged.connect(self._on_arousal_changed)
+        window.config_changed.connect(self._sync_arousal)
+        row = QHBoxLayout()
+        row.addWidget(self.arousal_slider, 1)
+        row.addWidget(self.arousal_label)
+        state_form.addRow("Arousal (pC1)", row)
         outer.addWidget(inspector)
         outer.setStretchFactor(0, 3)
         outer.setStretchFactor(1, 2)
@@ -117,6 +133,28 @@ class CharacterTab(QWidget):
         settings = self._window.get_tool_settings()
         character = dataclasses.replace(settings.character, hunger_override=override)
         self._window.set_tool_settings(dataclasses.replace(settings, character=character))
+
+    def _on_arousal_changed(self, value: int) -> None:
+        level = value / 100.0
+        self.arousal_label.setText(f"{value}%")
+        config = self._window.get_config()
+        current = config.modules.arousal
+        if current is None and level == 0.0:
+            return
+        params = dataclasses.replace(current or ArousalParams(), arousal=level)
+        self._window.set_config(dataclasses.replace(
+            config, modules=dataclasses.replace(config.modules, arousal=params)))
+        self._window.set_arousal_live(level)
+
+    def _sync_arousal(self, config) -> None:
+        """Keep the slider in step with the config (Circuits edits, presets)."""
+        arousal = config.modules.arousal
+        value = int(round((arousal.arousal if arousal else 0.0) * 100))
+        if value != self.arousal_slider.value():
+            self.arousal_slider.blockSignals(True)
+            self.arousal_slider.setValue(value)
+            self.arousal_slider.blockSignals(False)
+            self.arousal_label.setText(f"{value}%")
 
     def _on_powerup_changed(self, checked: bool) -> None:
         settings = self._window.get_tool_settings()
