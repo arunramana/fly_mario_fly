@@ -103,3 +103,40 @@ def test_duplicate_to_edit_creates_an_editable_copy_and_emits_switch(qtbot, monk
         assert (PROJECTS_ROOT / new_name / "config.json").exists()
     finally:
         shutil.rmtree(PROJECTS_ROOT / new_name, ignore_errors=True)
+
+
+# ---- the honest-play reference project (docs/CONTROL_AUDIT.md) -------------
+
+def test_honest_is_read_only_and_has_only_perception_and_motor_modules():
+    import dataclasses
+    from config.params import ControlRules
+
+    project = ToolProject.open("honest")
+    assert project.is_read_only is True
+    with pytest.raises(PermissionError):
+        project.save()
+    c = project.config
+    assert not any(getattr(c.rules, f.name) for f in dataclasses.fields(ControlRules)), "every control rule off"
+    assert c.scenario.graded_pit_response is False
+    m = c.modules
+    assert m.page_perception is not None and m.gap_ahead is not None and m.wall_ahead is not None
+    assert m.motor_direct is not None and m.motor_direct.release_on_landing is True
+    assert m.dnp01_refractory is not None and m.dnp02_refractory is not None
+    assert m.arousal is None and c.noise.sigma == 0.0
+
+
+def test_duplicating_honest_gives_an_editable_copy_with_the_same_settings():
+    import shutil
+    from config.output_routing import PROJECTS_ROOT
+
+    name = "_read_only_test_honest_dup"
+    shutil.rmtree(PROJECTS_ROOT / name, ignore_errors=True)
+    try:
+        honest = ToolProject.open("honest")
+        dup = honest.duplicate(name)
+        assert dup.is_read_only is False
+        assert dup.config.rules == honest.config.rules and dup.config.modules == honest.config.modules
+        assert (PROJECTS_ROOT / name / "entity_profiles.json").exists()   # the Entities-tab overrides travel too
+        dup.save()
+    finally:
+        shutil.rmtree(PROJECTS_ROOT / name, ignore_errors=True)

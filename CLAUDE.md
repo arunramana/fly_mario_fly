@@ -36,7 +36,7 @@ working around it.
 3. **Every hand-set scalar gets flagged and counted — no fixed budget.**
    Each one gets a typed, ranged home in `config/params.py` and a row in
    `docs/SCALARS.md` (generated from it, never written by hand). There
-   are **77**: 55 invented (placed currents, mechanical hold durations),
+   are **80**: 58 invented (placed currents, mechanical hold durations),
    22 measured (simulated against the real weight matrix and picked by a
    sweep), **0 connectome-derived**. The connectome determines each
    circuit's weight matrix, never a scalar controlling how hard a circuit

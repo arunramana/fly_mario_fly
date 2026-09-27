@@ -469,6 +469,27 @@ class ArousalParams:
 
 
 @dataclass(frozen=True)
+class WallAheadParams:
+    """bridge/controller_modules.py's WallAheadPerceptionModule (PERCEPTION).
+    The first solid obstacle ahead (pipe, stair, block stack), read from the
+    tile RAM as distance and height, is fed to the circuit as a stimulus only:
+    an expanding object for LC4/LPLC2 (theta = 2*arctan(h / (2*d)), h = the
+    obstacle's height in px) and/or a takeoff current onto DNp01. Which of the
+    two carries it is set by their gains; 0 turns that route off."""
+    perceive_tiles: int = _f(6, None,
+        "invented (perceptual range of the wall stimulus in tiles, mechanical, not a circuit gain)",
+        "bridge/controller_modules.py (WallAheadPerceptionModule)")
+    looming_gain: float = _f(1.0, None,
+        "invented (scale on the wall's theta/dtheta into LC4/LPLC2, the same stimulus class as an "
+        "enemy's looming; 0 = the looming route is off)",
+        "bridge/controller_modules.py (WallAheadPerceptionModule)")
+    takeoff_gain: float = _f(0.0, None,
+        "invented (current onto DNp01 per tile of wall height, scaled up as the wall approaches like "
+        "gap_ahead; 0 = the takeoff route is off)",
+        "bridge/controller_modules.py (WallAheadPerceptionModule)")
+
+
+@dataclass(frozen=True)
 class MbSpatialInputParams:
     """bridge/controller_modules.py's MbSpatialInputModule (PERCEPTION). No
     scalars: presence in ModulesConfig adds two Kenyon-cell inputs -- how
@@ -519,10 +540,49 @@ class MbonReadoutParams:
 
 
 @dataclass(frozen=True)
+class ControlRules:
+    """One switch per hand-coded control rule in docs/CONTROL_AUDIT.md that
+    decides when or how long to act. True = the rule is active (today's
+    behaviour, every golden unchanged); False = the rule is removed and the
+    circuit alone decides. Mode flags, not tuned scalars, so they are not in
+    ALL_PARAM_CLASSES (like scenario.graded_pit_response, the switch for the
+    forced GradedPitModule, audit row 17). Audit row 9 (shared A button) has no
+    switch: it only merges rows 1 and 7, and is vacuous with both off."""
+    jump_hold: bool = True            # row 1: fixed A-hold after a commit
+    jump_cooldown: bool = True        # row 2: no new commit for N frames after a jump
+    long_jump_select: bool = True     # row 3: binary long-vs-short hold from one DLMn sample
+    escape_habituation: bool = True   # row 4: give-up suppression of the escape reflex
+    mdn_backup: bool = True           # row 5: forced backing-up hold when MDN crosses threshold
+    climb_stall: bool = True          # row 6: "blocked" inferred from mario_x unchanged
+    climb_reflex: bool = True         # row 7: fixed hop/jump hold, cooldown, attempt counter
+    climb_habituation: bool = True    # row 8: give-up on repeated futile climbs
+    refusal: bool = True              # row 10: wide-gap refusal (drops gap current, steers away, zeroes DNp09)
+    walk_suppression: bool = True     # row 11: cut DNp09 drive while busy
+    odour_brake: bool = True          # row 12: odour subtracted from the walk drive
+
+
+CONTROL_RULE_LABELS: dict[str, str] = {
+    "jump_hold": "Jump hold (fixed A-hold after a commit) -- audit row 1",
+    "jump_cooldown": "Jump cooldown (no commit for N frames after a jump) -- row 2",
+    "long_jump_select": "Binary long-jump selection (one DLMn sample) -- row 3",
+    "escape_habituation": "Escape habituation give-up -- row 4",
+    "mdn_backup": "MDN backup hold (forced backing up) -- row 5",
+    "climb_stall": "Climb stall detector (mario_x unchanged) -- row 6",
+    "climb_reflex": "Climb hop/jump hold, cooldown, attempt counter -- rows 7",
+    "climb_habituation": "Climb habituation give-up -- row 8",
+    "refusal": "Refusal rule (wide gap) -- row 10",
+    "walk_suppression": "Walk suppression while busy -- row 11",
+    "odour_brake": "Odour brake on the walk drive -- row 12",
+}
+assert set(CONTROL_RULE_LABELS) == {f.name for f in fields(ControlRules)}
+
+
+@dataclass(frozen=True)
 class ModulesConfig:
     """Field order is execution order; None == module off."""
     page_perception: PagePerceptionParams | None = None
     gap_ahead: GapAheadParams | None = None
+    wall_ahead: WallAheadParams | None = None
     motor_direct: MotorDirectParams | None = None
     mb_spatial_inputs: MbSpatialInputParams | None = None
     dnp02_refractory: Dnp02RefractoryParams | None = None
@@ -531,7 +591,7 @@ class ModulesConfig:
     mbon_readout: MbonReadoutParams | None = None
 
 
-MODULE_PARAM_CLASSES: tuple = (PagePerceptionParams, GapAheadParams, MotorDirectParams, MbonReadoutParams,
+MODULE_PARAM_CLASSES: tuple = (PagePerceptionParams, GapAheadParams, WallAheadParams, MotorDirectParams, MbonReadoutParams,
                                      MbSpatialInputParams, Dnp02RefractoryParams,
                                      Dnp01RefractoryParams, ArousalParams)
 

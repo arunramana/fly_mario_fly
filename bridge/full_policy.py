@@ -128,6 +128,7 @@ class FullPolicy:
         self.perception = [m for m in built if m.kind == "perception"]
         self.motor = next((m for m in built if m.kind == "motor"), None)
         self.readout = next((m for m in built if m.kind == "readout"), None)
+        self.wall_module = next((m for m in built if m.name == "wall_ahead"), None)
         self.level = level
         self.retinotopic = retinotopic
         self.frame_skip = frame_skip
@@ -136,6 +137,7 @@ class FullPolicy:
         self.hunger_override = hunger_override
         self.entity_profiles = entity_profiles
         c = self.config
+        self.rules = c.rules   # docs/CONTROL_AUDIT.md: True = the hand-coded rule is active
 
         self.jump_hold_frames = max(1, round(c.jump.jump_hold_frames / frame_skip))
         self.jump_cooldown_frames = max(1, round(c.jump.jump_cooldown_frames / frame_skip))
@@ -381,7 +383,7 @@ class FullPolicy:
         gap_w = tile_ram.gap_width(ram, c.takeoff.gap_lookahead_tiles)
         distance_to_edge = tile_ram.distance_to_gap(ram, c.takeoff.gap_lookahead_tiles)
         wall_ahead = tile_ram.solid_ahead(ram)
-        refusing = gap_w > c.terrain.refusal_gap_tiles
+        refusing = self.rules.refusal and gap_w > c.terrain.refusal_gap_tiles
         if refusing:
             self.n_refusals += 1
         # docs/SPEC_pits.md: log exactly what the detector sees on the rising
@@ -399,6 +401,7 @@ class FullPolicy:
         for module in self.perception:
             module.perceive(pctx, stim)
         gap_input = gap_w if stim.gap_input is None else stim.gap_input
+        self._stim = stim
 
         cur_qblock_cols = {
             (int(ram[tile_ram.ADDR_MARIO_PAGE]) * 256 + mario_x) // 16 + off
@@ -468,6 +471,11 @@ class FullPolicy:
             Ij[self.j_msk["LC4_R"]] = abs(dtheta["R"]); Ij[self.j_msk["LPLC2_R"]] = theta["R"]
         if not refusing:
             Ij[self.jump_dnp01_mask] += c.takeoff.gap_gain * gap_input
+        # WallAheadPerceptionModule: a wall ahead is an object in the right visual
+        # field (looming) and/or a takeoff current. Zeros unless the module is on.
+        Ij[self.j_msk["LC4_R"]] += abs(stim.wall_dtheta)
+        Ij[self.j_msk["LPLC2_R"]] += stim.wall_theta
+        Ij[self.jump_dnp01_mask] += stim.wall_takeoff
         Ij[self.jump_dnp01_mask] += self.mb_pathway_bias["dnp01"]
         if pc1_h:
             Ij += self.pc1_gw["jump"] * pc1_h
@@ -486,7 +494,8 @@ class FullPolicy:
 
         # ---- DNp02: the second escape pathway -------------------------
         self.dnp02_ema["L"] = (1 - c.dnp02.alpha) * self.dnp02_ema["L"] + c.dnp02.alpha * abs(dtheta["L"])
-        self.dnp02_ema["R"] = (1 - c.dnp02.alpha) * self.dnp02_ema["R"] + c.dnp02.alpha * abs(dtheta["R"])
+        self.dnp02_ema["R"] = ((1 - c.dnp02.alpha) * self.dnp02_ema["R"]
+                               + c.dnp02.alpha * (abs(dtheta["R"]) + abs(stim.wall_dtheta)))
         Idp = np.zeros(self.Kdp)
         Idp[self.dnp02_lc4_l] = self.dnp02_ema["L"]; Idp[self.dnp02_lc4_r] = self.dnp02_ema["R"]
         Idp[self.dnp02_idx] += self.mb_bias_dnp02
@@ -601,7 +610,10 @@ class FullPolicy:
             self.climb_attempts = 0
             self.last_reset_x = mario_x
 
-        if self.jump_hold == 0 and self.climb_hold == 0:
+        if not self.rules.climb_stall:
+            self.stall_count = 0
+            self._last_x = mario_x
+        elif self.jump_hold == 0 and self.climb_hold == 0:
             if self._last_x == mario_x:
                 self.stall_count += 1
             else:
@@ -611,9 +623,10 @@ class FullPolicy:
             self.stall_count = 0
             self._last_x = mario_x
 
-        if (self.stall_count >= self.climb_stall_frames and self.direction == "R" and wall_ahead
+        if (self.rules.climb_reflex and self.stall_count >= self.climb_stall_frames
+                and self.direction == "R" and wall_ahead
                 and self.jump_hold == 0 and self.climb_hold == 0 and self.climb_cooldown == 0):
-            if self.hab_climb.check(mario_x):
+            if not self.rules.climb_habituation or self.hab_climb.check(mario_x):
                 if self.climb_attempts == 0:
                     hold = self.climb_hop_small_frames if mario_size == 0 else self.climb_hop_big_frames
                     self.climb_attempts = 1
@@ -660,10 +673,12 @@ class FullPolicy:
                         "DNp02" if self.dnp02_network.just_spiked.any() else "DNp01")
                 else:
                     pathway_fired = "DNp01" if dnp01_ready else "DNp02"
-                if self.hab_escape.check(mario_x):
+                if not self.rules.escape_habituation or self.hab_escape.check(mario_x):
                     if self.motor is None:
-                        long_jump = prop.force_long_jump or dlmn_val >= c.takeoff.dlmn_recruit_threshold
-                        self.jump_hold = self.long_jump_hold_frames if long_jump else self.jump_hold_frames
+                        long_jump = prop.force_long_jump or (
+                            self.rules.long_jump_select and dlmn_val >= c.takeoff.dlmn_recruit_threshold)
+                        if self.rules.jump_hold:
+                            self.jump_hold = self.long_jump_hold_frames if long_jump else self.jump_hold_frames
                     escape_trigger = True
                     self.n_escape_jumps += 1
                     if pathway_fired == "DNp01":
@@ -709,7 +724,7 @@ class FullPolicy:
                 h_mdn = self.mdn_network.step(Im, noise=self.noise)
             self.mdn_network.flush_denormals(c.network.denormal_flush_threshold)
             mdn_val = h_mdn[self.mdn_mask].mean()
-            if mdn_val >= c.mdn.mdn_threshold:
+            if self.rules.mdn_backup and mdn_val >= c.mdn.mdn_threshold:
                 self.mdn_backup_hold = self.mdn_backup_frames
                 log.debug(f"  escape habituated -> MDN takes over, backing up (hold={self.mdn_backup_frames})")
         else:
@@ -731,7 +746,7 @@ class FullPolicy:
             press_a = press_a or motor_a
         if self.jump_hold > 0:
             self.jump_hold -= 1
-            if self.jump_hold == 0:
+            if self.jump_hold == 0 and self.rules.jump_cooldown:
                 self.jump_cooldown = self.jump_cooldown_frames
         if self.climb_hold > 0:
             self.climb_hold -= 1
@@ -746,9 +761,11 @@ class FullPolicy:
         if refusing:
             Ip[self.dnp09_mask] = 0.0
         else:
-            odor_brake = min(c.speed.walk_drive, max(0.0, odor_l_eff + odor_r_eff - c.steering.home_bias))
+            odor_brake = (min(c.speed.walk_drive, max(0.0, odor_l_eff + odor_r_eff - c.steering.home_bias))
+                          if self.rules.odour_brake else 0.0)
             Ip[self.dnp09_mask] = (c.speed.walk_drive
-                                    - (c.speed.walk_suppression if busy else 0.0) - odor_brake
+                                    - (c.speed.walk_suppression if busy and self.rules.walk_suppression else 0.0)
+                                    - odor_brake
                                     + self.mb_pathway_bias["dnp09"])
         if pc1_h:
             Ip += self.pc1_gw["speed"] * pc1_h
@@ -790,6 +807,10 @@ class FullPolicy:
         if self.readout is not None:
             extras.update({f"mbon_{g}": v for g, v in self.mb_pathway_readout.items()})
             extras["mbon_agg"] = float(self.h_mbon.mean())
+        if self.wall_module is not None:
+            extras.update({"wall_tiles": stim.wall_distance_tiles, "wall_height": stim.wall_height_tiles,
+                           "wall_theta": stim.wall_theta, "wall_dtheta": stim.wall_dtheta,
+                           "wall_takeoff": stim.wall_takeoff})
         if self.arousal_module is not None:
             extras.update(self._pc1_extras(pc1_h))
         self.last_info["extras"] = extras

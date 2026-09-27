@@ -1,0 +1,254 @@
+{
+  "run": 1,
+  "n_frames": 108,
+  "max_x_abs": 311,
+  "died_or_flagged": true,
+  "death": {
+    "cause": "enemy contact",
+    "x": 311,
+    "y": 170,
+    "viewport": 1,
+    "nearest_enemy": {
+      "slot": 0,
+      "type": "0x6",
+      "dx": 7
+    },
+    "enemies": [
+      {
+        "slot": 0,
+        "type": "0x6",
+        "dx": 7
+      }
+    ],
+    "obstacle_ahead": null,
+    "pit_distance_tiles": null,
+    "flag_get": false,
+    "life": "2",
+    "time_left": 395
+  },
+  "savestate": {
+    "name": "001_baseline_1-1_pre_death",
+    "frame": 48,
+    "resimulated": false
+  },
+  "stimuli_last60": {
+    "theta": {
+      "max": 2.556,
+      "mean": 0.399,
+      "last": 2.556,
+      "active": 55
+    },
+    "dtheta": {
+      "max": 0.532,
+      "mean": 0.043,
+      "last": 0.532,
+      "active": 55
+    },
+    "d_px": {
+      "max": 196.0,
+      "mean": 98.818,
+      "last": 7.0,
+      "active": 55
+    },
+    "gap": {
+      "max": 0.0,
+      "mean": 0.0,
+      "last": 0.0,
+      "active": 0
+    },
+    "wall_tiles": {
+      "max": 0.0,
+      "mean": 0.0,
+      "last": 0.0,
+      "active": 0
+    },
+    "wall_height": {
+      "max": 0.0,
+      "mean": 0.0,
+      "last": 0.0,
+      "active": 0
+    },
+    "wall_theta": {
+      "max": 0.0,
+      "mean": 0.0,
+      "last": 0.0,
+      "active": 0
+    },
+    "wall_dtheta": {
+      "max": 0.0,
+      "mean": 0.0,
+      "last": 0.0,
+      "active": 0
+    },
+    "wall_takeoff": {
+      "max": 0.0,
+      "mean": 0.0,
+      "last": 0.0,
+      "active": 0
+    },
+    "odor_r": {
+      "max": 14.395,
+      "mean": 1.584,
+      "last": 0.608,
+      "active": 60
+    },
+    "avers_l": {
+      "max": 0.133,
+      "mean": 0.041,
+      "last": 0.0,
+      "active": 34
+    },
+    "avers_r": {
+      "max": 1.072,
+      "mean": 0.103,
+      "last": 1.072,
+      "active": 21
+    },
+    "refusing": {
+      "max": 0.0,
+      "mean": 0.0,
+      "last": 0.0,
+      "active": 0
+    }
+  },
+  "neurons_last60": {
+    "lc4_r": {
+      "max": 0.693,
+      "mean": 0.061,
+      "last": 0.693,
+      "active": 55
+    },
+    "lc4_l": {
+      "max": 0.002,
+      "mean": 0.0,
+      "last": 0.0,
+      "active": 51
+    },
+    "lplc2_r": {
+      "max": 5.002,
+      "mean": 0.762,
+      "last": 5.002,
+      "active": 55
+    },
+    "lplc2_l": {
+      "max": 0.0,
+      "mean": 0.0,
+      "last": 0.0,
+      "active": 4
+    },
+    "ttmn": {
+      "max": 15.631,
+      "mean": 1.398,
+      "last": 7.659,
+      "active": 20
+    },
+    "ttmn_dnp02": {
+      "max": 0.0,
+      "mean": 0.0,
+      "last": 0.0,
+      "active": 0
+    },
+    "dlmn": {
+      "max": 1.068,
+      "mean": 0.278,
+      "last": 1.068,
+      "active": 20
+    },
+    "dnp09": {
+      "max": 0.707,
+      "mean": 0.707,
+      "last": 0.707,
+      "active": 60
+    },
+    "dna01": {
+      "max": 7.502,
+      "mean": 1.472,
+      "last": 1.537,
+      "active": 60
+    },
+    "dna02": {
+      "max": 7.537,
+      "mean": 1.477,
+      "last": 1.543,
+      "active": 60
+    },
+    "r_team": {
+      "max": 14.977,
+      "mean": 2.612,
+      "last": 1.596,
+      "active": 60
+    },
+    "l_team": {
+      "max": 1.596,
+      "mean": 0.337,
+      "last": 1.484,
+      "active": 21
+    },
+    "mdn": {
+      "max": 0.0,
+      "mean": 0.0,
+      "last": 0.0,
+      "active": 0
+    },
+    "motor_drive": {
+      "max": 6.192,
+      "mean": 0.84,
+      "last": 3.074,
+      "active": 20
+    }
+  },
+  "events_last60": {
+    "spike": {
+      "max": 1.0,
+      "mean": 0.033,
+      "last": 0.0,
+      "active": 2
+    },
+    "spike_dnp02": {
+      "max": 0.0,
+      "mean": 0.0,
+      "last": 0.0,
+      "active": 0
+    },
+    "press_a": {
+      "max": 1.0,
+      "mean": 0.017,
+      "last": 0.0,
+      "active": 1
+    },
+    "press_b": {
+      "max": 1.0,
+      "mean": 1.0,
+      "last": 1.0,
+      "active": 60
+    },
+    "long_jump": {
+      "max": 0.0,
+      "mean": 0.0,
+      "last": 0.0,
+      "active": 0
+    },
+    "climb": {
+      "max": 0.0,
+      "mean": 0.0,
+      "last": 0.0,
+      "active": 0
+    },
+    "mdn_backing_up": {
+      "max": 0.0,
+      "mean": 0.0,
+      "last": 0.0,
+      "active": 0
+    }
+  },
+  "counts": {
+    "n_escape_jumps": 3,
+    "n_long_jumps": 0,
+    "n_dnp01_fired": 3,
+    "n_dnp02_fired": 0,
+    "n_climb_hops": 0,
+    "n_climb_jumps": 0,
+    "n_stomps": 0,
+    "n_refusals": 0
+  }
+}

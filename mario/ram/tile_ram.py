@@ -167,3 +167,36 @@ def upcoming_gap_width(ram, max_tiles: int = 8) -> int:
         elif width:
             break
     return width
+
+
+# Highest row an obstacle's height is counted up to (row 10 is the first row
+# above the ground; 8 tiles is the tallest stair in the game).
+OBSTACLE_TOP_ROW = 3
+
+
+def obstacle_height(ram, abs_col: int) -> int:
+    """Height in tiles of the solid stack standing on the ground in one
+    absolute column: consecutive solid tiles counted upward from row 10. A
+    floating block (not touching the ground stack) does not count -- Mario
+    walks under it. 0 = the column is open at walking height."""
+    buf1, buf2 = _grids(ram)
+    height = 0
+    for row in range(GROUND_ROW - 1, OBSTACLE_TOP_ROW - 1, -1):
+        t = _tile_at_abs_col(buf1, buf2, abs_col, row)
+        if t is None or t == EMPTY_ID or t in QUESTION_IDS:
+            break
+        height += 1
+    return height
+
+
+def obstacle_ahead(ram, max_tiles: int = 6) -> tuple[int, int] | None:
+    """The nearest solid obstacle ahead within `max_tiles` columns of Mario's
+    own, as (distance_tiles, height_tiles) -- distance 1-indexed like
+    ground_ahead. None if the way is open. A pipe, a stair step or a block
+    stack all read the same: a wall of some height."""
+    col0 = _mario_abs_col(ram)
+    for k in range(1, max_tiles + 1):
+        h = obstacle_height(ram, col0 + k)
+        if h:
+            return k, h
+    return None

@@ -30,3 +30,28 @@ Rule (CLAUDE.md invariant 8): the fly controls, the code only perceives. This li
 - Rules 1-3 form one mechanism: *when the jump button is down and for how long* is decided by counters, not by the motor neurons. Replacing them with "A follows motor activity" removes the cooldown entirely and fixes the pit failure mechanism found in `SPEC_pits.md`.
 - Only #2, #4, #6, #7 and #9 are exercised by the winning 1-1 route today; #10 and #17 are not.
 - Perception repairs (page-corrected enemy distance, upcoming-gap input) are now `PerceptionModule`s and do not appear here.
+
+## Switches (honest-play sprint)
+
+Each rule that decides when or how long to act now has an off switch in `config.rules` (`ControlRules`, `config/params.py`), shown as a checkbox in the Circuits tab. **True (default) = the rule is active, so every golden is byte-identical**; False removes the rule and leaves the decision to the circuit.
+
+| Row | Switch | Effect when off |
+|---|---|---|
+| 1 | `rules.jump_hold` | A is no longer held by the counter after a commit (a commit only counts; A then comes from MotorDirect, or from nothing) |
+| 2 | `rules.jump_cooldown` | No cooldown after a jump; a new commit needs only the circuit's own dynamics |
+| 3 | `rules.long_jump_select` | No long-vs-short choice from one DLMn sample (always the short hold; `graded_pit`'s forced long jump is separate) |
+| 4 | `rules.escape_habituation` | The escape reflex is never suppressed; `hab_escape` stays 0, so MDN is never driven |
+| 5 | `rules.mdn_backup` | MDN is still simulated but never forces the fixed backing-up hold or the habituation reset |
+| 6 | `rules.climb_stall` | No "blocked" inference from an unchanged `mario_x` (also removes stall from the walk-suppression `busy`) |
+| 7 | `rules.climb_reflex` | No climb hop/jump hold, cooldown or attempt counter |
+| 8 | `rules.climb_habituation` | The climb reflex never gives up |
+| 10 | `rules.refusal` | A wide gap keeps its gap current; no steering push, DNp09 not zeroed |
+| 11 | `rules.walk_suppression` | DNp09 drive is not cut while jumping/stalled |
+| 12 | `rules.odour_brake` | Odour is not subtracted from the walk drive |
+| 17 | `scenario.graded_pit_response` (already existed) | The forced GradedPitModule (cooldown bypass, forced DNp01 commit, long jump, B hold); mirrored read-only in the Circuits tab, written from the Goal tab |
+
+No switch: **row 9** (shared A button) only merges rows 1 and 7, so it is vacuous with both off; **13, 14** are stimuli and the motor readout, kept by design; **15, 16** are harness settings (frame-skip 1, injections) not present in real configs; **18** is a teaching signal.
+
+The perception replacement for row 6 is `WallAheadPerceptionModule` (`modules.wall_ahead`, off by default): the first ground-attached solid obstacle within `perceive_tiles` (pipe, stair, block stack) as distance and height from the tile RAM, fed only as looming (`theta = 2*arctan(h_px / (2*d_px))` into right-hemisphere LC4/LPLC2 and the DNp02 LC4 input) and/or a takeoff current onto DNp01. Two gains (`looming_gain`, `takeoff_gain`; 0 = that route off).
+
+`projects/honest` is the reference with every switch off; it is read-only (like `legacy`), so every experiment is a duplicate of it.

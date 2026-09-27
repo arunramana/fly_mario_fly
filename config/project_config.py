@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import get_type_hints
 
 from config.params import (
-    Dnp02Params, DemoParams, EntityParams, HabituationParams, InteractionParams,
+    ControlRules, Dnp02Params, DemoParams, EntityParams, HabituationParams, InteractionParams,
     JumpParams, MdnParams, ModulesConfig, MushroomBodyParams, NetworkParams, NoiseParams,
     OdourParams, RetinotopyParams, SpeedParams, SteeringParams, TakeoffParams,
     TerrainParams,
@@ -72,6 +72,7 @@ class ProjectConfig:
     retinotopy: RetinotopyParams = field(default_factory=RetinotopyParams)
     demo: DemoParams = field(default_factory=DemoParams)
     modules: ModulesConfig = field(default_factory=ModulesConfig)
+    rules: ControlRules = field(default_factory=ControlRules)
     scenario: ScenarioParams = field(default_factory=ScenarioParams)
     output: OutputParams = field(default_factory=OutputParams)
 

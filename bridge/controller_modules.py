@@ -108,6 +108,11 @@ class Stimulus:
     page_aware_looming: bool = False   # enemy distance uses page bytes (into enemy_thetas)
     gap_input: float | None = None     # replaces gap_w in the existing gap current onto DNp01
     mb_extra: tuple = ()               # extra Kenyon-cell inputs (MbSpatialInputModule)
+    wall_theta: float = 0.0            # looming angle of the wall ahead (WallAheadPerceptionModule)
+    wall_dtheta: float = 0.0           # its growth this frame
+    wall_takeoff: float = 0.0          # takeoff current from the wall onto DNp01
+    wall_distance_tiles: int = 0       # what was perceived (telemetry only): 0 = no wall
+    wall_height_tiles: int = 0
 
 
 class PerceptionModule(Protocol):
@@ -166,6 +171,45 @@ class GapAheadPerceptionModule:
             return
         width = tile_ram.upcoming_gap_width(ctx.ram, ctx.config.takeoff.gap_lookahead_tiles)
         stim.gap_input = width * (n - d + 1) / n
+
+
+class WallAheadPerceptionModule:
+    """PERCEPTION. The first solid obstacle ahead (pipe, stair, block stack)
+    from the tile RAM, as distance and height. It reaches the circuit only as
+    stimuli, never as an action: (1) looming -- the wall is an object of angular
+    size theta = 2*arctan(h / (2*d)) that grows as Mario walks at it (invariant
+    1, Mario's-eye view: h is the wall's height in px, d the distance to its
+    near face), added to the right-hemisphere LC4/LPLC2 drive like an enemy's;
+    (2) takeoff -- height x proximity onto DNp01, like gap_ahead. Each route has
+    its own gain (0 = off). Whether and when the fly jumps is the circuit's."""
+    name = "wall_ahead"
+    kind = "perception"
+    TILE_PX = 16
+
+    def __init__(self, params):
+        self.params = params
+        self.reset()
+
+    def reset(self) -> None:
+        self.prev_theta = 0.0
+
+    def perceive(self, ctx: PerceptionContext, stim: Stimulus) -> None:
+        import math
+        p = self.params
+        wall = tile_ram.obstacle_ahead(ctx.ram, p.perceive_tiles)
+        theta = 0.0
+        if wall is not None:
+            from mario.ram.addresses import ADDR_MARIO_PAGE
+            tiles, height = wall
+            mario_abs = int(ctx.ram[ADDR_MARIO_PAGE]) * 256 + ctx.mario_x
+            near_face = (mario_abs // self.TILE_PX + tiles) * self.TILE_PX
+            d = max(near_face - mario_abs, 1)
+            theta = 2.0 * math.atan(height * self.TILE_PX / (2.0 * d))
+            stim.wall_takeoff = p.takeoff_gain * height * (p.perceive_tiles - tiles + 1) / p.perceive_tiles
+            stim.wall_distance_tiles, stim.wall_height_tiles = tiles, height
+        stim.wall_theta = p.looming_gain * theta
+        stim.wall_dtheta = p.looming_gain * (theta - self.prev_theta)
+        self.prev_theta = theta
 
 
 class Dnp02RefractoryModule:
@@ -339,6 +383,7 @@ class MbonReadoutModule:
 # in ModulesConfig is the execution order.
 MODULE_CLASSES: dict[str, type] = {"page_perception": PagePerceptionModule,
                                     "gap_ahead": GapAheadPerceptionModule,
+                                    "wall_ahead": WallAheadPerceptionModule,
                                     "motor_direct": MotorDirectModule,
                                     "mb_spatial_inputs": MbSpatialInputModule,
                                     "dnp02_refractory": Dnp02RefractoryModule,

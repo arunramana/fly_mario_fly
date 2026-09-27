@@ -163,6 +163,14 @@ disagree.
 |---|---|---|---|---|
 | `perceive_tiles` | `4` | unknown | invented (perceptual range of the anticipatory gap input, mechanical, not a circuit gain; the current itself is still gap_gain x width) | `bridge/controller_modules.py (GapAheadPerceptionModule)` |
 
+## WallAheadParams
+
+| field | value | range | provenance | home |
+|---|---|---|---|---|
+| `perceive_tiles` | `6` | unknown | invented (perceptual range of the wall stimulus in tiles, mechanical, not a circuit gain) | `bridge/controller_modules.py (WallAheadPerceptionModule)` |
+| `looming_gain` | `1.0` | unknown | invented (scale on the wall's theta/dtheta into LC4/LPLC2, the same stimulus class as an enemy's looming; 0 = the looming route is off) | `bridge/controller_modules.py (WallAheadPerceptionModule)` |
+| `takeoff_gain` | `0.0` | unknown | invented (current onto DNp01 per tile of wall height, scaled up as the wall approaches like gap_ahead; 0 = the takeoff route is off) | `bridge/controller_modules.py (WallAheadPerceptionModule)` |
+
 ## MotorDirectParams
 
 | field | value | range | provenance | home |
@@ -210,19 +218,19 @@ disagree.
 
 ## Totals
 
-**77 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
+**80 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
 more (`DemoParams.mushroom_offset`, `DemoParams.wide_gap_lead_tiles`,
 `TerrainParams.refusal_gap_margin_tiles`) only matter in an opt-in
 injection demo -- the first is untested by any golden, the other two are
 exercised by `tests/test_golden.py::test_017_reprise`'s own
 `inject_gap_frame`, so "opt-in" here means "off by default", not
-"untested". The other 71 are live in every default run.
+"untested". The other 74 are live in every default run.
 
 A range of `unknown` means genuinely unknown, not left blank: an invented
 bound would be scaffolding that looks like data. Only `JumpParams.g` and
 `NoiseParams.sigma` have a characterised range.
 
-By category (the first word of each provenance): **55 invented**, **22 measured**, **0 connectome-derived** (of 77).
+By category (the first word of each provenance): **58 invented**, **22 measured**, **0 connectome-derived** (of 80).
 
 None are connectome-derived. The connectome determines each circuit's
 weight matrix `W`; every scalar here sits outside it, as a gain on it, a

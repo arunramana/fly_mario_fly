@@ -7,6 +7,7 @@ nothing already there is replaced.
 from __future__ import annotations
 
 import dataclasses
+import shutil
 from dataclasses import dataclass, field
 
 from config.output_routing import PROJECTS_ROOT
@@ -24,7 +25,11 @@ from tool.core.tool_settings import load as load_tool_settings
 # golden gate's own config-roundtrip test caught it days later. Read-only
 # in the GUI now; "Duplicate to edit" is the one way to change anything
 # derived from it.
-READ_ONLY_PROJECT_NAMES = frozenset({"legacy"})
+#
+# "honest" is the second one: the honest-play reference (every control rule
+# off, only perception modules -- docs/CONTROL_AUDIT.md). Every experiment
+# happens in a duplicate of it.
+READ_ONLY_PROJECT_NAMES = frozenset({"legacy", "honest"})
 
 
 @dataclass
@@ -71,7 +76,14 @@ class ToolProject:
         return cls(name=name, config=config, tool_settings=settings)
 
     def duplicate(self, new_name: str) -> ToolProject:
-        return ToolProject.create(new_name, config=self.config, tool_settings=self.tool_settings)
+        new = ToolProject.create(new_name, config=self.config, tool_settings=self.tool_settings)
+        # The entity-profile overrides (Entities tab) are part of the settings: a duplicate
+        # that silently dropped them would not reproduce the project it was copied from.
+        from tool.core.entity_profiles_store import override_path
+        src = override_path(self.name)
+        if src.exists():
+            shutil.copyfile(src, override_path(new_name))
+        return new
 
     def save(self) -> None:
         # A hard backstop, not the only guard -- tool/ui/main_window.py

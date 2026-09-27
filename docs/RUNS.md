@@ -2504,3 +2504,10 @@ the mode flag, the stomp-detection addition to `FullPolicy`).
   itself stands on its own (the tool's per-character smell panel needs
   real enemy identity regardless); only the phase-6-necessity claim was
   wrong.
+
+
+## honest-001 — baseline of the honest-play project (`projects/honest/runs/001_baseline_1-1.mp4`)
+
+**Setup.** New read-only project `honest` = test3's settings with every `config.rules` switch off (jump hold/cooldown, binary long jump, escape and climb habituation, MDN backup, climb stall/reflex, refusal, walk suppression, odour brake), no forced module (`graded_pit_response` off), MotorDirect with `release_on_landing` (decay 0.6, a_threshold 5.0), DNp01 and DNp02 refractory 8 steps, page + gap + wall perception on (wall: looming route gain 1.0, takeoff gain 0, 6 tiles), arousal 0, sigma 0, level 1-1, seed 0. Three new scalars (`WallAheadParams`), 80 in total; defaults of every existing config unchanged.
+**What happened.** Died at frame 108, `max_x_abs` 311, enemy contact with the first Goomba (7 px ahead at death; no pit, no wall in range, wall stimulus 0 all run). Last 60 frames: theta rose 0.12 -> 2.56 and d_px fell 192 -> 7 while LC4_R peaked 0.69 and LPLC2_R 5.0; TTMn crossed threshold three times (frames 89, 92, 105, all DNp01; DNp02 never fired) with motor drive 3.68, 2.45 and 6.19 against `a_threshold` 5.0, so A was pressed for one frame only, at d=14 px. DLMn 1.07 max (no pit), DNp09 flat 0.71 (B held all 60 frames), steering flipped R->L for frames 92-97 (aversive odour) then back to R, MDN 0. Save state `001_baseline_1-1_pre_death` at frame 48.
+**What we learned.** Without the counters the fly does commit early (65 px, frame 89, just after Mario's x wrapped past a 256 px page boundary, with page perception on) but MotorDirect's threshold discards that commit and the one that passes it is too late for a one-frame hop. The honest failure is at the motor mapping (decay/threshold against a single TTMn rise), not in perception; the next experiment belongs in a duplicate of `honest`. The wall module was not exercised by this death.

@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QSplitter, QToolButton, QVBoxLayout, QWidget,
 )
 
-from config.params import ArousalParams, GapAheadParams, MbonReadoutParams, Dnp01RefractoryParams, Dnp02RefractoryParams, MbSpatialInputParams, MotorDirectParams, PagePerceptionParams
+from config.params import CONTROL_RULE_LABELS, ArousalParams, GapAheadParams, WallAheadParams, MbonReadoutParams, Dnp01RefractoryParams, Dnp02RefractoryParams, MbSpatialInputParams, MotorDirectParams, PagePerceptionParams
 from config.project_config import from_dict as config_from_dict
 from tool.core.circuit_manifest import CIRCUIT_REGISTRY, OTHER_ENTRY
 from tool.ui.widgets.card_button import make_card_button
@@ -39,6 +39,9 @@ MODULE_TOGGLES = [
      "not ~230px behind. Changes what the fly sees, never an action."),
     ("gap_ahead", GapAheadParams, "Gap ahead (perception)",
      "Feeds the existing gap input from a few tiles away, scaled up as the edge approaches."),
+    ("wall_ahead", WallAheadParams, "Wall / step ahead (perception)",
+     "Pipes, stairs and block stacks from the tile RAM, as distance and height, fed to the circuit as "
+     "looming (LC4/LPLC2) and/or a takeoff current onto DNp01. A stimulus only: the fly decides."),
     ("mb_spatial_inputs", MbSpatialInputParams, "MB spatial inputs (perception)",
      "Two extra Kenyon-cell inputs: closeness of the next pit edge and of the nearest enemy "
      "ahead (page-corrected), so learning can key on where danger is."),
@@ -85,6 +88,17 @@ MODULE_PARAM_UI: dict[str, list] = {
                    "to the nearest non-ground tile (tiles): inside this range the gap input is "
                    "width x (n - d + 1) / n, reaching today's full strength at the edge. The "
                    "current itself is still takeoff.gap_gain x that value.")],
+    "wall_ahead": [
+        ("perceive_tiles", "int", 1, 16, 1,
+         "How many tiles ahead the wall is perceived. Compared against the distance to the first "
+         "ground-attached solid column (tiles); also sets the takeoff ramp: full strength at 1 tile."),
+        ("looming_gain", "float", 0.0, 10.0, 0.1,
+         "Scale on the wall's looming angle theta = 2*arctan(height_px / (2*distance_px)) into the "
+         "right-hemisphere LC4/LPLC2 drive, the same channel an enemy uses (a Goomba is 16 px wide, a "
+         "2-tile pipe 32 px). 0 = looming route off."),
+        ("takeoff_gain", "float", 0.0, 10.0, 0.1,
+         "Current onto DNp01 per tile of wall height, ramping up as the wall nears. Compared against "
+         "takeoff.gap_gain (1.0 per tile of pit width). 0 = takeoff route off.")],
     "motor_direct": [
         ("decay", "float", 0.0, 0.999, 0.01,
          "Per-frame multiplier on the motor drive (time constant = 1 / (1 - decay) frames; 0.9 = "
@@ -141,6 +155,25 @@ class CircuitsTab(QWidget):
         shuffle_form.addRow("Shuffle seed", self.shuffle_seed_spin)
         layout.addWidget(shuffle_box)
 
+        rules_box = QGroupBox("Control rules (docs/CONTROL_AUDIT.md): checked = the hand-coded rule is on")
+        rules_layout = QVBoxLayout(rules_box)
+        self.rule_checkboxes: dict[str, QCheckBox] = {}
+        for rule, label in CONTROL_RULE_LABELS.items():
+            box = QCheckBox(label)
+            box.setToolTip("Unchecked: the rule is removed and the circuit alone decides. "
+                           "Defaults are all checked (behaviour unchanged).")
+            box.setChecked(getattr(window.get_config().rules, rule))
+            box.toggled.connect(lambda checked, r=rule: self._on_rule_toggled(r, checked))
+            rules_layout.addWidget(box)
+            self.rule_checkboxes[rule] = box
+        # The forced GradedPitModule (audit row 17) already has its one writable home in the
+        # Goal tab; shown here read-only so every rule is visible in one place.
+        self.graded_pit_mirror = QCheckBox("Graded pit response, forced jump/B (row 17) -- set in the Goal tab")
+        self.graded_pit_mirror.setEnabled(False)
+        self.graded_pit_mirror.setChecked(window.get_config().scenario.graded_pit_response)
+        rules_layout.addWidget(self.graded_pit_mirror)
+        layout.addWidget(rules_box)
+
         modules_box = QGroupBox("Controller modules (docs/CONTROL_AUDIT.md)")
         modules_layout = QVBoxLayout(modules_box)
         self.module_checkboxes: dict[str, QCheckBox] = {}
@@ -166,6 +199,7 @@ class CircuitsTab(QWidget):
         # edit would re-emit it and silently undo a module toggle made elsewhere.
         window.config_changed.connect(self._sync_param_form)
         window.config_changed.connect(self._sync_module_editors)
+        window.config_changed.connect(self._sync_rules)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
 
@@ -292,6 +326,21 @@ class CircuitsTab(QWidget):
             w.blockSignals(True)
             w.setChecked(bool(value)) if isinstance(w, QCheckBox) else w.setValue(value)
             w.blockSignals(False)
+
+    def _on_rule_toggled(self, rule: str, checked: bool) -> None:
+        config = self._window.get_config()
+        if getattr(config.rules, rule) == checked:
+            return
+        self._window.set_config(dataclasses.replace(config, rules=dataclasses.replace(config.rules, **{rule: checked})))
+
+    def _sync_rules(self, config) -> None:
+        """Rule checkboxes (and the read-only graded-pit mirror) follow the config."""
+        for rule, box in self.rule_checkboxes.items():
+            if box.isChecked() != getattr(config.rules, rule):
+                box.blockSignals(True)
+                box.setChecked(getattr(config.rules, rule))
+                box.blockSignals(False)
+        self.graded_pit_mirror.setChecked(config.scenario.graded_pit_response)
 
     def _sync_param_form(self, config) -> None:
         if config is not self.param_form._config:

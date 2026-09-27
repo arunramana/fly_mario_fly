@@ -1,0 +1,147 @@
+{
+  "demo": {
+    "mushroom_offset": -40,
+    "wide_gap_lead_tiles": 10
+  },
+  "dnp02": {
+    "alpha": 0.1,
+    "g": 1.2,
+    "spike_threshold": 0.1
+  },
+  "entity": {
+    "entity_width_px": 16
+  },
+  "habituation": {
+    "hab_give_up": 3,
+    "hab_progress_px": 16
+  },
+  "interaction": {
+    "closing_speed_history_frames": 10,
+    "stomp_distance_px": 20
+  },
+  "jump": {
+    "dnp01_spike_threshold": 0.3,
+    "g": 2.5,
+    "jump_cooldown_frames": 10,
+    "jump_hold_frames": 25,
+    "spike_amp": 50.0,
+    "ttmn_press_threshold": 3.0
+  },
+  "mdn": {
+    "g": 1.2,
+    "mdn_backup_frames": 30,
+    "mdn_drive": 2.0,
+    "mdn_threshold": 1.0
+  },
+  "modules": {
+    "arousal": null,
+    "dnp01_refractory": {
+      "refractory_steps": 8
+    },
+    "dnp02_refractory": {
+      "refractory_steps": 8
+    },
+    "gap_ahead": {
+      "perceive_tiles": 4
+    },
+    "mb_spatial_inputs": null,
+    "mbon_readout": null,
+    "motor_direct": {
+      "a_threshold": 5.0,
+      "decay": 0.6,
+      "dlmn_gain": 0.5,
+      "release_on_landing": true,
+      "ttmn_gain": 1.0
+    },
+    "page_perception": {},
+    "wall_ahead": {
+      "looming_gain": 1.0,
+      "perceive_tiles": 6,
+      "takeoff_gain": 0.0
+    }
+  },
+  "mushroom_body": {
+    "kc_features_per_cell": 3,
+    "kc_projection_seed": 0,
+    "kc_sparsity": 0.05,
+    "learning_rate": 0.001,
+    "mbon_dna02_frac_l": 0.00379,
+    "mbon_dna02_frac_r": 0.00632,
+    "n_mb_sensory": 7,
+    "trace_decay": 60.0
+  },
+  "network": {
+    "alpha": 0.3,
+    "clip": 50.0,
+    "denormal_flush_threshold": 1e-30,
+    "substeps": 10
+  },
+  "noise": {
+    "sigma": 0.0
+  },
+  "odour": {
+    "alpha_adapt": 0.011111111111111112,
+    "avers_presence_gate": 1e-06,
+    "hunger_mult_hungry": 3.0,
+    "hunger_mult_sated": 1.0,
+    "odour_gain": 8.0
+  },
+  "output": {
+    "project_name": "honest"
+  },
+  "retinotopy": {
+    "azimuth_d_ref": 128.0,
+    "hex1_spread_fallback": 3.0,
+    "hex1_spread_floor": 0.5
+  },
+  "rules": {
+    "climb_habituation": false,
+    "climb_reflex": false,
+    "climb_stall": false,
+    "escape_habituation": false,
+    "jump_cooldown": false,
+    "jump_hold": false,
+    "long_jump_select": false,
+    "mdn_backup": false,
+    "odour_brake": false,
+    "refusal": false,
+    "walk_suppression": false
+  },
+  "scenario": {
+    "graded_pit_response": false,
+    "inject_gap_frame": null,
+    "level": "1-1",
+    "max_frames": 5000,
+    "retinotopic": false,
+    "seed": null
+  },
+  "speed": {
+    "dnp09_speed_threshold": 0.5,
+    "g": 1.2,
+    "walk_drive": 0.75,
+    "walk_suppression": 1.0
+  },
+  "steering": {
+    "climb_clear_distance": 24,
+    "climb_cooldown_frames": 15,
+    "climb_hop_big_frames": 14,
+    "climb_hop_small_frames": 10,
+    "climb_jump_frames": 25,
+    "climb_stall_frames": 20,
+    "g": 1.2,
+    "home_bias": 1.0
+  },
+  "takeoff": {
+    "dlmn_recruit_threshold": 0.3,
+    "g": 0.8,
+    "gap_gain": 1.0,
+    "gap_lookahead_tiles": 15,
+    "long_jump_hold_frames": 40,
+    "long_jump_trigger_distance_tiles": 5,
+    "run_up_tiles": 4
+  },
+  "terrain": {
+    "refusal_gap_margin_tiles": 2,
+    "refusal_gap_tiles": 5
+  }
+}

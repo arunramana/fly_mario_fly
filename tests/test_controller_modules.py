@@ -37,7 +37,9 @@ def test_perception_modules_only_set_stimuli():
     PagePerceptionModule(PagePerceptionParams()).perceive(
         PerceptionContext(ram=None, mario_x=0, gap_w=0, distance_to_edge=None, config=ProjectConfig()), stim)
     assert stim.page_aware_looming and stim.gap_input is None
-    assert set(dataclasses.asdict(stim)) == {"page_aware_looming", "gap_input", "mb_extra"}  # stimuli only, no action fields
+    assert set(dataclasses.asdict(stim)) == {                                   # stimuli only, no action fields
+        "page_aware_looming", "gap_input", "mb_extra", "wall_theta", "wall_dtheta", "wall_takeoff",
+        "wall_distance_tiles", "wall_height_tiles"}
 
 
 def _ground_ram(gap_cols, mario_x=0):
