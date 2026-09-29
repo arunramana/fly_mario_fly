@@ -1,13 +1,12 @@
-"""tool/ui/tabs/circuits.py -- tab 4: a card per circuit (jump/steering/
-speed/takeoff/MDN/mushroom body), each showing a real brain-map image
-(render.brain_panel.highlight_populations) plus a two-line description;
-clicking a card reveals just that circuit's own config/params.py group(s)
-in the (single, eagerly-built) ParamForm to its right (tool/SPEC_ui_retro.md
-sections 8/10, ease-of-use redesign -- an inspector panel, not a
-scrollable stack below the cards). Noise sigma + seed, and the shuffled-
-connectome toggle (C5) stay above the grid -- cross-cutting, not part of
-any one circuit. Presets for this tab live in the header's Presets menu
-(main_window.py), not a per-tab bar.
+"""tool/ui/tabs/circuits.py -- tab 4: a large grid of circuit cards (real brain-map
+images, render.brain_panel.highlight_populations) at the top-left; clicking a card
+opens an inspector on its right with that circuit's own config/params.py group(s)
+(the single, eagerly-built ParamForm), its related controller modules and its
+control rules, as collapsible lists with "k/n on" badges. The whole tab is ONE page
+scroll (no nested scroll areas), and every spin box/slider ignores the wheel unless
+focused, so the wheel always scrolls the page. The shuffled-connectome switch (C5)
+sits in a slim bar above the grid. Presets for this tab live in the header's
+Presets menu (main_window.py), not a per-tab bar.
 """
 
 from __future__ import annotations
@@ -15,9 +14,10 @@ from __future__ import annotations
 import dataclasses
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
-    QCheckBox, QFormLayout, QGroupBox, QLabel, QScrollArea,
-    QSplitter, QToolButton, QVBoxLayout, QWidget,
+    QCheckBox, QFormLayout, QFrame, QGridLayout, QHBoxLayout, QLabel, QScrollArea,
+    QSlider, QToolButton, QVBoxLayout, QWidget,
 )
 
 from config.params import CONTROL_RULE_LABELS, ArousalParams, GapAheadParams, WallAheadParams, MbonReadoutParams, Dnp01RefractoryParams, Dnp02RefractoryParams, MbSpatialInputParams, MotorDirectParams, PagePerceptionParams
@@ -25,9 +25,10 @@ from config.project_config import from_dict as config_from_dict
 from tool.core.circuit_manifest import CIRCUIT_REGISTRY, OTHER_ENTRY
 from tool.ui.widgets.card_button import make_card_button
 from tool.ui.widgets.circuit_card_image import circuit_card_pixmap
-from tool.ui.widgets.flow_layout import FlowLayout
-from tool.ui.widgets.no_scroll_inputs import NoScrollSpinBox
-from tool.ui.widgets.param_form import ParamForm
+from tool.ui.widgets.collapsible_section import CollapsibleSection
+from tool.ui.widgets.no_scroll_inputs import NoScrollSlider, NoScrollSpinBox
+from tool.ui.widgets.param_form import FIELD_MAX_WIDTH, ParamForm
+from tool.ui.widgets.reflow_grid import ReflowGrid
 
 # (ModulesConfig field, params class, label, tooltip) -- a checkbox per
 # controller module (bridge/controller_modules.py); checked = present in
@@ -130,174 +131,252 @@ MODULE_PARAM_UI: dict[str, list] = {
                                       ("dnp09", "DNp09 (speed)"), ("mdn", "MDN (backing up)"))],
 }
 
-CARD_ICON_PX = 160  # large, readable brain-map images -- ease-of-use redesign
+CARD_ICON_PX = 200   # brain maps first: big, readable card images (the ceiling; see card_icon_px)
+CARD_ICON_MIN_PX = 96
+CARD_ICON_SCREEN_FRACTION = 0.11   # icon edge as a share of the screen's available width
+INSPECTOR_MIN_EM = 24             # inspector min width, in line heights of the current font
+
+
+def card_icon_px(available_width: int) -> int:
+    """Card image edge from the screen, not a constant: 200px on a big monitor, shrinking to 96px
+    on a small laptop so the card column and the inspector both still fit."""
+    return max(CARD_ICON_MIN_PX, min(CARD_ICON_PX, int(available_width * CARD_ICON_SCREEN_FRACTION)))
+SLIDER_STEPS = 1000
+SWITCH_QSS = ("QCheckBox#switch::indicator { width: 30px; height: 16px; border-radius: 8px; "
+              "background: #9aa0a6; border: 1px solid #777; } "
+              "QCheckBox#switch::indicator:checked { background: #2a9d8f; }")
 
 
 class CircuitsTab(QWidget):
     def __init__(self, window, parent=None):
         super().__init__(parent)
         self._window = window
-        layout = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        # One scroll area for the whole tab: cards, inspector, modules and rules all scroll
+        # together with the wheel.
+        self.page_scroll = QScrollArea()
+        self.page_scroll.setWidgetResizable(True)
+        self.page_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        self.page_scroll.setWidget(content)
+        outer.addWidget(self.page_scroll)
 
-        shuffle_box = QGroupBox("Shuffled connectome (CLAUDE.md invariant 6)")
-        shuffle_form = QFormLayout(shuffle_box)
-        settings = window.get_tool_settings()
-        current_seed = settings.circuits.shuffle_seed
-        self.shuffle_checkbox = QCheckBox("Shuffle edges (same neurons, same degree, random wiring)")
-        self.shuffle_checkbox.setChecked(current_seed is not None)
-        self.shuffle_checkbox.toggled.connect(self._on_shuffle_toggled)
-        shuffle_form.addRow(self.shuffle_checkbox)
-        self.shuffle_seed_spin = NoScrollSpinBox()
-        self.shuffle_seed_spin.setRange(0, 2_000_000_000)
-        self.shuffle_seed_spin.setValue(current_seed or 0)
-        self.shuffle_seed_spin.setEnabled(current_seed is not None)
-        self.shuffle_seed_spin.valueChanged.connect(self._on_shuffle_seed_changed)
-        shuffle_form.addRow("Shuffle seed", self.shuffle_seed_spin)
-        layout.addWidget(shuffle_box)
+        layout.addLayout(self._build_shuffle_bar())
 
-        rules_box = QGroupBox("Control rules (docs/CONTROL_AUDIT.md): checked = the hand-coded rule is on")
-        rules_layout = QVBoxLayout(rules_box)
-        self.rule_checkboxes: dict[str, QCheckBox] = {}
-        for rule, label in CONTROL_RULE_LABELS.items():
-            box = QCheckBox(label)
-            box.setToolTip("Unchecked: the rule is removed and the circuit alone decides. "
-                           "Defaults are all checked (behaviour unchanged).")
-            box.setChecked(getattr(window.get_config().rules, rule))
-            box.toggled.connect(lambda checked, r=rule: self._on_rule_toggled(r, checked))
-            rules_layout.addWidget(box)
-            self.rule_checkboxes[rule] = box
-        # The forced GradedPitModule (audit row 17) already has its one writable home in the
-        # Goal tab; shown here read-only so every rule is visible in one place.
-        self.graded_pit_mirror = QCheckBox("Graded pit response, forced jump/B (row 17) -- set in the Goal tab")
-        self.graded_pit_mirror.setEnabled(False)
-        self.graded_pit_mirror.setChecked(window.get_config().scenario.graded_pit_response)
-        rules_layout.addWidget(self.graded_pit_mirror)
-        layout.addWidget(rules_box)
+        body = QHBoxLayout()
+        body.setSpacing(16)
+        layout.addLayout(body)
+        self._build_cards(body)
+        body.addWidget(self._build_inspector(), 2)
+        layout.addStretch(1)
 
-        modules_box = QGroupBox("Controller modules (docs/CONTROL_AUDIT.md)")
-        modules_layout = QVBoxLayout(modules_box)
-        self.module_checkboxes: dict[str, QCheckBox] = {}
-        for field_name, params_cls, label, tip in MODULE_TOGGLES:
-            box = QCheckBox(label)
-            box.setToolTip(tip)
-            box.setChecked(getattr(window.get_config().modules, field_name) is not None)
-            box.toggled.connect(lambda checked, f=field_name, c=params_cls: self._on_module_toggled(f, c, checked))
-            modules_layout.addWidget(box)
-            self.module_checkboxes[field_name] = box
-            modules_layout.addWidget(self._build_module_editors(field_name))
-        layout.addWidget(modules_box)
-
-        # tool/SPEC_ui_retro.md section 3, "one home per setting": ONE
-        # ParamForm, covering every group -- so _widget_by_path still has
-        # every scalar (noise.sigma among them) no matter which card is
-        # selected. The card grid only toggles which group boxes are
-        # VISIBLE (ParamForm.show_only_groups), it never builds a second
-        # form -- there is still exactly one writable widget per scalar.
-        self.param_form = ParamForm(window.get_config())
-        self.param_form.changed.connect(self._on_config_changed)
         # The form holds its own config snapshot; without this a later scalar
         # edit would re-emit it and silently undo a module toggle made elsewhere.
         window.config_changed.connect(self._sync_param_form)
         window.config_changed.connect(self._sync_module_editors)
         window.config_changed.connect(self._sync_rules)
+        self._select_circuit(CIRCUIT_REGISTRY[0].circuit_id)
 
-        splitter = QSplitter(Qt.Orientation.Horizontal)
+    # ---- construction --------------------------------------------------------
 
-        card_scroll = QScrollArea()
-        card_scroll.setWidgetResizable(True)
-        # A FlowLayout's own sizeHint() collapses to one card's width (it
-        # has no notion of "how many columns would look good"), which a
-        # QSplitter reads literally and shrinks this pane to fit -- an
-        # explicit minimum width is what actually gets the splitter to
-        # give the grid room to wrap past a single column.
-        card_scroll.setMinimumWidth(2 * (CARD_ICON_PX + 40))
-        card_area = QWidget()
-        card_flow = FlowLayout(card_area, spacing=10)
+    def _build_shuffle_bar(self) -> QHBoxLayout:
+        bar = QHBoxLayout()
+        current_seed = self._window.get_tool_settings().circuits.shuffle_seed
+        self.shuffle_checkbox = QCheckBox("Shuffled connectome")
+        self.shuffle_checkbox.setObjectName("switch")
+        self.shuffle_checkbox.setStyleSheet(SWITCH_QSS)
+        self.shuffle_checkbox.setToolTip("CLAUDE.md invariant 6: same neurons, same degree, random wiring.")
+        self.shuffle_checkbox.setChecked(current_seed is not None)
+        self.shuffle_checkbox.toggled.connect(self._on_shuffle_toggled)
+        self.shuffle_seed_spin = NoScrollSpinBox()
+        self.shuffle_seed_spin.setRange(0, 2_000_000_000)
+        self.shuffle_seed_spin.setMaximumWidth(FIELD_MAX_WIDTH)
+        self.shuffle_seed_spin.setPrefix("seed ")
+        self.shuffle_seed_spin.setValue(current_seed or 0)
+        self.shuffle_seed_spin.setEnabled(current_seed is not None)
+        self.shuffle_seed_spin.valueChanged.connect(self._on_shuffle_seed_changed)
+        bar.addWidget(self.shuffle_checkbox)
+        bar.addWidget(self.shuffle_seed_spin)
+        bar.addStretch(1)
+        return bar
+
+    def _build_cards(self, body: QHBoxLayout) -> None:
+        screen = self.screen() or QGuiApplication.primaryScreen()
+        icon_px = card_icon_px(screen.availableGeometry().width())
+        # Reflows its column count to the width it is given (1..n cards across).
+        card_area = ReflowGrid(cell_width=icon_px + 24, spacing=10)
         self._circuit_buttons: dict[str, QToolButton] = {}
         self._entries_by_id = {e.circuit_id: e for e in (*CIRCUIT_REGISTRY, OTHER_ENTRY)}
-        for entry in self._entries_by_id.values():
+        for i, entry in enumerate(self._entries_by_id.values()):
             button = make_card_button(entry.display_name, circuit_card_pixmap(entry),
-                                       CARD_ICON_PX, entry.description)
+                                       icon_px, entry.description)
             button.clicked.connect(lambda _checked, cid=entry.circuit_id: self._select_circuit(cid))
-            card_flow.addWidget(button)
+            card_area.add(button)
             self._circuit_buttons[entry.circuit_id] = button
-        card_scroll.setWidget(card_area)
+        self.card_area = card_area
+        body.addWidget(card_area, 3)
 
-        right = QWidget()
-        right_layout = QVBoxLayout(right)
-        right_layout.setContentsMargins(0, 0, 0, 0)
+    def _build_inspector(self) -> QWidget:
+        window = self._window
+        inspector = QWidget()
+        inspector.setMinimumWidth(INSPECTOR_MIN_EM * self.fontMetrics().height())
+        box = QVBoxLayout(inspector)
+        box.setContentsMargins(0, 0, 0, 0)
         self._description_label = QLabel()
         self._description_label.setWordWrap(True)
-        right_layout.addWidget(self._description_label)
-        right_layout.addWidget(self.param_form, 1)
+        box.addWidget(self._description_label)
 
-        splitter.addWidget(card_scroll)
-        splitter.addWidget(right)
-        splitter.setStretchFactor(0, 3)
-        splitter.setStretchFactor(1, 2)
-        # QSplitter's stretch factor only governs EXTRA space on resize,
-        # not the initial split -- without this, the card side started
-        # too narrow for FlowLayout to ever wrap to more than one column.
-        splitter.setSizes([700, 400])
-        layout.addWidget(splitter, 1)
+        # tool/SPEC_ui_retro.md section 3, "one home per setting": ONE ParamForm covering every
+        # group, so _widget_by_path still has every scalar (noise.sigma among them) whichever
+        # card is selected; the cards only toggle which group boxes are VISIBLE.
+        self.param_form = ParamForm(window.get_config(), scrollable=False)
+        self.param_form.changed.connect(self._on_config_changed)
+        box.addWidget(self.param_form)
 
-        self._select_circuit(CIRCUIT_REGISTRY[0].circuit_id)
+        self.modules_section = CollapsibleSection("Controller modules")
+        self.module_checkboxes: dict[str, QCheckBox] = {}
+        self.module_editors: dict = {}
+        self.module_editor_boxes: dict[str, QWidget] = {}
+        self._module_sliders: dict = {}
+        self._module_rows: dict[str, QWidget] = {}
+        for field_name, params_cls, label, tip in MODULE_TOGGLES:
+            row = QWidget()
+            row_layout = QVBoxLayout(row)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            cb = QCheckBox(label)
+            cb.setToolTip(tip)
+            cb.setChecked(getattr(window.get_config().modules, field_name) is not None)
+            cb.toggled.connect(lambda checked, f=field_name, c=params_cls: self._on_module_toggled(f, c, checked))
+            row_layout.addWidget(cb)
+            row_layout.addWidget(self._build_module_editors(field_name))
+            self.modules_section.add_widget(row)
+            self.module_checkboxes[field_name] = cb
+            self._module_rows[field_name] = row
+        box.addWidget(self.modules_section)
+
+        self.rules_section = CollapsibleSection("Control rules")
+        self.rule_checkboxes: dict[str, QCheckBox] = {}
+        for rule, label in CONTROL_RULE_LABELS.items():
+            cb = QCheckBox(label)
+            cb.setToolTip("Unchecked: the rule is removed and the circuit alone decides. "
+                          "Defaults are all checked (behaviour unchanged).")
+            cb.setChecked(getattr(window.get_config().rules, rule))
+            cb.toggled.connect(lambda checked, r=rule: self._on_rule_toggled(r, checked))
+            self.rules_section.add_widget(cb)
+            self.rule_checkboxes[rule] = cb
+        # The forced GradedPitModule (audit row 17) already has its one writable home in the
+        # Goal tab; shown here read-only so every rule is visible in one place.
+        self.graded_pit_mirror = QCheckBox("Graded pit response, forced jump/B (row 17) -- set in the Goal tab")
+        self.graded_pit_mirror.setEnabled(False)
+        self.graded_pit_mirror.setChecked(window.get_config().scenario.graded_pit_response)
+        self.rules_section.add_widget(self.graded_pit_mirror)
+        box.addWidget(self.rules_section)
+        box.addStretch(1)
+        return inspector
 
     def _select_circuit(self, circuit_id: str) -> None:
         for cid, button in self._circuit_buttons.items():
             button.setChecked(cid == circuit_id)
         entry = self._entries_by_id[circuit_id]
-        # Two lines (ease-of-use redesign): the circuit's own one-line
-        # description, then where its populations/spec live.
         if entry.spec_path:
             second_line = f"See {entry.spec_path}."
         elif entry.populations:
             second_line = f"Populations: {', '.join(entry.populations)}."
         else:
             second_line = "No populations tracked in the live-brain map."
-        self._description_label.setText(f"{entry.description}\n{second_line}")
+        self._description_label.setText(f"{entry.display_name}: {entry.description}\n{second_line}")
         self.param_form.show_only_groups(set(entry.groups))
+        self._selected = entry
+        for field_name, row in self._module_rows.items():
+            row.setVisible(field_name in entry.modules)
+        for rule, cb in self.rule_checkboxes.items():
+            cb.setVisible(rule in entry.rules)
+        self.graded_pit_mirror.setVisible("graded_pit_response" in entry.rules)
+        self.modules_section.setVisible(bool(entry.modules))
+        self.rules_section.setVisible(bool(entry.rules))
+        self._update_badges()
+
+    def _update_badges(self) -> None:
+        """"Control rules (k/n on)" / "Controller modules (k/n on)" for the selected circuit."""
+        entry, config = self._selected, self._window.get_config()
+        mods_on = sum(getattr(config.modules, f) is not None for f in entry.modules)
+        rules_on = sum(getattr(config.rules, r) for r in entry.rules if r != "graded_pit_response")
+        rules_on += int("graded_pit_response" in entry.rules and config.scenario.graded_pit_response)
+        self.modules_section.set_title(f"Controller modules ({mods_on}/{len(entry.modules)} on)")
+        self.rules_section.set_title(f"Control rules ({rules_on}/{len(entry.rules)} on)")
 
     def _build_module_editors(self, field_name: str) -> QWidget:
-        """Editable parameters of one module, shown while it is on."""
-        from PySide6.QtWidgets import QDoubleSpinBox, QSpinBox
+        """Editable parameters of one module, shown while it is on. Every ranged field gets a
+        slider beside its (width-capped) spin box; the spin box stays the one writable path."""
         from tool.ui.widgets.no_scroll_inputs import NoScrollDoubleSpinBox
         container = QWidget()
         form = QFormLayout(container)
+        form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
         form.setContentsMargins(24, 0, 0, 4)
-        self.module_editors = getattr(self, "module_editors", {})
-        self.module_editor_boxes = getattr(self, "module_editor_boxes", {})
         params = getattr(self._window.get_config().modules, field_name)
         shown = params if params is not None else next(c for f, c, *_ in MODULE_TOGGLES if f == field_name)()
         specs = MODULE_PARAM_UI.get(field_name, [])
         if not specs:
-            note = QLabel("No parameters: switching it on is the whole setting.")
-            form.addRow(note)
+            form.addRow(QLabel("No parameters: switching it on is the whole setting."))
         for name, kind, lo, hi, step, tip in specs:
             if kind == "bool":
                 w = QCheckBox()
                 w.setChecked(bool(getattr(shown, name)))
                 w.toggled.connect(lambda v, f=field_name, n=name: self._set_module_param(f, n, bool(v)))
-            elif kind == "int":
-                w = NoScrollSpinBox()
-                w.setRange(int(lo), int(hi))
-                w.setValue(int(getattr(shown, name)))
-                w.valueChanged.connect(lambda v, f=field_name, n=name: self._set_module_param(f, n, int(v)))
+                editor = w
             else:
-                w = NoScrollDoubleSpinBox()
-                w.setDecimals(4)
-                w.setRange(float(lo), float(hi))
-                w.setSingleStep(float(step))
-                w.setValue(float(getattr(shown, name)))
-                w.valueChanged.connect(lambda v, f=field_name, n=name: self._set_module_param(f, n, float(v)))
+                if kind == "int":
+                    w = NoScrollSpinBox()
+                    w.setRange(int(lo), int(hi))
+                    w.setValue(int(getattr(shown, name)))
+                    w.valueChanged.connect(lambda v, f=field_name, n=name: self._set_module_param(f, n, int(v)))
+                else:
+                    w = NoScrollDoubleSpinBox()
+                    w.setDecimals(4)
+                    w.setRange(float(lo), float(hi))
+                    w.setSingleStep(float(step))
+                    w.setValue(float(getattr(shown, name)))
+                    w.valueChanged.connect(lambda v, f=field_name, n=name: self._set_module_param(f, n, float(v)))
+                w.setMaximumWidth(FIELD_MAX_WIDTH)
+                slider = NoScrollSlider(Qt.Orientation.Horizontal)
+                slider.setRange(0, SLIDER_STEPS)
+                slider.setToolTip(f"{lo} to {hi}")
+                self._link_slider(w, slider, float(lo), float(hi))
+                self._module_sliders[(field_name, name)] = slider
+                editor = QWidget()
+                row = QHBoxLayout(editor)
+                row.setContentsMargins(0, 0, 0, 0)
+                row.addWidget(w)
+                row.addWidget(slider, 1)
             w.setToolTip(tip)
-            label = QLabel(f"{name}  [{lo}\u2013{hi}]" if kind != "bool" else name)
+            label = QLabel(f"{name}  [{lo}–{hi}]" if kind != "bool" else name)
             label.setToolTip(tip)
-            form.addRow(label, w)
+            form.addRow(label, editor)
             self.module_editors[(field_name, name)] = w
         container.setVisible(params is not None)
         self.module_editor_boxes[field_name] = container
         return container
+
+    @staticmethod
+    def _link_slider(spin, slider: QSlider, lo: float, hi: float) -> None:
+        """Slider <-> spin box over [lo, hi]; a value outside the range pins the slider at its end."""
+        span = (hi - lo) or 1.0
+        is_int = isinstance(spin, NoScrollSpinBox)
+
+        def to_slider(value) -> None:
+            slider.blockSignals(True)
+            slider.setValue(int(round(SLIDER_STEPS * (min(hi, max(lo, value)) - lo) / span)))
+            slider.blockSignals(False)
+
+        def from_slider(raw: int) -> None:
+            value = lo + span * raw / SLIDER_STEPS
+            spin.setValue(round(value) if is_int else value)
+
+        slider.valueChanged.connect(from_slider)
+        spin.valueChanged.connect(to_slider)
+        to_slider(spin.value())
 
     def _set_module_param(self, field_name: str, name: str, value) -> None:
         config = self._window.get_config()
@@ -326,6 +405,17 @@ class CircuitsTab(QWidget):
             w.blockSignals(True)
             w.setChecked(bool(value)) if isinstance(w, QCheckBox) else w.setValue(value)
             w.blockSignals(False)
+            self._sync_slider_of(field_name, name, w)
+        self._update_badges()
+
+    def _sync_slider_of(self, field_name: str, name: str, spin) -> None:
+        """The spin's own signal was blocked, so its slider must be moved by hand."""
+        slider = self._module_sliders.get((field_name, name))
+        if slider is not None:
+            lo, hi = spin.minimum(), spin.maximum()
+            slider.blockSignals(True)
+            slider.setValue(int(round(SLIDER_STEPS * (min(hi, max(lo, spin.value())) - lo) / ((hi - lo) or 1.0))))
+            slider.blockSignals(False)
 
     def _on_rule_toggled(self, rule: str, checked: bool) -> None:
         config = self._window.get_config()
@@ -341,6 +431,7 @@ class CircuitsTab(QWidget):
                 box.setChecked(getattr(config.rules, rule))
                 box.blockSignals(False)
         self.graded_pit_mirror.setChecked(config.scenario.graded_pit_response)
+        self._update_badges()
 
     def _sync_param_form(self, config) -> None:
         if config is not self.param_form._config:
@@ -353,6 +444,7 @@ class CircuitsTab(QWidget):
         box = self.module_editor_boxes.get(field_name)
         if box is not None:
             box.setVisible(checked)
+            self._update_badges()
             params = getattr(modules, field_name)
             for (f, name), w in self.module_editors.items():   # show the fresh defaults
                 if f == field_name and params is not None:
@@ -360,6 +452,7 @@ class CircuitsTab(QWidget):
                     value = getattr(params, name)
                     w.setChecked(bool(value)) if isinstance(w, QCheckBox) else w.setValue(value)
                     w.blockSignals(False)
+                    self._sync_slider_of(f, name, w)
 
     def _on_shuffle_toggled(self, checked: bool) -> None:
         self.shuffle_seed_spin.setEnabled(checked)

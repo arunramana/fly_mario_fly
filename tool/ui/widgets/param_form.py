@@ -53,12 +53,14 @@ class ParamForm(QWidget):
 
     changed = Signal(object)
 
-    def __init__(self, config, parent=None, groups: set[str] | None = None):
+    def __init__(self, config, parent=None, groups: set[str] | None = None, scrollable: bool = True):
         """`groups=None` (default): every scalar, the original scrollable
         stack of everything ALL_PARAM_CLASSES tracks. `groups={"jump",
         "dnp02"}`: only those groups' own fields -- tool/SPEC_ui_retro.md
         section 8's per-circuit-card detail panel, reached through a card
-        instead of a scrollable stack of all of them at once."""
+        instead of a scrollable stack of all of them at once.
+        `scrollable=False`: no scroll area of its own -- the form sits in a page that
+        already scrolls (the Circuits tab), so the wheel never gets trapped in a nested one."""
         super().__init__(parent)
         self._config = config
         self._groups = groups
@@ -68,8 +70,6 @@ class ParamForm(QWidget):
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
         inner = QWidget()
         inner_layout = QVBoxLayout(inner)
 
@@ -82,6 +82,8 @@ class ParamForm(QWidget):
         for group_name in sorted(by_group):
             box = QGroupBox(group_name)
             form = QFormLayout(box)
+            # A narrow window puts the label above its field instead of clipping the label.
+            form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
             for control in by_group[group_name]:
                 widget = self._build_widget(control)
                 label = QLabel(control.name)
@@ -93,8 +95,13 @@ class ParamForm(QWidget):
             self._group_boxes[group_name] = box
 
         inner_layout.addStretch(1)
-        scroll.setWidget(inner)
-        outer.addWidget(scroll)
+        if scrollable:
+            scroll = QScrollArea()
+            scroll.setWidgetResizable(True)
+            scroll.setWidget(inner)
+            outer.addWidget(scroll)
+        else:
+            outer.addWidget(inner)
 
     def show_only_groups(self, groups: set[str] | None) -> None:
         """Runtime visibility toggle over one full, eagerly-built form --

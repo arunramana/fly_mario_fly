@@ -19,3 +19,29 @@ def format_batch_result(result) -> str:
         stats = "no completed runs to summarise"
     cancelled_note = f"  ({n_cancelled} cancelled excluded)" if n_cancelled else ""
     return f"Batch: {len(result.fitnesses)} runs, {stats}{cancelled_note}"
+
+
+BATCH_COLUMNS = ("seed", "max_x", "flag", "frames", "stomps", "escape jumps")
+
+
+def entries_in_batch(entries: list[dict], batch_id: str | None) -> list[dict]:
+    """The recorded runs sharing one batch_id, in seed order (none for a plain run)."""
+    if not batch_id:
+        return []
+    return sorted((e for e in entries if e.get("batch_id") == batch_id), key=lambda e: (e.get("seed", 0), e["number"]))
+
+
+def batch_rows(batch_entries: list[dict]) -> list[tuple]:
+    """One (seed, max_x, flag, frames, stomps, escape jumps) row per run."""
+    rows = []
+    for e in batch_entries:
+        s = e.get("summary", {})
+        rows.append((e.get("seed"), s.get("max_x_abs"), bool(s.get("flag_get")), s.get("n_frames"),
+                     s.get("n_stomps"), s.get("n_escape_jumps")))
+    return rows
+
+
+def batch_stats(rows: list[tuple]) -> tuple[int, int, float | None]:
+    """(wins, runs, mean max_x): a win is reaching the flag."""
+    xs = [r[1] for r in rows if isinstance(r[1], (int, float))]
+    return sum(1 for r in rows if r[2]), len(rows), (sum(xs) / len(xs) if xs else None)

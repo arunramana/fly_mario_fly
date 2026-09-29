@@ -61,7 +61,8 @@ class RunPicker(QWidget):
         self.prev_button.setToolTip("Previous run")
         self.prev_button.clicked.connect(lambda: self._step(-1))
         self.combo = QComboBox()
-        self.combo.setMinimumWidth(420)
+        self.combo.setMinimumWidth(12 * self.fontMetrics().height())   # ~a label; it stretches from there
+        self.combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
         self.combo.activated.connect(self._on_activated)
         self.next_button = QPushButton("▶")
         self.next_button.setToolTip("Next run")

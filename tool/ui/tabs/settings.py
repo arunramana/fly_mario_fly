@@ -10,6 +10,7 @@ import dataclasses
 
 from PySide6.QtWidgets import QCheckBox, QFormLayout, QGroupBox, QLabel, QVBoxLayout, QWidget
 
+from tool.ui.widgets.scroll_page import install_scroll_page
 from tool.core.tool_settings import RenderSettings
 from tool.ui.widgets.no_scroll_inputs import NoScrollSpinBox
 
@@ -18,7 +19,9 @@ class SettingsTab(QWidget):
     def __init__(self, window, parent=None):
         super().__init__(parent)
         self._window = window
-        layout = QVBoxLayout(self)
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        install_scroll_page(self, content)
         settings = window.get_tool_settings()
 
         # Presets for this tab live in the header's Presets menu now

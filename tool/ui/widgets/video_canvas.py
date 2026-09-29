@@ -27,7 +27,7 @@ class VideoCanvas(QWidget):
         self._pixmap = QPixmap()
         self._placeholder = "(no run loaded)"
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.setMinimumSize(256, 240)
+        self.setMinimumSize(128, 120)   # half a NES frame: below this the tab scrolls instead
 
     def set_pixmap(self, pixmap: QPixmap) -> None:
         self._pixmap = pixmap
@@ -49,8 +49,11 @@ class VideoCanvas(QWidget):
         if self._pixmap.isNull():
             return self.rect()
         w, h = self._pixmap.width(), self._pixmap.height()
-        factor = max(1, min(self.width() // w, self.height() // h))
-        draw_w, draw_h = w * factor, h * factor
+        fit = min(self.width() / w, self.height() / h)
+        # Whole-number scale-up keeps pixels crisp; below 1x there is no whole number that
+        # fits, so scale down fractionally (NES aspect kept) rather than overflowing the widget.
+        factor = int(fit) if fit >= 1 else max(fit, 0.01)
+        draw_w, draw_h = max(1, round(w * factor)), max(1, round(h * factor))
         x = (self.width() - draw_w) // 2
         y = (self.height() - draw_h) // 2
         return QRect(x, y, draw_w, draw_h)
@@ -63,5 +66,5 @@ class VideoCanvas(QWidget):
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self._placeholder)
             return
         rect = self.target_rect()
-        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, False)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, rect.width() < self._pixmap.width())
         painter.drawPixmap(rect, self._pixmap, self._pixmap.rect())

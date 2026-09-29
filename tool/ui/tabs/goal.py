@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton
 
+from tool.ui.widgets.scroll_page import install_scroll_page
 from tool.core.tool_settings import ExperimentSettings, FitnessSettings
 from tool.ui.widgets.no_scroll_inputs import NoScrollDoubleSpinBox, NoScrollSpinBox
 
@@ -23,7 +24,9 @@ class GoalTab(QWidget):
     def __init__(self, window, parent=None):
         super().__init__(parent)
         self._window = window
-        layout = QVBoxLayout(self)
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        install_scroll_page(self, content)
         config = window.get_config()
         settings = window.get_tool_settings()
 
@@ -44,26 +47,25 @@ class GoalTab(QWidget):
         self.max_frames_spin.valueChanged.connect(self._on_max_frames_changed)
         scenario_form.addRow("Max frames", self.max_frames_spin)
 
-        # tool/SPEC_ui_retro.md section 3, "one home per setting": found
-        # noise.sigma editable in BOTH this tab and the Circuits tab
-        # (schema.py's ParamForm covers all 49, sigma among them), nothing
-        # keeping the two in sync by construction. The Circuits tab is now
-        # the one writable home; this is read-only, always showing the
-        # live config.noise.sigma via MainWindow.config_changed (not a
-        # value snapshotted once at construction, which would go stale
-        # the moment the Circuits tab's own widget changed it).
+        # noise.sigma is ONE config value with two editors (here and in Circuits ->
+        # Other parameters). Neither owns a copy: each writes through
+        # window.set_config and re-reads config.noise.sigma on
+        # MainWindow.config_changed, so they cannot disagree.
         self.sigma_spin = NoScrollDoubleSpinBox()
         self.sigma_spin.setRange(0.0, 1.0)
         self.sigma_spin.setDecimals(4)
         self.sigma_spin.setSingleStep(0.01)
+        self.sigma_spin.setMaximumWidth(130)
         self.sigma_spin.setValue(config.noise.sigma)
-        self.sigma_spin.setEnabled(False)
-        self.sigma_spin.setToolTip("Read-only -- change noise.sigma from the Circuits tab.")
+        self.sigma_spin.setToolTip("noise.sigma: per-step noise on every circuit. 0 = deterministic. "
+                                   "Same value as Circuits > Other parameters.")
+        self.sigma_spin.valueChanged.connect(self._on_sigma_changed)
         window.config_changed.connect(self._on_config_changed_externally)
-        scenario_form.addRow("Noise sigma (see Circuits tab)", self.sigma_spin)
+        scenario_form.addRow("Noise sigma", self.sigma_spin)
 
         self.seeds_edit = QLineEdit(" ".join(str(s) for s in settings.experiment.seeds))
-        self.seeds_edit.setToolTip("Space-separated seeds -- one run each on Play/Batch")
+        self.seeds_edit.setToolTip("Space-separated seeds -- one run each on Play/Batch. A seed is also the "
+                                   "noise seed: with sigma > 0 it fixes the noise sequence.")
         self.seeds_edit.editingFinished.connect(self._on_seeds_changed)
         scenario_form.addRow("Seeds", self.seeds_edit)
 
@@ -226,6 +228,11 @@ class GoalTab(QWidget):
         config = self._window.get_config()
         scenario = dataclasses.replace(config.scenario, graded_pit_response=checked)
         self._window.set_config(dataclasses.replace(config, scenario=scenario))
+
+    def _on_sigma_changed(self, value: float) -> None:
+        config = self._window.get_config()
+        if config.noise.sigma != value:
+            self._window.set_config(dataclasses.replace(config, noise=dataclasses.replace(config.noise, sigma=value)))
 
     def _on_max_frames_changed(self, value: int) -> None:
         config = self._window.get_config()

@@ -20,10 +20,13 @@ bookmarks, looping a section.
 from __future__ import annotations
 
 from PySide6.QtCore import QSize
+from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
     QHBoxLayout, QLabel, QMessageBox, QProgressBar, QPushButton, QTabWidget, QVBoxLayout, QWidget,
 )
 
+from tool.core.batch_summary import entries_in_batch
+from tool.ui.widgets.batch_summary_table import BatchSummaryTable
 from tool.ui.widgets.controller_pad import ControllerPad
 from tool.ui.widgets.learning_chart import LearningChart
 from tool.ui.widgets.plots import TelemetryPlots
@@ -32,10 +35,11 @@ from tool.ui.widgets.run_data_overlay import DataOverlayContent
 from tool.ui.widgets.run_detail_panels import ConfigPanelContent
 from tool.ui.widgets.run_edge_panel import EdgePanel
 from tool.ui.widgets.run_player import RunPlayer
+from tool.ui.widgets.scroll_page import install_scroll_page
 from tool.ui.widgets.run_picker import RunPicker
 from tool.ui.widgets.stat_chips import StatChips
 
-MIN_PANEL_W = 200
+MIN_VIDEO_AREA_SCREEN_FRACTION = 0.45   # the player never gets less than this share of screen height; the tab scrolls instead
 
 SHORTCUT_HELP = """Space -- play / pause
 ← / → -- step one frame back / forward
@@ -58,7 +62,9 @@ class RunTab(QWidget):
         super().__init__(parent)
         self._window = window
         self._current_summary: dict | None = None
-        layout = QVBoxLayout(self)
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        install_scroll_page(self, content)
 
         controls = QHBoxLayout()
         self.cancel_button = QPushButton("Cancel")
@@ -77,8 +83,15 @@ class RunTab(QWidget):
         self.result_label = QLabel("")
         self.result_label.setWordWrap(True)
         layout.addWidget(self.result_label)
+        self.fps_label = QLabel("")     # live runs only: sim frames/s vs displayed frames/s
+        layout.addWidget(self.fps_label)
+        self.batch_table = BatchSummaryTable()
+        layout.addWidget(self.batch_table)
+        self._entries: list[dict] = []
 
         self.sub_tabs = QTabWidget()
+        screen = self.screen() or QGuiApplication.primaryScreen()
+        self.sub_tabs.setMinimumHeight(int(screen.availableGeometry().height() * MIN_VIDEO_AREA_SCREEN_FRACTION))
         layout.addWidget(self.sub_tabs, 1)
 
         self._build_player_page()
@@ -133,13 +146,13 @@ class RunTab(QWidget):
 
     def _place_panels(self) -> None:
         """Left: Brain, full height. Right: Data above Config. Width = the
-        margin beside the video (at least MIN_PANEL_W: narrower windows let
+        margin beside the video (at least the drawer's width fraction: narrower windows let
         the panels overlap the video, transparently). Sizes never touch the
         canvas, so the video rect is unchanged."""
         canvas = self.player.canvas
         w, h = canvas.width(), canvas.height()
         margin = max(0, (w - canvas.target_rect().width()) // 2)
-        pw = max(margin, MIN_PANEL_W)
+        pw = max(margin, *(p.min_width_for(w) for p in (self.brain_overlay, self.data_overlay, self.config_overlay)))
         avail = max(60, h - self.player.transport.sizeHint().height() - 8)
         tab = self.brain_overlay.tab.sizeHint().height()
 
@@ -188,7 +201,16 @@ class RunTab(QWidget):
     def show_shortcut_help(self) -> None:
         QMessageBox.information(self, "Player shortcuts", SHORTCUT_HELP)
 
+    def show_batch_for(self, number: int) -> None:
+        """Show the summary table of the batch run `number` belongs to (hide it for a plain run)."""
+        entry = next((e for e in self._entries if e["number"] == number), None)
+        self.batch_table.set_entries(entries_in_batch(self._entries, entry.get("batch_id") if entry else None))
+
+    def set_fps(self, sim: float | None, shown: float | None = None) -> None:
+        self.fps_label.setText("" if sim is None else f"live: sim {sim:.0f} fps · displayed {shown:.0f} fps")
+
     def _on_playlist_run_selected(self, number: int) -> None:
+        self.show_batch_for(number)
         self._window.select_history_run(number)
 
     def _on_learning_point(self, number: int) -> None:
@@ -224,7 +246,11 @@ class RunTab(QWidget):
         self.plots.set_playhead(frame)
         row = self.player.current_row()
         row_dict = row.to_dict() if row is not None else None
-        self.controller_pad.set_from_row(row_dict)
+        action = self.player.current_action()
+        if action is not None:      # the button actually pressed, from the run's action log
+            self.controller_pad.set_from_action(action)
+        else:                       # no log (older run): fall back to the telemetry
+            self.controller_pad.set_from_row(row_dict)
         self.data_content.update_from_row(row_dict)
         if self.brain_overlay.is_open():
             self.brain_map_content.update_frame(frame)
@@ -241,6 +267,8 @@ class RunTab(QWidget):
 
     def set_running(self, running: bool) -> None:
         self.cancel_button.setEnabled(running)
+        if not running:
+            self.set_fps(None)
         self.batch_button.setEnabled(not running)
         self.player.set_live(running)
 
@@ -266,10 +294,12 @@ class RunTab(QWidget):
             summary = entry.get("summary", {})
             fitness = None if summary.get("cancelled") else fitness_of(fitness_settings, summary)
             enriched.append({**entry, "fitness": fitness})
+        self._entries = list(entries)
         self.playlist.set_entries(enriched)
         self.learning.set_entries(entries)
 
     def select_run(self, number: int) -> bool:
+        self.show_batch_for(number)
         return self.playlist.select_number(number)
 
     def load_run_data(self, raw_frames_path, tel, info: dict, run_config=None) -> None:

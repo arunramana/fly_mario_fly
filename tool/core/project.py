@@ -83,6 +83,11 @@ class ToolProject:
         src = override_path(self.name)
         if src.exists():
             shutil.copyfile(src, override_path(new_name))
+        # Save states (projects/<name>/savestates) are action logs; copying them keeps
+        # "Start from" working in the duplicate.
+        states = self.root / "savestates"
+        if states.is_dir():
+            shutil.copytree(states, PROJECTS_ROOT / new_name / "savestates", dirs_exist_ok=True)
         return new
 
     def save(self) -> None:

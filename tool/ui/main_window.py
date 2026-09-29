@@ -24,6 +24,7 @@ from tool.core.run_store import (
 )
 from tool.core.runner import run_one_streaming
 from tool.core.batch import run_batch
+from tool.ui.screen_fit import apply_initial_geometry, save_geometry
 
 # Ease-of-use redesign, "Presets: move them into a single header menu":
 # tab-key -> menu label, for exactly the tabs that used to carry their
@@ -64,6 +65,8 @@ class MainWindow(QMainWindow):
         self._poll_timer = QTimer(self)
         self._poll_timer.setInterval(33)  # ~30fps preview polling
         self._poll_timer.timeout.connect(self._poll_queue)
+        from tool.core.fps_meter import FpsMeter
+        self._fps = FpsMeter()
         self._train_process: mp.Process | None = None
         self._train_queue: mp.Queue | None = None
         self._train_stop: mp.Event | None = None
@@ -76,7 +79,7 @@ class MainWindow(QMainWindow):
         self._current_run_spec: RunSpec | None = None
 
         self.setWindowTitle(self._title())
-        self.resize(1100, 800)
+        apply_initial_geometry(self)
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -135,6 +138,7 @@ class MainWindow(QMainWindow):
         outer.addWidget(self.read_only_banner_row)
 
         self.tabs = QTabWidget()
+        self.tabs.setUsesScrollButtons(True)   # 7 wide tab labels overflow a small window: scroll them
         outer.addWidget(self.tabs)
 
         # tool/SPEC_ui_retro.md section 10 (minimal scope): the seven tabs
@@ -351,6 +355,8 @@ class MainWindow(QMainWindow):
             return
         if (self._process is not None and self._process.is_alive()) or self.training_active():
             self.cancel()
+        if QApplication.platformName() != "offscreen":   # tests must not write the user's saved geometry
+            save_geometry(self)
         event.accept()
 
     def _go_home(self) -> None:
@@ -450,6 +456,7 @@ class MainWindow(QMainWindow):
         self._process.start()
         self.run_tab.set_running(True)
         self.run_tab.progress.setValue(0)
+        self._fps.reset()
         self._poll_timer.start()
 
     def set_arousal_live(self, level: float) -> None:
@@ -533,23 +540,37 @@ class MainWindow(QMainWindow):
             self.run_tab.refresh_history(list_runs(self.project.name))
 
     def _poll_queue(self) -> None:
+        """Drain the queue, but draw only the LATEST frame this tick: rendering every
+        queued frame made the UI fall behind the sim. Progress and the data overlays
+        follow that last row. The fps readout separates sim rate from displayed rate."""
         if self._queue is None:
             return
         max_frames = self.project.config.scenario.max_frames
+        latest = None
+        terminal = None
         while not self._queue.empty():
             message = self._queue.get_nowait()
             kind = message[0]
             if kind == "frame":
-                obs, row = message[1], message[2]
-                self.run_tab.preview.show_frame(obs, row)
-                self.run_tab.set_progress(row.get("frame", 0), max_frames)
-            elif kind == "done":
-                info = message[1]
-                self._on_run_finished(info)
-                return
-            elif kind == "error":
-                self._on_run_error(message[1])
-                return
+                latest = message
+                frame = message[2].get("frame")
+                if frame is not None:
+                    self._fps.sim_frame(frame)
+            else:
+                terminal = message
+                break
+        if latest is not None:
+            obs, row = latest[1], latest[2]
+            self.run_tab.preview.show_frame(obs, row)
+            self._fps.shown_frame()
+            self.run_tab.set_progress(row.get("frame", 0), max_frames)
+            self.run_tab.set_fps(*self._fps.rates())
+        if terminal is None:
+            return
+        if terminal[0] == "done":
+            self._on_run_finished(terminal[1])
+        elif terminal[0] == "error":
+            self._on_run_error(terminal[1])
 
     def _on_run_finished(self, info: dict) -> None:
         self._poll_timer.stop()
@@ -609,6 +630,8 @@ class MainWindow(QMainWindow):
         n_workers = self.project.tool_settings.render.parallel_workers
         result = run_batch(self.project, seeds=seeds, n_workers=n_workers)
         self.run_tab.refresh_history(list_runs(self.project.name))
+        if result.numbers:
+            self.run_tab.show_batch_for(result.numbers[0])
         # Ease-of-use redesign: "show the result line once" -- a batch's
         # outcome goes through the same single result_label every other
         # run outcome does, not a dedicated Batch sub-tab/label.

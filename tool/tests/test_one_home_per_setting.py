@@ -1,9 +1,7 @@
-"""tool/SPEC_ui_retro.md section 3: noise.sigma was found editable in
-BOTH the Goal tab and the Circuits tab (schema.py's ParamForm covers all
-49 scalars), nothing keeping the two in sync by construction -- a real
-"which one is the real one" trap. Fixed: the Circuits tab is the one
-writable home; the Goal tab's own control is read-only and stays live
-via MainWindow.config_changed.
+"""noise.sigma has two editors (Goal tab and Circuits > Other parameters) but ONE
+value: each writes config.noise.sigma through window.set_config and re-reads it on
+MainWindow.config_changed, so they can never disagree (tool/SPEC_ui_retro.md section 3's
+"which one is the real one" trap, solved by sync instead of by making one read-only).
 """
 from __future__ import annotations
 
@@ -16,6 +14,10 @@ from config.output_routing import PROJECTS_ROOT
 PROJECT_NAME = "_one_home_test"
 
 
+def circuits_sigma(window):
+    return window.tabs.widget(3).param_form._widget_by_path["noise.sigma"]
+
+
 @pytest.fixture
 def clean_project():
     root = PROJECTS_ROOT / PROJECT_NAME
@@ -24,7 +26,7 @@ def clean_project():
     shutil.rmtree(root, ignore_errors=True)
 
 
-def test_goal_sigma_is_read_only(qtbot, clean_project):
+def test_goal_sigma_is_editable(qtbot, clean_project):
     from tool.core.project import ToolProject
     from tool.ui.main_window import MainWindow
 
@@ -33,7 +35,10 @@ def test_goal_sigma_is_read_only(qtbot, clean_project):
     qtbot.addWidget(window)
 
     goal_tab = window.tabs.widget(4)
-    assert not goal_tab.sigma_spin.isEnabled(), "Goal tab's sigma control must be read-only"
+    assert goal_tab.sigma_spin.isEnabled(), "Goal tab's sigma control is editable"
+    goal_tab.sigma_spin.setValue(0.05)
+    assert window.get_config().noise.sigma == pytest.approx(0.05)
+    assert circuits_sigma(window).value() == pytest.approx(0.05), "Circuits tab follows the Goal tab"
     window.save()
 
 
@@ -66,17 +71,16 @@ def test_changing_sigma_on_circuits_tab_updates_goal_tab_live(qtbot, clean_proje
     window.save()
 
 
-def test_only_one_widget_writes_noise_sigma(qtbot, clean_project):
-    """Structural check, not just this one value: the Goal tab's sigma
-    widget must be disabled (never emits a user edit), so there is
-    exactly one path that can ever call set_config with a new sigma."""
+def test_both_editors_write_the_same_config_value(qtbot, clean_project):
     from tool.core.project import ToolProject
     from tool.ui.main_window import MainWindow
 
-    project = ToolProject.create(PROJECT_NAME)
-    window = MainWindow(project)
+    window = MainWindow(ToolProject.create(PROJECT_NAME))
     qtbot.addWidget(window)
-
     goal_tab = window.tabs.widget(4)
-    assert not goal_tab.sigma_spin.isEnabled()
+    circuits_sigma(window).setValue(0.02)
+    assert goal_tab.sigma_spin.value() == pytest.approx(0.02)
+    goal_tab.sigma_spin.setValue(0.03)
+    assert window.get_config().noise.sigma == pytest.approx(0.03)
+    assert circuits_sigma(window).value() == pytest.approx(0.03)
     window.save()

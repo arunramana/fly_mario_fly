@@ -35,6 +35,15 @@ class ControllerPad(QWidget):
             self.left, self.right, self.b, self.a = new
             self.update()
 
+    def set_from_action(self, action) -> None:
+        """The action index actually sent to the emulator (mario.actions.actions.MOVES:
+        base 0 = right, 4 = left; +2 = A, +1 = B). None: nothing lit."""
+        if action is None:
+            self.set_state(None, False, False)
+            return
+        a = int(action)
+        self.set_state("L" if a >= 4 else "R", a & 1, a & 2)
+
     def set_from_row(self, row) -> None:
         """`row`: a telemetry row (dict or Series) or None (nothing lit)."""
         if row is None:

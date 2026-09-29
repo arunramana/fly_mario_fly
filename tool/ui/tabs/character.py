@@ -23,6 +23,7 @@ from tool.ui.widgets.asset_image import load_asset
 from tool.ui.widgets.card_button import make_card_button
 from tool.ui.widgets.flow_layout import FlowLayout
 from tool.ui.widgets.no_scroll_inputs import NoScrollSlider
+from tool.ui.widgets.scroll_page import install_scroll_page
 
 CARD_ICON_PX = 96
 # Short button text (fits the card); the fuller description is the
@@ -39,7 +40,7 @@ class CharacterTab(QWidget):
         settings = window.get_tool_settings()
 
         outer = QSplitter(Qt.Orientation.Horizontal, self)
-        QVBoxLayout(self).addWidget(outer)
+        install_scroll_page(self, outer)
 
         card_area = QWidget()
         # A FlowLayout's own sizeHint() collapses to one card's width (it
@@ -47,7 +48,7 @@ class CharacterTab(QWidget):
         # QSplitter reads literally and shrinks this pane to fit -- an
         # explicit minimum width is what actually gets the splitter to
         # give the grid room to wrap past a single column.
-        card_area.setMinimumWidth(3 * (CARD_ICON_PX + 40))
+        card_area.setMinimumWidth(CARD_ICON_PX + 40)   # one card; the FlowLayout wraps the rest
         card_flow = FlowLayout(card_area, spacing=10)
         self._player_buttons: dict[str, QToolButton] = {}
         for player_id, label, asset_id, tooltip in PLAYERS:

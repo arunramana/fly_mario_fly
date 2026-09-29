@@ -52,7 +52,7 @@ class EntityCardGrid(QSplitter):
         # QSplitter reads literally and shrinks this pane to fit -- an
         # explicit minimum width is what actually gets the splitter to
         # give the grid room to wrap past a single column.
-        card_scroll.setMinimumWidth(3 * (CARD_ICON_PX + 40))
+        card_scroll.setMinimumWidth(CARD_ICON_PX + 40)   # one card; the FlowLayout wraps the rest
         card_area = QWidget()
         card_flow = FlowLayout(card_area, spacing=10)
         self._stack = QStackedWidget()

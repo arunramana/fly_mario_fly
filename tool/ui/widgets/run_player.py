@@ -55,6 +55,7 @@ class RunPlayer(QWidget):
         self._player = "mario"
         self._mode = "empty"  # "empty" | "live" | "seekable"
         self._tel = None
+        self._actions = None
         self._info: dict = {}
         self._n_frames = 0
         self._frames_idx = None
@@ -206,6 +207,7 @@ class RunPlayer(QWidget):
         self.set_live(False)
         self._tel = tel
         self._info = info or {}
+        self._actions = self._load_actions(self._info)
 
         loaded = load_frames(raw_frames_path) if raw_frames_path is not None else None
         if loaded is None:
@@ -349,6 +351,24 @@ class RunPlayer(QWidget):
             displayed = apply_palette(rgb, self._player, mario_x=row.get("mario_x"), mario_y=row.get("mario_y"))
             self.canvas.set_pixmap(frame_to_pixmap(displayed))
         self.frame_changed.emit(frame)
+
+    @staticmethod
+    def _load_actions(info: dict):
+        """The run's own action log (one emulator action per frame, saved-state prefix
+        skipped), or None for a run that recorded none."""
+        from tool.core.savestates import actions_path_for
+        path = actions_path_for(info)
+        if path is None:
+            return None
+        import numpy as np
+        return np.load(path)[int(info.get("actions_prefix_len", 0)):]
+
+    def current_action(self):
+        """The action index sent on the current frame, or None (no log / live)."""
+        actions = getattr(self, "_actions", None)
+        if actions is None or self._mode != "seekable" or not len(actions):
+            return None
+        return int(actions[min(self._current_frame_index, len(actions) - 1)])
 
     def current_row(self):
         if self._tel is None or not len(self._tel) or self._mode != "seekable":

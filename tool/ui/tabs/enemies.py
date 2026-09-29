@@ -14,6 +14,7 @@ import dataclasses
 from PySide6.QtWidgets import QCheckBox, QVBoxLayout, QWidget
 
 from mario.entities.kinds import EntityKind
+from tool.ui.widgets.scroll_page import install_scroll_page
 from tool.core.entity_profiles_store import (
     load_merged, set_kind_field, set_kind_odour_intensity, set_kind_odour_sign,
 )
@@ -32,7 +33,9 @@ class EnemiesTab(QWidget):
     def __init__(self, window, parent=None):
         super().__init__(parent)
         self._window = window
-        layout = QVBoxLayout(self)
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        install_scroll_page(self, content)
 
         settings = window.get_tool_settings()
         self.enable_checkbox = QCheckBox("Enable per-kind entity profiles (C8a)")

@@ -29,6 +29,10 @@ class CircuitEntry:
     populations: tuple[str, ...]
     description: str
     spec_path: str | None  # None: falls back to the group's own dataclass docstring
+    # Related ModulesConfig fields / ControlRules fields (plus "graded_pit_response") the
+    # inspector lists under this circuit. Every module and rule has exactly one home.
+    modules: tuple[str, ...] = ()
+    rules: tuple[str, ...] = ()
 
 
 CIRCUIT_REGISTRY: list[CircuitEntry] = [
@@ -37,33 +41,39 @@ CIRCUIT_REGISTRY: list[CircuitEntry] = [
         "LC4/LPLC2 looming detectors drive the DNp01 Giant Fiber; TTMn is "
         "the jump muscle it fires. The original escape circuit.",
         "docs/SPEC_jump.md",
+        modules=('page_perception', 'wall_ahead', 'dnp01_refractory', 'dnp02_refractory', 'motor_direct'), rules=('jump_hold', 'jump_cooldown', 'escape_habituation'),
     ),
     CircuitEntry(
         "steering", "Steering", ("steering",), ("DNa01", "DNa02"),
         "DNa01/DNa02, winner-take-all left/right steering driven by food "
         "and aversive odour.",
         "docs/SPEC_steering.md",
+        modules=(), rules=('climb_stall', 'climb_reflex', 'climb_habituation'),
     ),
     CircuitEntry(
         "speed", "Speed", ("speed",), ("DNp09",),
         "DNp09 -- forward-walking drive, brakes near an obstacle.",
         None,
+        modules=(), rules=('walk_suppression', 'odour_brake'),
     ),
     CircuitEntry(
         "takeoff", "Takeoff", ("takeoff",), ("DLMn",),
         "DLMn -- wing downstroke muscle, drives the pit long-jump.",
         "docs/SPEC_terrain.md",
+        modules=('gap_ahead',), rules=('long_jump_select', 'refusal', 'graded_pit_response'),
     ),
     CircuitEntry(
         "mdn", "MDN", ("mdn",), ("MDN",),
         "MDN -- backward walking. Not currently wired into any decision.",
         None,
+        modules=(), rules=('mdn_backup',),
     ),
     CircuitEntry(
         "mushroom_body", "Mushroom body", ("mushroom_body",), ("KC", "MBON", "DAN"),
         "KC/MBON/DAN -- the mushroom body's associative-learning core "
         "(event-proximal dopamine).",
         "docs/SPEC_mushroom_body.md",
+        modules=('mb_spatial_inputs', 'mbon_readout'), rules=(),
     ),
 ]
 
@@ -81,4 +91,5 @@ OTHER_ENTRY = CircuitEntry(
     "-- network dynamics, noise, habituation, odour, terrain, entity "
     "geometry, the demo-only injection knobs.",
     None,
+    modules=("arousal",),
 )

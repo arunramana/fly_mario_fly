@@ -6,15 +6,40 @@ any widget is constructed.
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
-from PySide6.QtGui import QFontDatabase
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFontDatabase, QGuiApplication
 from PySide6.QtWidgets import QApplication, QDialog
 
 ASSETS_ROOT = Path(__file__).resolve().parent.parent / "assets"
 STYLE_QSS_PATH = Path(__file__).resolve().parent / "style.qss"
 FONT_PATH = ASSETS_ROOT / "fonts" / "PressStart2P-Regular.ttf"
+
+
+REFERENCE_SCREEN_W = 1700   # logical px the QSS point sizes were tuned on (a 1080p-ish desktop)
+MIN_FONT_SCALE = 0.8        # never shrink the pixel font below this: it turns illegible
+
+
+def font_scale_for(available_width: int) -> float:
+    """QSS sizes are logical px/pt, so Qt's own DPI handling already scales them with the
+    display; what it can't know is that a laptop's *logical* screen is smaller. Shrink the
+    point sizes in proportion (never grow them, never below MIN_FONT_SCALE)."""
+    return max(MIN_FONT_SCALE, min(1.0, available_width / REFERENCE_SCREEN_W))
+
+
+def _scale_points(stylesheet: str, scale: float) -> str:
+    return re.sub(r"(\d+(?:\.\d+)?)pt\b", lambda m: f"{max(6.0, float(m.group(1)) * scale):.1f}pt", stylesheet)
+
+
+def enable_high_dpi() -> None:
+    """Must run before the QApplication exists. PassThrough keeps fractional Windows scaling
+    (125%/150%) exact instead of rounding it to 100/200%, which is what made the laptop
+    layout blow up."""
+    QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
+        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
 
 
 def load_theme(app: QApplication) -> None:
@@ -32,10 +57,14 @@ def load_theme(app: QApplication) -> None:
         stylesheet = STYLE_QSS_PATH.read_text(encoding="utf-8")
         for name in ("SKY_BLUE", "MARIO_RED", "LUIGI_GREEN", "BRICK_BROWN", "BLACK", "WHITE"):
             stylesheet = stylesheet.replace(f"@{name}@", getattr(palette_colors, name))
+        screen = app.primaryScreen()
+        if screen is not None:
+            stylesheet = _scale_points(stylesheet, font_scale_for(screen.availableGeometry().width()))
         app.setStyleSheet(stylesheet)
 
 
 def main(argv=None) -> int:
+    enable_high_dpi()
     app = QApplication(argv if argv is not None else sys.argv)
     app.setApplicationName("fly_mario")
     load_theme(app)
