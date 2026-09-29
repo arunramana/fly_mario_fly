@@ -518,6 +518,11 @@ class MainWindow(QMainWindow):
             kind, payload = self._train_queue.get_nowait()
             if kind == "phase":
                 self.goal_tab.set_training_state(True, f"training: {payload}")
+            elif kind == "test":
+                changed = True   # the Learning tab re-reads training_eval.json on refresh
+                self.goal_tab.set_training_state(
+                    True, f"test {payload['network']} ep {payload['episode']}: "
+                          f"{payload['wins']}/{len(payload['seeds'])} wins, mean max_x {payload['mean_max_x']:.0f}")
             elif kind == "episode":
                 changed = True
                 self.goal_tab.set_training_state(
@@ -591,6 +596,8 @@ class MainWindow(QMainWindow):
         write_run_note(self.project.name, number, slug, seed,
                         spec.config, spec.tool_settings, info)
         self.run_tab.refresh_history(list_runs(self.project.name))
+        if info.get("saved_checkpoint"):   # a Play with keep-learning on wrote play_NNN.npy
+            self.goal_tab.refresh_checkpoints()
         # The SAME path a playlist pick takes (select_history_run) -- one
         # place loads a run's data into the tab, whether it just finished
         # or was picked from the playlist (matches "show the result line
@@ -722,7 +729,7 @@ class MainWindow(QMainWindow):
             from config.project_config import from_dict as config_from_dict
             run_config = config_from_dict(run_spec_config)
 
-        self.run_tab.load_run_data(raw_frames_path, tel, summary, run_config)
+        self.run_tab.load_run_data(raw_frames_path, tel, summary, run_config, run_spec.get("tool_settings"))
         fitness = None if summary.get("cancelled") else fitness_of(fitness_settings, summary)
         self.run_tab.set_stats(summary, fitness)
         self.run_tab.show_result(self._format_result_line(entry["number"], summary, fitness_settings))

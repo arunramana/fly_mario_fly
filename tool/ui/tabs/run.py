@@ -297,12 +297,17 @@ class RunTab(QWidget):
         self._entries = list(entries)
         self.playlist.set_entries(enriched)
         self.learning.set_entries(entries)
+        from tool.core.training import load_evals
+        try:
+            self.learning.set_tests(load_evals(self._window.project.name))
+        except (OSError, ValueError):   # a damaged eval file must not break the run history
+            self.learning.set_tests([])
 
     def select_run(self, number: int) -> bool:
         self.show_batch_for(number)
         return self.playlist.select_number(number)
 
-    def load_run_data(self, raw_frames_path, tel, info: dict, run_config=None) -> None:
+    def load_run_data(self, raw_frames_path, tel, info: dict, run_config=None, run_settings=None) -> None:
         """Feeds the player, plots, and overlays from one completed run --
         the single place all of a run's own displays get updated
         together, so they can never show data from two different runs
@@ -314,7 +319,7 @@ class RunTab(QWidget):
         # rendered must never leave the other panels showing the previous run.
         self.data_content.set_summary(info)
         try:
-            self.config_content.set_config(run_config)
+            self.config_content.set_config(run_config, run_settings)
         except Exception as exc:  # noqa: BLE001 -- display only; never block the rest
             self.config_content.panel.setHtml(
                 f"<i>(config could not be shown: {type(exc).__name__}: {exc})</i>")

@@ -24,11 +24,15 @@ class ConfigDiffPanel(QTextEdit):
         super().__init__(parent)
         self.setReadOnly(True)
         self._config = None
+        self._settings = None
         self.changed_only = False
         self._render()
 
-    def set_config(self, config) -> None:
+    def set_config(self, config, tool_settings: dict | None = None) -> None:
+        """`tool_settings`: the run's saved tool.json snapshot (a dict), for the settings that
+        live outside ProjectConfig -- today the brain weights the run used."""
         self._config = config
+        self._settings = tool_settings
         self._render()
 
     def set_changed_only(self, changed_only: bool) -> None:
@@ -45,7 +49,7 @@ class ConfigDiffPanel(QTextEdit):
         if self.changed_only and not diff_paths:
             self.setHtml("<i>Every scalar matched the shipped defaults.</i>")
             return
-        lines = []
+        lines = _brain_lines(self._settings)
         for section in dataclasses.fields(config):
             value = getattr(config, section.name)
             rows = []
@@ -78,8 +82,22 @@ class ConfigPanelContent(QWidget):
         layout.addWidget(self.toggle)
         layout.addWidget(self.panel, 1)
 
-    def set_config(self, config) -> None:
-        self.panel.set_config(config)
+    def set_config(self, config, tool_settings: dict | None = None) -> None:
+        self.panel.set_config(config, tool_settings)
+
+
+def _brain_lines(tool_settings: dict | None) -> list[str]:
+    """The `[brain weights]` block: which KC->MBON weights the run used and whether they were
+    frozen. Shown only when a checkpoint was used (fresh weights are the default, like every
+    other unchanged value)."""
+    experiment = (tool_settings or {}).get("experiment", {})
+    name = experiment.get("brain_weights")
+    if not name:
+        return []
+    mode = "keeps learning" if experiment.get("keep_learning") else "frozen"
+    return ["<b>[brain weights]</b>",
+            f"<span style='background:#ffe08a'>checkpoint = {html.escape(str(name))} ({mode}) "
+            f"(default: fresh)</span>"]
 
 
 def _fmt(x) -> str:

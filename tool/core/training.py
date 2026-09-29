@@ -5,7 +5,10 @@
 # training episode, and the optional shuffled-wiring control networks -- is
 # recorded through the tool's run store, so it shows up in the Player and
 # the Learning chart. Video frames are kept only for a few episodes to save
-# disk; telemetry is kept for all.
+# disk; telemetry is kept for all. Optionally each episode gets its own noise
+# seed, and every N episodes the current weights are tested, frozen, on a
+# held-out set of seeds; those results go to a small JSON file next to the
+# checkpoints.
 """tool/core/training.py -- the one training path (Goal tab's Train button,
 `scripts/train_mushroom_body.py`). Never write runs anywhere but
 `tool.core.run_store`.
@@ -20,6 +23,7 @@ Telemetry is kept for every episode.
 from __future__ import annotations
 
 import dataclasses
+import json
 import time
 from pathlib import Path
 
@@ -30,6 +34,7 @@ from tool.core.frame_store import FrameStore
 from tool.core.run_store import (list_runs, next_run_number, patch_run, record_run,
                                  write_run_note)
 
+EVAL_FILE = "training_eval.json"
 GROUP_BASELINE = "Baseline"
 GROUP_REAL = "Training · real"
 EVERY_NTH = 10
@@ -133,11 +138,12 @@ def run_training(project, settings, emit=lambda *a: None, should_stop=lambda: Fa
     env = rs.make_env(config.scenario.level)
     death_frames = ts.render.death_animation_frames
 
-    def play(net: _Network, slug: str, lr, cfg):
+    def play(net: _Network, slug: str, lr, cfg, ep_seed=seed):
         recorder = PaletteFrameStore()
         tel, info = run_from_config(
-            cfg, f"{slug}.mp4", seed=seed, record_video=False, frame_skip=1,
+            cfg, f"{slug}.mp4", seed=ep_seed, record_video=False, frame_skip=1,
             event_proximal_dopamine=settings.event_proximal,
+            powerup_reward=ts.fitness.powerup > 0,
             shuffle_seed=net.shuffle_seed,
             savestate={"env": env, "warmup_frames": WARMUP_FRAMES},
             mb_weights=net.weights,
@@ -159,13 +165,41 @@ def run_training(project, settings, emit=lambda *a: None, should_stop=lambda: Fa
     record_run(name, base_number, base_slug, seed, info, base_spec,
                extra={"group": GROUP_BASELINE, "training": {
                    "network": "baseline", "episode": -1, "max_x": info["max_x_abs"],
-                   "died": bool(info["died_or_flagged"]), "flag": bool(info.get("flag_get"))}})
+                   "died": bool(info["died_or_flagged"]), "flag": bool(info.get("flag_get")),
+                   "score": info.get("score")}})
     write_run_note(name, base_number, base_slug, seed, base_cfg, ts, info)
     emit("episode", {"number": base_number, "group": GROUP_BASELINE, "network": "baseline",
                      "episode": -1, "max_x": info["max_x_abs"]})
     if info["cancelled"]:
         env.close()
         return {"baseline": base_number, "cancelled": True}
+
+    # ---- held-out test: frozen weights on seeds never used for training ----
+    test_seeds = tuple(settings.test_seeds) if settings.test_every > 0 else ()
+
+    def test_frozen(net: _Network, episode: int) -> dict:
+        """Runs the current weights with learning rate 0 (so neither reward nor punishment can
+        change them, and `net.weights` is left untouched) on every test seed."""
+        frozen = ep_config(0.0)
+        results = []
+        for s in test_seeds:
+            if should_stop():
+                break
+            _tel, r = run_from_config(
+                frozen, "test.mp4", seed=s, record_video=False, frame_skip=1, write_telemetry=False,
+                event_proximal_dopamine=settings.event_proximal, shuffle_seed=net.shuffle_seed,
+                powerup_reward=ts.fitness.powerup > 0,
+                savestate={"env": env, "warmup_frames": WARMUP_FRAMES},
+                mb_weights=net.weights, should_stop=should_stop, death_animation_frames=0)
+            results.append((s, int(r["max_x_abs"]), bool(r.get("flag_get"))))
+        wins = sum(w for _, _, w in results)
+        record = {"network": net.label, "episode": episode, "baseline": base_number,
+                  "seeds": [s for s, _, _ in results], "max_x": [x for _, x, _ in results],
+                  "wins": wins, "win_rate": wins / len(results) if results else 0.0,
+                  "mean_max_x": sum(x for _, x, _ in results) / len(results) if results else 0.0}
+        if results and not should_stop():
+            _append_eval(name, record)
+        return record
 
     # ---- networks ----
     first = 0
@@ -181,6 +215,8 @@ def run_training(project, settings, emit=lambda *a: None, should_stop=lambda: Fa
         emit("phase", net.label)
         net_cfg = ep_config(settings.learning_rate)
         cancelled = False
+        if test_seeds and net.tag == "real":
+            emit("test", test_frozen(net, net.next_episode - 1))   # the starting brain, for reference
         for i in range(settings.episodes):
             if should_stop():
                 cancelled = True
@@ -188,7 +224,8 @@ def run_training(project, settings, emit=lambda *a: None, should_stop=lambda: Fa
             ep = net.next_episode
             number = next_run_number(name)
             slug = f"{number:03d}_train_{net.tag}_ep{ep:03d}"
-            recorder, info = play(net, slug, settings.learning_rate, net_cfg)
+            ep_seed = episode_seed(settings, seed, ep)
+            recorder, info = play(net, slug, settings.learning_rate, net_cfg, ep_seed)
             cancelled = should_stop()
             net.weights = info.pop("mb_weights")
             is_last = i == settings.episodes - 1
@@ -201,13 +238,13 @@ def run_training(project, settings, emit=lambda *a: None, should_stop=lambda: Fa
                 reasons.add("last")
             info["cancelled"] = cancelled
             info["raw_frames_path"] = None
-            record_run(name, number, slug, seed, info,
+            record_run(name, number, slug, ep_seed, info,
                        _episode_spec_dict(base_number, net, settings, frame_cap,
                                           config.mushroom_body.learning_rate),
                        extra={"group": net.group, "training": {
                            "network": net.label, "episode": ep, "max_x": info["max_x_abs"],
                            "died": bool(info["died_or_flagged"]), "flag": bool(info.get("flag_get")),
-                           "baseline": base_number}})
+                           "score": info.get("score"), "seed": ep_seed, "baseline": base_number}})
             _apply_keep_policy(name, net, number, reasons, recorder, info, base_cfg, slug)
             net.next_episode += 1
             if net.tag == "real" and (ep % EVERY_NTH == 0 or is_last or cancelled):
@@ -216,6 +253,8 @@ def run_training(project, settings, emit=lambda *a: None, should_stop=lambda: Fa
                              "episode": ep, "max_x": info["max_x_abs"]})
             if cancelled:
                 break
+            if test_seeds and ((ep + 1) % settings.test_every == 0 or is_last):
+                emit("test", test_frozen(net, ep))
         _flush_held(name, net, base_cfg)
         if cancelled:
             break
@@ -272,13 +311,71 @@ def _drop_reason(name, net, number, reason):
         net.reasons.pop(number, None)
 
 
+def episode_seed(settings, base_seed: int, episode: int) -> int:
+    """The noise seed of training episode `episode` (docs/SPEC_learning_v2.md section 1):
+    the base seed in "fixed" mode; the episode-th seed counting up from the base in "vary"
+    mode, skipping any held-out test seed so training never sees a test seed."""
+    base = settings.seed_base if settings.seed_base is not None else base_seed
+    if settings.seed_mode == "fixed":
+        return base
+    held_out = set(settings.test_seeds) if settings.test_every > 0 else set()
+    seed, n = base, 0
+    while True:
+        if seed not in held_out:
+            if n == episode:
+                return seed
+            n += 1
+        seed += 1
+
+
 def _checkpoint_episode(filename: str) -> int:
-    return int(Path(filename).stem.rsplit("_ep", 1)[1])
+    """Episode a real_epNNN.npy checkpoint was saved at. A play_NNN.npy (saved by a Play with
+    keep-learning on) has no training episode: -1, so resuming from it starts at episode 0."""
+    stem = Path(filename).stem
+    return int(stem.rsplit("_ep", 1)[1]) if "_ep" in stem else -1
+
+
+def checkpoint_dir(project_name: str) -> Path:
+    return PROJECTS_ROOT / project_name / "checkpoints"
 
 
 def list_checkpoints(project_name: str) -> list[str]:
-    d = PROJECTS_ROOT / project_name / "checkpoints"
-    return sorted(p.name for p in d.glob("real_ep*.npy")) if d.exists() else []
+    """real_epNNN.npy (training) then play_NNN.npy (a Play that kept learning)."""
+    d = checkpoint_dir(project_name)
+    if not d.exists():
+        return []
+    return sorted(p.name for p in d.glob("real_ep*.npy")) + sorted(p.name for p in d.glob("play_*.npy"))
+
+
+def load_checkpoint(project_name: str, filename: str):
+    path = checkpoint_dir(project_name) / filename
+    if not path.exists():
+        raise FileNotFoundError(f"checkpoint {filename!r} not found under {checkpoint_dir(project_name)}")
+    return np.load(path)
+
+
+def save_play_checkpoint(project_name: str, run_number: int, weights) -> str:
+    """Never overwrites a training checkpoint: it has its own play_<run number>.npy name."""
+    d = checkpoint_dir(project_name)
+    d.mkdir(parents=True, exist_ok=True)
+    name = f"play_{run_number:03d}.npy"
+    np.save(d / name, weights)
+    return name
+
+
+def eval_path(project_name: str) -> Path:
+    return PROJECTS_ROOT / project_name / EVAL_FILE
+
+
+def load_evals(project_name: str) -> list[dict]:
+    path = eval_path(project_name)
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+
+
+def _append_eval(project_name: str, record: dict) -> None:
+    path = eval_path(project_name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(load_evals(project_name) + [record], indent=1), encoding="utf-8")
 
 
 def _base_spec(project, cfg, seed, out_filename) -> dict:

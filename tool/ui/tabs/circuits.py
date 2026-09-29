@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QSlider, QToolButton, QVBoxLayout, QWidget,
 )
 
-from config.params import CONTROL_RULE_LABELS, ArousalParams, GapAheadParams, WallAheadParams, MbonReadoutParams, Dnp01RefractoryParams, Dnp02RefractoryParams, MbSpatialInputParams, MotorDirectParams, PagePerceptionParams
+from config.params import CONTROL_RULE_LABELS, ArousalParams, GapAheadParams, WallAheadParams, MbonReadoutParams, Dnp01RefractoryParams, Dnp02RefractoryParams, MbSpatialInputParams, MotorDirectParams, PagePerceptionParams, QBlockAheadParams
 from config.project_config import from_dict as config_from_dict
 from tool.core.circuit_manifest import CIRCUIT_REGISTRY, OTHER_ENTRY
 from tool.ui.widgets.card_button import make_card_button
@@ -60,6 +60,10 @@ MODULE_TOGGLES = [
     ("motor_direct", MotorDirectParams, "MotorDirect (motor)",
      "A follows a leaky integral of the motor neurons' own activity instead of the fixed "
      "jump-hold / cooldown counters (docs/CONTROL_AUDIT.md rows 1-3)."),
+    ("qblock_ahead", QBlockAheadParams, "? block ahead (perception)",
+     "Unhit ? blocks at or ahead of Mario as distance and height, fed to the mushroom body as two extra "
+     "Kenyon-cell inputs and, if looming_gain > 0, as a weak looming cue. A stimulus only: the fly "
+     "decides. Scaled by the Question Block's Cue weight in the Objects tab. docs/SPEC_learning_v2.md"),
     ("mbon_readout", MbonReadoutParams, "Per-MBON readout (mushroom body)",
      "Each MBON gets its own connectome-derived weight onto DNp01 / DLMn / DNp09 / MDN "
      "instead of one scalar mean, so learning acts on specific pathways."),
@@ -123,10 +127,19 @@ MODULE_PARAM_UI: dict[str, list] = {
         extra="Also compared against dnp02.spike_threshold / alpha (0.33), the drive that re-fires DNp02."))],
     "dnp01_refractory": [("refractory_steps", "int", 1, 50, 1, _REFRACTORY_TIP.format(
         extra="For DNp01 it sets the minimum spacing between Giant Fiber spikes."))],
-    "mbon_readout": [(f"{p}_frac", "float", 0.0, 0.1, 0.001,
+    "qblock_ahead": [
+        ("perceive_tiles", "int", 1, 16, 1,
+         "How many tiles ahead an unhit ? block is perceived. Compared against the block's distance in tiles "
+         "(0 = overhead): closeness = (n - d) / n, so 1 overhead and 0 at the edge of the range."),
+        ("looming_gain", "float", 0.0, 10.0, 0.1,
+         "Scale on the block's looming angle theta = 2*arctan(16 px / (2*distance_px)) into the right-hemisphere "
+         "LC4/LPLC2 drive. Compared against wall_ahead.looming_gain (1.0). 0 = the looming route is off; the "
+         "two Kenyon-cell inputs are always on while the module is.")],
+    "mbon_readout": [(f"{p}_frac", "float", 0.0, 0.2, 0.001,
                       f"Bias current onto {label} per unit of the connectome-weighted MBON activity "
                       "(negative sign, like the existing MBON->DNa02 path). Compared against "
-                      "mushroom_body.mbon_dna02_frac_l/r (0.0038 / 0.0063) -- same order of size.")
+                      "mushroom_body.mbon_dna02_frac_l/r (0.0038 / 0.0063) -- same order of size. Range 0-0.2; "
+                      "see docs/RUNS.md for the value at which the readout starts to change behaviour.")
                      for p, label in (("dnp01", "DNp01 (jump)"), ("dlmn", "DLMn (long jump)"),
                                       ("dnp09", "DNp09 (speed)"), ("mdn", "MDN (backing up)"))],
 }

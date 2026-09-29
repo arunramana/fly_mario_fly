@@ -16,7 +16,9 @@ from PySide6.QtWidgets import QCheckBox, QVBoxLayout, QWidget
 
 from mario.entities.kinds import EntityKind
 from tool.ui.widgets.scroll_page import install_scroll_page
-from tool.core.entity_profiles_store import load_merged, set_kind_odour_intensity, set_kind_odour_sign
+from tool.core.entity_profiles_store import (
+    load_merged, set_kind_field, set_kind_odour_intensity, set_kind_odour_sign,
+)
 from tool.core.entity_registry import all_entity_entries
 from tool.ui.widgets.entity_cards import EntityCardGrid
 
@@ -48,12 +50,12 @@ class ObjectsTab(QWidget):
         entries_by_kind = {e.kind: e for e in all_entity_entries()}
         entries = [entries_by_kind[k] for k in OBJECTS_TAB_KINDS]
 
-        # No on_field_changed handler needed: every kind on this tab is
-        # is_food=True (or greyed), so EntityCardGrid never renders a
-        # looming/danger control here at all (see its own is_food gate).
+        # Every kind on this tab is is_food=True (or greyed), so EntityCardGrid renders no
+        # looming/danger control here; the one field it does write is the Question Block's
+        # cue_weight (the "? block ahead" perception module's profile).
         self._grid = EntityCardGrid(
             entries, profiles, settings.entity_profile.enabled,
-            self._on_intensity_changed, self._on_sign_changed, lambda *_: None,
+            self._on_intensity_changed, self._on_sign_changed, self._on_field_changed,
         )
         layout.addWidget(self._grid)
         # Backward-compatible aliases (tool/tests/test_entity_profiles_tab.py):
@@ -70,6 +72,10 @@ class ObjectsTab(QWidget):
         self._window.set_tool_settings(dataclasses.replace(settings, entity_profile=entity_profile))
         self._grid.set_enabled(checked)
         self._window.reload_tab("enemies")
+
+    def _on_field_changed(self, kind: EntityKind, field_name: str, value: float) -> None:
+        # Written immediately to entity_profiles.json, like the Enemies tab's fields.
+        set_kind_field(self._window.project.name, kind.name, field_name, value)
 
     def _on_intensity_changed(self, kind: EntityKind, value: float) -> None:
         set_kind_odour_intensity(self._window.project.name, kind.name, 0, value)

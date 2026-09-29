@@ -499,6 +499,23 @@ class MbSpatialInputParams:
 
 
 @dataclass(frozen=True)
+class QBlockAheadParams:
+    """bridge/controller_modules.py's QBlockAheadPerceptionModule (PERCEPTION).
+    Unhit `?` blocks at or ahead of Mario, read from the tile RAM as distance
+    and height, reach the circuit only as stimuli: two extra Kenyon-cell inputs
+    (closeness and height, 0..1) and, if `looming_gain` > 0, a weak looming
+    cue for a block ahead. Never a jump command (docs/SPEC_learning_v2.md
+    section 5)."""
+    perceive_tiles: int = _f(8, None,
+        "invented (perceptual range of the ? block cue in tiles, mechanical, not a circuit gain)",
+        "bridge/controller_modules.py (QBlockAheadPerceptionModule)")
+    looming_gain: float = _f(0.0, None,
+        "invented (scale on the ? block's looming angle theta into LC4/LPLC2, the same stimulus "
+        "class as an enemy's or a wall's; 0 = the looming route is off)",
+        "bridge/controller_modules.py (QBlockAheadPerceptionModule)")
+
+
+@dataclass(frozen=True)
 class MotorDirectParams:
     """bridge/controller_modules.py's MotorDirectModule: A follows a leaky
     integrator of the motor neurons' own activity instead of fixed hold and
@@ -529,13 +546,13 @@ class MbonReadoutParams:
     each motor pathway (from the real MBON -> X -> target connectome counts)
     instead of one scalar MBON mean. Fractions are current per unit of the
     weighted MBON mean; the negative sign matches the existing DNa02 path."""
-    dnp01_frac: float = _f(0.005, None, "invented (same order as mbon_dna02_frac_*)",
+    dnp01_frac: float = _f(0.005, (0.0, 0.2), "invented (same order as mbon_dna02_frac_*)",
                            "bridge/controller_modules.py (MbonReadoutModule)")
-    dlmn_frac: float = _f(0.005, None, "invented (same order as mbon_dna02_frac_*)",
+    dlmn_frac: float = _f(0.005, (0.0, 0.2), "invented (same order as mbon_dna02_frac_*)",
                           "bridge/controller_modules.py (MbonReadoutModule)")
-    dnp09_frac: float = _f(0.005, None, "invented (same order as mbon_dna02_frac_*)",
+    dnp09_frac: float = _f(0.005, (0.0, 0.2), "invented (same order as mbon_dna02_frac_*)",
                            "bridge/controller_modules.py (MbonReadoutModule)")
-    mdn_frac: float = _f(0.005, None, "invented (same order as mbon_dna02_frac_*)",
+    mdn_frac: float = _f(0.005, (0.0, 0.2), "invented (same order as mbon_dna02_frac_*)",
                          "bridge/controller_modules.py (MbonReadoutModule)")
 
 
@@ -589,11 +606,12 @@ class ModulesConfig:
     dnp01_refractory: Dnp01RefractoryParams | None = None
     arousal: ArousalParams | None = None
     mbon_readout: MbonReadoutParams | None = None
+    qblock_ahead: QBlockAheadParams | None = None
 
 
 MODULE_PARAM_CLASSES: tuple = (PagePerceptionParams, GapAheadParams, WallAheadParams, MotorDirectParams, MbonReadoutParams,
                                      MbSpatialInputParams, Dnp02RefractoryParams,
-                                     Dnp01RefractoryParams, ArousalParams)
+                                     Dnp01RefractoryParams, ArousalParams, QBlockAheadParams)
 
 ALL_PARAM_CLASSES = (
     NetworkParams, NoiseParams, JumpParams, Dnp02Params, TakeoffParams, SpeedParams,

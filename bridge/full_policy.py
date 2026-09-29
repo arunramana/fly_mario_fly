@@ -97,7 +97,8 @@ class FullPolicy:
     def __init__(self, config: ProjectConfig | None = None, level: str = "1-1",
                  retinotopic: bool = False, frame_skip: int = 1, mb_weights=None,
                  event_proximal_dopamine: bool = False, shuffle_seed: int | None = None,
-                 hunger_override: bool | None = None, entity_profiles=None):
+                 hunger_override: bool | None = None, entity_profiles=None,
+                 powerup_reward: bool = False):
         """`hunger_override`: None (default) reads hunger from Mario's real
         size, as always. True/False forces hungry/sated regardless of size
         (tool/PLAN.md C7) -- a character-state control, science-change-when-
@@ -129,10 +130,14 @@ class FullPolicy:
         self.motor = next((m for m in built if m.kind == "motor"), None)
         self.readout = next((m for m in built if m.kind == "readout"), None)
         self.wall_module = next((m for m in built if m.name == "wall_ahead"), None)
+        self.qblock_module = next((m for m in built if m.name == "qblock_ahead"), None)
         self.level = level
         self.retinotopic = retinotopic
         self.frame_skip = frame_skip
         self.event_proximal_dopamine = event_proximal_dopamine
+        # Mode flag (docs/SPEC_learning_v2.md section 4): in event-proximal mode, Mario
+        # becoming Super is also an appetitive dopamine event. Off = byte-identical to before.
+        self.powerup_reward = powerup_reward
         self.shuffle_seed = shuffle_seed
         self.hunger_override = hunger_override
         self.entity_profiles = entity_profiles
@@ -304,8 +309,11 @@ class FullPolicy:
         _mb_rng = np.random.default_rng(c.mushroom_body.kc_projection_seed)
         # MbSpatialInputModule adds 2 inputs (pit-edge and enemy closeness);
         # off -> exactly the original 7, so the goldens are untouched.
+        # Every perception module that feeds the KCs (mb_spatial_inputs, qblock_ahead)
+        # declares N_INPUTS; none present -> exactly the original 7.
         self.mb_spatial = any(m.name == "mb_spatial_inputs" for m in built)
-        n_mb_sensory = c.mushroom_body.n_mb_sensory + (2 if self.mb_spatial else 0)
+        self.n_mb_extra = sum(getattr(m, "N_INPUTS", 0) for m in built if m.kind == "perception")
+        n_mb_sensory = c.mushroom_body.n_mb_sensory + self.n_mb_extra
         self.mb_proj = np.zeros((self.n_kc, n_mb_sensory))
         for _i in range(self.n_kc):
             _feats = _mb_rng.choice(n_mb_sensory, size=c.mushroom_body.kc_features_per_cell,
@@ -339,6 +347,7 @@ class FullPolicy:
         self.n_dnp01_fired = self.n_dnp02_fired = 0
         self.n_qblock_hits = self.n_odor_avoids = self.n_refusals = 0
         self.n_stomps = 0
+        self.n_powerups = 0
         self._prev_enemy_slots: dict[int, int] = {}  # slot -> mario_x, for the stomp proxy
         self.orn_adapt = OlfactoryAdaptation()
         self.orn_adapt_avers = OlfactoryAdaptation()
@@ -397,7 +406,7 @@ class FullPolicy:
         stim = Stimulus()
         pctx = PerceptionContext(ram=ram, mario_x=mario_x, gap_w=gap_w,
                                  distance_to_edge=distance_to_edge, config=c,
-                                 registry=self.registry)
+                                 registry=self.registry, profiles=self.entity_profiles)
         for module in self.perception:
             module.perceive(pctx, stim)
         gap_input = gap_w if stim.gap_input is None else stim.gap_input
@@ -432,7 +441,9 @@ class FullPolicy:
         self._prev_enemy_slots = {i: mario_x for i in now_active_enemy_slots}
 
         mario_size = int(ram[ADDR_MARIO_SIZE])
-        if mario_size > self.prev_mario_size:
+        powerup = mario_size > self.prev_mario_size
+        if powerup:
+            self.n_powerups += 1
             log.debug(f"  Mario grew (size {self.prev_mario_size} -> {mario_size}) -- ate the mushroom")
         self.prev_mario_size = mario_size
 
@@ -476,6 +487,10 @@ class FullPolicy:
         Ij[self.j_msk["LC4_R"]] += abs(stim.wall_dtheta)
         Ij[self.j_msk["LPLC2_R"]] += stim.wall_theta
         Ij[self.jump_dnp01_mask] += stim.wall_takeoff
+        # QBlockAheadPerceptionModule's weak looming cue: zeros unless the module is on and its
+        # looming_gain > 0. A stimulus like the wall's; the circuit decides.
+        Ij[self.j_msk["LC4_R"]] += abs(stim.qblock_dtheta)
+        Ij[self.j_msk["LPLC2_R"]] += stim.qblock_theta
         Ij[self.jump_dnp01_mask] += self.mb_pathway_bias["dnp01"]
         if pc1_h:
             Ij += self.pc1_gw["jump"] * pc1_h
@@ -539,7 +554,7 @@ class FullPolicy:
         mb_sensory = np.array([theta["L"], theta["R"], odor_l_eff, odor_r_eff,
                                 float(gap_w), self.mb_prev_dnp09,
                                 1.0 if hunger == HUNGER_MULT_HUNGRY else 0.0]
-                               + (list(stim.mb_extra) if self.mb_spatial else []))
+                               + (list(stim.mb_extra) if self.n_mb_extra else []))
         mb_raw = self.mb_proj @ mb_sensory
         k_active = max(1, int(round(c.mushroom_body.kc_sparsity * self.n_kc)))
         mb_top = np.argpartition(mb_raw, -k_active)[-k_active:]
@@ -559,7 +574,8 @@ class FullPolicy:
         self.mb_elig = update_eligibility(self.mb_elig, kc_active, c.mushroom_body.trace_decay)
         # See __init__ for event_proximal_dopamine; the goldens use progress.
         if self.event_proximal_dopamine:
-            reward, _punish_unused = event_dopamine(qblock_hit, stomp, died=False)
+            reward, _punish_unused = event_dopamine(qblock_hit, stomp, died=False,
+                                                    powerup=powerup and self.powerup_reward)
         else:
             reward = progress
         if reward > 0:
@@ -811,6 +827,9 @@ class FullPolicy:
             extras.update({"wall_tiles": stim.wall_distance_tiles, "wall_height": stim.wall_height_tiles,
                            "wall_theta": stim.wall_theta, "wall_dtheta": stim.wall_dtheta,
                            "wall_takeoff": stim.wall_takeoff})
+        if self.qblock_module is not None:
+            extras.update({"qblock_tiles": stim.qblock_tiles, "qblock_height": stim.qblock_height_tiles,
+                           "qblock_theta": stim.qblock_theta})
         if self.arousal_module is not None:
             extras.update(self._pc1_extras(pc1_h))
         self.last_info["extras"] = extras

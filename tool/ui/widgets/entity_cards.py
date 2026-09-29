@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QSplitter, QStackedWidget, QWidget,
 )
 
+from mario.entities.kinds import EntityKind
 from tool.core.entity_registry import EntityKindEntry
 from tool.ui.widgets.asset_image import load_asset
 from tool.ui.widgets.card_button import make_card_button
@@ -146,6 +147,19 @@ class EntityCardGrid(QSplitter):
             danger_spin.setToolTip("Master knob: also scales looming salience above (SPEC section 1).")
             danger_spin.valueChanged.connect(lambda v, k=kind: self._on_field_changed(k, "danger_weight", v))
             form.addRow("Danger weight (master)", danger_spin)
+
+        # QUESTION_BLOCK only: the profile for Circuits' "? block ahead" perception module
+        # (docs/SPEC_learning_v2.md section 5). Scales its Kenyon-cell inputs and weak looming cue.
+        if kind == EntityKind.QUESTION_BLOCK:
+            cue_spin = NoScrollDoubleSpinBox()
+            cue_spin.setRange(0.0, 10.0)
+            cue_spin.setSingleStep(0.1)
+            cue_spin.setValue(profile.cue_weight)
+            cue_spin.setToolTip("Scale on the '? block ahead' perception module's cue (its two Kenyon-cell "
+                                "inputs and its looming route). Only used while that module is on "
+                                "(Circuits > Mushroom body) and profiles are enabled. 1 = unscaled.")
+            cue_spin.valueChanged.connect(lambda v, k=kind: self._on_field_changed(k, "cue_weight", v))
+            form.addRow("Cue weight (? block ahead)", cue_spin)
 
         page.setEnabled(enabled)
         return page

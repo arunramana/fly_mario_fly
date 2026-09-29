@@ -3,7 +3,8 @@
 # Mario (ground, bricks, pipes, "?" blocks, empty sky). From it, it answers
 # three questions: is there ground ahead or a pit, and how many blocks wide
 # is the pit; is there a wall or pipe directly in front of Mario; and where
-# are the nearby "?" blocks.
+# are the nearby "?" blocks (including how far ahead and how high the
+# nearest unhit one is).
 """
 tile_ram.py — SPEC_terrain.md section 1: decode the SMB collision tile
 buffer at 0x0500-0x069F.
@@ -154,6 +155,24 @@ def question_blocks_near(ram, n_tiles: int = 16) -> list[int]:
                 offsets.append(k)
                 break
     return offsets
+
+
+def question_blocks_ahead(ram, max_tiles: int = 8) -> list[tuple[int, int]]:
+    """Unhit `?` blocks (coin or power-up tile) in Mario's own column or up
+    to `max_tiles` ahead, as (distance_tiles, height_tiles), nearest first.
+    distance 0 = directly overhead; height = tiles above the ground row, so
+    a block whose tile row is r reads GROUND_ROW - r. One entry per column
+    (the lowest block in it). A hit block reads as USED_BLOCK_ID, so it
+    drops out of this list the moment it is hit."""
+    buf1, buf2 = _grids(ram)
+    col0 = _mario_abs_col(ram)
+    found = []
+    for k in range(0, max_tiles + 1):
+        for row in range(ROWS - 1, -1, -1):
+            if _tile_at_abs_col(buf1, buf2, col0 + k, row) in QUESTION_IDS:
+                found.append((k, GROUND_ROW - row))
+                break
+    return found
 
 
 def upcoming_gap_width(ram, max_tiles: int = 8) -> int:

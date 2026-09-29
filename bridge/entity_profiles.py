@@ -37,6 +37,9 @@ class KindProfile:
     danger_weight: float = 0.0
     is_food: bool = False
     body_scale: float = 1.0
+    # QUESTION_BLOCK only: scales QBlockAheadPerceptionModule's cue (its Kenyon-cell
+    # inputs and weak looming route). Default 1.0 = unscaled; other kinds ignore it.
+    cue_weight: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -71,6 +74,7 @@ def _kind_profile_from_dict(d: dict) -> KindProfile:
         danger_weight=d.get("danger_weight", 0.0),
         is_food=d.get("is_food", False),
         body_scale=d.get("body_scale", 1.0),
+        cue_weight=d.get("cue_weight", 1.0),
     )
 
 

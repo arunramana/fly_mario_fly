@@ -73,7 +73,7 @@ CIRCUIT_REGISTRY: list[CircuitEntry] = [
         "KC/MBON/DAN -- the mushroom body's associative-learning core "
         "(event-proximal dopamine).",
         "docs/SPEC_mushroom_body.md",
-        modules=('mb_spatial_inputs', 'mbon_readout'), rules=(),
+        modules=('mb_spatial_inputs', 'qblock_ahead', 'mbon_readout'), rules=(),
     ),
 ]
 

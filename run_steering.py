@@ -223,6 +223,8 @@ def policy_extra_columns(policy) -> tuple:
         cols += [f"mbon_{g}" for g in policy.readout.PATHWAYS] + ["mbon_agg"]
     if getattr(policy, "wall_module", None) is not None:
         cols += ["wall_tiles", "wall_height", "wall_theta", "wall_dtheta", "wall_takeoff"]
+    if getattr(policy, "qblock_module", None) is not None:
+        cols += ["qblock_tiles", "qblock_height", "qblock_theta"]
     if getattr(policy, "arousal_module", None) is not None:
         cols += ["arousal", "pc1_h", "pc1_drive_steer_r", "pc1_drive_steer_l", "pc1_drive_dnp09", "pc1_drive_gf"]
     return tuple(cols)
@@ -236,7 +238,7 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
          event_proximal_dopamine=False, config=None, on_frame=None, should_stop=None,
          shuffle_seed=None, hunger_override=None, entity_profiles=None,
          death_animation_frames=0, start_actions=None, record_actions=False,
-         arousal_source=None):
+         arousal_source=None, powerup_reward=False):
     """Run one episode of the full system and return (telemetry, info).
 
     start_actions: a saved-state prefix (uint8 action indices). The emulator
@@ -312,6 +314,10 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
         C8a). A bridge.entity_profiles.EntityProfiles applies each kind's
         intensity/looming_salience/danger_weight -- a science change when
         it differs from bridge/profiles/default.json's shipped values.
+    powerup_reward: False (default): unchanged. True: in event-proximal mode,
+        Mario becoming Super (RAM 0x0756 rising) is an appetitive dopamine
+        event too (docs/SPEC_learning_v2.md section 4). info["n_powerups"]
+        counts those events either way.
     death_animation_frames: 0 (default): unchanged behaviour, the episode
         ends the instant `done` is True, as always. On a real death or
         flag (not a Cancel, not hitting max_frames), a positive value
@@ -352,7 +358,7 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
                          frame_skip=frame_skip, mb_weights=mb_weights,
                          event_proximal_dopamine=event_proximal_dopamine,
                          shuffle_seed=shuffle_seed, hunger_override=hunger_override,
-                         entity_profiles=entity_profiles)
+                         entity_profiles=entity_profiles, powerup_reward=powerup_reward)
     policy.reset(seed)
     policy.arousal_source = arousal_source   # a callable -> slider level, read every frame (None = the config's value)
 
@@ -590,6 +596,7 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
         n_odor_avoids, n_qblock_hits, n_refusals = (policy.n_odor_avoids, policy.n_qblock_hits,
                                                      policy.n_refusals)
         n_stomps = policy.n_stomps
+        n_powerups = policy.n_powerups
         max_x_abs = policy.max_x_abs
         log.info(f"\n{frame} frames -- escape jumps={n_escape_jumps} "
                  f"(of which long jumps={n_long_jumps}, DNp01={n_dnp01_fired}, DNp02={n_dnp02_fired})  "
@@ -617,7 +624,7 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
                       n_climb_hops=n_climb_hops, n_climb_jumps=n_climb_jumps,
                       n_conflicts=n_conflicts, n_frames=frame, died_or_flagged=done,
                       n_odor_avoids=n_odor_avoids, n_qblock_hits=n_qblock_hits,
-                      n_stomps=n_stomps, n_refusals=n_refusals,
+                      n_stomps=n_stomps, n_powerups=n_powerups, n_refusals=n_refusals,
                       mb_weights=W_kc_mbon, max_x_abs=max_x_abs,
                       seed=seed, sigma=sigma,
                       score=info.get("score"), coins=info.get("coins"),

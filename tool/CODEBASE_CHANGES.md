@@ -367,3 +367,31 @@ exactly 90 more `on_frame` calls (frames 689-778) while `tel`, `n_frames`,
 and `max_x_abs` stay byte-for-byte identical to `death_animation_frames=0`;
 a run that hits max_frames instead of dying gets zero extra frames
 regardless of the setting.
+
+## C14 -- learning v2: power-up reward, "?" block cue, MBON readout range (docs/SPEC_learning_v2.md)
+
+**What.** Everything below is opt-in; with it off nothing changes.
+- `fly/plasticity/dopamine.py`: `event_dopamine(..., powerup=False)` -- Mario becoming Super is an
+  appetitive (PAM) event, same one-shot `dynamics.CLIP` magnitude as a `?` hit or stomp (no new scalar).
+- `bridge/full_policy.py`, `run_steering.py`: `powerup_reward=False` mode flag (event-proximal mode only);
+  `FullPolicy.n_powerups` counts RAM `0x0756` rising and `info["n_powerups"]` reports it (not a telemetry
+  column). `sim/fitness.py`: `FitnessWeights.powerup` (default 0.0) and `compute_fitness(..., powerups=)`.
+- `bridge/controller_modules.py`, `mario/ram/tile_ram.py`, `config/params.py`: `QBlockAheadPerceptionModule`
+  (`ModulesConfig.qblock_ahead`, off): unhit `?` blocks at/ahead of Mario as distance and height into two extra
+  Kenyon-cell inputs and an optional weak looming cue -- perception only (invariant 8). `Stimulus` gains four
+  `qblock_*` fields; `PerceptionContext` gains `profiles`; each perception module that feeds the KCs declares
+  `N_INPUTS` and `FullPolicy.n_mb_extra` sums them (`mb_spatial_inputs` alone is bit-identical to before).
+  Telemetry gains `qblock_tiles/height/theta` only while the module is on (`policy_extra_columns`).
+  `bridge/entity_profiles.py` + `default.json`: `KindProfile.cue_weight` (default 1.0) for QUESTION_BLOCK.
+- `config/params.py`: `QBlockAheadParams` (2 scalars -> 82 in `docs/SCALARS.md`); `MbonReadoutParams.*_frac`
+  range `(0.0, 0.2)` (values unchanged).
+
+**Why.** Learning v2 needs a second appetitive event, a way for the mushroom body to see where rewarding
+blocks are, and a readout strength range wide enough to test whether learning can change behaviour.
+
+**Default that keeps behaviour.** `powerup_reward=False`, `powerup` weight 0, `qblock_ahead=None`,
+`cue_weight` 1.0 unused without the module, `_frac` defaults unchanged.
+
+**Proof.** `tests/test_golden.py` (3/3 byte-identical) and the full `tests/` pass; new
+`tests/test_powerup_reward.py` (incl. the reward-vs-punishment sign test) and `tests/test_qblock_ahead.py`.
+`tests/test_controller_modules.py`'s stimulus-field set gained the four `qblock_*` names (all stimuli).

@@ -99,6 +99,7 @@ class PerceptionContext:
     distance_to_edge: int | None
     config: object
     registry: object = None
+    profiles: object = None    # bridge.entity_profiles.EntityProfiles, or None (profiles off)
 
 
 @dataclass
@@ -113,6 +114,10 @@ class Stimulus:
     wall_takeoff: float = 0.0          # takeoff current from the wall onto DNp01
     wall_distance_tiles: int = 0       # what was perceived (telemetry only): 0 = no wall
     wall_height_tiles: int = 0
+    qblock_theta: float = 0.0          # looming angle of the ? block ahead (QBlockAheadPerceptionModule)
+    qblock_dtheta: float = 0.0         # its growth this frame
+    qblock_tiles: int = -1             # what was perceived (telemetry only): -1 = no block in range
+    qblock_height_tiles: int = 0
 
 
 class PerceptionModule(Protocol):
@@ -264,7 +269,7 @@ class MbSpatialInputModule:
     every golden is unchanged)."""
     name = "mb_spatial_inputs"
     kind = "perception"
-    N_INPUTS = 2
+    N_INPUTS = 2   # Kenyon-cell inputs it adds; FullPolicy sums these over all modules
     ENEMY_RANGE_PX = 128.0
 
     def __init__(self, params):
@@ -288,7 +293,55 @@ class MbSpatialInputModule:
                 if dx >= 0 and (nearest is None or dx < nearest):
                     nearest = dx
         enemy = 0.0 if nearest is None else max(0.0, 1.0 - nearest / self.ENEMY_RANGE_PX)
-        stim.mb_extra = (float(edge), float(enemy))
+        stim.mb_extra = stim.mb_extra + (float(edge), float(enemy))
+
+
+class QBlockAheadPerceptionModule:
+    """PERCEPTION. Unhit `?` blocks at or ahead of Mario, from the tile RAM, as
+    distance and height (a hit block reads as used and drops out of the list,
+    so a cue never points at an emptied block). Reaches the circuit only as
+    stimuli, never as an action (invariant 8): (1) two Kenyon-cell inputs, both
+    0..1 like looming -- closeness (1 overhead, 0 at `perceive_tiles`) and
+    height (tiles above the ground row / the ground row), so the mushroom body
+    can learn where rewarding blocks are; (2) if `looming_gain` > 0, a weak
+    looming cue theta = 2*arctan(16 px / (2*d_px)) into the right-hemisphere
+    LC4/LPLC2 drive like the wall. Whether and when the fly jumps is the
+    circuit's. Both routes are scaled by the QUESTION_BLOCK profile's
+    `cue_weight` when entity profiles are on (Objects tab). Off by default:
+    n_mb_sensory stays as it was and every golden is unchanged."""
+    name = "qblock_ahead"
+    kind = "perception"
+    N_INPUTS = 2
+    TILE_PX = 16
+
+    def __init__(self, params):
+        self.params = params
+        self.reset()
+
+    def reset(self) -> None:
+        self.prev_theta = 0.0
+
+    def perceive(self, ctx: PerceptionContext, stim: Stimulus) -> None:
+        import math
+        from mario.ram.tile_ram import GROUND_ROW, question_blocks_ahead
+        p = self.params
+        weight = 1.0
+        if ctx.profiles is not None:
+            from mario.entities.kinds import EntityKind
+            weight = ctx.profiles.get(EntityKind.QUESTION_BLOCK).cue_weight
+        blocks = question_blocks_ahead(ctx.ram, p.perceive_tiles)
+        closeness = height = theta = 0.0
+        if blocks:
+            tiles, height_tiles = blocks[0]
+            closeness = (p.perceive_tiles - tiles) / p.perceive_tiles
+            height = height_tiles / GROUND_ROW
+            d_px = max(tiles * self.TILE_PX, self.TILE_PX / 2)
+            theta = 2.0 * math.atan(self.TILE_PX / (2.0 * d_px))
+            stim.qblock_tiles, stim.qblock_height_tiles = tiles, height_tiles
+        stim.mb_extra = stim.mb_extra + (weight * closeness, weight * height)
+        stim.qblock_theta = weight * p.looming_gain * theta
+        stim.qblock_dtheta = weight * p.looming_gain * (theta - self.prev_theta)
+        self.prev_theta = theta
 
 
 class MotorDirectModule:
@@ -389,7 +442,8 @@ MODULE_CLASSES: dict[str, type] = {"page_perception": PagePerceptionModule,
                                     "dnp02_refractory": Dnp02RefractoryModule,
                                     "dnp01_refractory": Dnp01RefractoryModule,
                                     "arousal": ArousalModule,
-                                    "mbon_readout": MbonReadoutModule}
+                                    "mbon_readout": MbonReadoutModule,
+                                    "qblock_ahead": QBlockAheadPerceptionModule}
 
 
 def register(name: str):

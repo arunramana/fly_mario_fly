@@ -53,6 +53,7 @@
     "danger_weight": 0.0,
     "is_food": true,
     "body_scale": 1.0,
+    "cue_weight": 1.0,
     "_note": "Tile-based, not an enemy-slot entity -- bridge/perception.py's question_block_odor reads tile_ram directly rather than mario.entities.registry, a deliberate phase-2 scoping decision (docs/ENTITIES.md). Shares the 'food' channel with POWERUP because run_steering.py's main() sums them before applying ODOUR_GAIN/hunger -- this file documents that equivalence, it doesn't create it. `intensity: 1.0` (C8a, invented, same reasoning as POWERUP)."
   },
 

@@ -57,6 +57,10 @@ class FitnessSettings:
     points: float = 0.0
     distance: float = 1.0
     time: float = 0.0
+    # Weight of one power-up eaten (Mario becoming Super). > 0 also switches on the power-up
+    # dopamine event in event-proximal runs; the value never scales the dopamine
+    # (docs/SPEC_learning_v2.md section 4).
+    powerup: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -70,6 +74,12 @@ class ExperimentSettings:
     # A name under projects/<name>/savestates/ (tool/core/savestates.py), or
     # None = power-on. Recorded in every run's snapshot; the brain starts fresh.
     start_state: str | None = None
+    # Play / batch brain (docs/SPEC_learning_v2.md section 2): None = fresh connectome weights,
+    # or a file under projects/<name>/checkpoints/. Without keep_learning the weights are
+    # frozen for the run (learning rate 0); with it they learn, and a single Play saves the
+    # updated matrix as play_<run>.npy.
+    brain_weights: str | None = None
+    keep_learning: bool = False
 
 
 @dataclass(frozen=True)
@@ -127,7 +137,12 @@ class TrainingSettings:
     `event_proximal` switches the reward from "any forward progress" to
     "only a ? block / stomp" (FullPolicy's event_proximal_dopamine).
     `checkpoint`: a file name under projects/<name>/checkpoints/ to start
-    the real network from instead of fresh weights."""
+    the real network from instead of fresh weights.
+    Seeds (docs/SPEC_learning_v2.md section 1): `seed_mode` "fixed" = every
+    episode uses the base seed (`seed_base`, None = the Goal tab's first seed);
+    "vary" = episode i uses base + i, skipping any test seed. `test_every` > 0
+    evaluates the current weights, frozen, on `test_seeds` every that many
+    episodes (0 = never)."""
     episodes: int = 200
     frame_cap: int = 3000
     learning_rate: float | None = None
@@ -135,6 +150,14 @@ class TrainingSettings:
     include_shuffled: bool = False
     n_shuffled: int = 2
     checkpoint: str | None = None
+    seed_mode: str = "fixed"
+    seed_base: int | None = None
+    test_every: int = 0
+    test_seeds: tuple[int, ...] = tuple(range(100, 110))
+
+    def __post_init__(self):
+        if self.seed_mode not in ("fixed", "vary"):
+            raise ValueError(f"seed_mode must be 'fixed' or 'vary', got {self.seed_mode!r}")
 
 
 @dataclass(frozen=True)
@@ -181,7 +204,7 @@ def _from_dict(cls, data: dict):
         raw = data[f.name]
         if is_dataclass(field_type) and isinstance(raw, dict):
             kwargs[f.name] = _from_dict(field_type, raw)
-        elif f.name == "seeds" and raw is not None:
+        elif f.name in ("seeds", "test_seeds") and raw is not None:
             kwargs[f.name] = tuple(raw)
         else:
             kwargs[f.name] = raw

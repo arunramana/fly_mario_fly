@@ -5,10 +5,12 @@ both the Play button (P4) and a batch run (batch.py) go through
 
 from __future__ import annotations
 
+import dataclasses
+import re
 from pathlib import Path
 
 
-def run_one(spec, on_frame=None, should_stop=None, arousal_source=None):
+def run_one(spec, on_frame=None, should_stop=None, arousal_source=None, save_checkpoint=False):
     """Runs one RunSpec synchronously in whatever process calls this -- a
     fresh one (a single Play), or a warm pool worker (batch.py). Routes
     through sim.project_runner.run_from_config so C1's config= plumbing
@@ -30,11 +32,28 @@ def run_one(spec, on_frame=None, should_stop=None, arousal_source=None):
     recording -- excluded from telemetry and fitness (run_steering.py's
     own docstring) -- so the player shows the NES's own death animation
     instead of cutting to the last standing frame.
+
+    Brain weights (docs/SPEC_learning_v2.md section 2): `experiment.brain_weights`
+    names a checkpoint to run instead of the fresh connectome weights. Without
+    `experiment.keep_learning` the run is frozen (learning rate forced to 0, so
+    the run is of THAT checkpoint); with it the project's rate applies, and
+    `save_checkpoint` (a single Play; never a batch) writes the updated matrix
+    as play_<run number>.npy. Neither set = exactly the run this function has
+    always made.
     """
     import setuptools  # noqa: F401 -- must precede gym, same rule as run_steering.py
     from sim.project_runner import run_from_config
 
     character = spec.tool_settings.character
+    experiment = spec.tool_settings.experiment
+    config = spec.config
+    mb_weights = None
+    if experiment.brain_weights:
+        from tool.core.training import load_checkpoint
+        mb_weights = load_checkpoint(spec.project_name, experiment.brain_weights)
+        if not experiment.keep_learning:
+            config = dataclasses.replace(config, mushroom_body=dataclasses.replace(
+                config.mushroom_body, learning_rate=0.0))
     powerup_kwargs = {}
     if character.starting_powerup:
         powerup_kwargs = dict(force_mario_size=1, force_size_from_frame=0)
@@ -62,7 +81,7 @@ def run_one(spec, on_frame=None, should_stop=None, arousal_source=None):
     if spec.tool_settings.render.raw_frames:
         from config.output_routing import resolve_run_path
         from tool.core.frame_store import FrameStore
-        raw_path = resolve_run_path(spec.config, Path(spec.out_filename).stem + "_raw.npz")
+        raw_path = resolve_run_path(config, Path(spec.out_filename).stem + "_raw.npz")
         recorder = FrameStore()
 
     def combined_on_frame(frame, obs, row):
@@ -71,7 +90,7 @@ def run_one(spec, on_frame=None, should_stop=None, arousal_source=None):
             on_frame(frame, obs, row)
 
     tel, info = run_from_config(
-        spec.config, spec.out_filename,
+        config, spec.out_filename,
         seed=spec.seed,
         record_video=spec.tool_settings.render.record_video,
         frame_skip=spec.tool_settings.render.frame_skip,
@@ -85,14 +104,23 @@ def run_one(spec, on_frame=None, should_stop=None, arousal_source=None):
         start_actions=start_state["actions"] if start_state else None,
         arousal_source=arousal_source,
         record_actions=replayable,
+        mb_weights=mb_weights,
+        powerup_reward=spec.tool_settings.fitness.powerup > 0,
         **powerup_kwargs,
     )
+    if experiment.brain_weights:
+        info["brain_weights"] = experiment.brain_weights
+        info["brain_frozen"] = not experiment.keep_learning
+    if save_checkpoint and experiment.keep_learning:
+        from tool.core.training import save_play_checkpoint
+        number = int(re.match(r"\d+", spec.out_filename).group())
+        info["saved_checkpoint"] = save_play_checkpoint(spec.project_name, number, info["mb_weights"])
     actions = info.pop("actions", None)
     if actions is not None:
         import numpy as np
         from config.output_routing import resolve_run_path
         prefix = start_state["actions"] if start_state else np.empty(0, dtype=np.uint8)
-        path = resolve_run_path(spec.config, Path(spec.out_filename).stem + "_actions.npy")
+        path = resolve_run_path(config, Path(spec.out_filename).stem + "_actions.npy")
         path.parent.mkdir(parents=True, exist_ok=True)
         np.save(path, np.concatenate([prefix, actions]).astype(np.uint8))
         info["actions_path"] = str(path)
@@ -159,7 +187,8 @@ def run_one_streaming(spec, frame_queue, stop_event, arousal_value=None):
 
     try:
         source = (lambda: arousal_value.value) if arousal_value is not None else None
-        tel, info = run_one(spec, on_frame=on_frame, should_stop=should_stop, arousal_source=source)
+        tel, info = run_one(spec, on_frame=on_frame, should_stop=should_stop, arousal_source=source,
+                            save_checkpoint=True)
         # Found in manual testing: a cancelled run was recorded and shown
         # exactly like a normal completed one, with nothing distinguishing
         # it from Cancel having done nothing at all. should_stop() being

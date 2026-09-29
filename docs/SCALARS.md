@@ -185,10 +185,10 @@ disagree.
 
 | field | value | range | provenance | home |
 |---|---|---|---|---|
-| `dnp01_frac` | `0.005` | unknown | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
-| `dlmn_frac` | `0.005` | unknown | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
-| `dnp09_frac` | `0.005` | unknown | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
-| `mdn_frac` | `0.005` | unknown | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
+| `dnp01_frac` | `0.005` | 0.0-0.2 | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
+| `dlmn_frac` | `0.005` | 0.0-0.2 | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
+| `dnp09_frac` | `0.005` | 0.0-0.2 | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
+| `mdn_frac` | `0.005` | 0.0-0.2 | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
 
 ## MbSpatialInputParams
 
@@ -215,22 +215,29 @@ disagree.
 | `arousal_max_h` | `10.0` | 0.0-50.0 | invented (pC1 activity, in network h units, at arousal 1; 50 is the network clip) | `bridge/full_policy.py (arousal_max_h)` |
 | `two_hop` | `False` | unknown | invented (mechanical: also drive through one intermediate neuron, Dale-signed; off = direct pC1 synapses only) | `fly/circuits/pc1_arousal_weights.py (two_hop)` |
 
+## QBlockAheadParams
+
+| field | value | range | provenance | home |
+|---|---|---|---|---|
+| `perceive_tiles` | `8` | unknown | invented (perceptual range of the ? block cue in tiles, mechanical, not a circuit gain) | `bridge/controller_modules.py (QBlockAheadPerceptionModule)` |
+| `looming_gain` | `0.0` | unknown | invented (scale on the ? block's looming angle theta into LC4/LPLC2, the same stimulus class as an enemy's or a wall's; 0 = the looming route is off) | `bridge/controller_modules.py (QBlockAheadPerceptionModule)` |
+
 
 ## Totals
 
-**80 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
+**82 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
 more (`DemoParams.mushroom_offset`, `DemoParams.wide_gap_lead_tiles`,
 `TerrainParams.refusal_gap_margin_tiles`) only matter in an opt-in
 injection demo -- the first is untested by any golden, the other two are
 exercised by `tests/test_golden.py::test_017_reprise`'s own
 `inject_gap_frame`, so "opt-in" here means "off by default", not
-"untested". The other 74 are live in every default run.
+"untested". The other 76 are live in every default run.
 
 A range of `unknown` means genuinely unknown, not left blank: an invented
 bound would be scaffolding that looks like data. Only `JumpParams.g` and
 `NoiseParams.sigma` have a characterised range.
 
-By category (the first word of each provenance): **58 invented**, **22 measured**, **0 connectome-derived** (of 80).
+By category (the first word of each provenance): **60 invented**, **22 measured**, **0 connectome-derived** (of 82).
 
 None are connectome-derived. The connectome determines each circuit's
 weight matrix `W`; every scalar here sits outside it, as a gain on it, a

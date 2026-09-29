@@ -90,9 +90,25 @@ class GoalTab(QWidget):
         note.setWordWrap(True)
         scenario_form.addRow(note)
         self.refresh_states()
+
+        # docs/SPEC_learning_v2.md section 2: which KC->MBON weights Play and Run batch use.
+        self.brain_weights_combo = QComboBox()
+        self.brain_weights_combo.setToolTip(
+            "fresh: the connectome's own KC->MBON weights (default). A checkpoint: run that trained brain "
+            "(from Train, or a Play that kept learning). Applies to Play and Run batch; recorded in the run.")
+        self.brain_weights_combo.currentIndexChanged.connect(self._on_brain_weights_changed)
+        scenario_form.addRow("Brain weights", self.brain_weights_combo)
+        self.keep_learning_checkbox = QCheckBox("Keep learning during play (saves play_NNN.npy after a Play)")
+        self.keep_learning_checkbox.setChecked(settings.experiment.keep_learning)
+        self.keep_learning_checkbox.setToolTip(
+            "Off: a checkpoint is frozen for the run (learning rate 0), so the run is of that checkpoint. "
+            "On: it learns as it plays; a single Play saves the updated weights as a new checkpoint. "
+            "A batch never saves or chains: every seed starts from the same checkpoint.")
+        self.keep_learning_checkbox.toggled.connect(self._on_keep_learning_changed)
+        scenario_form.addRow("", self.keep_learning_checkbox)
         layout.addWidget(scenario_box)
 
-        fitness_box = QGroupBox("Fitness weights (points/distance/time)")
+        fitness_box = QGroupBox("Fitness weights (points/distance/time/power-up)")
         fitness_form = QFormLayout(fitness_box)
         self.points_spin = self._fitness_spin(settings.fitness.points, self._on_points_changed)
         self.distance_spin = self._fitness_spin(settings.fitness.distance, self._on_distance_changed)
@@ -100,6 +116,12 @@ class GoalTab(QWidget):
         fitness_form.addRow("Points", self.points_spin)
         fitness_form.addRow("Distance", self.distance_spin)
         fitness_form.addRow("Time", self.time_spin)
+        self.powerup_spin = self._fitness_spin(settings.fitness.powerup, self._on_powerup_changed)
+        self.powerup_spin.setToolTip(
+            "Weight of one power-up eaten (Mario becoming Super). Above 0 it also makes eating one a "
+            "dopamine reward (needs the Learning box above): a fixed pulse like a ? block hit, the value "
+            "only weights the score. docs/SPEC_learning_v2.md section 4.")
+        fitness_form.addRow("Power-up", self.powerup_spin)
         layout.addWidget(fitness_box)
 
         layout.addWidget(self._build_training_box(settings.training))
@@ -137,6 +159,33 @@ class GoalTab(QWidget):
         self.train_event_checkbox.setChecked(t.event_proximal)
         self.train_event_checkbox.toggled.connect(lambda v: self._set_training(event_proximal=v))
         form.addRow(self.train_event_checkbox)
+        self.train_seed_mode_combo = QComboBox()
+        self.train_seed_mode_combo.addItem("fixed: every episode uses the base seed", "fixed")
+        self.train_seed_mode_combo.addItem("vary: episode i uses base + i", "vary")
+        self.train_seed_mode_combo.setCurrentIndex(max(0, self.train_seed_mode_combo.findData(t.seed_mode)))
+        self.train_seed_mode_combo.currentIndexChanged.connect(
+            lambda _i: self._set_training(seed_mode=self.train_seed_mode_combo.currentData()))
+        form.addRow("Seed mode", self.train_seed_mode_combo)
+        self.train_seed_base_spin = NoScrollSpinBox()
+        self.train_seed_base_spin.setRange(-1, 2_000_000_000)
+        self.train_seed_base_spin.setSpecialValueText("first Goal seed")
+        self.train_seed_base_spin.setValue(-1 if t.seed_base is None else t.seed_base)
+        self.train_seed_base_spin.valueChanged.connect(
+            lambda v: self._set_training(seed_base=(v if v >= 0 else None)))
+        form.addRow("Base seed", self.train_seed_base_spin)
+        self.train_test_every_spin = NoScrollSpinBox()
+        self.train_test_every_spin.setRange(0, 10_000)
+        self.train_test_every_spin.setSpecialValueText("never")
+        self.train_test_every_spin.setValue(t.test_every)
+        self.train_test_every_spin.setToolTip(
+            "Every N episodes, run the current weights FROZEN (no learning) on the held-out test seeds "
+            "below and plot the win-rate on the Learning tab. Test seeds are never used for training.")
+        self.train_test_every_spin.valueChanged.connect(lambda v: self._set_training(test_every=v))
+        form.addRow("Test every N episodes", self.train_test_every_spin)
+        self.train_test_seeds_edit = QLineEdit(" ".join(str(s) for s in t.test_seeds))
+        self.train_test_seeds_edit.setToolTip("Space-separated held-out seeds (default 100-109).")
+        self.train_test_seeds_edit.editingFinished.connect(self._on_test_seeds_changed)
+        form.addRow("Test seeds", self.train_test_seeds_edit)
         self.train_shuffled_checkbox = QCheckBox("Include shuffled controls (invariant 6)")
         self.train_shuffled_checkbox.setChecked(t.include_shuffled)
         self.train_shuffled_checkbox.toggled.connect(lambda v: self._set_training(include_shuffled=v))
@@ -169,20 +218,49 @@ class GoalTab(QWidget):
             settings, training=dataclasses.replace(settings.training, **changes)))
 
     def refresh_checkpoints(self) -> None:
-        """Lists projects/<name>/checkpoints/real_epNNN.npy as "start from
-        checkpoint N" (fresh weights when none is chosen)."""
+        """Lists projects/<name>/checkpoints/ (real_epNNN.npy = "checkpoint N", play_NNN.npy = "played
+        run N") in both the Train "Start from" and the Scenario "Brain weights" combos
+        (fresh weights when none is chosen)."""
         from tool.core.training import list_checkpoints
-        current = self._window.get_tool_settings().training.checkpoint
-        combo = self.train_checkpoint_combo
-        combo.blockSignals(True)
-        combo.clear()
-        combo.addItem("fresh weights", None)
-        for name in list_checkpoints(self._window.project.name):
-            n = int(name.rsplit("_ep", 1)[1].split(".")[0])
-            combo.addItem(f"checkpoint {n}", name)
-        index = combo.findData(current)
-        combo.setCurrentIndex(max(0, index))
-        combo.blockSignals(False)
+        settings = self._window.get_tool_settings()
+        names = list_checkpoints(self._window.project.name)
+        for combo, current in ((self.train_checkpoint_combo, settings.training.checkpoint),
+                               (self.brain_weights_combo, settings.experiment.brain_weights)):
+            combo.blockSignals(True)
+            combo.clear()
+            combo.addItem("fresh weights", None)
+            for name in names:
+                combo.addItem(self._checkpoint_label(name), name)
+            combo.setCurrentIndex(max(0, combo.findData(current)))
+            combo.blockSignals(False)
+
+    @staticmethod
+    def _checkpoint_label(name: str) -> str:
+        stem = name.rsplit(".", 1)[0]
+        if "_ep" in stem:
+            return f"checkpoint {int(stem.rsplit('_ep', 1)[1])}"
+        return f"played run {int(stem.rsplit('_', 1)[1])}"
+
+    def _on_brain_weights_changed(self, _index: int) -> None:
+        settings = self._window.get_tool_settings()
+        experiment = dataclasses.replace(settings.experiment, brain_weights=self.brain_weights_combo.currentData())
+        self._window.set_tool_settings(dataclasses.replace(settings, experiment=experiment))
+
+    def _on_keep_learning_changed(self, checked: bool) -> None:
+        settings = self._window.get_tool_settings()
+        experiment = dataclasses.replace(settings.experiment, keep_learning=checked)
+        self._window.set_tool_settings(dataclasses.replace(settings, experiment=experiment))
+
+    def _on_test_seeds_changed(self) -> None:
+        text = self.train_test_seeds_edit.text().strip()
+        try:
+            seeds = tuple(int(s) for s in text.split())
+        except ValueError:
+            seeds = ()
+        if not seeds:
+            seeds = tuple(range(100, 110))
+            self.train_test_seeds_edit.setText(" ".join(str(s) for s in seeds))
+        self._set_training(test_seeds=seeds)
 
     def _on_checkpoint_changed(self, _index: int) -> None:
         self._set_training(checkpoint=self.train_checkpoint_combo.currentData())
@@ -275,6 +353,11 @@ class GoalTab(QWidget):
     def _on_time_changed(self, value: float) -> None:
         settings = self._window.get_tool_settings()
         fitness = dataclasses.replace(settings.fitness, time=value)
+        self._window.set_tool_settings(dataclasses.replace(settings, fitness=fitness))
+
+    def _on_powerup_changed(self, value: float) -> None:
+        settings = self._window.get_tool_settings()
+        fitness = dataclasses.replace(settings.fitness, powerup=value)
         self._window.set_tool_settings(dataclasses.replace(settings, fitness=fitness))
 
     def _preset_data(self) -> dict:
