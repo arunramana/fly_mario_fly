@@ -74,3 +74,25 @@ along +x; an object is at azimuth 0 (frontal) if it is ahead (dx >= 0), behind o
 ## Reporting
 After phase 3: `scripts/eval_connectome.py` on honest_1 (#36 settings) with `bio_strict` on, 20 held-out seeds, real vs
 shuffled. Expect fewer wins; reported as found.
+
+## Results (2026-09-30): honest_1 #36 settings, 20 held-out seeds (1000-1019), frame cap 3000
+Real connectome vs degree-preserving shuffle (a different shuffle per seed). Win = flag. 95 % CIs: Wilson (win rate),
+bootstrap (mean max_x). Raw per-seed values in `audit/final_eval.json` (untracked).
+
+| condition | arm | wins | win rate (CI) | max_x mean (CI) | median |
+|---|---|---|---|---|---|
+| **bio_strict** (walls unperceived, as #36 has `wall_ahead.looming_gain` 0) | real | 0/20 | 0 % (0-16) | 331 (303-359) | 298 |
+| | shuffled | 0/20 | 0 % (0-16) | 328 (310-347) | 310 |
+| **bio_strict + wall looming route** (`looming_gain` 1.0) | real | 0/20 | 0 % (0-16) | 505 (338-674) | 298 |
+| | shuffled | 0/20 | 0 % (0-16) | 355 (310-409) | 310 |
+| non-strict, same settings (contrast) | real | 1/20 | 5 % (1-24) | 970 (635-1355) | 770 |
+| | shuffled | 0/20 | 0 % (0-16) | 400 (308-583) | 310 |
+
+Reading, truthfully: the honest fly does not win, and under strict the real and shuffled connectomes are
+indistinguishable (intervals overlap almost entirely; 15/20 real runs die at x 293-300, the first Goomba; 5/20 reach the
+first pipe at x 435). With the wall visible as an expanding object, 5/20 real runs get past it (x ~1130) while the
+shuffle mostly does not (2/20 past 435) -- a hint of a connectome effect, not a significant one at n = 20. The
+non-strict fly (same settings, held-out seeds) wins 1/20 and is clearly ahead of its shuffle on distance, so the drop from
+"wins" to 0/20 is what the injected currents, privileged senses and tonic press were buying; the audit's single-seed win
+of #36 (seed 10) was a 5 % event, not a competence. Not done: re-tuning anything under bio_strict (thresholds were
+calibrated with the old units), a pit route, a trained (MB) strict fly.
