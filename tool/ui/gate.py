@@ -30,8 +30,9 @@ class ProjectGateDialog(QDialog):
         buttons = QHBoxLayout()
         new_btn = QPushButton("New project")
         new_btn.clicked.connect(self._new_project)
-        dup_btn = QPushButton("Duplicate legacy")
-        dup_btn.clicked.connect(self._duplicate_legacy)
+        dup_btn = QPushButton("Duplicate project...")
+        self.duplicate_button = dup_btn
+        dup_btn.clicked.connect(self._duplicate_project)
         open_btn = QPushButton("Open selected")
         open_btn.clicked.connect(self._open_selected)
         buttons.addWidget(new_btn)
@@ -54,13 +55,15 @@ class ProjectGateDialog(QDialog):
             return
         self.accept()
 
-    def _duplicate_legacy(self) -> None:
-        name, ok = QInputDialog.getText(self, "Duplicate legacy", "New project name:")
-        if not ok or not name:
+    def _duplicate_project(self) -> None:
+        """Any project (legacy included; it duplicates the same way) under a new, unused name,
+        then straight into the copy."""
+        from tool.ui.duplicate_dialog import DuplicateProjectDialog
+        dialog = DuplicateProjectDialog(self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         try:
-            legacy = ToolProject.open("legacy")
-            self.selected_project = legacy.duplicate(name)
+            self.selected_project = ToolProject.open(dialog.source()).duplicate(dialog.new_name())
         except Exception as exc:
             QMessageBox.warning(self, "Could not duplicate", str(exc))
             return

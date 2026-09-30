@@ -12,7 +12,7 @@ import multiprocessing as mp
 from PySide6.QtCore import QEvent, Qt, QTimer, Signal
 from PySide6.QtGui import QCloseEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
-    QApplication, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMenu,
+    QApplication, QDialog, QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMenu,
     QMessageBox, QPushButton, QTabWidget, QToolButton, QVBoxLayout, QWidget,
 )
 
@@ -104,13 +104,16 @@ class MainWindow(QMainWindow):
         # (`headerAccent`), never by size -- see style.qss's own comment.
         header_play_button = QPushButton("START")
         header_play_button.clicked.connect(self.play)
-        self.header_buttons = (home_button, self.presets_button, self.save_button, header_play_button)
+        self.project_button = self._build_project_button()
+        self.header_buttons = (home_button, self.project_button, self.presets_button, self.save_button,
+                               header_play_button)
         for button in self.header_buttons:
             button.setProperty("headerButton", True)
         header_play_button.setProperty("headerAccent", True)
         header.addWidget(home_button)
         header.addWidget(self.title_label)
         header.addStretch(1)
+        header.addWidget(self.project_button)
         header.addWidget(self.presets_button)
         header.addWidget(self.save_button)
         header.addWidget(header_play_button)
@@ -312,6 +315,36 @@ class MainWindow(QMainWindow):
         self.title_label.setText(self._title())
         self.setWindowTitle(self._title())
         self._update_save_enabled()
+
+    def _build_project_button(self) -> QToolButton:
+        button = QToolButton()
+        button.setText("Project")
+        button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        menu = QMenu(button)
+        self.duplicate_action = menu.addAction("Duplicate project...")
+        self.duplicate_action.triggered.connect(self.duplicate_project)
+        button.setMenu(menu)
+        return button
+
+    def duplicate_project(self) -> None:
+        """Header menu: copy any project (this one by default) under a new name and switch to the
+        copy. Pending edits are saved first so the copy includes them."""
+        from tool.ui.duplicate_dialog import DuplicateProjectDialog
+        if self._dirty and not self.project.is_read_only:
+            self.save()
+        dialog = DuplicateProjectDialog(self, default_source=self.project.name)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        from tool.core.project import ToolProject
+        source = self.project if dialog.source() == self.project.name else ToolProject.open(dialog.source())
+        try:
+            new_project = source.duplicate(dialog.new_name())
+        except Exception as exc:  # noqa: BLE001 -- shown, never crash the window
+            QMessageBox.warning(self, "Could not duplicate", str(exc))
+            return
+        self._closing_confirmed = True
+        self.project_switch_requested.emit(new_project)
+        self.close()
 
     def _on_duplicate_to_edit(self) -> None:
         """The read-only banner's own button: makes an editable copy of

@@ -18,7 +18,7 @@ from tool.core.tool_settings import load as load_tool_settings
 
 
 # "legacy" is the shared reference project every other project is
-# duplicated from (gate.py's own "Duplicate legacy" button,
+# duplicated from (the gate's "Duplicate project..." button,
 # scripts/validate_entity_profiles.py's own PROJECT_NAME) -- editing it
 # in place through the GUI silently drifted a scalar (habituation.
 # hab_give_up, 3 -> -2) invisibly enough that nobody noticed until the
@@ -103,6 +103,25 @@ class ToolProject:
         self.root.mkdir(parents=True, exist_ok=True)
         self.config.save(self.root / "config.json")
         self.tool_settings.save(self.root / "tool.json")
+
+    @staticmethod
+    def list_by_recency() -> list[str]:
+        """Every project, most recently changed (config.json mtime) first."""
+        names = ToolProject.list_recent()
+        return sorted(names, key=lambda n: (PROJECTS_ROOT / n / "config.json").stat().st_mtime, reverse=True)
+
+    @staticmethod
+    def name_error(name: str) -> str | None:
+        """Why `name` cannot be a new project's name (None = fine): empty, not a plain folder
+        name, or an existing project."""
+        if not name or name != name.strip():
+            return "Enter a name for the copy."
+        bad = "\\/:*?\"<>|"
+        if any(c in name for c in bad) or name in (".", ".."):
+            return "A project name cannot contain any of: " + bad
+        if (PROJECTS_ROOT / name).exists():
+            return f"A project named {name!r} already exists."
+        return None
 
     @staticmethod
     def list_recent() -> list[str]:
