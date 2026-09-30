@@ -85,7 +85,7 @@ def run_one(spec, on_frame=None, should_stop=None, arousal_source=None, save_che
         recorder = FrameStore()
 
     def combined_on_frame(frame, obs, row):
-        recorder.write_frame(obs)
+        recorder.write_frame(obs, (row.get("mario_sx"), row.get("mario_y")))
         if on_frame is not None:
             on_frame(frame, obs, row)
 
@@ -106,6 +106,7 @@ def run_one(spec, on_frame=None, should_stop=None, arousal_source=None, save_che
         record_actions=replayable,
         mb_weights=mb_weights,
         powerup_reward=spec.tool_settings.fitness.powerup > 0,
+        gap_reward=spec.tool_settings.fitness.gap > 0,
         **powerup_kwargs,
     )
     if experiment.brain_weights:

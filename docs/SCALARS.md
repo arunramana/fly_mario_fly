@@ -94,6 +94,7 @@ disagree.
 | `kc_sparsity` | `0.05` | unknown | measured (matches the real fly's ~5% concurrently-active KC fraction, enforced structurally via top-k rather than simulating the real APL feedback-inhibition neuron) | `run_steering.py (KC_SPARSITY)` |
 | `trace_decay` | `60.0` | 60.0-120.0 | measured (docs/TRACE_BIOLOGY.md, Handler et al. 2019, Cell: KC->MBON synaptic-tag plasticity is significant at ISIs of -1.2s/0s/+0.5s, a ~1-2s window, and negligible by 6s -- 60 frames = 1s at 60Hz sits at that window's near edge, and the range is the window itself, 60-120 frames) | `run_steering.py (TRACE_DECAY)` |
 | `learning_rate` | `0.001` | unknown | invented (checked against a hand-computed dW on a real KC->MBON weight: one full punishment depresses an eligible synapse by 5%) | `run_steering.py (LEARNING_RATE)` |
+| `recovery_rate` | `0.0` | 0.0-1.0 | invented (docs/SPEC_learning_v3.md A1: strength of recovery toward the untrained weight per unit of dopamine at KCs that were not recently active; 0 = off, depression only) | `fly/plasticity/three_factor.py (recover)` |
 | `mbon_dna02_frac_l` | `0.00379` | unknown | measured (docs/RUNS.md run 014: a raw synapse-COUNT fraction computed against the real mushroom-body connectome, not a sweep or a published timescale -- the closest existing provenance bucket, not a perfect fit; run 020 found the shipped code applied it unsigned/excitatory when the MBON's real dominant partners are GABAergic, fixed in run 021; 014's own finding that this bias is ~4,000x too small to matter still stands) | `bridge/full_policy.py (MBON_DNA02_FRAC['L'])` |
 | `mbon_dna02_frac_r` | `0.00632` | unknown | measured (docs/RUNS.md run 014, same derivation and caveats as mbon_dna02_frac_l) | `bridge/full_policy.py (MBON_DNA02_FRAC['R'])` |
 | `n_mb_sensory` | `7` | unknown | invented (docs/CODE_AUDIT.md section H: the KC projection's input vector dimensionality -- theta_L, theta_R, odor_l_eff, odor_r_eff, gap_w, mb_prev_dnp09, hungry; changing this changes the shape of mb_proj, not just a gain) | `bridge/full_policy.py (N_MB_SENSORY)` |
@@ -156,6 +157,7 @@ disagree.
 
 | field | value | range | provenance | home |
 |---|---|---|---|---|
+| `ignore_behind` | `False` | unknown | invented (perception: an enemy behind Mario is outside the frontal visual field and produces no looming; off = theta from |d| for enemies on both sides, today's behaviour) | `bridge/perception.py (enemy_thetas)` |
 
 ## GapAheadParams
 
@@ -180,15 +182,25 @@ disagree.
 | `ttmn_gain` | `1.0` | unknown | invented (drive added per unit of TTMn rise, in units of the press threshold) | `bridge/controller_modules.py (MotorDirectModule)` |
 | `dlmn_gain` | `0.05` | unknown | invented (drive added per frame per unit of DLMn: sustained DLMn lengthens the hold, a graded long jump instead of the binary choice) | `bridge/controller_modules.py (MotorDirectModule)` |
 | `release_on_landing` | `True` | unknown | invented (mechanical: A is released for one frame when Mario lands, RAM 0x001D back to 0, so the next jump is a fresh button press -- the NES only jumps on a new press) | `bridge/controller_modules.py (MotorDirectModule)` |
+| `adapt_frames` | `0.0` | 0.0-600.0 | invented (muscle adaptation, docs/SPEC_learning_v3.md A4: a TTMn rise is measured above a slow baseline with this time constant in frames, so a sustained limit cycle stops holding A; 0 = off) | `bridge/controller_modules.py (MotorDirectModule)` |
+| `buttons` | `False` | unknown | invented (mode switch: the Down / Up / Left muscles below drive their buttons; off = only A, B and the steering direction, today's behaviour) | `bridge/controller_modules.py (MotorDirectModule)` |
+| `button_decay` | `0.8` | unknown | invented (per-frame decay of the Down/Up/Left muscle drives, tau ~5 frames) | `bridge/controller_modules.py (MotorDirectModule)` |
+| `down_gain` | `1.0` | unknown | invented (drive added per unit of DNp03/DNp06/DNp11 activity) | `bridge/controller_modules.py (MotorDirectModule)` |
+| `down_threshold` | `5.0` | unknown | invented (Down is held while its drive is at or above this; measured on learn_1: posture Down-DN activity median 0.19, peak 1.5, so a drive (~5x activity) of 5 needs a strong sustained looming) | `bridge/controller_modules.py (MotorDirectModule)` |
+| `up_gain` | `1.0` | unknown | invented (drive added per unit of DNg40/DNp05 activity) | `bridge/controller_modules.py (MotorDirectModule)` |
+| `up_threshold` | `3.0` | unknown | invented (Up threshold; Up-DN activity peaks at 0.76 on learn_1) | `bridge/controller_modules.py (MotorDirectModule)` |
+| `left_gain` | `1.0` | unknown | invented (drive added per unit of the DNa01/DNa02 left-minus-right team activity) | `bridge/controller_modules.py (MotorDirectModule)` |
+| `left_threshold` | `2.0` | unknown | invented (Left replaces Right while its drive is at or above this) | `bridge/controller_modules.py (MotorDirectModule)` |
+| `posture_g` | `0.8` | unknown | measured (spectral radius of the posture circuit is 0.9993 at g=1, so 0.8 stays stable) | `bridge/full_policy.py (posture network)` |
 
 ## MbonReadoutParams
 
 | field | value | range | provenance | home |
 |---|---|---|---|---|
-| `dnp01_frac` | `0.005` | 0.0-0.2 | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
-| `dlmn_frac` | `0.005` | 0.0-0.2 | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
-| `dnp09_frac` | `0.005` | 0.0-0.2 | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
-| `mdn_frac` | `0.005` | 0.0-0.2 | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
+| `dnp01_frac` | `0.005` | 0.0-1.0 | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
+| `dlmn_frac` | `0.005` | 0.0-1.0 | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
+| `dnp09_frac` | `0.005` | 0.0-1.0 | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
+| `mdn_frac` | `0.005` | 0.0-1.0 | invented (same order as mbon_dna02_frac_*) | `bridge/controller_modules.py (MbonReadoutModule)` |
 
 ## MbSpatialInputParams
 
@@ -222,22 +234,28 @@ disagree.
 | `perceive_tiles` | `8` | unknown | invented (perceptual range of the ? block cue in tiles, mechanical, not a circuit gain) | `bridge/controller_modules.py (QBlockAheadPerceptionModule)` |
 | `looming_gain` | `0.0` | unknown | invented (scale on the ? block's looming angle theta into LC4/LPLC2, the same stimulus class as an enemy's or a wall's; 0 = the looming route is off) | `bridge/controller_modules.py (QBlockAheadPerceptionModule)` |
 
+## MbGapSpeedInputParams
+
+| field | value | range | provenance | home |
+|---|---|---|---|---|
+| `perceive_tiles` | `8` | unknown | invented (how many tiles ahead the pit-width input looks; mechanical, not a circuit gain) | `bridge/controller_modules.py (MbGapSpeedInputModule)` |
+
 
 ## Totals
 
-**82 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
+**95 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
 more (`DemoParams.mushroom_offset`, `DemoParams.wide_gap_lead_tiles`,
 `TerrainParams.refusal_gap_margin_tiles`) only matter in an opt-in
 injection demo -- the first is untested by any golden, the other two are
 exercised by `tests/test_golden.py::test_017_reprise`'s own
 `inject_gap_frame`, so "opt-in" here means "off by default", not
-"untested". The other 76 are live in every default run.
+"untested". The other 89 are live in every default run.
 
 A range of `unknown` means genuinely unknown, not left blank: an invented
 bound would be scaffolding that looks like data. Only `JumpParams.g` and
 `NoiseParams.sigma` have a characterised range.
 
-By category (the first word of each provenance): **60 invented**, **22 measured**, **0 connectome-derived** (of 82).
+By category (the first word of each provenance): **72 invented**, **23 measured**, **0 connectome-derived** (of 95).
 
 None are connectome-derived. The connectome determines each circuit's
 weight matrix `W`; every scalar here sits outside it, as a gain on it, a

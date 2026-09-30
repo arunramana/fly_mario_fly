@@ -31,6 +31,7 @@ import numpy as np
 
 from config.output_routing import PROJECTS_ROOT, resolve_run_path
 from tool.core.frame_store import FrameStore
+from tool.core.savestates import load_state
 from tool.core.run_store import (list_runs, next_run_number, patch_run, record_run,
                                  write_run_note)
 
@@ -61,7 +62,8 @@ class PaletteFrameStore(FrameStore):
         self._sorted_keys = np.array([k for k, _ in items], dtype=np.uint32)
         self._sorted_idx = np.array([i for _, i in items], dtype=np.uint8)
 
-    def write_frame(self, obs: np.ndarray) -> None:
+    def write_frame(self, obs: np.ndarray, mario=None) -> None:
+        self._note_mario(mario)
         frame = np.asarray(obs)
         if len(self._sorted_keys):
             packed = (frame[..., 0].astype(np.uint32) << 16
@@ -72,7 +74,8 @@ class PaletteFrameStore(FrameStore):
             if np.array_equal(self._sorted_keys[pos], packed):
                 self._frames.append(self._sorted_idx[pos])
                 return
-        super().write_frame(obs)
+        self._mario.pop()   # the base class notes it again
+        super().write_frame(obs, mario)
         self._refresh()
 
 
@@ -138,16 +141,27 @@ def run_training(project, settings, emit=lambda *a: None, should_stop=lambda: Fa
     env = rs.make_env(config.scenario.level)
     death_frames = ts.render.death_animation_frames
 
-    def play(net: _Network, slug: str, lr, cfg, ep_seed=seed):
+    state_env = None   # a second env for saved-state episodes: no warm-up backup, replays the action log
+
+    def play(net: _Network, slug: str, lr, cfg, ep_seed=seed, state=None):
+        nonlocal state_env
         recorder = PaletteFrameStore()
+        if state is None:
+            run_env = {"env": env, "warmup_frames": WARMUP_FRAMES}
+            start_actions = None
+        else:
+            if state_env is None:
+                state_env = rs.make_env(config.scenario.level)
+            run_env = {"env": state_env}
+            start_actions = state["actions"]
         tel, info = run_from_config(
             cfg, f"{slug}.mp4", seed=ep_seed, record_video=False, frame_skip=1,
             event_proximal_dopamine=settings.event_proximal,
-            powerup_reward=ts.fitness.powerup > 0,
-            shuffle_seed=net.shuffle_seed,
-            savestate={"env": env, "warmup_frames": WARMUP_FRAMES},
+            powerup_reward=ts.fitness.powerup > 0, gap_reward=ts.fitness.gap > 0,
+            shuffle_seed=net.shuffle_seed, start_actions=start_actions,
+            savestate=run_env,
             mb_weights=net.weights,
-            on_frame=lambda f, obs, row: recorder.write_frame(obs),
+            on_frame=lambda f, obs, row: recorder.write_frame(obs, (row.get("mario_sx"), row.get("mario_y"))),
             should_stop=should_stop, death_animation_frames=death_frames)
         return recorder, info
 
@@ -188,7 +202,7 @@ def run_training(project, settings, emit=lambda *a: None, should_stop=lambda: Fa
             _tel, r = run_from_config(
                 frozen, "test.mp4", seed=s, record_video=False, frame_skip=1, write_telemetry=False,
                 event_proximal_dopamine=settings.event_proximal, shuffle_seed=net.shuffle_seed,
-                powerup_reward=ts.fitness.powerup > 0,
+                powerup_reward=ts.fitness.powerup > 0, gap_reward=ts.fitness.gap > 0,
                 savestate={"env": env, "warmup_frames": WARMUP_FRAMES},
                 mb_weights=net.weights, should_stop=should_stop, death_animation_frames=0)
             results.append((s, int(r["max_x_abs"]), bool(r.get("flag_get"))))
@@ -225,7 +239,9 @@ def run_training(project, settings, emit=lambda *a: None, should_stop=lambda: Fa
             number = next_run_number(name)
             slug = f"{number:03d}_train_{net.tag}_ep{ep:03d}"
             ep_seed = episode_seed(settings, seed, ep)
-            recorder, info = play(net, slug, settings.learning_rate, net_cfg, ep_seed)
+            start_name = pick_start_state(settings, ep_seed)
+            state = None if start_name in (None, POWER_ON) else load_state(name, start_name)
+            recorder, info = play(net, slug, settings.learning_rate, net_cfg, ep_seed, state)
             cancelled = should_stop()
             net.weights = info.pop("mb_weights")
             is_last = i == settings.episodes - 1
@@ -244,7 +260,8 @@ def run_training(project, settings, emit=lambda *a: None, should_stop=lambda: Fa
                        extra={"group": net.group, "training": {
                            "network": net.label, "episode": ep, "max_x": info["max_x_abs"],
                            "died": bool(info["died_or_flagged"]), "flag": bool(info.get("flag_get")),
-                           "score": info.get("score"), "seed": ep_seed, "baseline": base_number}})
+                           "score": info.get("score"), "seed": ep_seed, "start_state": start_name,
+                           "baseline": base_number}})
             _apply_keep_policy(name, net, number, reasons, recorder, info, base_cfg, slug)
             net.next_episode += 1
             if net.tag == "real" and (ep % EVERY_NTH == 0 or is_last or cancelled):
@@ -259,6 +276,8 @@ def run_training(project, settings, emit=lambda *a: None, should_stop=lambda: Fa
         if cancelled:
             break
     env.close()
+    if state_env is not None:
+        state_env.close()
     emit("done", {"cancelled": should_stop()})
     return {"baseline": base_number, "cancelled": should_stop(),
             "best": {n.label: n.best_max_x for n in nets}}
@@ -309,6 +328,18 @@ def _drop_reason(name, net, number, reason):
             path.unlink()
         patch_run(name, number, summary={"raw_frames_path": None})
         net.reasons.pop(number, None)
+
+
+POWER_ON = "power-on"
+
+
+def pick_start_state(settings, ep_seed: int):
+    """The curriculum's start state for an episode (docs/SPEC_learning_v3.md A5): one of
+    `settings.start_states`, chosen with the episode's own seeded rng so a run is reproducible.
+    None when no curriculum is set (power-on, as always)."""
+    if not settings.start_states:
+        return None
+    return settings.start_states[int(np.random.default_rng(ep_seed).integers(len(settings.start_states)))]
 
 
 def episode_seed(settings, base_seed: int, episode: int) -> int:

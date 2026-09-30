@@ -6,8 +6,9 @@ from __future__ import annotations
 
 import dataclasses
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QComboBox, QFormLayout, QGroupBox, QLineEdit,
+    QComboBox, QFormLayout, QGroupBox, QLineEdit, QListWidget, QListWidgetItem,
     QCheckBox, QVBoxLayout, QWidget,
 )
 
@@ -122,6 +123,12 @@ class GoalTab(QWidget):
             "dopamine reward (needs the Learning box above): a fixed pulse like a ? block hit, the value "
             "only weights the score. docs/SPEC_learning_v2.md section 4.")
         fitness_form.addRow("Power-up", self.powerup_spin)
+        self.gap_spin = self._fitness_spin(settings.fitness.gap, self._on_gap_changed)
+        self.gap_spin.setToolTip(
+            "Weight of one pit cleared (Mario lands safely past a pit he was approaching). Above 0 it also makes "
+            "that a dopamine reward (needs the Learning box above); the value only weights the score. "
+            "docs/SPEC_learning_v3.md A3.")
+        fitness_form.addRow("Cleared gap", self.gap_spin)
         layout.addWidget(fitness_box)
 
         layout.addWidget(self._build_training_box(settings.training))
@@ -186,6 +193,14 @@ class GoalTab(QWidget):
         self.train_test_seeds_edit.setToolTip("Space-separated held-out seeds (default 100-109).")
         self.train_test_seeds_edit.editingFinished.connect(self._on_test_seeds_changed)
         form.addRow("Test seeds", self.train_test_seeds_edit)
+        # Curriculum (docs/SPEC_learning_v3.md A5): tick the start states each episode may sample.
+        self.train_states_list = QListWidget()
+        self.train_states_list.setMaximumHeight(90)
+        self.train_states_list.setToolTip("Tick one or more start states; each episode samples one at random "
+                                          "(seeded). None ticked = every episode starts from power-on.")
+        self.train_states_list.itemChanged.connect(self._on_start_states_changed)
+        form.addRow("Start states", self.train_states_list)
+        self.refresh_train_states()
         self.train_shuffled_checkbox = QCheckBox("Include shuffled controls (invariant 6)")
         self.train_shuffled_checkbox.setChecked(t.include_shuffled)
         self.train_shuffled_checkbox.toggled.connect(lambda v: self._set_training(include_shuffled=v))
@@ -241,6 +256,27 @@ class GoalTab(QWidget):
             return f"checkpoint {int(stem.rsplit('_ep', 1)[1])}"
         return f"played run {int(stem.rsplit('_', 1)[1])}"
 
+    def refresh_train_states(self) -> None:
+        """\"power-on\" plus the project's saved states, ticked as the settings say."""
+        from tool.core.savestates import list_states
+        from tool.core.training import POWER_ON
+        chosen = set(self._window.get_tool_settings().training.start_states)
+        lst = self.train_states_list
+        lst.blockSignals(True)
+        lst.clear()
+        for name in [POWER_ON] + list_states(self._window.project.name):
+            item = QListWidgetItem(name)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(Qt.CheckState.Checked if name in chosen else Qt.CheckState.Unchecked)
+            lst.addItem(item)
+        lst.blockSignals(False)
+
+    def _on_start_states_changed(self, _item) -> None:
+        lst = self.train_states_list
+        names = tuple(lst.item(i).text() for i in range(lst.count())
+                      if lst.item(i).checkState() == Qt.CheckState.Checked)
+        self._set_training(start_states=names)
+
     def _on_brain_weights_changed(self, _index: int) -> None:
         settings = self._window.get_tool_settings()
         experiment = dataclasses.replace(settings.experiment, brain_weights=self.brain_weights_combo.currentData())
@@ -291,6 +327,8 @@ class GoalTab(QWidget):
             combo.addItem(f"saved state: {name}", name)
         combo.setCurrentIndex(max(0, combo.findData(current)))
         combo.blockSignals(False)
+        if hasattr(self, "train_states_list"):
+            self.refresh_train_states()
 
     def _on_start_state_changed(self, _index: int) -> None:
         settings = self._window.get_tool_settings()
@@ -353,6 +391,11 @@ class GoalTab(QWidget):
     def _on_time_changed(self, value: float) -> None:
         settings = self._window.get_tool_settings()
         fitness = dataclasses.replace(settings.fitness, time=value)
+        self._window.set_tool_settings(dataclasses.replace(settings, fitness=fitness))
+
+    def _on_gap_changed(self, value: float) -> None:
+        settings = self._window.get_tool_settings()
+        fitness = dataclasses.replace(settings.fitness, gap=value)
         self._window.set_tool_settings(dataclasses.replace(settings, fitness=fitness))
 
     def _on_powerup_changed(self, value: float) -> None:

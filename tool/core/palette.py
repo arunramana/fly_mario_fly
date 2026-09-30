@@ -49,6 +49,9 @@ MARIO_HEIGHT_PX = PaletteDisplayParams().mario_height_px
 
 
 def to_luigi(frame: np.ndarray, mario_x: int | None = None, mario_y: int | None = None) -> np.ndarray:
+    # `mario_x` is Mario's DRAWN x (RAM 0x03AD), NOT 0x0086: that one is his x within the 256px
+    # page and stops matching the sprite the moment the screen starts scrolling, which left the
+    # recolour box on empty scenery (Luigi never appeared) after the first ~100px.
     """Swaps the R and G channels wherever a pixel is red-dominant (SMB1's
     Mario sprite: cap, shirt, overalls trim) -- turns that hue green,
     Luigi's own colour, without needing the exact NES palette index.
@@ -93,5 +96,7 @@ def apply(frame: np.ndarray, player: str, mario_x: int | None = None, mario_y: i
     if player == "mario":
         return frame
     if player == "luigi":
+        if mario_x is None or mario_y is None:
+            return frame   # position unknown: leave the frame alone rather than recolour the level
         return to_luigi(frame, mario_x=mario_x, mario_y=mario_y)
     raise ValueError(f"player must be 'mario' or 'luigi', got {player!r}")

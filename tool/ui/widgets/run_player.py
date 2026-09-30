@@ -22,7 +22,7 @@ from PySide6.QtCore import QEvent, QTimer, Qt, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
-from tool.core.frame_store import frames_to_rgb, load_frames
+from tool.core.frame_store import frames_to_rgb, load_frames, load_mario_positions
 from tool.core.palette import apply as apply_palette
 from tool.ui.widgets.preview import frame_to_pixmap
 from tool.ui.widgets.video_canvas import VideoCanvas
@@ -60,6 +60,7 @@ class RunPlayer(QWidget):
         self._n_frames = 0
         self._frames_idx = None
         self._palette = None
+        self._mario_pos = None    # Mario's drawn (x, y) per recorded frame, for the Luigi recolour
         self._current_frame_index = 0
         self._speed = 1.0
         self._playing = False
@@ -183,7 +184,7 @@ class RunPlayer(QWidget):
     def show_frame(self, obs, row: dict) -> None:
         if self._mode != "live":
             self._enter_live_mode()
-        displayed = apply_palette(obs, self._player, mario_x=row.get("mario_x"), mario_y=row.get("mario_y"))
+        displayed = apply_palette(obs, self._player, mario_x=row.get("mario_sx"), mario_y=row.get("mario_y"))
         self.canvas.set_pixmap(frame_to_pixmap(displayed))
         frame = row.get("frame")
         if frame is not None:
@@ -210,6 +211,7 @@ class RunPlayer(QWidget):
         self._actions = self._load_actions(self._info)
 
         loaded = load_frames(raw_frames_path) if raw_frames_path is not None else None
+        self._mario_pos = load_mario_positions(raw_frames_path) if loaded is not None else None
         if loaded is None:
             self._mode = "empty"
             self._frames_idx = None
@@ -348,7 +350,10 @@ class RunPlayer(QWidget):
         if self._frames_idx is not None and frame < len(self._frames_idx):
             row = self._tel_row(frame)
             rgb = frames_to_rgb(self._frames_idx[frame], self._palette)
-            displayed = apply_palette(rgb, self._player, mario_x=row.get("mario_x"), mario_y=row.get("mario_y"))
+            mx = my = None
+            if self._mario_pos is not None and frame < len(self._mario_pos) and self._mario_pos[frame][0] >= 0:
+                mx, my = int(self._mario_pos[frame][0]), int(self._mario_pos[frame][1])
+            displayed = apply_palette(rgb, self._player, mario_x=mx, mario_y=my)
             self.canvas.set_pixmap(frame_to_pixmap(displayed))
         self.frame_changed.emit(frame)
 

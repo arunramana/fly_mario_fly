@@ -230,6 +230,10 @@ class MushroomBodyParams:
                                 "invented (checked against a hand-computed dW on a real KC->MBON "
                                 "weight: one full punishment depresses an eligible synapse by 5%)",
                                 "run_steering.py (LEARNING_RATE)")
+    recovery_rate: float = _f(0.0, (0.0, 1.0),
+                                "invented (docs/SPEC_learning_v3.md A1: strength of recovery toward the untrained weight "
+                                "per unit of dopamine at KCs that were not recently active; 0 = off, depression only)",
+                                "fly/plasticity/three_factor.py (recover)")
     mbon_dna02_frac_l: float = _f(0.00379, None,
                                     "measured (docs/RUNS.md run 014: a raw synapse-COUNT fraction "
                                     "computed against the real mushroom-body connectome, not a sweep "
@@ -412,8 +416,13 @@ class DemoParams:
 
 @dataclass(frozen=True)
 class PagePerceptionParams:
-    """bridge/controller_modules.py's PagePerceptionModule (PERCEPTION). No
-    scalars: presence in ModulesConfig is the whole switch."""
+    """bridge/controller_modules.py's PagePerceptionModule (PERCEPTION). Presence in
+    ModulesConfig switches on page-aware distances; `ignore_behind` additionally drops enemies
+    behind Mario from the looming input (docs/SPEC_learning_v3.md A4)."""
+    ignore_behind: bool = _f(False, None,
+        "invented (perception: an enemy behind Mario is outside the frontal visual field and "
+        "produces no looming; off = theta from |d| for enemies on both sides, today's behaviour)",
+        "bridge/perception.py (enemy_thetas)")
 
 
 @dataclass(frozen=True)
@@ -516,6 +525,15 @@ class QBlockAheadParams:
 
 
 @dataclass(frozen=True)
+class MbGapSpeedInputParams:
+    """bridge/controller_modules.py's MbGapSpeedInputModule (PERCEPTION): two more Kenyon-cell
+    inputs, the width of the next pit and Mario's own horizontal speed (docs/SPEC_learning_v3.md A2)."""
+    perceive_tiles: int = _f(8, None,
+        "invented (how many tiles ahead the pit-width input looks; mechanical, not a circuit gain)",
+        "bridge/controller_modules.py (MbGapSpeedInputModule)")
+
+
+@dataclass(frozen=True)
 class MotorDirectParams:
     """bridge/controller_modules.py's MotorDirectModule: A follows a leaky
     integrator of the motor neurons' own activity instead of fixed hold and
@@ -538,6 +556,34 @@ class MotorDirectParams:
         "invented (mechanical: A is released for one frame when Mario lands, RAM 0x001D back to 0, "
         "so the next jump is a fresh button press -- the NES only jumps on a new press)",
         "bridge/controller_modules.py (MotorDirectModule)")
+    adapt_frames: float = _f(0.0, (0.0, 600.0),
+        "invented (muscle adaptation, docs/SPEC_learning_v3.md A4: a TTMn rise is measured above a slow "
+        "baseline with this time constant in frames, so a sustained limit cycle stops holding A; 0 = off)",
+        "bridge/controller_modules.py (MotorDirectModule)")
+    buttons: bool = _f(False, None,
+        "invented (mode switch: the Down / Up / Left muscles below drive their buttons; off = only A, B "
+        "and the steering direction, today's behaviour)", "bridge/controller_modules.py (MotorDirectModule)")
+    button_decay: float = _f(0.8, None,
+        "invented (per-frame decay of the Down/Up/Left muscle drives, tau ~5 frames)",
+        "bridge/controller_modules.py (MotorDirectModule)")
+    down_gain: float = _f(1.0, None, "invented (drive added per unit of DNp03/DNp06/DNp11 activity)",
+        "bridge/controller_modules.py (MotorDirectModule)")
+    down_threshold: float = _f(5.0, None,
+        "invented (Down is held while its drive is at or above this; measured on learn_1: posture Down-DN "
+        "activity median 0.19, peak 1.5, so a drive (~5x activity) of 5 needs a strong sustained looming)", "bridge/controller_modules.py (MotorDirectModule)")
+    up_gain: float = _f(1.0, None, "invented (drive added per unit of DNg40/DNp05 activity)",
+        "bridge/controller_modules.py (MotorDirectModule)")
+    up_threshold: float = _f(3.0, None, "invented (Up threshold; Up-DN activity peaks at 0.76 on learn_1)",
+        "bridge/controller_modules.py (MotorDirectModule)")
+    left_gain: float = _f(1.0, None,
+        "invented (drive added per unit of the DNa01/DNa02 left-minus-right team activity)",
+        "bridge/controller_modules.py (MotorDirectModule)")
+    left_threshold: float = _f(2.0, None,
+        "invented (Left replaces Right while its drive is at or above this)",
+        "bridge/controller_modules.py (MotorDirectModule)")
+    posture_g: float = _f(0.8, None,
+        "measured (spectral radius of the posture circuit is 0.9993 at g=1, so 0.8 stays stable)",
+        "bridge/full_policy.py (posture network)")
 
 
 @dataclass(frozen=True)
@@ -546,13 +592,13 @@ class MbonReadoutParams:
     each motor pathway (from the real MBON -> X -> target connectome counts)
     instead of one scalar MBON mean. Fractions are current per unit of the
     weighted MBON mean; the negative sign matches the existing DNa02 path."""
-    dnp01_frac: float = _f(0.005, (0.0, 0.2), "invented (same order as mbon_dna02_frac_*)",
+    dnp01_frac: float = _f(0.005, (0.0, 1.0), "invented (same order as mbon_dna02_frac_*)",
                            "bridge/controller_modules.py (MbonReadoutModule)")
-    dlmn_frac: float = _f(0.005, (0.0, 0.2), "invented (same order as mbon_dna02_frac_*)",
+    dlmn_frac: float = _f(0.005, (0.0, 1.0), "invented (same order as mbon_dna02_frac_*)",
                           "bridge/controller_modules.py (MbonReadoutModule)")
-    dnp09_frac: float = _f(0.005, (0.0, 0.2), "invented (same order as mbon_dna02_frac_*)",
+    dnp09_frac: float = _f(0.005, (0.0, 1.0), "invented (same order as mbon_dna02_frac_*)",
                            "bridge/controller_modules.py (MbonReadoutModule)")
-    mdn_frac: float = _f(0.005, (0.0, 0.2), "invented (same order as mbon_dna02_frac_*)",
+    mdn_frac: float = _f(0.005, (0.0, 1.0), "invented (same order as mbon_dna02_frac_*)",
                          "bridge/controller_modules.py (MbonReadoutModule)")
 
 
@@ -607,11 +653,13 @@ class ModulesConfig:
     arousal: ArousalParams | None = None
     mbon_readout: MbonReadoutParams | None = None
     qblock_ahead: QBlockAheadParams | None = None
+    mb_gap_speed_inputs: MbGapSpeedInputParams | None = None
 
 
 MODULE_PARAM_CLASSES: tuple = (PagePerceptionParams, GapAheadParams, WallAheadParams, MotorDirectParams, MbonReadoutParams,
                                      MbSpatialInputParams, Dnp02RefractoryParams,
-                                     Dnp01RefractoryParams, ArousalParams, QBlockAheadParams)
+                                     Dnp01RefractoryParams, ArousalParams, QBlockAheadParams,
+                                     MbGapSpeedInputParams)
 
 ALL_PARAM_CLASSES = (
     NetworkParams, NoiseParams, JumpParams, Dnp02Params, TakeoffParams, SpeedParams,

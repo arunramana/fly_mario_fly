@@ -13,6 +13,7 @@ def fitness_of(settings: FitnessSettings, info: dict) -> float:
     max_x_abs (distance) and n_frames (time) have always been there;
     score (points) is tool/PLAN.md's C4."""
     weights = FitnessWeights(points=settings.points, distance=settings.distance, time=settings.time,
-                              powerup=settings.powerup)
+                              powerup=settings.powerup, gap=settings.gap)
     return compute_fitness(weights, distance=info["max_x_abs"], time=info["n_frames"],
-                            points=info.get("score") or 0, powerups=info.get("n_powerups") or 0)
+                            points=info.get("score") or 0, powerups=info.get("n_powerups") or 0,
+                            gaps=info.get("n_gaps_cleared") or 0)

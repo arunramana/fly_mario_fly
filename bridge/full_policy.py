@@ -34,6 +34,7 @@ from bridge.perception import (
     profiled_enemy_thetas, profiled_odor,
 )
 from bridge.motor import action_index
+from mario.actions.actions import action_from_buttons
 from bridge.controller_modules import ActContext, PerceptionContext, Proposal, Stimulus, build_modules
 from mario.entities.registry import KindRegistry
 from config.project_config import ProjectConfig
@@ -47,6 +48,7 @@ from fly.circuits.load_steering_cached import load as load_steering
 from fly.circuits.load_takeoff_cached import load as load_takeoff
 from fly.circuits.load_speed_cached import load as load_speed
 from fly.circuits.load_mdn_cached import load as load_mdn
+from fly.circuits.load_posture_cached import load as load_posture
 from fly.circuits.load_dnp02_cached import load as load_dnp02
 from fly.circuits.load_mushroom_body_cached import load as load_mushroom_body
 from mario.ram import tile_ram
@@ -55,7 +57,7 @@ from mario.ram.addresses import (
     ADDR_ENEMY_ACTIVE, ADDR_ENEMY_TYPE, N_ENEMY_SLOTS, POWERUP_ID,
 )
 from fly.plasticity.dopamine import event_dopamine
-from fly.plasticity.three_factor import update_eligibility, depress
+from fly.plasticity.three_factor import update_eligibility, depress, recover
 
 log = logging.getLogger(__name__)
 
@@ -98,7 +100,7 @@ class FullPolicy:
                  retinotopic: bool = False, frame_skip: int = 1, mb_weights=None,
                  event_proximal_dopamine: bool = False, shuffle_seed: int | None = None,
                  hunger_override: bool | None = None, entity_profiles=None,
-                 powerup_reward: bool = False):
+                 powerup_reward: bool = False, gap_reward: bool = False):
         """`hunger_override`: None (default) reads hunger from Mario's real
         size, as always. True/False forces hungry/sated regardless of size
         (tool/PLAN.md C7) -- a character-state control, science-change-when-
@@ -138,6 +140,8 @@ class FullPolicy:
         # Mode flag (docs/SPEC_learning_v2.md section 4): in event-proximal mode, Mario
         # becoming Super is also an appetitive dopamine event. Off = byte-identical to before.
         self.powerup_reward = powerup_reward
+        # Same idea for a pit cleared (landed safely past one Mario was approaching), A3.
+        self.gap_reward = gap_reward
         self.shuffle_seed = shuffle_seed
         self.hunger_override = hunger_override
         self.entity_profiles = entity_profiles
@@ -234,6 +238,20 @@ class FullPolicy:
             W_m, Integrator(alpha=c.network.alpha, clip=c.network.clip), g=c.mdn.g,
             populations={"MDN": self.mdn_mask})
 
+        # Down / Up muscles (docs/SPEC_learning_v3.md A7): the posture circuit, only built when MotorDirect's
+        # `buttons` switch is on, so every other run is untouched.
+        self.buttons_on = self.motor is not None and self.motor.params.buttons
+        if self.buttons_on:
+            from fly.circuits.posture_circuit import DOWN_TYPES, UP_TYPES
+            pb, _, _, _, W_po, _, _ = _load_maybe_shuffled("posture", load_posture, self.shuffle_seed)
+            self.Kpo = W_po.shape[0]
+            self.posture_masks = {f"{t}_{s}": ((pb["type"] == t) & (pb["somaSide"] == s)).to_numpy()
+                                  for t in ("LC4", "LPLC2", "LPLC1") for s in ("L", "R")}
+            self.down_mask = pb["type"].isin(DOWN_TYPES).to_numpy()
+            self.up_mask = pb["type"].isin(UP_TYPES).to_numpy()
+            self.posture_network = Network(
+                W_po, Integrator(alpha=c.network.alpha, clip=c.network.clip), g=self.motor.params.posture_g,
+                populations={"down": self.down_mask, "up": self.up_mask})
         log.debug("Loading the DNp02 circuit (second escape pathway, N=60, cached)...")
         dp_bodies, _, _, _, W_dp, _, _ = _load_maybe_shuffled("dnp02", load_dnp02, self.shuffle_seed)
         self.Kdp = W_dp.shape[0]
@@ -299,6 +317,8 @@ class FullPolicy:
         # the caller's matrix must survive the episode unchanged.
         self.W_kc_mbon = (mb_weights.copy() if mb_weights is not None
                           else W_mb_full[np.ix_(self.mb_mbon_idx, self.mb_kc_idx)].copy())
+        # The untrained connectome weights: what recovery (A1) relaxes a depressed synapse toward.
+        self.W_kc_mbon0 = W_mb_full[np.ix_(self.mb_mbon_idx, self.mb_kc_idx)].copy()
         self.mb_pam_reach = W_mb_full[np.ix_(self.mb_mbon_idx, mb_pam_idx)].sum(axis=1)
         self.mb_punish_reach = W_mb_full[np.ix_(self.mb_mbon_idx, mb_punish_idx)].sum(axis=1)
         # N_MB_SENSORY/features-per-KC/the projection seed are "Advanced"
@@ -348,6 +368,8 @@ class FullPolicy:
         self.n_qblock_hits = self.n_odor_avoids = self.n_refusals = 0
         self.n_stomps = 0
         self.n_powerups = 0
+        self.n_gaps_cleared = 0
+        self._gap_end_col = None   # far edge (tile column) of the pit Mario is approaching
         self._prev_enemy_slots: dict[int, int] = {}  # slot -> mario_x, for the stomp proxy
         self.orn_adapt = OlfactoryAdaptation()
         self.orn_adapt_avers = OlfactoryAdaptation()
@@ -447,14 +469,31 @@ class FullPolicy:
             log.debug(f"  Mario grew (size {self.prev_mario_size} -> {mario_size}) -- ate the mushroom")
         self.prev_mario_size = mario_size
 
+        # ---- cleared-gap event (docs/SPEC_learning_v3.md A3) ----------
+        # Remember the far edge of a pit when it first enters the lookahead; landing on the ground
+        # (RAM 0x001D == 0) at or past that column is a pit cleared. Always counted, rewarded only
+        # when gap_reward is on.
+        col0 = (int(ram[tile_ram.ADDR_MARIO_PAGE]) * 256 + mario_x) // 16
+        if self._gap_end_col is None:
+            grounded = tile_ram.ground_ahead(ram, c.takeoff.gap_lookahead_tiles)
+            if not all(grounded):
+                self._gap_end_col = (col0 + 1 + grounded.index(False)
+                                      + tile_ram.upcoming_gap_width(ram, c.takeoff.gap_lookahead_tiles))
+        gap_cleared = (self._gap_end_col is not None and col0 >= self._gap_end_col
+                       and int(ram[ADDR_PLAYER_STATE]) == 0)
+        if gap_cleared:
+            self.n_gaps_cleared += 1
+            self._gap_end_col = None
+
         # ---- escape jump + pit-triggered graded takeoff --------------
         if self.entity_profiles is None:
             theta, dtheta, d_out = enemy_thetas(ram, mario_x, self.prev_theta, registry=self.registry,
-                                                   page_aware=stim.page_aware_looming)
+                                                   page_aware=stim.page_aware_looming,
+                                                   ignore_behind=stim.ignore_behind)
         else:
             theta, dtheta, d_out = profiled_enemy_thetas(
                 ram, mario_x, self.prev_theta, registry=self.registry, profiles=self.entity_profiles,
-                page_aware=stim.page_aware_looming)
+                page_aware=stim.page_aware_looming, ignore_behind=stim.ignore_behind)
         self.prev_theta = theta
         for _side in ("L", "R"):
             if d_out[_side] is not None:
@@ -575,13 +614,16 @@ class FullPolicy:
         # See __init__ for event_proximal_dopamine; the goldens use progress.
         if self.event_proximal_dopamine:
             reward, _punish_unused = event_dopamine(qblock_hit, stomp, died=False,
-                                                    powerup=powerup and self.powerup_reward)
+                                                    powerup=powerup and self.powerup_reward,
+                                                    gap_cleared=gap_cleared and self.gap_reward)
         else:
             reward = progress
         if reward > 0:
             dopamine_reward = reward * self.mb_pam_reach
             self.W_kc_mbon = depress(self.W_kc_mbon, dopamine_reward, self.mb_elig,
                                       c.mushroom_body.learning_rate)
+            self.W_kc_mbon = recover(self.W_kc_mbon, self.W_kc_mbon0, dopamine_reward, self.mb_elig,
+                                      c.mushroom_body.recovery_rate)
 
         if self.readout is not None:
             pair = self.readout.readout(self.h_mbon)
@@ -799,6 +841,23 @@ class FullPolicy:
         self.mb_prev_dnp09 = dnp09_val
 
         action = action_index(self.direction, press_a, press_b)
+        if self.buttons_on:
+            # Down / Up / Left muscles (A7): looming drives the posture DNs through their real synapses,
+            # steering's left-minus-right team drives Left; each button is a MotorDirect muscle.
+            Ipo = np.zeros(self.Kpo)
+            for _side in ("L", "R"):
+                Ipo[self.posture_masks[f"LC4_{_side}"]] = abs(dtheta[_side])
+                Ipo[self.posture_masks[f"LPLC2_{_side}"]] = theta[_side]
+                Ipo[self.posture_masks[f"LPLC1_{_side}"]] = theta[_side]
+            for _ in range(self.substeps):
+                h_po = self.posture_network.step(Ipo, noise=self.noise)
+            self.posture_network.flush_denormals(c.network.denormal_flush_threshold)
+            self.down_val = float(h_po[self.down_mask].mean())
+            self.up_val = float(h_po[self.up_mask].mean())
+            self.pressed = self.motor.update_buttons(self.down_val, self.up_val, max(0.0, l_team - r_team))
+            action = action_from_buttons(right=not self.pressed["left"], left=self.pressed["left"],
+                                         down=self.pressed["down"], up=self.pressed["up"],
+                                         a=bool(press_a), b=bool(press_b))
         self._prev_press_a = bool(press_a)
 
         # Read by the telemetry row and by on_step()'s death punishment.
@@ -827,6 +886,11 @@ class FullPolicy:
             extras.update({"wall_tiles": stim.wall_distance_tiles, "wall_height": stim.wall_height_tiles,
                            "wall_theta": stim.wall_theta, "wall_dtheta": stim.wall_dtheta,
                            "wall_takeoff": stim.wall_takeoff})
+        if self.buttons_on:
+            extras.update({"down_val": self.down_val, "up_val": self.up_val,
+                           "down_drive": self.motor.button_drive["down"], "up_drive": self.motor.button_drive["up"],
+                           "left_drive": self.motor.button_drive["left"], "btn_down": self.pressed["down"],
+                           "btn_up": self.pressed["up"], "btn_left": self.pressed["left"]})
         if self.qblock_module is not None:
             extras.update({"qblock_tiles": stim.qblock_tiles, "qblock_height": stim.qblock_height_tiles,
                            "qblock_theta": stim.qblock_theta})
@@ -864,6 +928,8 @@ class FullPolicy:
             dopamine_punish = punish_magnitude * self.mb_punish_reach
             self.W_kc_mbon = depress(self.W_kc_mbon, dopamine_punish, self.mb_elig,
                                       c.mushroom_body.learning_rate)
+            self.W_kc_mbon = recover(self.W_kc_mbon, self.W_kc_mbon0, dopamine_punish, self.mb_elig,
+                                      c.mushroom_body.recovery_rate)
 
     def on_episode_end(self, steps: int) -> None:
         pass

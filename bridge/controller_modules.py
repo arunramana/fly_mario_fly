@@ -22,11 +22,18 @@ from __future__ import annotations
 import dataclasses
 import logging
 
+import numpy as np
+
 from mario.ram import tile_ram
 from dataclasses import dataclass
 from typing import Protocol
 
 log = logging.getLogger(__name__)
+
+
+def np_int8(value) -> int:
+    """A RAM byte read as signed (Player_X_Speed is two's complement)."""
+    return int(np.array([int(value)], dtype=np.uint8).view(np.int8)[0])
 
 
 @dataclass
@@ -118,6 +125,7 @@ class Stimulus:
     qblock_dtheta: float = 0.0         # its growth this frame
     qblock_tiles: int = -1             # what was perceived (telemetry only): -1 = no block in range
     qblock_height_tiles: int = 0
+    ignore_behind: bool = False        # enemies behind Mario give no looming (PagePerceptionModule)
 
 
 class PerceptionModule(Protocol):
@@ -150,6 +158,7 @@ class PagePerceptionModule:
 
     def perceive(self, ctx: PerceptionContext, stim: Stimulus) -> None:
         stim.page_aware_looming = True
+        stim.ignore_behind = self.params.ignore_behind
 
 
 class GapAheadPerceptionModule:
@@ -344,6 +353,30 @@ class QBlockAheadPerceptionModule:
         self.prev_theta = theta
 
 
+class MbGapSpeedInputModule:
+    """PERCEPTION. Two more Kenyon-cell inputs (docs/SPEC_learning_v3.md A2), both 0..1: the width of
+    the first pit within `perceive_tiles` (tiles / range) and Mario's own horizontal speed
+    (RAM 0x0057 Player_X_Speed, |v| / 40, the game's maximum). Lets the mushroom body learn that a
+    wide pit at speed differs from a narrow one standing still. Stimulus only. Off by default."""
+    name = "mb_gap_speed_inputs"
+    kind = "perception"
+    N_INPUTS = 2
+    MAX_SPEED = 40.0
+
+    def __init__(self, params):
+        self.params = params
+
+    def reset(self) -> None:
+        pass
+
+    def perceive(self, ctx: PerceptionContext, stim: Stimulus) -> None:
+        from mario.ram.addresses import ADDR_MARIO_XSPEED
+        n = self.params.perceive_tiles
+        width = min(tile_ram.upcoming_gap_width(ctx.ram, n), n) / n
+        speed = min(abs(int(np_int8(ctx.ram[ADDR_MARIO_XSPEED]))) / self.MAX_SPEED, 1.0)
+        stim.mb_extra = stim.mb_extra + (float(width), float(speed))
+
+
 class MotorDirectModule:
     """MOTOR. Replaces the fixed jump-hold and cooldown counters (docs/
     CONTROL_AUDIT.md rows 1-3) with a readout of the motor neurons
@@ -367,6 +400,9 @@ class MotorDirectModule:
     def reset(self) -> None:
         self.drive = 0.0
         self.prev_ratio = 0.0
+        self.baseline = 0.0     # slow TTMn baseline (adapt_frames)
+        self.dlmn_baseline = 0.0   # slow DLMn baseline (adapt_frames)
+        self.button_drive = {"down": 0.0, "up": 0.0, "left": 0.0}
         self.was_ready = False
         self.suppressed = False
         self.prev_player_state = 0
@@ -392,13 +428,37 @@ class MotorDirectModule:
                 self.drive = 0.0
                 self.prev_ratio = ttmn_ratio
                 return False
-        rise = max(0.0, ttmn_ratio - self.prev_ratio)
+        floor = self.prev_ratio
+        if p.adapt_frames > 0:
+            # Muscle adaptation (A4): a rise counts only above the slow baseline, so a sustained
+            # 4 -> 8 -> 17 cycle adapts away while a fresh onset from rest still drives fully.
+            floor = max(floor, self.baseline)
+            self.baseline += (ttmn_ratio - self.baseline) / p.adapt_frames
+            # The same for DLMn: a tonic DLMn (a latched jump circuit) must not hold A forever; a fresh
+            # DLMn onset (a pit takeoff) still lengthens the hold in full.
+            dlmn_val, self.dlmn_baseline = (max(0.0, dlmn_val - self.dlmn_baseline),
+                                            self.dlmn_baseline + (dlmn_val - self.dlmn_baseline) / p.adapt_frames)
+        rise = max(0.0, ttmn_ratio - floor)
         self.prev_ratio = ttmn_ratio
         drive_in = 0.0 if self.suppressed else p.ttmn_gain * rise + p.dlmn_gain * dlmn_val
         self.drive = self.drive * p.decay + drive_in
         if self.drive < 1e-12:
             self.drive = 0.0
         return self.drive >= p.a_threshold
+
+
+    def update_buttons(self, down_activity: float, up_activity: float, left_activity: float) -> dict:
+        """The Down / Up / Left muscles (docs/SPEC_learning_v3.md A7): each is a leaky integrator of
+        its neurons' activity, held while its drive is at or above its threshold. Returns
+        {"down": bool, "up": bool, "left": bool}. Nothing is forced: no neuron activity, no press."""
+        p = self.params
+        for name, act, gain in (("down", down_activity, p.down_gain), ("up", up_activity, p.up_gain),
+                                ("left", left_activity, p.left_gain)):
+            d = self.button_drive[name] * p.button_decay + gain * act
+            self.button_drive[name] = 0.0 if d < 1e-12 else d
+        return {"down": self.button_drive["down"] >= p.down_threshold,
+                "up": self.button_drive["up"] >= p.up_threshold,
+                "left": self.button_drive["left"] >= p.left_threshold}
 
 
 class MbonReadoutModule:
@@ -443,7 +503,8 @@ MODULE_CLASSES: dict[str, type] = {"page_perception": PagePerceptionModule,
                                     "dnp01_refractory": Dnp01RefractoryModule,
                                     "arousal": ArousalModule,
                                     "mbon_readout": MbonReadoutModule,
-                                    "qblock_ahead": QBlockAheadPerceptionModule}
+                                    "qblock_ahead": QBlockAheadPerceptionModule,
+                                    "mb_gap_speed_inputs": MbGapSpeedInputModule}
 
 
 def register(name: str):

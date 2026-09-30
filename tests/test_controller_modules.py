@@ -40,7 +40,7 @@ def test_perception_modules_only_set_stimuli():
     assert set(dataclasses.asdict(stim)) == {                                   # stimuli only, no action fields
         "page_aware_looming", "gap_input", "mb_extra", "wall_theta", "wall_dtheta", "wall_takeoff",
         "wall_distance_tiles", "wall_height_tiles",
-        "qblock_theta", "qblock_dtheta", "qblock_tiles", "qblock_height_tiles"}
+        "qblock_theta", "qblock_dtheta", "qblock_tiles", "qblock_height_tiles", "ignore_behind"}
 
 
 def _ground_ram(gap_cols, mario_x=0):

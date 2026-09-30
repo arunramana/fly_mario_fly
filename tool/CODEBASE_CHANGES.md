@@ -395,3 +395,29 @@ blocks are, and a readout strength range wide enough to test whether learning ca
 **Proof.** `tests/test_golden.py` (3/3 byte-identical) and the full `tests/` pass; new
 `tests/test_powerup_reward.py` (incl. the reward-vs-punishment sign test) and `tests/test_qblock_ahead.py`.
 `tests/test_controller_modules.py`'s stimulus-field set gained the four `qblock_*` names (all stimuli).
+
+## C15 -- learning v3: recovery, cleared gap, gap/speed inputs, muscle adaptation, all buttons (docs/SPEC_learning_v3.md)
+
+**What.** All opt-in / default off.
+- `fly/plasticity/three_factor.py`: `recover()`; `MushroomBodyParams.recovery_rate` (0). Applied after both
+  depress calls in `FullPolicy` toward `W_kc_mbon0`, the untrained connectome weights. `dopamine.py`:
+  `event_dopamine(..., gap_cleared=)`. `sim/fitness.py`: `FitnessWeights.gap`, `compute_fitness(..., gaps=)`.
+- `bridge/full_policy.py`, `run_steering.py`: `gap_reward` flag, cleared-gap detection (`n_gaps_cleared`, RAM
+  `0x001D` landing at or past a remembered pit edge); `info["n_gaps_cleared"]`.
+- `bridge/controller_modules.py`: `MbGapSpeedInputModule` (`mb_gap_speed_inputs`, 2 KC inputs, RAM `0x0057`);
+  `PagePerceptionParams.ignore_behind` -> `bridge/perception.py` `enemy_thetas(ignore_behind=)`;
+  `MotorDirectParams.adapt_frames` (TTMn rise and DLMn above slow baselines) and the `buttons` muscles
+  (`update_buttons`, down/up/left gain+threshold, `button_decay`, `posture_g`).
+- `fly/circuits/posture_circuit.py`, `load_posture_cached.py`: DNp03/DNp06/DNp11 (Down), DNg40/DNp05 (Up) +
+  their LC4/LPLC2/LPLC1 inputs; reads the shared edge cache `edges_dn_vis_learning_v3.parquet` (one streaming pass).
+- `mario/actions/actions.py`, `mario/emulator/env.py`: `MOVES_ALL` (all 64 combinations of right/left/down/up/A/B;
+  the original 8 keep indices 0-7, so old action logs and goldens are unchanged), `action_from_buttons`,
+  `buttons_of`; the env is built on `MOVES_ALL`.
+- `mario/ram/addresses.py`: `ADDR_MARIO_XSPEED`, `ADDR_MARIO_SCREEN_X` (0x03AD). `run_steering.py`: every
+  `on_frame` row also carries `mario_sx` (not a telemetry column) for the Luigi recolour.
+- `config/params.py`: `MbonReadoutParams.*_frac` range (0, 1); new params -> 95 in `docs/SCALARS.md`.
+
+**Default that keeps behaviour.** recovery 0, gap weight 0, modules off, `ignore_behind`/`adapt_frames` 0,
+`buttons` False (posture circuit not even loaded), `mario_sx` extra row key only.
+
+**Proof.** Full `tests/` incl. the 3 goldens; `tests/test_learning_v3.py`.

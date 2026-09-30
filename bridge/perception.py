@@ -47,18 +47,23 @@ def _dx(ram, slot, rec, mario_x, page_aware):
             - (int(ram[ADDR_MARIO_PAGE]) * 256 + int(mario_x)))
 
 
-def enemy_thetas(ram, mario_x, prev_theta, registry=DEFAULT_REGISTRY, page_aware=False):
+def enemy_thetas(ram, mario_x, prev_theta, registry=DEFAULT_REGISTRY, page_aware=False,
+                 ignore_behind=False):
     """Nearest active THREAT's theta/dtheta per hemisphere. Enemies ahead of
     Mario (on-screen x >= mario_x) route Right; behind route Left -- our
     convention, SPEC doesn't fix one since retinotopy is skipped (section 2).
     Powerup-slot entities are skipped -- see mario.ram.addresses.POWERUP_ID's
-    comment."""
+    comment. `ignore_behind` (PagePerceptionParams, docs/SPEC_learning_v3.md A4): an enemy
+    behind Mario (d < 0) produces no looming at all -- it is outside the frontal visual field, and
+    theta computed from |d| otherwise keeps a receding enemy driving the left hemisphere."""
     theta = {"L": 0.0, "R": 0.0}
     d_out = {"L": None, "R": None}
     for slot, rec in enumerate(registry.enemy_records(ram)):
         if not rec.active or rec.kind == EntityKind.POWERUP:
             continue
         d = _dx(ram, slot, rec, mario_x, page_aware)
+        if ignore_behind and d < 0:
+            continue
         side = "R" if d >= 0 else "L"
         ad = max(abs(d), 1)
         th = 2.0 * np.arctan(rec.width / (2.0 * ad))
@@ -129,7 +134,8 @@ def goomba_odor(ram, mario_x, registry=DEFAULT_REGISTRY):
     return odor
 
 
-def profiled_enemy_thetas(ram, mario_x, prev_theta, registry, profiles: EntityProfiles, page_aware=False):
+def profiled_enemy_thetas(ram, mario_x, prev_theta, registry, profiles: EntityProfiles, page_aware=False,
+                          ignore_behind=False):
     """C8a (docs/SPEC_entity_perception.md section 1.1): same as
     enemy_thetas, except each entity's raw angular size is scaled by its
     kind's `looming_salience * danger_weight` (the master-knob product)
@@ -147,6 +153,8 @@ def profiled_enemy_thetas(ram, mario_x, prev_theta, registry, profiles: EntityPr
         if not rec.active or rec.kind == EntityKind.POWERUP:
             continue
         d = _dx(ram, slot, rec, mario_x, page_aware)
+        if ignore_behind and d < 0:
+            continue
         side = "R" if d >= 0 else "L"
         ad = max(abs(d), 1)
         th_raw = 2.0 * np.arctan(rec.width / (2.0 * ad))

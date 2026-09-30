@@ -217,18 +217,18 @@ def test_config_panel_shows_the_brain_weights_block(qtbot):
     assert "[brain weights]" not in panel.panel.toPlainText()
 
 
-def test_mbon_readout_fracs_are_editable_up_to_0_2(window):
+def test_mbon_readout_fracs_are_editable_up_to_1_0(window):
     circuits = window.tabs.widget(3)
     circuits._select_circuit("mushroom_body")
     circuits.module_checkboxes["mbon_readout"].setChecked(True)
     for pathway in ("dnp01", "dlmn", "dnp09", "mdn"):
         spin = circuits.module_editors[("mbon_readout", f"{pathway}_frac")]
-        assert (spin.minimum(), spin.maximum()) == (0.0, 0.2)
-        spin.setValue(0.15)
-        assert getattr(window.get_config().modules.mbon_readout, f"{pathway}_frac") == 0.15
+        assert (spin.minimum(), spin.maximum()) == (0.0, 1.0)
+        spin.setValue(0.9)
+        assert getattr(window.get_config().modules.mbon_readout, f"{pathway}_frac") == 0.9
     from config.params import MbonReadoutParams, _f  # noqa: F401
     import dataclasses as dc
-    assert all(f.metadata["range"] == (0.0, 0.2) for f in dc.fields(MbonReadoutParams))
+    assert all(f.metadata["range"] == (0.0, 1.0) for f in dc.fields(MbonReadoutParams))
 
 
 def test_qblock_module_is_in_the_mushroom_body_card(window):

@@ -25,19 +25,21 @@ from fly.network import dynamics
 
 
 def event_dopamine(qblock_hit: bool, stomp: bool, died: bool,
-                   powerup: bool = False) -> tuple[float, float]:
+                   powerup: bool = False, gap_cleared: bool = False) -> tuple[float, float]:
     """Routes RAM-decodable events to the two DAN compartments
     (SPEC_mushroom_body.md section 3): a `?` block hit or a stomp -> PAM
     (appetitive), death -> PPL1/PPM (aversive). `powerup` (Mario just became
     Super, RAM 0x0756 rose from 0) is the same appetitive pulse
     (docs/SPEC_learning_v2.md section 4); the caller passes it only when the
-    power-up reward is switched on. Magnitude is
+    power-up reward is switched on. `gap_cleared` (Mario landed safely past a
+    pit he was approaching, docs/SPEC_learning_v3.md A3) is the same pulse, only
+    when its reward is switched on. Magnitude is
     `dynamics.CLIP` either way, a one-shot event rather than a new scalar.
 
     Returns `(pam_dopamine, punish_dopamine)`. `died` only comes from
     FullPolicy.on_step() after the episode ends, so it never coincides with
     a same-frame reward.
     """
-    pam = dynamics.CLIP if (qblock_hit or stomp or powerup) else 0.0
+    pam = dynamics.CLIP if (qblock_hit or stomp or powerup or gap_cleared) else 0.0
     punish = dynamics.CLIP if died else 0.0
     return pam, punish

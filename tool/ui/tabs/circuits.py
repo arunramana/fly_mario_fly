@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QSlider, QToolButton, QVBoxLayout, QWidget,
 )
 
-from config.params import CONTROL_RULE_LABELS, ArousalParams, GapAheadParams, WallAheadParams, MbonReadoutParams, Dnp01RefractoryParams, Dnp02RefractoryParams, MbSpatialInputParams, MotorDirectParams, PagePerceptionParams, QBlockAheadParams
+from config.params import CONTROL_RULE_LABELS, ArousalParams, GapAheadParams, WallAheadParams, MbonReadoutParams, Dnp01RefractoryParams, Dnp02RefractoryParams, MbSpatialInputParams, MotorDirectParams, PagePerceptionParams, QBlockAheadParams, MbGapSpeedInputParams
 from config.project_config import from_dict as config_from_dict
 from tool.core.circuit_manifest import CIRCUIT_REGISTRY, OTHER_ENTRY
 from tool.ui.widgets.card_button import make_card_button
@@ -60,6 +60,9 @@ MODULE_TOGGLES = [
     ("motor_direct", MotorDirectParams, "MotorDirect (motor)",
      "A follows a leaky integral of the motor neurons' own activity instead of the fixed "
      "jump-hold / cooldown counters (docs/CONTROL_AUDIT.md rows 1-3)."),
+    ("mb_gap_speed_inputs", MbGapSpeedInputParams, "MB gap width + own speed (perception)",
+     "Two more Kenyon-cell inputs: the width of the next pit and Mario's own horizontal speed (RAM 0x0057). "
+     "Stimulus only. docs/SPEC_learning_v3.md A2."),
     ("qblock_ahead", QBlockAheadParams, "? block ahead (perception)",
      "Unhit ? blocks at or ahead of Mario as distance and height, fed to the mushroom body as two extra "
      "Kenyon-cell inputs and, if looming_gain > 0, as a weak looming cue. A stimulus only: the fly "
@@ -88,6 +91,12 @@ MODULE_PARAM_UI: dict[str, list] = {
          "Also drive through one intermediate neuron (pC1 -> X -> target, signed by X's transmitter). "
          "Off = direct pC1 synapses only. Roughly doubles the steering effect and lowers the Giant "
          "Fiber's response to looming; the intermediates' own dynamics are not simulated.")],
+    "page_perception": [("ignore_behind", "bool", 0, 1, 1,
+        "An enemy behind Mario produces no looming (it is outside the frontal visual field). Off: theta from |d| "
+        "for enemies on both sides, so a receding enemy keeps driving the left hemisphere -- the source of the "
+        "TTMn plateau (docs/SPEC_learning_v3.md A4).")],
+    "mb_gap_speed_inputs": [("perceive_tiles", "int", 1, 16, 1,
+        "How many tiles ahead the pit width is read. Compared against the takeoff lookahead (gap_lookahead_tiles).")],
     "gap_ahead": [("perceive_tiles", "int", 1, 16, 1,
                    "How many tiles ahead the pit-edge input starts. Compared against the distance "
                    "to the nearest non-ground tile (tiles): inside this range the gap input is "
@@ -119,6 +128,20 @@ MODULE_PARAM_UI: dict[str, list] = {
         ("dlmn_gain", "float", 0.0, 1.0, 0.01,
          "Drive added per frame per unit of DLMn activity (0 to ~8 on a pit). Sustained DLMn "
          "lengthens the hold: a graded long jump instead of a binary choice."),
+        ("adapt_frames", "float", 0.0, 600.0, 5.0,
+         "Muscle adaptation: a TTMn rise counts only above a slow baseline with this time constant (frames), so a "
+         "sustained 4->8->17 cycle stops holding A while a fresh onset still drives fully. 0 = off."),
+        ("buttons", "bool", 0, 1, 1,
+         "Turn on the Down / Up / Left muscles below (each a leaky integral of its neurons, pressed above its threshold). "
+         "Down = DNp03/DNp06/DNp11, Up = DNg40/DNp05 (looming-driven, roles are a hypothesis), Left = DNa01/02 left minus right."),
+        ("button_decay", "float", 0.0, 0.999, 0.01, "Per-frame decay of the three button drives (tau = 1/(1-decay) frames)."),
+        ("down_gain", "float", 0.0, 20.0, 0.1, "Drive added per unit of Down-DN activity (median 0.19, peak 1.5 on learn_1)."),
+        ("down_threshold", "float", 0.0, 100.0, 0.1, "Down is held while its drive is at or above this."),
+        ("up_gain", "float", 0.0, 20.0, 0.1, "Drive added per unit of Up-DN activity (peak 0.76 on learn_1)."),
+        ("up_threshold", "float", 0.0, 100.0, 0.1, "Up is held while its drive is at or above this."),
+        ("left_gain", "float", 0.0, 20.0, 0.1, "Drive added per unit of DNa01/02 left-minus-right team activity."),
+        ("left_threshold", "float", 0.0, 100.0, 0.1, "Left replaces Right while its drive is at or above this."),
+        ("posture_g", "float", 0.1, 1.2, 0.05, "Gain of the posture circuit (spectral radius 0.9993 at g=1: keep below ~1)."),
         ("release_on_landing", "bool", 0, 1, 1,
          "Release A for one frame when Mario lands (RAM 0x001D returns to 0) and clear the drive, "
          "so the next jump is a fresh press -- the NES ignores a held A. Compared against the "
@@ -135,10 +158,10 @@ MODULE_PARAM_UI: dict[str, list] = {
          "Scale on the block's looming angle theta = 2*arctan(16 px / (2*distance_px)) into the right-hemisphere "
          "LC4/LPLC2 drive. Compared against wall_ahead.looming_gain (1.0). 0 = the looming route is off; the "
          "two Kenyon-cell inputs are always on while the module is.")],
-    "mbon_readout": [(f"{p}_frac", "float", 0.0, 0.2, 0.001,
+    "mbon_readout": [(f"{p}_frac", "float", 0.0, 1.0, 0.005,
                       f"Bias current onto {label} per unit of the connectome-weighted MBON activity "
                       "(negative sign, like the existing MBON->DNa02 path). Compared against "
-                      "mushroom_body.mbon_dna02_frac_l/r (0.0038 / 0.0063) -- same order of size. Range 0-0.2; "
+                      "mushroom_body.mbon_dna02_frac_l/r (0.0038 / 0.0063) -- same order of size. Range 0-1; "
                       "see docs/RUNS.md for the value at which the readout starts to change behaviour.")
                      for p, label in (("dnp01", "DNp01 (jump)"), ("dlmn", "DLMn (long jump)"),
                                       ("dnp09", "DNp09 (speed)"), ("mdn", "MDN (backing up)"))],

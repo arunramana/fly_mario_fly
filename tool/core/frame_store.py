@@ -35,8 +35,16 @@ class FrameStore:
         self._palette: dict[int, int] = {}  # packed 24-bit RGB -> index
         self._palette_rgb: list[tuple[int, int, int]] = []
         self._frames: list[np.ndarray] = []
+        self._mario: list[tuple[int, int]] = []   # per frame: Mario's DRAWN (x, y); -1 = unknown
 
-    def write_frame(self, obs: np.ndarray) -> None:
+    def _note_mario(self, mario) -> None:
+        """`mario` = (screen x, screen y) from the on_frame row (RAM 0x03AD / 0x03B8), stored so a
+        replay can recolour Mario's sprite (Luigi) exactly where he was drawn."""
+        x, y = mario if mario is not None else (None, None)
+        self._mario.append((-1 if x is None else int(x), -1 if y is None else int(y)))
+
+    def write_frame(self, obs: np.ndarray, mario=None) -> None:
+        self._note_mario(mario)
         frame = np.asarray(obs)
         packed = (frame[..., 0].astype(np.uint32) << 16
                   | frame[..., 1].astype(np.uint32) << 8
@@ -68,6 +76,7 @@ class FrameStore:
                 out_path,
                 frames=np.stack(self._frames, axis=0),
                 palette=np.array(self._palette_rgb, dtype=np.uint8),
+                mario_pos=np.array(self._mario, dtype=np.int16),
             )
         except OSError:
             return None
@@ -85,6 +94,16 @@ def load_frames(path) -> tuple[np.ndarray, np.ndarray] | None:
     try:
         with np.load(path) as data:
             return data["frames"], data["palette"]
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def load_mario_positions(path) -> np.ndarray | None:
+    """(N, 2) int16 of Mario's drawn (x, y) per recorded frame (-1 = unknown), or None for a
+    recording made before positions were kept."""
+    try:
+        with np.load(Path(path)) as data:
+            return data["mario_pos"] if "mario_pos" in data.files else None
     except (OSError, ValueError, KeyError):
         return None
 

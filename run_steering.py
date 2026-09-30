@@ -38,7 +38,7 @@ from PIL import Image
 from sim.telemetry import TelemetryObserver
 from mario.ram import tile_ram
 from mario.ram.addresses import (
-    ADDR_MARIO_X, ADDR_MARIO_Y, ADDR_MARIO_SIZE,
+    ADDR_MARIO_X, ADDR_MARIO_Y, ADDR_MARIO_SIZE, ADDR_MARIO_SCREEN_X,
     ADDR_ENEMY_X, ADDR_ENEMY_Y, ADDR_ENEMY_ACTIVE, ADDR_ENEMY_TYPE,
     N_ENEMY_SLOTS, POWERUP_ID,
 )
@@ -223,6 +223,8 @@ def policy_extra_columns(policy) -> tuple:
         cols += [f"mbon_{g}" for g in policy.readout.PATHWAYS] + ["mbon_agg"]
     if getattr(policy, "wall_module", None) is not None:
         cols += ["wall_tiles", "wall_height", "wall_theta", "wall_dtheta", "wall_takeoff"]
+    if getattr(policy, "buttons_on", False):
+        cols += ["down_val", "up_val", "down_drive", "up_drive", "left_drive", "btn_down", "btn_up", "btn_left"]
     if getattr(policy, "qblock_module", None) is not None:
         cols += ["qblock_tiles", "qblock_height", "qblock_theta"]
     if getattr(policy, "arousal_module", None) is not None:
@@ -238,7 +240,7 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
          event_proximal_dopamine=False, config=None, on_frame=None, should_stop=None,
          shuffle_seed=None, hunger_override=None, entity_profiles=None,
          death_animation_frames=0, start_actions=None, record_actions=False,
-         arousal_source=None, powerup_reward=False):
+         arousal_source=None, powerup_reward=False, gap_reward=False):
     """Run one episode of the full system and return (telemetry, info).
 
     start_actions: a saved-state prefix (uint8 action indices). The emulator
@@ -318,6 +320,9 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
         Mario becoming Super (RAM 0x0756 rising) is an appetitive dopamine
         event too (docs/SPEC_learning_v2.md section 4). info["n_powerups"]
         counts those events either way.
+    gap_reward: False (default): unchanged. True: in event-proximal mode, landing safely past
+        a pit Mario was approaching is an appetitive dopamine event (docs/SPEC_learning_v3.md A3);
+        info["n_gaps_cleared"] counts them either way.
     death_animation_frames: 0 (default): unchanged behaviour, the episode
         ends the instant `done` is True, as always. On a real death or
         flag (not a Cancel, not hitting max_frames), a positive value
@@ -358,7 +363,8 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
                          frame_skip=frame_skip, mb_weights=mb_weights,
                          event_proximal_dopamine=event_proximal_dopamine,
                          shuffle_seed=shuffle_seed, hunger_override=hunger_override,
-                         entity_profiles=entity_profiles, powerup_reward=powerup_reward)
+                         entity_profiles=entity_profiles, powerup_reward=powerup_reward,
+                         gap_reward=gap_reward)
     policy.reset(seed)
     policy.arousal_source = arousal_source   # a callable -> slider level, read every frame (None = the config's value)
 
@@ -435,6 +441,7 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
                 # becomes a CSV column -- it's here purely for on_frame's
                 # Luigi-recolour box (tool/core/palette.py).
                 row["mario_y"] = int(ram[ADDR_MARIO_Y])
+                row["mario_sx"] = int(ram[ADDR_MARIO_SCREEN_X])   # drawn x, for the Luigi box
                 if record_video:
                     Image.fromarray(obs).save(tmp / f"{frame:05d}.png")
                 if on_frame is not None:
@@ -548,6 +555,7 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
             row.update(info_f["extras"])
             observer.record(row)
             row["mario_y"] = mario_y  # after record() -- see the frame-skip branch's own comment
+            row["mario_sx"] = int(ram[ADDR_MARIO_SCREEN_X])
             if record_video:
                 Image.fromarray(obs).save(tmp / f"{frame:05d}.png")
             if on_frame is not None:
@@ -597,6 +605,7 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
                                                      policy.n_refusals)
         n_stomps = policy.n_stomps
         n_powerups = policy.n_powerups
+        n_gaps_cleared = policy.n_gaps_cleared
         max_x_abs = policy.max_x_abs
         log.info(f"\n{frame} frames -- escape jumps={n_escape_jumps} "
                  f"(of which long jumps={n_long_jumps}, DNp01={n_dnp01_fired}, DNp02={n_dnp02_fired})  "
@@ -624,7 +633,7 @@ def main(out_mp4=None, level="1-1", max_frames=ScenarioParams().max_frames,
                       n_climb_hops=n_climb_hops, n_climb_jumps=n_climb_jumps,
                       n_conflicts=n_conflicts, n_frames=frame, died_or_flagged=done,
                       n_odor_avoids=n_odor_avoids, n_qblock_hits=n_qblock_hits,
-                      n_stomps=n_stomps, n_powerups=n_powerups, n_refusals=n_refusals,
+                      n_stomps=n_stomps, n_powerups=n_powerups, n_gaps_cleared=n_gaps_cleared, n_refusals=n_refusals,
                       mb_weights=W_kc_mbon, max_x_abs=max_x_abs,
                       seed=seed, sigma=sigma,
                       score=info.get("score"), coins=info.get("coins"),

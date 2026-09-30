@@ -61,6 +61,9 @@ class FitnessSettings:
     # dopamine event in event-proximal runs; the value never scales the dopamine
     # (docs/SPEC_learning_v2.md section 4).
     powerup: float = 0.0
+    # Weight of one pit cleared (landed safely past it); > 0 also switches on that dopamine event
+    # (docs/SPEC_learning_v3.md A3), its value never scales the dopamine.
+    gap: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -154,6 +157,9 @@ class TrainingSettings:
     seed_base: int | None = None
     test_every: int = 0
     test_seeds: tuple[int, ...] = tuple(range(100, 110))
+    # Curriculum (docs/SPEC_learning_v3.md A5): savestate names (or "power-on") sampled per episode
+    # with the episode's seeded rng; empty = every episode starts from power-on, as before.
+    start_states: tuple[str, ...] = ()
 
     def __post_init__(self):
         if self.seed_mode not in ("fixed", "vary"):
@@ -204,7 +210,7 @@ def _from_dict(cls, data: dict):
         raw = data[f.name]
         if is_dataclass(field_type) and isinstance(raw, dict):
             kwargs[f.name] = _from_dict(field_type, raw)
-        elif f.name in ("seeds", "test_seeds") and raw is not None:
+        elif f.name in ("seeds", "test_seeds", "start_states") and raw is not None:
             kwargs[f.name] = tuple(raw)
         else:
             kwargs[f.name] = raw
