@@ -107,6 +107,7 @@ class PerceptionContext:
     config: object
     registry: object = None
     profiles: object = None    # bridge.entity_profiles.EntityProfiles, or None (profiles off)
+    bio: bool = False          # bio_strict: perceive only what is on the drawn screen
 
 
 @dataclass
@@ -290,6 +291,7 @@ class MbSpatialInputModule:
     def perceive(self, ctx: PerceptionContext, stim: Stimulus) -> None:
         from bridge.perception import _dx
         from mario.entities.kinds import EntityKind
+        from mario.ram import screen
         look = ctx.config.takeoff.gap_lookahead_tiles
         d = ctx.distance_to_edge
         edge = 0.0 if d is None or d > look else (look - d + 1) / look
@@ -298,6 +300,8 @@ class MbSpatialInputModule:
             for slot, rec in enumerate(ctx.registry.enemy_records(ctx.ram)):
                 if not rec.active or rec.kind == EntityKind.POWERUP:
                     continue
+                if ctx.bio and not screen.enemy_on_screen(ctx.ram, slot, rec.width):
+                    continue   # off screen: not seen
                 dx = _dx(ctx.ram, slot, rec, ctx.mario_x, True)
                 if dx >= 0 and (nearest is None or dx < nearest):
                     nearest = dx
@@ -338,7 +342,7 @@ class QBlockAheadPerceptionModule:
         if ctx.profiles is not None:
             from mario.entities.kinds import EntityKind
             weight = ctx.profiles.get(EntityKind.QUESTION_BLOCK).cue_weight
-        blocks = question_blocks_ahead(ctx.ram, p.perceive_tiles)
+        blocks = question_blocks_ahead(ctx.ram, p.perceive_tiles, visible_only=ctx.bio)
         closeness = height = theta = 0.0
         if blocks:
             tiles, height_tiles = blocks[0]

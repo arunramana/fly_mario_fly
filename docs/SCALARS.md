@@ -153,6 +153,17 @@ disagree.
 | `mushroom_offset` | `-40` | unknown | invented (spawn position for the synthetic mushroom-injection demo, behind Mario so it competes with HOME_BIAS's rightward pull) | `run_steering.py (MUSHROOM_OFFSET)` |
 | `wide_gap_lead_tiles` | `10` | unknown | invented (docs/CODE_AUDIT.md section H: how many tiles ahead of Mario the synthetic wide-gap demo places its fixed gap column -- exercised by tests/test_golden.py::test_017_reprise via inject_gap_frame, not purely a demo-only value the way mushroom_offset is) | `run_steering.py (wide_gap_target_col's lead_tiles default)` |
 
+## BioStrictParams
+
+| field | value | range | provenance | home |
+|---|---|---|---|---|
+| `elevation_limit_deg` | `60.0` | 10.0-90.0 | invented (elevation above/below the horizon beyond which an object no longer drives the looming detectors; LC4/LPLC2 tile the visual field, Wu et al. 2016, Klapoetke et al. 2017 -- the limit itself is a choice) | `bridge/perception.py (bio_enemy_thetas)` |
+| `clip_hz` | `200.0` | 50.0-1000.0 | invented (rate units read as Hz; sustained peak rates of Drosophila central neurons are of order 1e2 Hz, Bhandawat et al. 2007) | `config/bio_strict.py (network.clip)` |
+| `spike_amp_hz` | `60.0` | 10.0-200.0 | invented (derived: one spike per 16.7 ms frame = 1000/16.67 Hz) | `config/bio_strict.py (jump.spike_amp)` |
+| `refractory_steps` | `3` | 1-10 | invented (absolute refractory period in substeps of 1.67 ms: 3 = 5 ms, the top of the ~2-5 ms range of insect neurons; the smallest value that removes the DNp02<->pIP1 latch) | `config/bio_strict.py (refractory modules)` |
+| `adapt_frames` | `30.0` | 1.0-600.0 | invented (motor-neuron spike-frequency adaptation, 0.5 s; 1e2-1e3 ms is typical for insect motor neurons) | `config/bio_strict.py (motor_direct.adapt_frames)` |
+| `walk_threshold` | `0.2` | 0.0-1.0 | invented (DNp09 activity above which Mario walks; DNp09 is a walking descending neuron, Bidaye et al. 2020) | `bridge/full_policy.py (walk gate)` |
+
 ## PagePerceptionParams
 
 | field | value | range | provenance | home |
@@ -243,19 +254,19 @@ disagree.
 
 ## Totals
 
-**95 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
+**101 hand-set scalars.** Three (`RetinotopyParams`) are dormant; three
 more (`DemoParams.mushroom_offset`, `DemoParams.wide_gap_lead_tiles`,
 `TerrainParams.refusal_gap_margin_tiles`) only matter in an opt-in
 injection demo -- the first is untested by any golden, the other two are
 exercised by `tests/test_golden.py::test_017_reprise`'s own
 `inject_gap_frame`, so "opt-in" here means "off by default", not
-"untested". The other 89 are live in every default run.
+"untested". The other 95 are live in every default run.
 
 A range of `unknown` means genuinely unknown, not left blank: an invented
 bound would be scaffolding that looks like data. Only `JumpParams.g` and
 `NoiseParams.sigma` have a characterised range.
 
-By category (the first word of each provenance): **72 invented**, **23 measured**, **0 connectome-derived** (of 95).
+By category (the first word of each provenance): **78 invented**, **23 measured**, **0 connectome-derived** (of 101).
 
 None are connectome-derived. The connectome determines each circuit's
 weight matrix `W`; every scalar here sits outside it, as a gain on it, a

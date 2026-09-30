@@ -83,6 +83,14 @@ class GoalTab(QWidget):
             "A science change when on (CLAUDE.md rule 3).")
         self.graded_pits_checkbox.toggled.connect(self._on_graded_pits_changed)
         scenario_form.addRow("Pits", self.graded_pits_checkbox)
+        self.bio_strict_checkbox = QCheckBox("Biologically strict fly (docs/SPEC_bio_strict.md)")
+        self.bio_strict_checkbox.setChecked(config.bio_strict)
+        self.bio_strict_checkbox.setToolTip(
+            "Honest senses and dynamics: looming only from enemies on screen and ahead (elevation-weighted, both eyes), "
+            "no wall/pit currents onto the Giant Fiber, no hand-coded control rules, clip/spike scaled to Hz, refractory "
+            "periods, a phasic motor model, walking as a DNp09 muscle. Needs the MotorDirect module. A science change.")
+        self.bio_strict_checkbox.toggled.connect(self._on_bio_strict_changed)
+        scenario_form.addRow("Strict", self.bio_strict_checkbox)
         self.start_state_combo = QComboBox()
         self.start_state_combo.currentIndexChanged.connect(self._on_start_state_changed)
         scenario_form.addRow("Start from", self.start_state_combo)
@@ -344,6 +352,10 @@ class GoalTab(QWidget):
         config = self._window.get_config()
         scenario = dataclasses.replace(config.scenario, graded_pit_response=checked)
         self._window.set_config(dataclasses.replace(config, scenario=scenario))
+
+    def _on_bio_strict_changed(self, checked: bool) -> None:
+        config = self._window.get_config()
+        self._window.set_config(dataclasses.replace(config, bio_strict=checked))
 
     def _on_sigma_changed(self, value: float) -> None:
         config = self._window.get_config()

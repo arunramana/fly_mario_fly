@@ -36,7 +36,7 @@ working around it.
 3. **Every hand-set scalar gets flagged and counted — no fixed budget.**
    Each one gets a typed, ranged home in `config/params.py` and a row in
    `docs/SCALARS.md` (generated from it, never written by hand). There
-   are **95**: 72 invented (placed currents, mechanical hold durations),
+   are **101**: 78 invented (placed currents, mechanical hold durations),
    23 measured (simulated against the real weight matrix and picked by a
    sweep), **0 connectome-derived**. The connectome determines each
    circuit's weight matrix, never a scalar controlling how hard a circuit
@@ -44,7 +44,7 @@ working around it.
    stayed true past the next prototype -- check `docs/SCALARS.md`'s own
    generated total, not this number, before relying on it for anything;
    the last additions are `QBlockAheadParams` (docs/SPEC_learning_v2.md) and the v3 recovery / muscle /
-   posture scalars, docs/SPEC_learning_v3.md.)
+   posture scalars (docs/SPEC_learning_v3.md) and the six `BioStrictParams` (docs/SPEC_bio_strict.md).)
 
 4. **The circuit is recurrent, not feedforward.** Lateral connection within the
    detector populations is 3–9.5x their drive onto the Giant Fiber. Model it as

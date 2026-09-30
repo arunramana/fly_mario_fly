@@ -83,7 +83,7 @@ CIRCUIT_REGISTRY: list[CircuitEntry] = [
 # circuit it doesn't actually belong to.
 OTHER_GROUPS: tuple[str, ...] = (
     "network", "noise", "habituation", "odour", "terrain",
-    "interaction", "entity", "retinotopy", "demo",
+    "interaction", "entity", "retinotopy", "demo", "bio",
 )
 OTHER_ENTRY = CircuitEntry(
     "other", "Other parameters", OTHER_GROUPS, (),

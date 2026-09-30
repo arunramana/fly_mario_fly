@@ -140,15 +140,19 @@ def solid_ahead(ram) -> bool:
     return False
 
 
-def question_blocks_near(ram, n_tiles: int = 16) -> list[int]:
+def question_blocks_near(ram, n_tiles: int = 16, visible_only: bool = False) -> list[int]:
     """Screen-relative column offsets (can be negative -- behind Mario) of
     every `?` block (coin or power-up) within +-n_tiles of Mario's own
     column. A hit block reads as USED_BLOCK_ID and is not listed, so an
-    emptied block stops smelling (bridge.perception.question_block_odor)."""
+    emptied block stops smelling (bridge.perception.question_block_odor). `visible_only`: only columns that are
+    inside the drawn screen (Mario's drawn column + k in 0..15) -- what an eye could see."""
     buf1, buf2 = _grids(ram)
     col0 = _mario_abs_col(ram)
+    scol = int(ram[0x03AD]) // 16
     offsets = []
     for k in range(-n_tiles, n_tiles + 1):
+        if visible_only and not 0 <= scol + k <= 15:
+            continue
         for row in range(ROWS):
             t = _tile_at_abs_col(buf1, buf2, col0 + k, row)
             if t in QUESTION_IDS:
@@ -157,7 +161,7 @@ def question_blocks_near(ram, n_tiles: int = 16) -> list[int]:
     return offsets
 
 
-def question_blocks_ahead(ram, max_tiles: int = 8) -> list[tuple[int, int]]:
+def question_blocks_ahead(ram, max_tiles: int = 8, visible_only: bool = False) -> list[tuple[int, int]]:
     """Unhit `?` blocks (coin or power-up tile) in Mario's own column or up
     to `max_tiles` ahead, as (distance_tiles, height_tiles), nearest first.
     distance 0 = directly overhead; height = tiles above the ground row, so
@@ -166,8 +170,11 @@ def question_blocks_ahead(ram, max_tiles: int = 8) -> list[tuple[int, int]]:
     drops out of this list the moment it is hit."""
     buf1, buf2 = _grids(ram)
     col0 = _mario_abs_col(ram)
+    scol = int(ram[0x03AD]) // 16
     found = []
     for k in range(0, max_tiles + 1):
+        if visible_only and scol + k > 15:
+            break
         for row in range(ROWS - 1, -1, -1):
             if _tile_at_abs_col(buf1, buf2, col0 + k, row) in QUESTION_IDS:
                 found.append((k, GROUND_ROW - row))

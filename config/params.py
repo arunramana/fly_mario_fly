@@ -661,10 +661,34 @@ MODULE_PARAM_CLASSES: tuple = (PagePerceptionParams, GapAheadParams, WallAheadPa
                                      Dnp01RefractoryParams, ArousalParams, QBlockAheadParams,
                                      MbGapSpeedInputParams)
 
+@dataclass(frozen=True)
+class BioStrictParams:
+    """The numbers behind `ProjectConfig.bio_strict` (docs/SPEC_bio_strict.md): values with cited qualitative support,
+    not measurements. Only read when bio_strict is on."""
+    elevation_limit_deg: float = _f(60.0, (10.0, 90.0),
+        "invented (elevation above/below the horizon beyond which an object no longer drives the looming detectors; "
+        "LC4/LPLC2 tile the visual field, Wu et al. 2016, Klapoetke et al. 2017 -- the limit itself is a choice)",
+        "bridge/perception.py (bio_enemy_thetas)")
+    clip_hz: float = _f(200.0, (50.0, 1000.0),
+        "invented (rate units read as Hz; sustained peak rates of Drosophila central neurons are of order 1e2 Hz, "
+        "Bhandawat et al. 2007)", "config/bio_strict.py (network.clip)")
+    spike_amp_hz: float = _f(60.0, (10.0, 200.0),
+        "invented (derived: one spike per 16.7 ms frame = 1000/16.67 Hz)", "config/bio_strict.py (jump.spike_amp)")
+    refractory_steps: int = _f(3, (1, 10),
+        "invented (absolute refractory period in substeps of 1.67 ms: 3 = 5 ms, the top of the ~2-5 ms range of "
+        "insect neurons; the smallest value that removes the DNp02<->pIP1 latch)", "config/bio_strict.py (refractory modules)")
+    adapt_frames: float = _f(30.0, (1.0, 600.0),
+        "invented (motor-neuron spike-frequency adaptation, 0.5 s; 1e2-1e3 ms is typical for insect motor neurons)",
+        "config/bio_strict.py (motor_direct.adapt_frames)")
+    walk_threshold: float = _f(0.2, (0.0, 1.0),
+        "invented (DNp09 activity above which Mario walks; DNp09 is a walking descending neuron, Bidaye et al. 2020)",
+        "bridge/full_policy.py (walk gate)")
+
+
 ALL_PARAM_CLASSES = (
     NetworkParams, NoiseParams, JumpParams, Dnp02Params, TakeoffParams, SpeedParams,
     SteeringParams, MdnParams, MushroomBodyParams, HabituationParams, OdourParams,
-    TerrainParams, InteractionParams, EntityParams, RetinotopyParams, DemoParams,
+    TerrainParams, InteractionParams, EntityParams, RetinotopyParams, DemoParams, BioStrictParams,
 )
 
 

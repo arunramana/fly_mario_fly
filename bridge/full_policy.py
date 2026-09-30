@@ -29,11 +29,12 @@ import logging
 import numpy as np
 
 from bridge.perception import (
-    enemy_thetas, mushroom_odor, question_block_odor, goomba_odor,
+    enemy_thetas, mushroom_odor, question_block_odor, goomba_odor, VisibleRegistry, bio_enemy_thetas,
     hunger_multiplier, HUNGER_MULT_HUNGRY,
     profiled_enemy_thetas, profiled_odor,
 )
 from bridge.motor import action_index
+from config.bio_strict import effective as bio_effective
 from mario.actions.actions import action_from_buttons
 from bridge.controller_modules import ActContext, PerceptionContext, Proposal, Stimulus, build_modules
 from mario.entities.registry import KindRegistry
@@ -126,6 +127,10 @@ class FullPolicy:
         bridge/profiles/default.json's own shipped values (CLAUDE.md
         rule 3), byte-identical to the None path when it doesn't."""
         self.config = config or ProjectConfig()
+        # docs/SPEC_bio_strict.md: the honest fly. `self.bio` switches the perception/motor paths below; the config is
+        # replaced by its strict version (no injected currents, scaled clip/spike, refractory, phasic muscle).
+        self.bio = bool(self.config.bio_strict)
+        self.config = bio_effective(self.config)
         built = build_modules(self.config)  # ordered, from config
         self.modules = [m for m in built if m.kind == "control"]
         self.perception = [m for m in built if m.kind == "perception"]
@@ -343,6 +348,7 @@ class FullPolicy:
                                  "R": c.mushroom_body.mbon_dna02_frac_r}
         self.substeps = c.network.substeps
         self.registry = KindRegistry(entity_width_px=c.entity.entity_width_px)
+        self.vis_registry = VisibleRegistry(self.registry)   # enemies outside the drawn screen are invisible
 
         self.reset(seed=0)
 
@@ -413,6 +419,8 @@ class FullPolicy:
         # ---- terrain sensing: SPEC_terrain.md section 1 --------------
         gap_w = tile_ram.gap_width(ram, c.takeoff.gap_lookahead_tiles)
         distance_to_edge = tile_ram.distance_to_gap(ram, c.takeoff.gap_lookahead_tiles)
+        if self.bio:   # pits have no connectome route to the circuit: unperceived (no current, no MB input)
+            gap_w, distance_to_edge = 0, None
         wall_ahead = tile_ram.solid_ahead(ram)
         refusing = self.rules.refusal and gap_w > c.terrain.refusal_gap_tiles
         if refusing:
@@ -428,7 +436,8 @@ class FullPolicy:
         stim = Stimulus()
         pctx = PerceptionContext(ram=ram, mario_x=mario_x, gap_w=gap_w,
                                  distance_to_edge=distance_to_edge, config=c,
-                                 registry=self.registry, profiles=self.entity_profiles)
+                                 registry=self.vis_registry if self.bio else self.registry,
+                                 profiles=self.entity_profiles, bio=self.bio)
         for module in self.perception:
             module.perceive(pctx, stim)
         gap_input = gap_w if stim.gap_input is None else stim.gap_input
@@ -486,7 +495,9 @@ class FullPolicy:
             self._gap_end_col = None
 
         # ---- escape jump + pit-triggered graded takeoff --------------
-        if self.entity_profiles is None:
+        if self.bio:
+            theta, dtheta, d_out = bio_enemy_thetas(ram, self.prev_theta, self.registry, c.bio, self.entity_profiles)
+        elif self.entity_profiles is None:
             theta, dtheta, d_out = enemy_thetas(ram, mario_x, self.prev_theta, registry=self.registry,
                                                    page_aware=stim.page_aware_looming,
                                                    ignore_behind=stim.ignore_behind)
@@ -524,6 +535,9 @@ class FullPolicy:
         # WallAheadPerceptionModule: a wall ahead is an object in the right visual
         # field (looming) and/or a takeoff current. Zeros unless the module is on.
         Ij[self.j_msk["LC4_R"]] += abs(stim.wall_dtheta)
+        if self.bio:   # a wall ahead is a frontal object: both hemispheres
+            Ij[self.j_msk["LC4_L"]] += abs(stim.wall_dtheta)
+            Ij[self.j_msk["LPLC2_L"]] += stim.wall_theta
         Ij[self.j_msk["LPLC2_R"]] += stim.wall_theta
         Ij[self.jump_dnp01_mask] += stim.wall_takeoff
         # QBlockAheadPerceptionModule's weak looming cue: zeros unless the module is on and its
@@ -547,7 +561,8 @@ class FullPolicy:
         dlmn_val = h_takeoff[self.dlmn_mask].mean()
 
         # ---- DNp02: the second escape pathway -------------------------
-        self.dnp02_ema["L"] = (1 - c.dnp02.alpha) * self.dnp02_ema["L"] + c.dnp02.alpha * abs(dtheta["L"])
+        self.dnp02_ema["L"] = ((1 - c.dnp02.alpha) * self.dnp02_ema["L"]
+                               + c.dnp02.alpha * (abs(dtheta["L"]) + (abs(stim.wall_dtheta) if self.bio else 0.0)))
         self.dnp02_ema["R"] = ((1 - c.dnp02.alpha) * self.dnp02_ema["R"]
                                + c.dnp02.alpha * (abs(dtheta["R"]) + abs(stim.wall_dtheta)))
         Idp = np.zeros(self.Kdp)
@@ -563,15 +578,17 @@ class FullPolicy:
         # ---- steering: home bias + odour (mushroom + ?-blocks), WTA ---
         hunger = hunger_multiplier(ram, override=self.hunger_override)
         if self.entity_profiles is None:
-            mush = mushroom_odor(ram, mario_x, registry=self.registry)
-            qblock = question_block_odor(ram, entity_width_px=c.entity.entity_width_px)
+            seen = self.vis_registry if self.bio else self.registry   # bio_strict: only sources on the screen
+            mush = mushroom_odor(ram, mario_x, registry=seen)
+            qblock = question_block_odor(ram, entity_width_px=c.entity.entity_width_px, visible_only=self.bio)
             food_raw = {"R": mush["R"] + qblock["R"], "L": mush["L"] + qblock["L"]}
-            avers_raw = goomba_odor(ram, mario_x, registry=self.registry)
+            avers_raw = goomba_odor(ram, mario_x, registry=seen)
             odor_gain_eff = c.odour.odour_gain * hunger
             prod_odor = {"R": odor_gain_eff * food_raw["R"], "L": odor_gain_eff * food_raw["L"]}
         else:
             food_gated, food_ungated, avers_raw = profiled_odor(
-                ram, mario_x, registry=self.registry, profiles=self.entity_profiles)
+                ram, mario_x, registry=self.vis_registry if self.bio else self.registry, profiles=self.entity_profiles,
+                visible_only=self.bio)
             odor_gain_eff = c.odour.odour_gain * hunger
             # food_gated * odor_gain_eff (hunger folded in, one multiply) +
             # food_ungated * odour_gain (hunger never applied) -- matches
@@ -841,6 +858,12 @@ class FullPolicy:
         self.mb_prev_dnp09 = dnp09_val
 
         action = action_index(self.direction, press_a, press_b)
+        if self.bio:
+            # Walking is a muscle, not a constant Right press (docs/SPEC_bio_strict.md item 11): Right/Left only while DNp09
+            # is active; direction from the steering teams; a press of A/B needs no walking.
+            walking = dnp09_val >= c.bio.walk_threshold
+            action = action_from_buttons(right=walking and self.direction == "R", left=walking and self.direction == "L",
+                                         a=bool(press_a), b=bool(press_b))
         if self.buttons_on:
             # Down / Up / Left muscles (A7): looming drives the posture DNs through their real synapses,
             # steering's left-minus-right team drives Left; each button is a MotorDirect muscle.

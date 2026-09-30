@@ -421,3 +421,20 @@ blocks are, and a readout strength range wide enough to test whether learning ca
 `buttons` False (posture circuit not even loaded), `mario_sx` extra row key only.
 
 **Proof.** Full `tests/` incl. the 3 goldens; `tests/test_learning_v3.py`.
+
+## C16 -- bio_strict: an honest fly + snapshots (docs/SPEC_bio_strict.md)
+
+**What.** Phase 1 (no behaviour change): `RunSpec.snapshot` (merged entity profiles, start-state actions, brain-weights
+sha256), `tool/core/runner.run_setup` shared by Play, batch and training, training warm-up 60 -> 0 frames, the standard
+eval (`tool/core/evaluation.py`, `scripts/eval_connectome.py`), `bridge/entity_profiles.py` `merged_raw`/`from_raw`.
+Phases 2-3 behind `ProjectConfig.bio_strict` (default False): `config/bio_strict.py` (`effective(config)`: no gap/wall
+currents onto DNp01, hand-coded rules off, clip 200 / spike_amp 60, refractory 3 substeps, `adapt_frames` 30),
+`bridge/perception.py` (`bio_enemy_thetas`: on-screen, ahead, elevation-weighted, both hemispheres; `VisibleRegistry`;
+odours/tile cues visible-only), `mario/ram/screen.py`, `bridge/full_policy.py` (bio paths, walking = DNp09 muscle),
+`BioStrictParams` (6 scalars -> 101 in `docs/SCALARS.md`).
+
+**Default that keeps behaviour.** `bio_strict` False: `effective()` returns the config unchanged and every bio branch is
+skipped; `question_blocks_near/ahead(visible_only=False)`, `odour ... visible_only=False`.
+
+**Proof.** Full `tests/` incl. the 3 goldens; `tests/test_bio_strict.py` (senses, stripped injections, both latches gone,
+phasic muscle, walking gate); `tool/tests/test_run_spec_snapshot.py`, `test_evaluation.py`, `test_bio_strict_ui.py`.

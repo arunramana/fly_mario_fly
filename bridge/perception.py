@@ -74,6 +74,55 @@ def enemy_thetas(ram, mario_x, prev_theta, registry=DEFAULT_REGISTRY, page_aware
     return theta, dtheta, d_out
 
 
+class VisibleRegistry:
+    """A view of a registry in which enemies outside the drawn screen are inactive (docs/SPEC_bio_strict.md phase 2):
+    the odour/MB-input functions see only what is in the picture."""
+
+    def __init__(self, registry):
+        self._registry = registry
+
+    def __getattr__(self, name):
+        return getattr(self._registry, name)
+
+    def enemy_records(self, ram):
+        import dataclasses
+        from mario.ram import screen
+        return [r if screen.enemy_on_screen(ram, i, r.width) else dataclasses.replace(r, active=False)
+                for i, r in enumerate(self._registry.enemy_records(ram))]
+
+
+def bio_enemy_thetas(ram, prev_theta, registry, bio, profiles=None):
+    """Looming as a fly's eye could see it (docs/SPEC_bio_strict.md phase 2, items 5-6). Only enemies that are (a) drawn
+    on screen and (b) ahead of Mario (dx >= 0, page-corrected) contribute; (c) their angular size is weighted by
+    elevation, `max(0, 1 - elev/bio.elevation_limit_deg)` with elev = atan(|dy| / dx): an enemy well above or below
+    the horizon is outside the looming detectors' field. A frontal object falls in the binocular overlap, so both
+    hemispheres get the same value (no arbitrary left/right convention). `profiles` scales by kind as usual."""
+    import math
+    from mario.ram import screen
+    from mario.ram.addresses import ADDR_ENEMY_Y, ADDR_MARIO_PAGE, ADDR_MARIO_X
+    mario_x = int(ram[ADDR_MARIO_X])
+    mario_y = int(ram[0x00CE])   # Player_Y_Position, same scale as ADDR_ENEMY_Y
+    best, best_d = 0.0, None
+    for slot, rec in enumerate(registry.enemy_records(ram)):
+        if not rec.active or rec.kind == EntityKind.POWERUP or not screen.enemy_on_screen(ram, slot, rec.width):
+            continue
+        d = _dx(ram, slot, rec, mario_x, True)
+        if d < 0:
+            continue
+        elev = math.degrees(math.atan2(abs(int(ram[ADDR_ENEMY_Y + slot]) - mario_y), max(d, 1)))
+        w = max(0.0, 1.0 - elev / bio.elevation_limit_deg)
+        th = 2.0 * math.atan(rec.width / (2.0 * max(d, 1))) * w
+        if profiles is not None:
+            p = profiles.get(rec.kind)
+            th = min(math.pi, th * p.looming_salience * p.danger_weight)
+        if th > best:
+            best, best_d = th, d
+    theta = {"L": best, "R": best}
+    d_out = {"L": best_d, "R": best_d}
+    dtheta = {s: theta[s] - prev_theta[s] for s in ("L", "R")}
+    return theta, dtheta, d_out
+
+
 def mushroom_odor(ram, mario_x, registry=DEFAULT_REGISTRY):
     """SPEC_steering.md section 2: powerups share the enemy slots.
     concentration ~ 1/distance, routed by sign of d exactly like enemy
@@ -92,7 +141,7 @@ def mushroom_odor(ram, mario_x, registry=DEFAULT_REGISTRY):
     return odor
 
 
-def question_block_odor(ram, entity_width_px: int = 16):
+def question_block_odor(ram, entity_width_px: int = 16, visible_only: bool = False):
     """SPEC_odour.md section 1: a second odour source at every `?` block
     tile_ram finds (0xC0 coin, 0xC1 power-up -- not distinguished, same as
     the mushroom not distinguishing power-up subtype). tile_ram.
@@ -109,7 +158,7 @@ def question_block_odor(ram, entity_width_px: int = 16):
     literal under a different name; real callers with a config pass it
     explicitly, same pattern as fly/network/dynamics.py's ALPHA/CLIP)."""
     odor = {"L": 0.0, "R": 0.0}
-    for offset_tiles in tile_ram.question_blocks_near(ram):
+    for offset_tiles in tile_ram.question_blocks_near(ram, visible_only=visible_only):
         d = offset_tiles * entity_width_px
         conc = 1.0 / max(abs(d), 1)
         side = "R" if d >= 0 else "L"
@@ -167,7 +216,7 @@ def profiled_enemy_thetas(ram, mario_x, prev_theta, registry, profiles: EntityPr
     return theta, dtheta, d_out
 
 
-def profiled_odor(ram, mario_x, registry, profiles: EntityProfiles):
+def profiled_odor(ram, mario_x, registry, profiles: EntityProfiles, visible_only: bool = False):
     """C8a (docs/SPEC_entity_perception.md sections 1.2/1.3): replaces
     mushroom_odor + question_block_odor (food) and goomba_odor (threat)
     with one per-entity, per-kind aggregation. For each active entity

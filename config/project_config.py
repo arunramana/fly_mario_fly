@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import get_type_hints
 
 from config.params import (
-    ControlRules, Dnp02Params, DemoParams, EntityParams, HabituationParams, InteractionParams,
+    BioStrictParams, ControlRules, Dnp02Params, DemoParams, EntityParams, HabituationParams, InteractionParams,
     JumpParams, MdnParams, ModulesConfig, MushroomBodyParams, NetworkParams, NoiseParams,
     OdourParams, RetinotopyParams, SpeedParams, SteeringParams, TakeoffParams,
     TerrainParams,
@@ -75,6 +75,10 @@ class ProjectConfig:
     rules: ControlRules = field(default_factory=ControlRules)
     scenario: ScenarioParams = field(default_factory=ScenarioParams)
     output: OutputParams = field(default_factory=OutputParams)
+    # docs/SPEC_bio_strict.md: True = the honest fly (senses limited to the screen, no injected control, biologically
+    # scaled dynamics, phasic motor model); False (default) = every existing behaviour, goldens unchanged.
+    bio_strict: bool = False
+    bio: BioStrictParams = field(default_factory=BioStrictParams)
 
     def to_dict(self) -> dict:
         return asdict(self)
