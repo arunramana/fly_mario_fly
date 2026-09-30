@@ -39,7 +39,9 @@ EVAL_FILE = "training_eval.json"
 GROUP_BASELINE = "Baseline"
 GROUP_REAL = "Training · real"
 EVERY_NTH = 10
-WARMUP_FRAMES = 60
+# Training's emulator backup is taken at power-on (0 warm-up frames): its first frame is exactly Play's first frame
+# (docs/SPEC_bio_strict.md phase 1). It used to be 60 frames of forced right+B.
+WARMUP_FRAMES = 0
 
 
 def group_for_shuffled(n: int) -> str:
@@ -143,26 +145,35 @@ def run_training(project, settings, emit=lambda *a: None, should_stop=lambda: Fa
 
     state_env = None   # a second env for saved-state episodes: no warm-up backup, replays the action log
 
-    def play(net: _Network, slug: str, lr, cfg, ep_seed=seed, state=None):
+    from tool.core.run_spec import RunSpec, freeze
+    from tool.core.runner import run_setup
+    # One frozen spec (merged entity profiles, start state...) for the whole training; every episode is this spec
+    # with its own config (learning rate), seed and brain -- the same run_setup Play and batch use.
+    frozen = freeze(RunSpec(project_name=name, config=config, tool_settings=ts, seed=seed, out_filename="train.mp4"))
+
+    def setup_for(cfg, ep_seed, net: _Network, state=None):
         nonlocal state_env
-        recorder = PaletteFrameStore()
-        if state is None:
-            run_env = {"env": env, "warmup_frames": WARMUP_FRAMES}
-            start_actions = None
-        else:
+        setup = run_setup(dataclasses.replace(frozen, config=cfg, seed=ep_seed), for_training=True)
+        kw = dict(setup.kwargs)
+        kw.update(record_video=False, event_proximal_dopamine=settings.event_proximal,
+                  shuffle_seed=net.shuffle_seed, mb_weights=net.weights)
+        if state is not None:
+            kw["start_actions"] = state["actions"]
+        if kw.get("start_actions") is None:
+            kw["savestate"] = {"env": env, "warmup_frames": WARMUP_FRAMES}
+        else:   # a saved state replays its action log on its own env (no warm-up backup)
             if state_env is None:
                 state_env = rs.make_env(config.scenario.level)
-            run_env = {"env": state_env}
-            start_actions = state["actions"]
+            kw["savestate"] = {"env": state_env}
+        return setup.config, kw
+
+    def play(net: _Network, slug: str, lr, cfg, ep_seed=seed, state=None):
+        recorder = PaletteFrameStore()
+        run_cfg, kw = setup_for(cfg, ep_seed, net, state)
         tel, info = run_from_config(
-            cfg, f"{slug}.mp4", seed=ep_seed, record_video=False, frame_skip=1,
-            event_proximal_dopamine=settings.event_proximal,
-            powerup_reward=ts.fitness.powerup > 0, gap_reward=ts.fitness.gap > 0,
-            shuffle_seed=net.shuffle_seed, start_actions=start_actions,
-            savestate=run_env,
-            mb_weights=net.weights,
+            run_cfg, f"{slug}.mp4", seed=ep_seed,
             on_frame=lambda f, obs, row: recorder.write_frame(obs, (row.get("mario_sx"), row.get("mario_y"))),
-            should_stop=should_stop, death_animation_frames=death_frames)
+            should_stop=should_stop, **kw)
         return recorder, info
 
     # ---- baseline: the untrained network, learning off (rate 0) ----
@@ -194,17 +205,15 @@ def run_training(project, settings, emit=lambda *a: None, should_stop=lambda: Fa
     def test_frozen(net: _Network, episode: int) -> dict:
         """Runs the current weights with learning rate 0 (so neither reward nor punishment can
         change them, and `net.weights` is left untouched) on every test seed."""
-        frozen = ep_config(0.0)
+        frozen_cfg = ep_config(0.0)
         results = []
         for s in test_seeds:
             if should_stop():
                 break
-            _tel, r = run_from_config(
-                frozen, "test.mp4", seed=s, record_video=False, frame_skip=1, write_telemetry=False,
-                event_proximal_dopamine=settings.event_proximal, shuffle_seed=net.shuffle_seed,
-                powerup_reward=ts.fitness.powerup > 0, gap_reward=ts.fitness.gap > 0,
-                savestate={"env": env, "warmup_frames": WARMUP_FRAMES},
-                mb_weights=net.weights, should_stop=should_stop, death_animation_frames=0)
+            run_cfg, kw = setup_for(frozen_cfg, s, net)
+            kw["death_animation_frames"] = 0
+            _tel, r = run_from_config(run_cfg, "test.mp4", seed=s, write_telemetry=False,
+                                      should_stop=should_stop, **kw)
             results.append((s, int(r["max_x_abs"]), bool(r.get("flag_get"))))
         wins = sum(w for _, _, w in results)
         record = {"network": net.label, "episode": episode, "baseline": base_number,
@@ -410,9 +419,9 @@ def _append_eval(project_name: str, record: dict) -> None:
 
 
 def _base_spec(project, cfg, seed, out_filename) -> dict:
-    from tool.core.run_spec import RunSpec
-    return RunSpec(project_name=project.name, config=cfg, tool_settings=project.tool_settings,
-                   seed=seed, out_filename=out_filename).to_dict()
+    from tool.core.run_spec import RunSpec, freeze
+    return freeze(RunSpec(project_name=project.name, config=cfg, tool_settings=project.tool_settings,
+                          seed=seed, out_filename=out_filename)).to_dict()
 
 
 def run_training_streaming(project, settings, event_queue, stop_event) -> None:

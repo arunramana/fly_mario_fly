@@ -29,3 +29,6 @@ tool/assets/derived/
 /runs/
 # Per-run log files (config/logging_setup.py); telemetry CSVs are the record.
 /logs/
+
+# Throwaway audit scripts/results (docs/AUDIT_biological_validity.md)
+audit/

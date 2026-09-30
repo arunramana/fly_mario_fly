@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pyqtgraph as pg
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 ROLLING_WINDOW = 10
 _COLORS = [(230, 90, 60), (70, 130, 220), (60, 170, 110), (170, 100, 200), (200, 160, 40)]
@@ -78,6 +78,7 @@ def rolling_mean(values: list[float], window: int = ROLLING_WINDOW) -> list[floa
 
 class LearningChart(QWidget):
     point_selected = Signal(int)  # run number of the clicked episode
+    eval_requested = Signal()     # the "Run eval" button
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -91,6 +92,16 @@ class LearningChart(QWidget):
         self.metric_combo.currentIndexChanged.connect(lambda _i: self._redraw())
         top.addWidget(self.metric_combo)
         layout.addLayout(top)
+        evalrow = QHBoxLayout()
+        self.eval_label = QLabel("Eval (20 held-out seeds, real vs shuffled connectome): not run yet.")
+        self.eval_label.setWordWrap(True)
+        self.eval_button = QPushButton("Run eval")
+        self.eval_button.setToolTip("20 held-out seeds (1000-1019): the project's fly with the real connectome vs a "
+                                    "degree-preserving shuffle; win rate and max_x with 95% CIs.")
+        self.eval_button.clicked.connect(self.eval_requested)
+        evalrow.addWidget(self.eval_label, 1)
+        evalrow.addWidget(self.eval_button)
+        layout.addLayout(evalrow)
         self.plot = pg.PlotWidget()
         self.plot.setLabel("bottom", "episode")
         self.plot.setLabel("left", "max_x")
@@ -117,6 +128,11 @@ class LearningChart(QWidget):
         self._series, self._baseline = collect_series(entries)
         self._scores = collect_scores(entries)
         self._redraw()
+
+    def set_eval(self, result: dict | None) -> None:
+        from tool.core.evaluation import format_eval
+        self.eval_label.setText("Eval (seeds %d-%d): " % tuple(result["seeds"]) + format_eval(result)
+                                if result else "Eval (20 held-out seeds, real vs shuffled connectome): not run yet.")
 
     def set_tests(self, evals: list[dict]) -> None:
         self._tests = collect_tests(evals)

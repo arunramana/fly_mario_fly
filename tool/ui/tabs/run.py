@@ -100,6 +100,7 @@ class RunTab(QWidget):
         self.sub_tabs.addTab(self.plots, "Plots")
         self.learning = LearningChart()
         self.learning.point_selected.connect(self._on_learning_point)
+        self.learning.eval_requested.connect(window.start_eval)
         self.sub_tabs.addTab(self.learning, "Learning")
 
         self.player.frame_changed.connect(self._on_frame_changed)
@@ -297,7 +298,10 @@ class RunTab(QWidget):
         self._entries = list(entries)
         self.playlist.set_entries(enriched)
         self.learning.set_entries(entries)
+        from tool.core.evaluation import load_eval_history
         from tool.core.training import load_evals
+        history = load_eval_history(self._window.project.name)
+        self.learning.set_eval(history[-1] if history else None)
         try:
             self.learning.set_tests(load_evals(self._window.project.name))
         except (OSError, ValueError):   # a damaged eval file must not break the run history

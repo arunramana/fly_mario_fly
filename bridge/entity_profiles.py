@@ -86,6 +86,29 @@ def _merge_kind_dict(default_d: dict, override_d: dict) -> dict:
     return {**default_d, **override_d}
 
 
+def merged_raw(project_root: str | Path | None = None) -> dict:
+    """The full profile JSON a run actually uses: default.json with the project's override merged in, per kind
+    (what a run spec snapshots, so replaying it does not depend on a project file that may have changed)."""
+    default_raw = _load_raw(DEFAULT_PROFILE_PATH)
+    override_raw: dict = {}
+    if project_root is not None:
+        override_path = Path(project_root) / "entity_profiles.json"
+        if override_path.exists():
+            override_raw = _load_raw(override_path)
+    unknown = set(override_raw) - set(default_raw)
+    if unknown:
+        raise ValueError(
+            f"entity_profiles.json overrides unknown kind(s): {sorted(unknown)} "
+            f"-- must be one of {sorted(default_raw)}"
+        )
+    return {key: _merge_kind_dict(default_d, override_raw.get(key, {})) for key, default_d in default_raw.items()}
+
+
+def from_raw(raw: dict) -> EntityProfiles:
+    """EntityProfiles from a merged raw dict (merged_raw's output, e.g. a run spec's snapshot)."""
+    return EntityProfiles(by_kind={EntityKind[key]: _kind_profile_from_dict(d) for key, d in raw.items()})
+
+
 def load(project_root: str | Path | None = None) -> EntityProfiles:
     """`project_root=None`: `bridge/profiles/default.json` alone -- this
     is also what a project with no `entity_profiles.json` override file

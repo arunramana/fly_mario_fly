@@ -10,6 +10,7 @@ from __future__ import annotations
 
 
 def format_batch_result(result) -> str:
+    from tool.core.evaluation import wilson_ci
     kept = [fit for fit, info in zip(result.fitnesses, result.infos) if not info.get("cancelled")]
     n_cancelled = len(result.fitnesses) - len(kept)
     if kept:
@@ -18,7 +19,11 @@ def format_batch_result(result) -> str:
     else:
         stats = "no completed runs to summarise"
     cancelled_note = f"  ({n_cancelled} cancelled excluded)" if n_cancelled else ""
-    return f"Batch: {len(result.fitnesses)} runs, {stats}{cancelled_note}"
+    done = [i for i in result.infos if not i.get("cancelled")]
+    wins = sum(1 for i in done if i.get("flag_get"))
+    lo, hi = wilson_ci(wins, len(done))
+    rate = f"  wins {wins}/{len(done)} (95% CI {100 * lo:.0f}-{100 * hi:.0f}%)" if done else ""
+    return f"Batch: {len(result.fitnesses)} runs, {stats}{rate}{cancelled_note}"
 
 
 BATCH_COLUMNS = ("seed", "max_x", "flag", "frames", "stomps", "escape jumps")

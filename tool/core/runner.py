@@ -7,7 +7,84 @@ from __future__ import annotations
 
 import dataclasses
 import re
+from dataclasses import dataclass
 from pathlib import Path
+
+
+@dataclass
+class RunSetup:
+    """Everything a run needs beyond `seed` and the callbacks, derived from a RunSpec. Play, batch and training all
+    call `run_setup`, so they run the same way (docs/SPEC_bio_strict.md phase 1)."""
+    config: object
+    kwargs: dict              # keyword arguments for sim.project_runner.run_from_config
+    start_state: dict | None
+    replayable: bool
+
+
+def run_setup(spec, for_training: bool = False) -> RunSetup:
+    """`for_training=True`: the brain comes from the training loop (weights passed in, learning on), so the
+    experiment's checkpoint is neither loaded nor frozen; everything else -- entity profiles, character, forced
+    power-up, start state, frame skip, reward flags -- is identical to Play."""
+    character = spec.tool_settings.character
+    experiment = spec.tool_settings.experiment
+    config = spec.config
+    mb_weights = None
+    if experiment.brain_weights and not for_training:
+        from tool.core.training import load_checkpoint
+        mb_weights = load_checkpoint(spec.project_name, experiment.brain_weights)
+        want = ((spec.snapshot or {}).get("brain_weights") or {}).get("sha256")
+        if want is not None:
+            from tool.core.run_spec import sha256_of
+            from tool.core.training import checkpoint_dir
+            if sha256_of((checkpoint_dir(spec.project_name) / experiment.brain_weights).read_bytes()) != want:
+                raise ValueError(f"brain weights {experiment.brain_weights!r} differ from the ones this run spec "
+                                 "recorded (checksum mismatch)")
+        if not experiment.keep_learning:
+            config = dataclasses.replace(config, mushroom_body=dataclasses.replace(
+                config.mushroom_body, learning_rate=0.0))
+    powerup_kwargs = {}
+    if character.starting_powerup:
+        powerup_kwargs = dict(force_mario_size=1, force_size_from_frame=0)
+
+    entity_profiles = None
+    if spec.tool_settings.entity_profile.enabled:
+        raw = (spec.snapshot or {}).get("entity_profiles")
+        if raw is not None:                      # the recorded profiles, not whatever the project file says now
+            from bridge.entity_profiles import from_raw
+            entity_profiles = from_raw(raw)
+        else:
+            from tool.core.entity_profiles_store import load_merged
+            entity_profiles = load_merged(spec.project_name)
+
+    # A saved state (Goal tab "Start from") is replayed before frame 0 -- see tool/core/savestates.py.
+    start_state = None
+    name = experiment.start_state
+    if name:
+        from tool.core.run_spec import snapshot_start_state
+        start_state = snapshot_start_state(spec)
+        if start_state is None:
+            from tool.core.savestates import load_state
+            start_state = load_state(spec.project_name, name)
+        if start_state["level"] != spec.config.scenario.level:
+            raise ValueError(f"saved state {name!r} is for level {start_state['level']}, "
+                             f"but this run is level {spec.config.scenario.level}")
+    kwargs = dict(
+        record_video=spec.tool_settings.render.record_video,
+        frame_skip=spec.tool_settings.render.frame_skip,
+        event_proximal_dopamine=experiment.learning_enabled,
+        shuffle_seed=spec.tool_settings.circuits.shuffle_seed,
+        hunger_override=character.hunger_override,
+        entity_profiles=entity_profiles,
+        death_animation_frames=spec.tool_settings.render.death_animation_frames,
+        start_actions=start_state["actions"] if start_state else None,
+        mb_weights=mb_weights,
+        powerup_reward=spec.tool_settings.fitness.powerup > 0,
+        gap_reward=spec.tool_settings.fitness.gap > 0,
+        **powerup_kwargs,
+    )
+    # RAM pokes cannot be replayed, so such runs record no action log.
+    replayable = not (powerup_kwargs or spec.config.scenario.inject_gap_frame is not None)
+    return RunSetup(config=config, kwargs=kwargs, start_state=start_state, replayable=replayable)
 
 
 def run_one(spec, on_frame=None, should_stop=None, arousal_source=None, save_checkpoint=False):
@@ -44,37 +121,9 @@ def run_one(spec, on_frame=None, should_stop=None, arousal_source=None, save_che
     import setuptools  # noqa: F401 -- must precede gym, same rule as run_steering.py
     from sim.project_runner import run_from_config
 
-    character = spec.tool_settings.character
+    setup = run_setup(spec)
+    config, start_state, replayable = setup.config, setup.start_state, setup.replayable
     experiment = spec.tool_settings.experiment
-    config = spec.config
-    mb_weights = None
-    if experiment.brain_weights:
-        from tool.core.training import load_checkpoint
-        mb_weights = load_checkpoint(spec.project_name, experiment.brain_weights)
-        if not experiment.keep_learning:
-            config = dataclasses.replace(config, mushroom_body=dataclasses.replace(
-                config.mushroom_body, learning_rate=0.0))
-    powerup_kwargs = {}
-    if character.starting_powerup:
-        powerup_kwargs = dict(force_mario_size=1, force_size_from_frame=0)
-
-    entity_profiles = None
-    if spec.tool_settings.entity_profile.enabled:
-        from tool.core.entity_profiles_store import load_merged
-        entity_profiles = load_merged(spec.project_name)
-
-    # A saved state (Goal tab "Start from") is replayed before frame 0 --
-    # see tool/core/savestates.py. The brain starts fresh.
-    start_state = None
-    name = spec.tool_settings.experiment.start_state
-    if name:
-        from tool.core.savestates import load_state
-        start_state = load_state(spec.project_name, name)
-        if start_state["level"] != spec.config.scenario.level:
-            raise ValueError(f"saved state {name!r} is for level {start_state['level']}, "
-                             f"but this run is level {spec.config.scenario.level}")
-    # RAM pokes cannot be replayed, so such runs record no action log.
-    replayable = not (powerup_kwargs or spec.config.scenario.inject_gap_frame is not None)
 
     recorder = None
     raw_path = None
@@ -92,22 +141,11 @@ def run_one(spec, on_frame=None, should_stop=None, arousal_source=None, save_che
     tel, info = run_from_config(
         config, spec.out_filename,
         seed=spec.seed,
-        record_video=spec.tool_settings.render.record_video,
-        frame_skip=spec.tool_settings.render.frame_skip,
-        event_proximal_dopamine=spec.tool_settings.experiment.learning_enabled,
-        shuffle_seed=spec.tool_settings.circuits.shuffle_seed,
-        hunger_override=character.hunger_override,
-        entity_profiles=entity_profiles,
         on_frame=combined_on_frame if recorder is not None else on_frame,
         should_stop=should_stop,
-        death_animation_frames=spec.tool_settings.render.death_animation_frames,
-        start_actions=start_state["actions"] if start_state else None,
         arousal_source=arousal_source,
         record_actions=replayable,
-        mb_weights=mb_weights,
-        powerup_reward=spec.tool_settings.fitness.powerup > 0,
-        gap_reward=spec.tool_settings.fitness.gap > 0,
-        **powerup_kwargs,
+        **setup.kwargs,
     )
     if experiment.brain_weights:
         info["brain_weights"] = experiment.brain_weights

@@ -97,5 +97,10 @@ def set_kind_odour_sign(project_name: str, kind_name: str, odour_index: int, sig
     save_override_raw(project_name, override)
 
 
+def merged_raw(project_name: str) -> dict:
+    from bridge.entity_profiles import merged_raw as _merged_raw
+    return _merged_raw(PROJECTS_ROOT / project_name)
+
+
 def load_merged(project_name: str) -> EntityProfiles:
     return load_profiles(project_root=PROJECTS_ROOT / project_name)

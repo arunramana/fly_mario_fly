@@ -16,7 +16,7 @@ import uuid
 from dataclasses import dataclass
 
 from tool.core.fitness import fitness_of
-from tool.core.run_spec import RunSpec
+from tool.core.run_spec import RunSpec, freeze
 from tool.core.run_store import next_run_number, record_run
 from tool.core.runner import run_one
 
@@ -45,9 +45,9 @@ def run_batch(project, seeds, fitness_settings=None, n_workers: int = 1) -> Batc
     start = next_run_number(project.name)
     numbers = list(range(start, start + len(seeds)))
     specs = [
-        RunSpec(project_name=project.name, config=project.config,
-                tool_settings=project.tool_settings, seed=seed,
-                out_filename=f"{number:03d}_batch_seed{seed}.mp4")
+        freeze(RunSpec(project_name=project.name, config=project.config,
+                       tool_settings=project.tool_settings, seed=seed,
+                       out_filename=f"{number:03d}_batch_seed{seed}.mp4"))
         for number, seed in zip(numbers, seeds)
     ]
 

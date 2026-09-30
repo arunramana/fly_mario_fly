@@ -458,9 +458,10 @@ class MainWindow(QMainWindow):
     # ---- Play / Cancel, through a shared stop event ----------------------
 
     def _make_run_spec(self, seed: int, out_filename: str) -> RunSpec:
-        return RunSpec(project_name=self.project.name, config=self.project.config,
-                        tool_settings=self.project.tool_settings, seed=seed,
-                        out_filename=out_filename)
+        from tool.core.run_spec import freeze   # the snapshot makes the spec reproduce the run by itself
+        return freeze(RunSpec(project_name=self.project.name, config=self.project.config,
+                              tool_settings=self.project.tool_settings, seed=seed,
+                              out_filename=out_filename))
 
     def play(self) -> None:
         if self._process is not None and self._process.is_alive():
@@ -537,6 +538,37 @@ class MainWindow(QMainWindow):
         self.goal_tab.set_training_state(True, "starting...")
         self.run_tab.cancel_button.setEnabled(True)
         self.run_tab.sub_tabs.setCurrentWidget(self.run_tab.learning)
+
+    def start_eval(self) -> None:
+        """Learning tab's Run eval: real vs shuffled connectome on 20 held-out seeds, in a child process."""
+        if getattr(self, "_eval_process", None) is not None and self._eval_process.is_alive():
+            return
+        import os
+        from tool.core.evaluation import run_eval_streaming
+        ctx = mp.get_context("spawn")
+        self._eval_queue = ctx.Queue()
+        self._eval_process = ctx.Process(target=run_eval_streaming, args=(
+            self.project, self._eval_queue, max(1, (os.cpu_count() or 2) // 2)))
+        self._eval_process.start()
+        self.run_tab.learning.eval_button.setEnabled(False)
+        self.run_tab.learning.eval_label.setText("Eval running (40 runs)...")
+        self._eval_timer = QTimer(self)
+        self._eval_timer.setInterval(1000)
+        self._eval_timer.timeout.connect(self._poll_eval)
+        self._eval_timer.start()
+
+    def _poll_eval(self) -> None:
+        if self._eval_queue.empty():
+            return
+        kind, payload = self._eval_queue.get_nowait()
+        self._eval_timer.stop()
+        self._eval_process.join(timeout=5)
+        self._eval_process = None
+        self.run_tab.learning.eval_button.setEnabled(True)
+        if kind == "done":
+            self.run_tab.learning.set_eval(payload)
+        else:
+            self.run_tab.learning.eval_label.setText(f"Eval failed: {payload[:300]}")
 
     def cancel_training(self) -> None:
         if self._train_stop is not None and self.training_active():

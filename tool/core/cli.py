@@ -22,9 +22,10 @@ def cmd_run(args) -> int:
     project = ToolProject.open(args.project)
     number = next_run_number(project.name)
     slug = f"{number:03d}_cli_run"
-    spec = RunSpec(project_name=project.name, config=project.config,
-                    tool_settings=project.tool_settings, seed=args.seed,
-                    out_filename=f"{slug}.mp4")
+    from tool.core.run_spec import freeze
+    spec = freeze(RunSpec(project_name=project.name, config=project.config,
+                          tool_settings=project.tool_settings, seed=args.seed,
+                          out_filename=f"{slug}.mp4"))
     tel, info = run_one(spec)
     fitness = fitness_of(project.tool_settings.fitness, info)
     record_run(project.name, number, slug, args.seed, info, spec.to_dict())

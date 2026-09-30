@@ -40,5 +40,7 @@ class BatchSummaryTable(QWidget):
         if rows:
             wins, n, mean_x = batch_stats(rows)
             mean = "?" if mean_x is None else f"{mean_x:.0f}"
-            self.totals_label.setText(f"wins: {wins} / {n}    mean max_x: {mean}")
+            from tool.core.evaluation import wilson_ci
+            lo, hi = wilson_ci(wins, n)
+            self.totals_label.setText(f"wins: {wins} / {n} (95% CI {100 * lo:.0f}-{100 * hi:.0f}%)    mean max_x: {mean}")
         self.setVisible(bool(rows))
