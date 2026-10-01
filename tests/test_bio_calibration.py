@@ -18,7 +18,7 @@ from config.params import BioStrictParams, ModulesConfig, MotorDirectParams
 from config.project_config import ProjectConfig
 
 BIO = BioStrictParams()
-TARGET_DEG = 55.0
+TARGET_DEG = 40.0
 
 
 def _policy(shuffle=None, bio=BIO):
@@ -67,7 +67,7 @@ def test_real_gf_fires_near_a_constant_angular_size_for_l_over_v_20_to_80(real):
         assert s["tau"] > 20                                             # well before collision
         assert rec[0]["ttmn"] < 0.5 and max(r["ttmn"] for r in rec[:5]) < 0.5   # TTMn no longer switches on at onset
     assert max(thetas) - min(thetas) < 20                               # roughly constant across a 4x range of l/v
-    assert all(40 <= t <= 75 for t in thetas)                            # around the 50-60 deg target (medium-low confidence)
+    assert all(30 <= t <= 60 for t in thetas)                            # around the ~40 deg GF peak (Ache et al. 2019)
 
 
 def test_fixed_thresholds_on_shuffled_wiring_respond_later_or_weaker(real, shuffled):

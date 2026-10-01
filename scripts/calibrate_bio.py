@@ -10,8 +10,8 @@
 
 Derivations (all on the synthetic disc, l/v 10-80 ms):
   stability : g = min(g, margin / rho(W)) per circuit (FullPolicy._g)
-  GF        : gf_threshold = mean over l/v 20,40,80 of the DNp01 spike-cell membrane at theta = 55 deg (real circuit)
-  DNp02     : dnp02_threshold = DNp02 membrane at theta = 55 deg for l/v 10
+  GF        : gf_threshold = mean over l/v 20,40,80 of the DNp01 spike-cell membrane at theta = 40 deg (real circuit)
+  DNp02     : dnp02_threshold = DNp02 membrane at theta = 40 deg for l/v 10
   units     : ttmn/dlmn_unit_factor = peak response at clip 200/spike 60 over clip 50/spike 50, same disc and circuit
 """
 
@@ -28,7 +28,7 @@ from bridge.loom_disc import FRAME_MS, LV_MS, first, rest_test, run_disc
 from config.params import BioStrictParams, ModulesConfig, MotorDirectParams
 from config.project_config import ProjectConfig
 
-THETA_GF_DEG = 55.0      # target angular size (von Reyn et al. 2014; medium-low confidence, to be verified)
+THETA_GF_DEG = 40.0      # GF peak at a consistent ~40 deg (Ache et al. 2019 Curr Biol 29:1073, model 42 deg; verified)
 HUGE = 1e9
 
 
