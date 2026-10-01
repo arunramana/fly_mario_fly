@@ -183,7 +183,7 @@ class FullPolicy:
                              spike_idx=self.dnp01_idx,
                              spike_threshold=c.jump.dnp01_spike_threshold,
                              spike_amp=c.jump.spike_amp),
-            g=c.jump.g, populations=self.j_msk)
+            g=self._g("jump", c.jump.g), populations=self.j_msk)
 
         if retinotopic:
             from fly.sensing import retinotopy as rt
@@ -215,7 +215,7 @@ class FullPolicy:
         self.dna01_l_mask, self.dna01_r_mask = sm("DNa01", "L"), sm("DNa01", "R")
         self.dna02_l_mask, self.dna02_r_mask = sm("DNa02", "L"), sm("DNa02", "R")
         self.steering_network = Network(
-            W_s, Integrator(alpha=c.network.alpha, clip=c.network.clip), g=c.steering.g,
+            W_s, Integrator(alpha=c.network.alpha, clip=c.network.clip), g=self._g("steering", c.steering.g),
             populations={"R": self.r_mask, "L": self.l_mask})
 
         log.debug("Loading the takeoff circuit (DNp01 -> GFC1-4 -> DLMn, cached)...")
@@ -224,7 +224,7 @@ class FullPolicy:
         self.takeoff_dnp01_mask = (t_bodies["type"] == "DNp01").to_numpy()
         self.dlmn_mask = t_bodies["type"].isin(["DLMn c-f", "DLMn a, b"]).to_numpy()
         self.takeoff_network = Network(
-            W_t, Integrator(alpha=c.network.alpha, clip=c.network.clip), g=c.takeoff.g,
+            W_t, Integrator(alpha=c.network.alpha, clip=c.network.clip), g=self._g("takeoff", c.takeoff.g),
             populations={"DNp01": self.takeoff_dnp01_mask, "DLMn": self.dlmn_mask})
 
         log.debug("Loading the speed circuit (DNp09, N=60, cached)...")
@@ -232,7 +232,7 @@ class FullPolicy:
         self.Kp = W_p.shape[0]
         self.dnp09_mask = (p_bodies["type"] == "DNp09").to_numpy()
         self.speed_network = Network(
-            W_p, Integrator(alpha=c.network.alpha, clip=c.network.clip), g=c.speed.g,
+            W_p, Integrator(alpha=c.network.alpha, clip=c.network.clip), g=self._g("speed", c.speed.g),
             populations={"DNp09": self.dnp09_mask})
 
         log.debug("Loading the MDN circuit (backward walking, N=60, cached)...")
@@ -240,7 +240,7 @@ class FullPolicy:
         self.Km = W_m.shape[0]
         self.mdn_mask = (m_bodies["type"] == "MDN").to_numpy()
         self.mdn_network = Network(
-            W_m, Integrator(alpha=c.network.alpha, clip=c.network.clip), g=c.mdn.g,
+            W_m, Integrator(alpha=c.network.alpha, clip=c.network.clip), g=self._g("mdn", c.mdn.g),
             populations={"MDN": self.mdn_mask})
 
         # Down / Up muscles (docs/SPEC_learning_v3.md A7): the posture circuit, only built when MotorDirect's
@@ -255,7 +255,7 @@ class FullPolicy:
             self.down_mask = pb["type"].isin(DOWN_TYPES).to_numpy()
             self.up_mask = pb["type"].isin(UP_TYPES).to_numpy()
             self.posture_network = Network(
-                W_po, Integrator(alpha=c.network.alpha, clip=c.network.clip), g=self.motor.params.posture_g,
+                W_po, Integrator(alpha=c.network.alpha, clip=c.network.clip), g=self._g("posture", self.motor.params.posture_g),
                 populations={"down": self.down_mask, "up": self.up_mask})
         log.debug("Loading the DNp02 circuit (second escape pathway, N=60, cached)...")
         dp_bodies, _, _, _, W_dp, _, _ = _load_maybe_shuffled("dnp02", load_dnp02, self.shuffle_seed)
@@ -273,7 +273,7 @@ class FullPolicy:
                               spike_idx=self.dnp02_idx,
                               spike_threshold=c.dnp02.spike_threshold,
                               spike_amp=c.jump.spike_amp),
-            g=c.dnp02.g,
+            g=self._g("dnp02", c.dnp02.g),
             populations={"L": self.dnp02_l_mask, "R": self.dnp02_r_mask,
                          "TTMn_L": self.dnp02_ttmn_l, "TTMn_R": self.dnp02_ttmn_r})
 
@@ -351,6 +351,16 @@ class FullPolicy:
         self.vis_registry = VisibleRegistry(self.registry)   # enemies outside the drawn screen are invisible
 
         self.reset(seed=0)
+
+    def _g(self, key: str, g: float) -> float:
+        """Recurrent gain of circuit `key`. bio_strict: capped so the linearised loop gain rho(W_real)*g <= stability_margin (no
+        latch at rest, docs/SPEC_bio_calibration.md target 1). rho is always the REAL circuit's, so a shuffled circuit runs at
+        exactly the same gain (the wiring changes, the calibration does not). Off: g unchanged."""
+        if not self.bio:
+            return g
+        from fly.connectome import circuit
+        rho = circuit.spectral_radius(_circuit_cache[key][4], 1.0)   # index 4 = the unshuffled W (see _load_maybe_shuffled)
+        return min(g, self.config.bio.stability_margin / rho) if rho > 0 else g
 
     def reset(self, seed: int) -> None:
         rng = np.random.default_rng(seed)
@@ -566,7 +576,8 @@ class FullPolicy:
         self.dnp02_ema["R"] = ((1 - c.dnp02.alpha) * self.dnp02_ema["R"]
                                + c.dnp02.alpha * (abs(dtheta["R"]) + abs(stim.wall_dtheta)))
         Idp = np.zeros(self.Kdp)
-        Idp[self.dnp02_lc4_l] = self.dnp02_ema["L"]; Idp[self.dnp02_lc4_r] = self.dnp02_ema["R"]
+        gain = c.bio.dnp02_input_gain if self.bio else 1.0   # bio_strict: LC4 rate signal on the GF's current scale
+        Idp[self.dnp02_lc4_l] = gain * self.dnp02_ema["L"]; Idp[self.dnp02_lc4_r] = gain * self.dnp02_ema["R"]
         Idp[self.dnp02_idx] += self.mb_bias_dnp02
         if pc1_h:
             Idp += self.pc1_gw["dnp02"] * pc1_h

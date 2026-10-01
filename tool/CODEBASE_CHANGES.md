@@ -438,3 +438,16 @@ skipped; `question_blocks_near/ahead(visible_only=False)`, `odour ... visible_on
 
 **Proof.** Full `tests/` incl. the 3 goldens; `tests/test_bio_strict.py` (senses, stripped injections, both latches gone,
 phasic muscle, walking gate); `tool/tests/test_run_spec_snapshot.py`, `test_evaluation.py`, `test_bio_strict_ui.py`.
+
+
+## C17 -- bio_strict calibration on the looming disc (docs/SPEC_bio_calibration.md)
+
+**What.** Under `bio_strict` only: every recurrent gain is capped so `rho(W_real)*g <= 0.85` (`FullPolicy._g`; shuffled circuits
+get the same gain); `config/bio_strict.py` applies the disc-derived `gf_threshold`, `dnp02_threshold`, `ttmn_unit_factor`
+(`jump.ttmn_press_threshold`), `dlmn_unit_factor` (`motor_direct.dlmn_gain`); DNp02's LC4 input is scaled by `dnp02_input_gain`.
+New `bridge/loom_disc.py` (disc + resting-state bench) and `scripts/calibrate_bio.py` (derivations); `BioStrictParams` gains
+five measured values and `stability_margin` -> 107 scalars in `docs/SCALARS.md`.
+
+**Default that keeps behaviour.** `bio_strict` False: `_g` returns `g`, `effective()` is the identity, the DNp02 gain is 1.
+
+**Proof.** Full `tests/` incl. the 3 goldens; `tests/test_bio_calibration.py` (rest, disc, shuffle, thresholds).

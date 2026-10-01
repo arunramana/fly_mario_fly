@@ -680,6 +680,23 @@ class BioStrictParams:
     adapt_frames: float = _f(30.0, (1.0, 600.0),
         "invented (motor-neuron spike-frequency adaptation, 0.5 s; 1e2-1e3 ms is typical for insect motor neurons)",
         "config/bio_strict.py (motor_direct.adapt_frames)")
+    stability_margin: float = _f(0.85, (0.1, 0.99),
+        "invented (largest allowed linearised loop gain rho(W)*g of any recurrent circuit; < 1 means no runaway, 0.85 leaves a "
+        "15 % margin for noise -- docs/SPEC_bio_calibration.md target 1)", "bridge/full_policy.py (_g)")
+    gf_threshold: float = _f(0.34994, (0.01, 50.0),
+        "measured (DNp01 spike-cell membrane at the target angular size, real circuit, disc test: scripts/calibrate_bio.py)",
+        "config/bio_strict.py (jump.dnp01_spike_threshold)")
+    dnp02_threshold: float = _f(0.34994, (0.0001, 10.0),
+        "measured (set equal to gf_threshold: DNp02 and the GF share one membrane scale, scripts/calibrate_bio.py)",
+        "config/bio_strict.py (dnp02.spike_threshold)")
+    dnp02_input_gain: float = _f(14.796, (0.1, 1000.0),
+        "measured (gain on the LC4 rate signal |dtheta| (~1e-2 rad/frame) into DNp02, chosen so its membrane at the target angular "
+        "size for the fastest disc equals the GF's threshold, scripts/calibrate_bio.py)", "bridge/full_policy.py (DNp02 input)")
+    ttmn_unit_factor: float = _f(1.275, (0.1, 20.0),
+        "measured (peak TTMn for the same disc at clip 200 / spike 60 over clip 50 / spike 50, scripts/calibrate_bio.py)",
+        "config/bio_strict.py (jump.ttmn_press_threshold)")
+    dlmn_unit_factor: float = _f(1.224, (0.1, 20.0),
+        "measured (same for DLMn, scripts/calibrate_bio.py)", "config/bio_strict.py (motor_direct.dlmn_gain)")
     walk_threshold: float = _f(0.2, (0.0, 1.0),
         "invented (DNp09 activity above which Mario walks; DNp09 is a walking descending neuron, Bidaye et al. 2020)",
         "bridge/full_policy.py (walk gate)")
