@@ -35,7 +35,10 @@ working around it.
 
 3. **Every hand-set scalar gets flagged and counted — no fixed budget.**
    Each one gets a typed, ranged home in `config/params.py` and a row in
-   `docs/SCALARS.md` (generated from it, never written by hand). There
+   `docs/SCALARS.md` (generated from it, never written by hand). The
+   redesigned brain (`brain/`) has its own registry, `brain/scalars.py`, with
+   each scalar tagged measured / calibrated / invented, generating
+   `docs/SCALARS_BRAIN.md`; `config/params.py` is frozen. For the legacy path, there
    are **107**: 79 invented (placed currents, mechanical hold durations),
    28 measured (simulated against the real weight matrix and picked by a
    sweep), **0 connectome-derived**. The connectome determines each

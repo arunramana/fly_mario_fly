@@ -13,7 +13,9 @@
 # gym 0.23.1 imports `distutils`, removed from the stdlib in Python 3.12;
 # setuptools<70 provides the shim, but only if setuptools is imported before
 # gym (`import setuptools` before `import gym`).
-numpy<2
+numpy>=1.26,<1.27
+# scipy: brain/ (sparse weights, eigensolve). 1.13 supports numpy 1.26; scipy>=1.14 may pull numpy>=2 pressure.
+scipy>=1.13,<1.14
 gym==0.23.1
 setuptools<70
 nes-py
