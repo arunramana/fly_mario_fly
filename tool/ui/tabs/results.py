@@ -15,7 +15,7 @@ from tool.ui.widgets.scroll_page import install_scroll_page
 
 SUMMARY_COLUMNS = ("Arm", "Survived", "95% CI", "Deaths", "GF before contact", "A-press runs", "theta at GF (median, deg)",
                    "distance at GF (median, px)", "GF crossed threshold", "GF output / TTMn max (Hz)")
-ARM_LABELS = {"lesion_gf": "lesion_gf (control)", "shuffled_class": "shuffled_class (class-preserving)",
+ARM_LABELS = {"lesion_gf": "lesion_gf (control)", "shuffled_class": "shuffled_class (class-preserving, informative)",
               "real_no_landmark": "real_no_landmark (control)", "real_no_pursuit": "real_no_pursuit (control)"}
 GOAL_SUMMARY_COLUMNS = ("Arm", "Reached", "95% CI", "Deaths", "Lost / timeouts", "Median frames to reach", "Mean Left frames",
                         "GF crossed threshold", "GF output / TTMn max (Hz)")

@@ -56,6 +56,8 @@ def _constants() -> list[BrainScalar]:
         S("REST_Z", C.REST_Z, "std", INVENTED, 1.0, 20.0, "motor threshold = rest mean + REST_Z * rest std (convention, rest test only)"),
         S("A_FRACTION", C.A_FRACTION, "fraction", INVENTED, 0.05, 1.0, "A threshold = this fraction of the weakest calibration disc's peak muscle drive"),
         S("MUSCLE_DECAY", C.MUSCLE_DECAY, "per frame", INVENTED, 0.0, 0.999, "A-muscle leaky integral, tau ~10 frames (as MotorDirectParams.decay)"),
+        S("CALIBRATION_NOISE_SEEDS", C.CALIBRATION_NOISE_SEEDS, "seeds", INVENTED, 1, 1000, "noise seeds each derived threshold is averaged over (docs/SPEC_phase3.md section 12); a convention, never chosen on game outcomes"),
+        S("CALIBRATION_SEED0", C.CALIBRATION_SEED0, "seed", INVENTED, 0, 10**6, "first calibration noise seed (7000-7029); an identifier, not a tuned value"),
         S("MOTOR_FLOOR_HZ", C.MOTOR_FLOOR_HZ, "Hz", INVENTED, 0.0, 0.1, "a motor threshold is never below this"),
         S("ELEVATION_LIMIT_DEG", C.ELEVATION_LIMIT_DEG, "deg", INVENTED, 10.0, 90.0,
           "elevation beyond which an object leaves the looming field (same as the validated bio_strict path)"),
@@ -104,11 +106,11 @@ def _derived(cal: C.Calibration) -> list[BrainScalar]:
     S, m = BrainScalar, cal.motor
     return [
         S("g", cal.g, "ratio", CALIBRATED, 0.0, 10.0, "min(G_NOMINAL, STABILITY_MARGIN / rho(W)); rho by sparse eigensolve"),
-        S("gf_threshold", cal.gf_threshold, "membrane", CALIBRATED, 0.0, 10.0, "mean GF membrane at THETA_GF_DEG over the calibration discs"),
-        S("a_threshold", m.a_threshold, "Hz", CALIBRATED, 0.0, 100.0, "A_FRACTION x weakest calibration disc's peak muscle drive"),
-        S("walk_threshold", m.walk_threshold, "Hz", CALIBRATED, 0.0, 100.0, "rest mean + REST_Z std of DNp09"),
-        S("steer_threshold", m.steer_threshold, "Hz", CALIBRATED, 0.0, 100.0, "rest mean + REST_Z std of |DNa01/02 left - right|"),
-        S("back_threshold", m.back_threshold, "Hz", CALIBRATED, 0.0, 100.0, "rest mean + REST_Z std of MDN"),
+        S("gf_threshold", cal.gf_threshold, "membrane", CALIBRATED, 0.0, 10.0, "mean GF membrane at THETA_GF_DEG over the calibration discs and CALIBRATION_NOISE_SEEDS noise seeds"),
+        S("a_threshold", m.a_threshold, "Hz", CALIBRATED, 0.0, 100.0, "A_FRACTION x weakest calibration disc's peak muscle drive (mean over the noise seeds)"),
+        S("walk_threshold", m.walk_threshold, "Hz", CALIBRATED, 0.0, 100.0, "rest mean + REST_Z std of DNp09 (pooled over the noise seeds)"),
+        S("steer_threshold", m.steer_threshold, "Hz", CALIBRATED, 0.0, 100.0, "rest mean + REST_Z std of |DNa01/02 left - right| (pooled over the noise seeds)"),
+        S("back_threshold", m.back_threshold, "Hz", CALIBRATED, 0.0, 100.0, "rest mean + REST_Z std of MDN (pooled over the noise seeds)"),
     ]
 
 

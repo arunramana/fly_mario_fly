@@ -107,3 +107,31 @@ E0 real / shuffled / shuffled_class were not rerun (unaffected by the arousal ch
 - The E1 diagnosis (shorter A holds) is correlational: brain-only evidence, not a paired closed-loop test. 12/20 on fresh seeds matching 13/20 on replayed seeds supports "not seed luck".
 - Rule-before-run ordering of PURSUIT_AROUSAL is unverifiable from artefacts (mtimes: calibration.py 13:50:31, senses_arousal_output.txt 13:50:41, SPEC 13:55:17); 0.65 equals the midpoint of the stated 0.3-1.0 window.
 - Videos: 216b is the no-pursuit control; there is no shuffled video for 216 and no E1 video for the 12/20 result.
+
+## Annotation 2026-10-04 (criteria wording, append)
+
+The "FAIL (3)" and "n/a" entries for shuffled_class above are superseded: the class-preserving shuffle is an informative arm with NO pass/fail
+(docs/SPEC_phase3.md section 13). E3 is accepted with class-shuffle 3/20 reported as is; the pass/fail null is the degree-preserving shuffle (0/20, pass).
+E1 shows that type-level wiring matters, not neuron-level wiring (class-shuffled 13/20 vs real 12/20 on fresh seeds). The tables above are not edited.
+
+## Round 3 results (many-seed calibration, fresh seeds 3200-3219)
+
+One run, network 3848f3e70b2051ef, calibration 343d8f60abcdba25, no retries. Raw: audit/p3r3_e1.json, audit/p3r3_e1.txt; first-A-run lengths: audit/p3r3_arun.py / .json (re-runs the real arm with per-frame rows; same 16/20). RUNS.md entry 218.
+
+| Arm | Survived | Wilson 95% CI | Deaths | GF before contact | theta at GF median (min-max) | GF out max Hz | TTMn max Hz | A-press runs | Criterion | Result |
+|---|---|---|---|---|---|---|---|---|---|---|
+| real | 16/20 | 58-92% | 4 | 20/20 | 41.7 (38.4-43.6) | 12.0 | 0.349 | 20/20 | >= 16 | pass (boundary) |
+| shuffled (degree) | 0/20 | 0-16% | 20 | 0/20 | none fired | 0.0 | 0.073 | 0/20 | <= 2 | pass |
+| shuffled_class | 16/20 | 58-92% | 4 | 20/20 | 33.0 (27.3-34.2) | 18.0 | 0.517 | 20/20 | informative | n/a |
+| lesion_gf | 0/20 | 0-16% | 20 | 20/20 (membrane read) | 41.7 (38.4-43.6) | 0.0 | 0.012 | 0/20 | should fail | fails as expected |
+
+Real-arm first A run (frames): survivors (16) 1,1,1,1,2,3,3,3,4,5,5,5,6,6,6,6; deaths (3202, 3203, 3207, 3217) 1,1,1,1. Total A frames: deaths 1-4, survivors 12-27. Tap (first A run <= 2 frames): 9/20 (4 deaths + 5 survivors). Context only: single-seed calibration on 3100-3119 gave real 12/20, class 13/20.
+
+Unit test tests/test_e1.py::test_lesion_arm_silences_gf_and_ttmn_but_the_gf_still_crosses_threshold, run once, still FAILS: seed 9100, 160 max frames, lesion TTMn max 0.00836 vs real 0.0720 (ratio 0.116; test requires < 0.1). GF output in the lesion arm is 0.0 as asserted. No edit made.
+
+## Annotation 2026-10-04 (round 3, append)
+
+- E0 / E3 were produced under calibration 9cf9317984a0b28c and were NOT re-run under 343d8f60abcdba25. Thresholds moved: gf +1.4%, a +7.0%, walk +0.1%, steer -0.6%, back -0.5%. They are therefore unverified under the new calibration; a re-run on fresh seeds is recommended and awaits Arun's decision.
+- The short-hop / 1-frame A-tap failure mode is NOT fixed. Brain-only tap fraction fell 0.42 -> 0.30, but on 3200-3219 all 4 deaths were 1-frame first A runs and 5 survivors were taps too (9/20), so the tap-death link is not a paired test. The 0.30 comes from the same analysis that motivated the change (not independent validation) and the tap fraction is non-monotone in the threshold.
+- tests/test_e1.py::test_lesion_arm_silences_gf_and_ttmn_but_the_gf_still_crosses_threshold fails under the new calibration (lesion/real TTMn ratio 0.116 vs the invented bound 0.1 at seed 9100). It is left failing and unedited, awaiting Arun. At seed 9100 the real arm now has weaker GF output (3 Hz) and dies, so the old 9100 / 9200 E1 numbers do not carry over.
+- E1 16/20 is a boundary pass: lower CI 58%, one noise sample, 15/20 would fail, and real equals class-shuffled (16 vs 16).

@@ -216,3 +216,52 @@ result): E0 real reached at 135, real_no_landmark timed out with no key pressed;
 LC10A_GAIN, LC10A_AZIMUTH_SPLIT, GOAL_CUE_SALIENCE, all E0 / E3 constants, `brain/calibration.json` and the motor map are unchanged.
 
 **Provenance of the 0.65 rule (reviewer note).** The rule-before-run ordering is unverifiable from artefacts (mtimes: `brain/calibration.py` 13:50:31, `docs/senses_arousal_output.txt` 13:50:41, SPEC 13:55:17); what can be checked is that 0.65 equals the midpoint of the stated 0.3-1.0 window.
+
+## 12. Many-seed calibration (option C of docs/NOTE_e1_regression.md; decided by Arun 2026-10-04)
+
+Why: `a_threshold` was derived from ONE noise seed per disc, and that seed's weakest-disc peak sat 7 % below the 30-seed mean, which
+moved the threshold onto the first TTMn upstroke (NOTE_e1_regression.md). Rule, written before the re-run: **every derived value that
+came from a single noise seed is derived from K = `CALIBRATION_NOISE_SEEDS` = 30 noise seeds, 7000-7029, on the same synthetic stimuli,
+by the same rule as before**. K is a new invented scalar (`brain/calibration.py`, registered in `brain/scalars.py`). Seeds 7000-7029 are
+used by nothing else. Nothing is chosen from game outcomes; A_FRACTION, REST_Z, THETA_GF_DEG, MUSCLE_DECAY and the motor map are unchanged.
+
+| value | before | after (many-seed form) |
+|---|---|---|
+| `g` | deterministic: min(G_NOMINAL, STABILITY_MARGIN / rho(W)) | unchanged (no noise) |
+| `gf_threshold` | mean over the 3 discs (l/v 20/40/80) of the GF membrane at 40 deg, noise seed 0 | the same mean over the 3 discs AND the 30 seeds (spiking disabled) |
+| `walk` / `steer` / `back` thresholds | rest mean + REST_Z * std of the pooled signal, rest runs of 2000 frames (first 500 skipped) at seeds 0 and 1 | the same pooled mean + REST_Z * pooled std over the 30 rest runs (seeds 7000-7029; 30 x 1500 frames) |
+| `a_threshold` | A_FRACTION * min over discs of the peak muscle drive, seed 0 | A_FRACTION * min over discs of the MEAN over 30 seeds of the peak muscle drive |
+| `muscle_decay`, rho | constants / deterministic | unchanged |
+| `derivation` record | single-seed numbers | per-seed mean (and std where relevant) of the same quantities |
+
+Not derived from noise: `LC10A_GAIN`, `LC10A_AZIMUTH_SPLIT`, `PURSUIT_AROUSAL` (synthetic dot sweeps with fixed grids, section 3 / 11; kept;
+the checks in tests/test_phase3.py re-run against the new calibration). `report()` (disc / rest printout) stays on seed 0: it reports, it derives nothing.
+The old file is kept as `brain/calibration_v1_singleseed.json`. Network unchanged (3848f3e70b2051ef).
+
+Validation (synthetic only; any failure stops the work, nothing adjusted): disc gate (real GF 38-48 deg at l/v 10/20/40/80, spread <= 8, the
+5 degree shuffles never fire), rest gate (0 GF spikes, motor below thresholds; max/threshold real vs shuffles reported), the pursuit/landmark
+synthetic tests of `tests/test_phase3.py`, and the brain-only tap fraction of NOTE_e1_regression.md (200 noise seeds, E1 approach theta, share with a
+first A run <= 2 frames) before / after.
+
+## 13. Criteria wording (decided 2026-10-04)
+
+The **degree-preserving shuffle is the pass/fail null**: for the survival / reach criteria it must reach <= 2/20. The **class-preserving
+shuffle is an informative arm** answering "does type-level wiring suffice?"; it has NO pass/fail. E3 stays accepted with class-shuffle 3/20 reported as
+is. Plain statement: E1 shows that type-level wiring matters, not neuron-level wiring (the class-shuffled arm survives about as often as
+the real one). Earlier sections (5, 6, 9, 11) that call the class shuffle a null are superseded by this section; their text is not rewritten.
+
+**Result of section 12 (one run, `python -m brain.calibrate`, calibration file hash 343d8f60abcdba25; old file kept as `brain/calibration_v1_singleseed.json`).**
+| value | single seed (old) | 30 seeds 7000-7029 (new) |
+|---|---|---|
+| g | 0.85 | 0.85 |
+| gf_threshold | 0.16736 | 0.16965 |
+| a_threshold | 0.12359 | 0.13230 (mean peaks 0.324 / 0.310 / 0.265 at l/v 20 / 40 / 80) |
+| walk / steer / back | 0.016884 / 0.010984 / 0.014003 | 0.01691 / 0.01092 / 0.01393 |
+Gates: real GF 47.2 / 47.2 / 47.2 / 40.6 deg at l/v 10 / 20 / 40 / 80 (spread 6.6); 5 degree shuffles never fire; rest 0 GF spikes, rest max / threshold real
+0.83 / 0.83 / 0.82 (walk / back / steer), shuffles 0.88-0.94 / 0.86-0.93 / 0.81-0.86. Brain-only tap fraction (200 noise seeds, E1 approach theta, first A run <= 2
+frames): 0.42 before (old calibration), 0.30 after. The synthetic rest / disc / phase 3 pursuit checks pass.
+
+**Disclosures for section 12 (reviewer round 3, appended).**
+- Ordering: unverifiable from artefacts; the code (calibrate.py / calibration.py, 16:10) precedes calibration.json (16:40) but this SPEC text was last saved 16:43. Same status as the PURSUIT_AROUSAL note.
+- Motivation: E1 12/20 on seeds 3100-3119 prompted the recalibration (those seeds are context only, not validation). The tap fraction is non-monotone in the A threshold (docs/NOTE_e1_regression.md), so the post-change 0.30 is partly luck.
+- The 0.30 tap figure comes from the same 200-seed brain-only analysis that motivated the change; it is not independent validation.

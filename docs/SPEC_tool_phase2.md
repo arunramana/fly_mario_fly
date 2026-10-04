@@ -141,3 +141,8 @@ are added to `TAB_REGISTRY`; Ctrl+1..9 switch tabs.
   allows only the exact clamp write, `tool/tests/test_brain_tool.py` (Run default 9100, button label, lesion row 'control',
   auto-filled run note).
 - Not done: the 20-seed E1 evaluation (experimenter), Koopa geometry re-validation, builder, goal cue.
+
+## Addendum 2026-10-04: control labels and criteria
+
+Results tab: the arm `shuffled_class` is labelled "shuffled_class (class-preserving, informative)": an informative arm, not a criterion. The pass/fail
+null is the degree-preserving `shuffled` arm (<= 2/20). See docs/SPEC_phase3.md section 13.

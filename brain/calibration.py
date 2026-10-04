@@ -34,6 +34,8 @@ CALIBRATION_LV_MS = (20, 40, 80)   # disc speeds used to derive the GF threshold
 REST_Z = 6.0                # motor threshold = rest mean + REST_Z * rest std (invented convention, rest test only)
 A_FRACTION = 0.5            # A threshold = this fraction of the weakest calibration disc's peak muscle drive
 MUSCLE_DECAY = 0.9          # per-frame decay of the A muscle drive (tau ~10 frames; invented, as MotorDirectParams.decay)
+CALIBRATION_NOISE_SEEDS = 30   # noise seeds every derived value is averaged over (7000-7029; docs/SPEC_phase3.md section 12; invented)
+CALIBRATION_SEED0 = 7000       # first calibration noise seed, used by nothing else
 MOTOR_FLOOR_HZ = 1e-3       # a motor threshold is never below this, even if the rest activity is exactly zero
 ELEVATION_LIMIT_DEG = 60.0  # elevation beyond which an object leaves the looming detectors' field (invented; same value
                             # as the validated bio_strict path, a property of the scene encoding, not of the brain)

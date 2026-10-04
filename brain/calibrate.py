@@ -11,9 +11,10 @@
 
 Derivations (all on the synthetic disc, l/v 20/40/80 ms, or on a no-stimulus rest run):
   g              = min(G_NOMINAL, STABILITY_MARGIN / rho(W))
-  gf_threshold   = mean over the calibration discs of the GF membrane at THETA_GF_DEG (spiking disabled)
-  walk/steer/back thresholds = rest mean + REST_Z * rest std of the pooled activity
-  a_threshold    = A_FRACTION * the weakest calibration disc's peak A-muscle drive
+  gf_threshold   = mean over the calibration discs AND the noise seeds of the GF membrane at THETA_GF_DEG (spiking disabled)
+  walk/steer/back thresholds = rest mean + REST_Z * rest std of the activity pooled over the noise seeds' rest runs
+  a_threshold    = A_FRACTION * the weakest calibration disc's peak A-muscle drive, averaged over the noise seeds
+Noise seeds: CALIBRATION_SEED0 .. +CALIBRATION_NOISE_SEEDS-1 (docs/SPEC_phase3.md section 12).
 """
 
 from __future__ import annotations
@@ -25,7 +26,7 @@ import numpy as np
 
 from brain import builder
 from brain.brain import Brain
-from brain.calibration import (A_FRACTION, CALIBRATION_FILE, CALIBRATION_LV_MS, G_NOMINAL, MOTOR_FLOOR_HZ, MUSCLE_DECAY,
+from brain.calibration import (A_FRACTION, CALIBRATION_FILE, CALIBRATION_NOISE_SEEDS, CALIBRATION_SEED0, CALIBRATION_LV_MS, G_NOMINAL, MOTOR_FLOOR_HZ, MUSCLE_DECAY,
                                REST_Z, STABILITY_MARGIN, THETA_GF_DEG, Calibration, MotorThresholds)
 from brain.disc import first, rest_margin, rest_run, run_disc
 from brain.mechanisms import LoomingMechanism
@@ -55,7 +56,8 @@ def muscle_trace(rec: list[dict]) -> np.ndarray:
     return np.array([m.muscle(r["ttmn"]) for r in rec])
 
 
-def derive(net: builder.BuiltNetwork, rest_frames: int = 2000, rest_seeds=(0, 1)) -> Calibration:
+def derive(net: builder.BuiltNetwork, rest_frames: int = 2000) -> Calibration:
+    seeds = range(CALIBRATION_SEED0, CALIBRATION_SEED0 + CALIBRATION_NOISE_SEEDS)
     rho = builder.spectral_radius(net.W, 1.0)
     g = min(G_NOMINAL, STABILITY_MARGIN / rho)
     print(f"rho(W) = {rho:.4f}  ->  g = {g:.4f}")
@@ -63,24 +65,25 @@ def derive(net: builder.BuiltNetwork, rest_frames: int = 2000, rest_seeds=(0, 1)
     brain = Brain(net, stub, calibration_hash="derivation")
     mech = LoomingMechanism(net)
 
-    mem = {lv: at_theta(run_disc(brain, mech, lv), "mem", THETA_GF_DEG) for lv in CALIBRATION_LV_MS}
+    mem = {lv: float(np.mean([at_theta(run_disc(brain, mech, lv, s), "mem", THETA_GF_DEG) for s in seeds]))
+           for lv in CALIBRATION_LV_MS}
     gf = float(np.mean(list(mem.values())))
     print(f"GF membrane at {THETA_GF_DEG:.0f} deg: {({k: round(v, 5) for k, v in mem.items()})} -> gf_threshold {gf:.5f}")
 
     # Rest run with the spiking GF in place: what the motor map must stay silent for.
     with_gf = dataclasses.replace(stub, gf_threshold=gf)
     brain = Brain(net, with_gf, calibration_hash="derivation")
-    rows = [r for s in rest_seeds for r in rest_run(brain, rest_frames, s)[rest_frames // 4:]]
+    rows = [r for s in seeds for r in rest_run(brain, rest_frames, s)[rest_frames // 4:]]
     sig = _motor_signals(rows)
     thr = {k: max(MOTOR_FLOOR_HZ, float(v.mean() + REST_Z * v.std())) for k, v in sig.items()}
-    print("rest (frames %d, seeds %s): " % (len(rows), list(rest_seeds)) +
+    print("rest (frames %d, %d seeds): " % (len(rows), len(seeds)) +
           " ".join(f"{k} mean {v.mean():.5f} std {v.std():.5f} max {v.max():.5f} -> thr {thr[k]:.5f}" for k, v in sig.items()))
 
     peaks = {}
     for lv in CALIBRATION_LV_MS:
-        peaks[lv] = float(muscle_trace(run_disc(brain, mech, lv)).max())
+        peaks[lv] = float(np.mean([muscle_trace(run_disc(brain, mech, lv, s)).max() for s in seeds]))
     a_thr = A_FRACTION * min(peaks.values())
-    print(f"peak A-muscle drive per disc {({k: round(v, 3) for k, v in peaks.items()})} -> a_threshold {a_thr:.4f}")
+    print(f"mean peak A-muscle drive per disc {({k: round(v, 3) for k, v in peaks.items()})} -> a_threshold {a_thr:.4f}")
 
     motor = MotorThresholds(MUSCLE_DECAY, a_thr, thr["walk"], thr["steer"], thr["back"])
     return dataclasses.replace(

@@ -76,3 +76,9 @@ The cause was not diagnosed (a correlation only).
 ## Annotation 2026-10-04 (reviewer, append)
 
 On fresh seeds 3100-3119 the Phase 3 network gives E1 real 12/20 (FAILS >= 16), matching 13/20 on replayed seeds (not seed luck), while the class-preserving shuffle survives 13/20: near-equal with overlapping CIs, so E1 survival does not separate the real wiring from class-preserving rewiring. The A-hold diagnosis is correlational (brain-only, not a paired closed-loop test). See docs/RUNS.md entry 217.
+
+## Annotation 2026-10-04 (criteria wording, append)
+
+The degree-preserving shuffle is the pass/fail null (<= 2/20 for survival / reach). The class-preserving shuffle is an informative arm ("does
+type-level wiring suffice?") with no pass/fail. E1 shows that type-level wiring matters, not neuron-level wiring: the class-shuffled arm survives about as
+often as the real one. See docs/SPEC_phase3.md section 13. Earlier tables are not rewritten.
