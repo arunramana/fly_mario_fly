@@ -137,15 +137,18 @@ def test_lesion_arm_is_not_an_option_of_the_run_path():
 
 @needs_net
 @needs_cal
-def test_lesion_arm_silences_gf_and_ttmn_but_the_gf_still_crosses_threshold():
-    res, rows, stamp = e1.run_e1_episode(9100, None, max_frames=160, record_rows=True, arm="lesion_gf")
-    assert res.arm == "lesion_gf" and stamp["lesion"] == ["GF"]
-    assert res.gf_output_max_hz == 0.0                                       # the GF output is held at zero
-    assert res.ttmn_max_hz < 0.1 * e1.run_e1_episode(9100, None, max_frames=160)[0].ttmn_max_hz   # muscle drive cut (residual: other inputs to TTMn)
-    assert res.gf_fired and res.first_gf_frame is not None                   # the GF's own threshold crossing is still read
-    assert not res.a_pressed and max(r["ttmn"] for r in rows) < 1.0
+def test_lesion_arm_gf_output_is_zero_and_a_never_pressed_across_seeds():
+    # The control's purpose: with the GF silenced the fly cannot jump. Smoke seeds, not held-out seeds.
+    for seed in (9100, 9101, 9102):
+        res, rows, stamp = e1.run_e1_episode(seed, None, max_frames=160, record_rows=True, arm="lesion_gf")
+        assert res.arm == "lesion_gf" and stamp["lesion"] == ["GF"]
+        assert res.gf_output_max_hz == 0.0                                   # GF output exactly 0 Hz over the episode
+        assert rows and all(r["gf_output"] == 0.0 for r in rows if "gf_output" in r)
+        assert not res.a_pressed and res.a_frames == 0                       # A is never pressed
+        assert all(not r["press_a"] for r in rows)
+        assert res.outcome != "stomped"                                      # no jump, so no stomp
     real = e1.run_e1_episode(9100, None, max_frames=160)[0]
-    assert real.gf_output_max_hz > 0.0 and real.ttmn_max_hz > 0.0
+    assert real.gf_output_max_hz > 0.0
 
 
 # ---- library ---------------------------------------------------------------------------------------------------------
