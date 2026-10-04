@@ -122,7 +122,9 @@ class GoombaTracker:
     for an active Goomba or None. Inside the overlap window (|dx| < SPRITE_PX) it remembers whether Mario was ever airborne and whether
     his box overlapped the Goomba's while he stood on the ground (a hit). It counts the instance as jumped once, when the window
     closes by (a) the slot becoming inactive with Mario airborne at some point in the window (stomped and removed) or (b) the Goomba
-    ending up entirely behind Mario (dx <= -SPRITE_PX) with Mario airborne at some point and no ground contact (passed over)."""
+    ending up entirely behind Mario (dx <= -SPRITE_PX) with Mario airborne at some point and no ground contact (passed over).
+    Metric correction: a ground box overlap before Mario's first airborne frame in the window (approach, take-off frame) is not a hit;
+    a hit is a ground box overlap after he has been airborne in the window (landing into the Goomba). A walk-in death closes no window."""
 
     def __init__(self):
         self.encountered = 0
@@ -145,8 +147,8 @@ class GoombaTracker:
                     st["seen"] = True
                     self.encountered += 1
                 st["in_window"] = True
+                st["hit"] = st["hit"] or (ground_contact and st["air"])   # ground box overlap only counts after a take-off
                 st["air"] = st["air"] or airborne
-                st["hit"] = st["hit"] or ground_contact
             elif st["in_window"]:
                 if dx <= -SPRITE_PX and st["air"] and not st["hit"] and not st["counted"]:
                     self.jumped += 1                                  # (b) ended up behind Mario with an airborne frame and no hit

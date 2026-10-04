@@ -36,7 +36,7 @@ Nothing is tuned on game outcomes.
      enemy slot lies within 24 px horizontally and 32 px vertically of Mario; else `died_other` (e.g. time up).
    - `stuck`: no max_x progress for BASELINE_STUCK_FRAMES frames.
    - `timeout`: BASELINE_MAX_FRAMES reached.
-3. Goombas jumped. A Goomba instance is a slot (type 0x06) from the frame it becomes active until it becomes inactive. It
+3. Goombas jumped. [SUPERSEDED by "Metric correction 2026-10-04" below.] A Goomba instance is a slot (type 0x06) from the frame it becomes active until it becomes inactive. It
    "overlaps" while |dx| < 16 px. Closing an overlap window counts the instance as jumped if Mario was airborne
    (player float state 0x001D != 0) on at least one frame of the window and either (a) the slot became inactive while the window
    was open (stomped and removed), or (b) dx fell to <= -16 (the Goomba is behind Mario: passed) with Mario alive and no frame in
@@ -64,3 +64,14 @@ done by the experimenter.
 
 ## CLI
 `python -m brain.baseline --n 20 --seed0 6000 --workers 8 --out result.json [--arms ...] [--max-frames N]`
+
+## Metric correction 2026-10-04 (Goombas jumped)
+Defect: the original definition counted a ground box overlap anywhere in the window as a hit, including the approach frames before
+take-off (Mario on the ground at |dx| < 16, box overlapping, a frame before the jump). Real-arm seed 6002 clearly jumps a Goomba
+(airborne frames 104-119, survives) yet scored 0; all 7 survivors were false negatives. Chosen outcome-neutrally before re-scoring.
+New definition (the rest of item 3 is unchanged): a Goomba instance counts as jumped if Mario is airborne (0x001D != 0) on at least
+one frame while |dx| < 16 AND Mario is not killed by it, i.e. the window closes by (a) slot inactive while open (stomp) or (b) dx <= -16
+with Mario alive. A "ground hit" is a 16 px box overlap in both axes (as the death classifier and `is_contact`) while Mario is on the
+ground AFTER he has been airborne in that window (landing into it); a ground overlap before his first airborne frame in the window
+(approach, take-off frame) is not a hit. Walking into a Goomba and dying on the ground, or dying having never been airborne, is not
+jumped (a dying Mario closes no window).

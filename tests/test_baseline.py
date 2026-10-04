@@ -50,9 +50,22 @@ def test_goomba_tracker_counts_a_pass_over_and_a_stomp_but_not_a_hit_or_a_walk_b
     t = GoombaTracker()
     _feed(t, [(True, {1: (8, False)}), (True, {1: (2, False)}), (True, {1: None})])
     assert (t.encountered, t.jumped) == (1, 1)
-    # Ground contact (a hit), Goomba then behind Mario: encountered, not jumped.
+    # Take-off then landing into the Goomba (ground box overlap after being airborne), Goomba then behind: not jumped.
     t = GoombaTracker()
-    _feed(t, [(False, {0: (10, True)}), (True, {0: (-4, False)}), (True, {0: (-20, False)})])
+    _feed(t, [(True, {0: (12, False)}), (False, {0: (6, True)}), (False, {0: (-4, False)}), (False, {0: (-20, False)})])
+    assert (t.encountered, t.jumped) == (1, 0)
+    # Metric correction 2026-10-04: pre-take-off ground overlap at |dx| < 16 (approach), then jump over and survive: jumped.
+    t = GoombaTracker()
+    _feed(t, [(False, {0: (14, True)}), (False, {0: (10, True)}), (True, {0: (6, False)}), (True, {0: (-4, False)}),
+              (True, {0: (-20, False)})])
+    assert (t.encountered, t.jumped) == (1, 1)
+    # Walk into the Goomba on the ground and die (dying frames are not fed to the tracker): not jumped.
+    t = GoombaTracker()
+    _feed(t, [(False, {0: (14, False)}), (False, {0: (8, True)})])
+    assert (t.encountered, t.jumped) == (1, 0)
+    # Never airborne and the Goomba is removed with Mario dead (slots cleared): not jumped.
+    t = GoombaTracker()
+    _feed(t, [(False, {0: (10, True)}), (False, {0: None})])
     assert (t.encountered, t.jumped) == (1, 0)
     # Mario never airborne: not jumped. A Goomba that never overlaps is not even encountered.
     t = GoombaTracker()
