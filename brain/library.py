@@ -16,8 +16,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from brain.e1 import CRITERION
+from brain.baseline import BASELINE_MAX_FRAMES, BASELINE_STUCK_FRAMES
 from brain.goal_eval import CRITERIA, E0_GOAL_X, E0_MAX_FRAMES, E3_MAX_FRAMES
-from brain.scenes import E0_SCENE_ID, E1_SCENE_ID, E3_SCENE_ID
+from brain.scenes import B11_SCENE_ID, E0_SCENE_ID, E1_SCENE_ID, E3_SCENE_ID
 
 PLAN = "docs/REDESIGN_PLAN.md"
 
@@ -131,6 +132,16 @@ EXPERIMENTS: tuple[ExperimentEntry, ...] = (
                     CONTROLS, PLAN + " section 4", "planned"),
     ExperimentEntry("E8", "Transfer", "1-2, 1-3, 1-4", ("looming", "goal_direction"), "distance vs shuffled, no retraining", CONTROLS,
                     PLAN + " section 4", "planned"),
+    ExperimentEntry("B11", "1-1 innate baseline", B11_SCENE_ID, ("looming", "pursuit", "goal_direction"),
+                    "none: a BASELINE, not a criterion, no pass/fail. Reported: max x (mean with bootstrap CI, median), how each run ends "
+                    "(level complete, death by enemy / pit / other, stuck, timeout), Goombas jumped, A-tap fraction and A-run lengths, power-up "
+                    "reached, GF output and TTMn max",
+                    "real vs degree-preserving shuffled vs class-preserving shuffled connectome, 20 seeds (6000-6019: fresh, but 6000-6029 were "
+                    "noise seeds of Phase 3b diagnostic runs on the E1 scene), run once. All three mechanisms are ON; the home landmark is an "
+                    f"invented world cue (it moves the 'go right' assumption into the senses). Bounds are invented conventions: {BASELINE_MAX_FRAMES} "
+                    f"frames, stuck = no new max x for {BASELINE_STUCK_FRAMES} frames",
+                    "docs/SPEC_baseline_1-1.md; real level 1-1 from reset (brain/scenes/b11_baseline.json: no actions, no enemy clearing, no RAM edits)",
+                    "runnable", "brain.baseline"),
 )
 
 

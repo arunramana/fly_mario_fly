@@ -21,8 +21,12 @@ GOAL_SUMMARY_COLUMNS = ("Arm", "Reached", "95% CI", "Deaths", "Lost / timeouts",
                         "GF crossed threshold", "GF output / TTMn max (Hz)")
 GOAL_EPISODE_COLUMNS = ("Arm", "Seed", "Outcome", "Reached", "Frames", "Max x", "GF crossed", "GF output max (Hz)", "TTMn max (Hz)",
                         "Left / Right / B frames")
-EVAL_EXPERIMENTS = ("E1", "E0", "E3")
-EVAL_SEEDS = {"E1": (3000, 3019), "E0": (4000, 4019), "E3": (5100, 5119)}
+BASELINE_SUMMARY_COLUMNS = ("Arm", "Max x mean (bootstrap 95% CI)", "Max x median", "How runs ended", "Goombas jumped / encountered",
+                            "A-tap episodes", "Power-up collected", "GF crossed threshold", "GF output / TTMn max (Hz)")
+BASELINE_EPISODE_COLUMNS = ("Arm", "Seed", "End", "Frames", "Max x", "Goombas jumped / encountered", "First A run", "Power-up",
+                            "GF output max (Hz)", "TTMn max (Hz)")
+EVAL_EXPERIMENTS = ("E1", "E0", "E3", "B11")
+EVAL_SEEDS = {"E1": (3000, 3019), "E0": (4000, 4019), "E3": (5100, 5119), "B11": (6000, 6019)}
 EPISODE_COLUMNS = ("Arm", "Seed", "Outcome", "Survived", "GF before contact", "theta at GF (deg)", "distance at GF (px)", "A frames")
 
 
@@ -34,8 +38,22 @@ def is_goal(result: dict) -> bool:
     return result.get("experiment", "E1") in ("E0", "E3")
 
 
+def is_baseline(result: dict) -> bool:
+    return result.get("experiment", "E1") == "B11"
+
+
 def summary_rows(result: dict) -> list[list[str]]:
     rows = []
+    if is_baseline(result):
+        for arm in result["arms"]:
+            s = result[arm]
+            tap = "no A presses" if s["tap_fraction"] is None else f"{s['tap_episodes']}/{s['a_episodes']}"
+            ends = ", ".join(f"{k} {v}" for k, v in s["end_reasons"].items() if v)
+            rows.append([ARM_LABELS.get(arm, arm), f"{s['max_x_mean']:.0f} ({s['max_x_mean_ci'][0]:.0f}-{s['max_x_mean_ci'][1]:.0f})",
+                         f"{s['max_x_median']:.0f}", ends, f"{s['goombas_jumped']} / {s['goombas_encountered']}", tap,
+                         f"{s['collected']}/{s['n']}", f"{s['gf_fired']}/{s['n']}",
+                         f"{s.get('gf_output_max_hz', 0.0):.2f} / {s.get('ttmn_max_hz', 0.0):.3f}"])
+        return rows
     if is_goal(result):
         for arm in result["arms"]:
             s = result[arm]
@@ -56,6 +74,9 @@ def summary_rows(result: dict) -> list[list[str]]:
 
 
 def criterion_text(result: dict) -> str:
+    if is_baseline(result):
+        return ("Baseline, not a criterion: no pass/fail. All three mechanisms on; the home landmark is an invented world cue. "
+                f"Tap = first A run <= {result['tap_max_frames']} frames; stuck = no new max x for {result['stuck_frames']} frames.")
     if is_goal(result):
         c, real, shuf = result["criterion"], result["real"], result["shuffled"]
         met = real["reached"] >= c["real_reached_min"] and shuf["reached"] <= c["shuffled_reached_max"]
@@ -142,7 +163,14 @@ class ResultsTab(QWidget):
 
     def _show(self, result: dict) -> None:
         st = result["stamp"]
-        if is_goal(result):
+        if is_baseline(result):
+            self.header_label.setText(
+                f"B11 1-1 innate baseline, scene {result['scene']['id']} ({result['scene']['scene_hash']}), seeds "
+                f"{result['seeds'][0]}-{result['seeds'][1]}, max {result['max_frames']} frames. Network {st['build_hash']} "
+                f"({st['neurons']} neurons), calibration {st['calibration_hash']}, senses {st.get('senses')}.")
+            self._set_columns(self.summary_table, BASELINE_SUMMARY_COLUMNS)
+            self._set_columns(self.episode_table, BASELINE_EPISODE_COLUMNS)
+        elif is_goal(result):
             self.header_label.setText(
                 f"{result['experiment']}, scene {result['scene']['id']} ({result['scene']['scene_hash']}), seeds "
                 f"{result['seeds'][0]}-{result['seeds'][1]}, {result['metric']}. Network {st['build_hash']} "
@@ -165,7 +193,12 @@ class ResultsTab(QWidget):
         eps = result["episodes"]
         self.episode_table.setRowCount(len(eps))
         for r, e in enumerate(eps):
-            if is_goal(result):
+            if is_baseline(result):
+                vals = [ARM_LABELS.get(e["arm"], e["arm"]), str(e["seed"]), e["outcome"], str(e["frames"]), str(e["max_x"]),
+                        f"{e['goombas_jumped']} / {e['goombas_encountered']}", "-" if e["first_a_run"] is None else str(e["first_a_run"]),
+                        "collected" if e["collected"] else ("released" if e["powerup_released"] else "no"),
+                        f"{e['gf_output_max_hz']:.2f}", f"{e['ttmn_max_hz']:.3f}"]
+            elif is_goal(result):
                 vals = [ARM_LABELS.get(e["arm"], e["arm"]), str(e["seed"]), e["outcome"], "yes" if e["reached"] else "no", str(e["frames"]),
                         str(e["max_x"]), "yes" if e["gf_fired"] else "no", f"{e['gf_output_max_hz']:.2f}", f"{e['ttmn_max_hz']:.3f}",
                         f"{e['left_frames']} / {e['right_frames']} / {e['b_frames']}"]

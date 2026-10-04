@@ -1,0 +1,10 @@
+{
+  "id": "b11_baseline",
+  "experiment": "B11",
+  "level": "1-1",
+  "description": "Real level 1-1 from power-on (env.reset). No scripted actions, no enemy clearing, no RAM edits. The fly takes over on the first frame.",
+  "rules": [],
+  "action_log": [],
+  "checks": "Written once. Nothing in the log and no rules: the level is played as the game ships it.",
+  "takeover": "the reset frame"
+}

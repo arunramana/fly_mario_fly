@@ -85,9 +85,10 @@ class BrainRunController(QObject):
         if latest is not None:
             run_tab.preview.show_frame(latest[1], latest[2])
             from brain.e1 import E1_MAX_FRAMES
+            from brain.baseline import BASELINE_MAX_FRAMES
             from brain.goal_eval import MAX_FRAMES
             exp = (self._meta or {}).get("experiment", "E1")
-            run_tab.set_progress(latest[2].get("frame", 0), E1_MAX_FRAMES if exp == "E1" else MAX_FRAMES[exp])
+            run_tab.set_progress(latest[2].get("frame", 0), E1_MAX_FRAMES if exp == "E1" else {**MAX_FRAMES, "B11": BASELINE_MAX_FRAMES}[exp])
         if terminal is None:
             return
         self._timer.stop()
@@ -135,6 +136,8 @@ class BrainRunController(QObject):
         arms = ("real, shuffled and the GF-lesion control" if experiment == "E1"
                 else "real, degree-preserving shuffled, class-preserving shuffled and "
                 + ("real with the landmark off" if experiment == "E0" else "real with pursuit off"))
+        if experiment == "B11":
+            arms = "real, degree-preserving shuffled and class-preserving shuffled; a baseline, no pass/fail"
         self._eval_experiment = experiment
         self.eval_status.emit(f"{experiment} evaluation running ({arms}, 20 seeds each)...")
         return True

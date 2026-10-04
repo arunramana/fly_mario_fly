@@ -23,7 +23,7 @@ import numpy as np
 from config.output_routing import PROJECTS_ROOT
 
 BRAIN_RUN_KIND = "brain_e1"          # E1 runs; E0 and E3 runs are "brain_e0" / "brain_e3" (run_kind)
-RUNNABLE = ("E0", "E1", "E3")
+RUNNABLE = ("E0", "E1", "E3", "B11")
 SETTINGS_FILE = "brain_settings.json"   # the Mechanisms tab's per-object pursuit setting and home-landmark strength
 PREVIEW_EVERY_N = 2          # live preview: every 2nd frame (the brain runs well above real time, the queue need not carry all)
 
@@ -57,10 +57,11 @@ def run_brain_one(project_name: str, slug: str, seed: int, shuffle_seed: int | N
     import pandas as pd
     from brain.e1 import run_e1_episode
     from brain.goal_eval import SCENES, run_goal_episode
-    from brain.scenes import load_scene
+    from brain.baseline import run_baseline_episode
+    from brain.scenes import B11_SCENE_ID, load_scene
     from brain.settings import SenseSettings
     from tool.core.frame_store import FrameStore
-    scene = load_scene(SCENES[experiment]) if experiment != "E1" else load_scene()
+    scene = load_scene({**SCENES, "B11": B11_SCENE_ID}[experiment]) if experiment != "E1" else load_scene()
     recorder = FrameStore()
 
     def combined(frame, obs, row):
@@ -71,6 +72,10 @@ def run_brain_one(project_name: str, slug: str, seed: int, shuffle_seed: int | N
     if experiment == "E1":
         result, rows, stamp = run_e1_episode(seed, shuffle_seed, scene=scene, on_frame=combined, should_stop=should_stop,
                                              record_rows=True)
+    elif experiment == "B11":
+        arm = "real" if shuffle_seed is None else shuffle_mode
+        result, rows, stamp = run_baseline_episode(seed, arm, shuffle_seed, (SenseSettings.from_dict(settings) if settings is not None else SenseSettings.user_default()),
+                                                   scene=scene, on_frame=combined, should_stop=should_stop, record_rows=True)
     else:
         arm = "real" if shuffle_seed is None else shuffle_mode
         result, rows, stamp = run_goal_episode(experiment, seed, arm, shuffle_seed, (SenseSettings.from_dict(settings) if settings is not None else SenseSettings.user_default()),
@@ -158,7 +163,7 @@ def write_brain_run_note(project_name: str, number: int, slug: str, seed: int, i
     else:
         what = (f"{e['frames']} frames, outcome {e['outcome']}, reached {e['reached']}, max x {e['max_x']}, GF fired {e['gf_fired']}, "
                 f"GF output max {e['gf_output_max_hz']:.2f} Hz, TTMn max {e['ttmn_max_hz']:.3f} Hz, A pressed {e['a_pressed']}.")
-        title = {"E0": "E0 walk to the goal", "E3": "E3 pursue the mushroom by sight"}[exp]
+        title = {"E0": "E0 walk to the goal", "E3": "E3 pursue the mushroom by sight", "B11": "B11 1-1 innate baseline"}[exp]
     path.write_text(
         f"# {number:03d} -- {slug}\n\n"
         f"**Setup.** {title}, {e['arm']} connectome, brain noise seed {seed}, shuffle seed {e['shuffle_seed']}, "
@@ -192,6 +197,11 @@ def run_brain_eval_streaming(project_name: str, queue, workers: int = 4, n: int 
         if experiment == "E1":
             from brain import e1
             result = e1.run_eval(e1.E1_N if n is None else n, e1.E1_SEED0 if seed0 is None else seed0, workers)
+        elif experiment == "B11":
+            from brain import baseline
+            from brain.settings import SenseSettings
+            result = baseline.run_eval(baseline.N if n is None else n, seed0, workers,
+                                       settings=SenseSettings.from_dict(settings) if settings is not None else None)
         else:
             from brain import goal_eval
             from brain.settings import SenseSettings
@@ -205,6 +215,9 @@ def run_brain_eval_streaming(project_name: str, queue, workers: int = 4, n: int 
 
 
 def format_brain_eval(result: dict) -> str:
+    if result.get("experiment", "E1") == "B11":
+        from brain.baseline import format_eval as format_baseline
+        return format_baseline(result)
     if result.get("experiment", "E1") != "E1":
         from brain.goal_eval import format_eval as format_goal
         return format_goal(result)

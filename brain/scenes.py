@@ -32,6 +32,7 @@ SCENES_DIR = Path(__file__).resolve().parent / "scenes"
 E1_SCENE_ID = "e1_goomba_approach"
 E0_SCENE_ID = "e0_walk_goal"
 E3_SCENE_ID = "e3_mushroom"
+B11_SCENE_ID = "b11_baseline"      # the real level 1-1 from reset: no log, no rules (docs/SPEC_baseline_1-1.md)
 SCENE_RULES = ("clear_enemies",)      # per-frame changes to the surroundings (never to the fly): enemies removed, power-ups kept
 
 

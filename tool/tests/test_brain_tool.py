@@ -59,7 +59,7 @@ def _fake_eval():
 
 def test_experiments_library_lists_the_ladder_read_only_with_provenance(window):
     tab = _tab(window, "experiments")
-    assert tab.table.rowCount() == 10
+    assert tab.table.rowCount() == 11
     assert tab.selected().id == "E1"
     html = tab.detail.toHtml()
     assert "e1_goomba_approach" in html and "feature-level (D1)" in html and "Ache et al. 2019" in html
@@ -265,3 +265,37 @@ def test_an_e0_run_is_recorded_and_loads_in_the_watch_tab(window):
     window.run_tab.refresh_history(list_runs(PROJECT_NAME))
     window.load_history_run(list_runs(PROJECT_NAME)[0])
     assert window.run_tab.player._n_frames == len(tel)
+
+
+def test_results_shows_a_b11_baseline_evaluation_without_a_criterion(window):
+    from tool.core.brain_runner import save_brain_eval
+    arm = {"n": 20, "max_x_mean": 400.0, "max_x_mean_ci": [350.0, 450.0], "max_x_median": 390.0, "max_x_min": 100, "max_x_max": 900,
+           "level_complete": 0, "level_complete_ci": [0.0, 0.16], "end_reasons": {"died_enemy": 18, "stuck": 2},
+           "goombas_encountered": 20, "goombas_jumped": 5, "episodes_with_a_jump": 5, "a_episodes": 10, "tap_episodes": 4,
+           "tap_fraction": 0.4, "tap_ci": [0.2, 0.6], "a_run_hist": {"1": 3}, "a_runs_total": 3, "powerup_released_runs": 1,
+           "collected": 1, "collected_ci": [0.0, 0.2], "gf_fired": 10, "gf_output_max_hz": 12.0, "ttmn_max_hz": 0.3, "frames_median": 300.0}
+    ep = {"experiment": "B11", "arm": "real", "seed": 6000, "outcome": "died_enemy", "frames": 300, "max_x": 400, "goombas_jumped": 1,
+          "goombas_encountered": 1, "first_a_run": 3, "collected": False, "powerup_released": False, "gf_output_max_hz": 12.0, "ttmn_max_hz": 0.3}
+    res = {"experiment": "B11", "metric": "m", "seeds": [6000, 6019], "max_frames": 3000, "stuck_frames": 300, "tap_max_frames": 2,
+           "scene": {"id": "b11_baseline", "scene_hash": "abc"}, "stamp": {"build_hash": "h", "neurons": 16464, "calibration_hash": "c", "senses": {}},
+           "criterion": None, "arms": ["real", "shuffled", "shuffled_class"], "real": arm, "shuffled": arm, "shuffled_class": arm, "episodes": [ep]}
+    save_brain_eval(PROJECT_NAME, res)
+    tab = _tab(window, "results")
+    tab.refresh()
+    assert tab.summary_table.rowCount() == 3 and tab.summary_table.item(0, 1).text() == "400 (350-450)"
+    assert tab.summary_table.item(0, 4).text() == "5 / 20" and tab.summary_table.item(0, 5).text() == "4/10"
+    assert "not a criterion" in tab.criterion_label.text() and "no pass/fail" in tab.criterion_label.text()
+    assert tab.episode_table.rowCount() == 1 and "B11" in tab.header_label.text()
+    tab.experiment_combo.setCurrentText("B11")
+    assert "6000-6019" in tab.run_button.text()
+
+
+def test_experiments_tab_lists_the_b11_baseline_as_runnable_with_honest_labels(window):
+    from brain.library import experiment
+    e = experiment("B11")
+    assert e.status == "runnable" and e.runner == "brain.baseline" and set(e.mechanisms) == {"looming", "pursuit", "goal_direction"}
+    assert "no pass/fail" in e.criterion and "invented world cue" in e.controls
+    tab = _tab(window, "experiments")
+    row = next(r for r in range(tab.table.rowCount()) if tab.table.item(r, 0).text() == "B11")
+    tab.table.selectRow(row)
+    assert tab.selected().id == "B11" and tab.run_real_button.isEnabled() and "B11" in tab.run_real_button.text()

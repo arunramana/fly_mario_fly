@@ -98,6 +98,17 @@ def _phase3_experiments() -> list[BrainScalar]:
         S("E3_SCENE_STAND_FRAMES", log[1][1], "frames", INVENTED, 1, 120, "scene log: stand still under the block"),
         S("E3_SCENE_JUMP_FRAMES", log[2][1], "frames", INVENTED, 1, 60, "scene log: A held to jump straight up and hit the block"),
         S("E3_SCENE_LAND_FRAMES", log[3][1], "frames", INVENTED, 1, 120, "scene log: release everything so Mario lands and stands still"),
+    ] + _baseline_experiments()
+
+
+def _baseline_experiments() -> list[BrainScalar]:
+    """1-1 innate baseline conventions (docs/SPEC_baseline_1-1.md): definitions fixed before any run, not circuit scalars."""
+    from brain import baseline
+    S = BrainScalar
+    return [
+        S("BASELINE_MAX_FRAMES", baseline.BASELINE_MAX_FRAMES, "frames", INVENTED, 100, 20000, "1-1 baseline episode bound (50 s); level 1-1 is about 3150 px"),
+        S("BASELINE_STUCK_FRAMES", baseline.BASELINE_STUCK_FRAMES, "frames", INVENTED, 30, 3000, "1-1 baseline: no new max x for this long ends the episode as stuck (5 s)"),
+        S("BASELINE_TAP_MAX_FRAMES", baseline.BASELINE_TAP_MAX_FRAMES, "frames", INVENTED, 1, 10, "1-1 baseline: a first A run this short or shorter counts as a tap (docs/INVESTIGATION_phase3b.md)"),
     ]
 
 

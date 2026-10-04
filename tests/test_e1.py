@@ -154,7 +154,7 @@ def test_lesion_arm_gf_output_is_zero_and_a_never_pressed_across_seeds():
 # ---- library ---------------------------------------------------------------------------------------------------------
 def test_library_is_complete_and_labels_the_input_tier():
     ids = {m.id for m in library.MECHANISMS}
-    assert [e.id for e in library.EXPERIMENTS] == ["E0", "E1", "E2a", "E2b", "E3", "E4", "E5", "E6", "E7", "E8"]
+    assert [e.id for e in library.EXPERIMENTS] == ["E0", "E1", "E2a", "E2b", "E3", "E4", "E5", "E6", "E7", "E8", "B11"]
     for e in library.EXPERIMENTS:
         assert set(e.mechanisms) <= ids and e.origin and e.criterion and e.controls
     for m in library.MECHANISMS:
@@ -162,7 +162,7 @@ def test_library_is_complete_and_labels_the_input_tier():
         assert m.entry_tier in ("feature-level (D1)", "receptor", "n/a")
     looming = library.mechanism("looming")
     assert looming.status == "built" and looming.entry_tier == "feature-level (D1)"
-    assert [e.id for e in library.EXPERIMENTS if e.status == "runnable"] == ["E0", "E1", "E3"]
+    assert [e.id for e in library.EXPERIMENTS if e.status == "runnable"] == ["E0", "E1", "E3", "B11"]
     assert library.experiment("E1").runner == "brain.e1"
 
 
