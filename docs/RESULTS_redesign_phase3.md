@@ -135,3 +135,34 @@ Unit test tests/test_e1.py::test_lesion_arm_silences_gf_and_ttmn_but_the_gf_stil
 - The short-hop / 1-frame A-tap failure mode is NOT fixed. Brain-only tap fraction fell 0.42 -> 0.30, but on 3200-3219 all 4 deaths were 1-frame first A runs and 5 survivors were taps too (9/20), so the tap-death link is not a paired test. The 0.30 comes from the same analysis that motivated the change (not independent validation) and the tap fraction is non-monotone in the threshold.
 - tests/test_e1.py::test_lesion_arm_silences_gf_and_ttmn_but_the_gf_still_crosses_threshold fails under the new calibration (lesion/real TTMn ratio 0.116 vs the invented bound 0.1 at seed 9100). It is left failing and unedited, awaiting Arun. At seed 9100 the real arm now has weaker GF output (3 Hz) and dies, so the old 9100 / 9200 E1 numbers do not carry over.
 - E1 16/20 is a boundary pass: lower CI 58%, one noise sample, 15/20 would fail, and real equals class-shuffled (16 vs 16).
+
+## Round 4: E0/E3 under the current calibration (fresh seeds)
+
+One run each, no retries, no code edits. Network 3848f3e70b2051ef, calibration 343d8f60abcdba25. E0 scene e0_walk_goal (27a671e7e27469e6), seeds 4100-4119, 600 frames, goal x 400. E3 scene e3_mushroom (cbde4f133a0f0870), seeds 5200-5219, 150 frames. Raw: audit/p4_e0.json/.txt, audit/p4_e3.json/.txt. RUNS.md entry 220.
+
+These are the current-calibration E0/E3 results. The earlier E0/E3 numbers (RUNS 214-217, RESULTS rounds 1-2) are SUPERSEDED by them (they were produced under calibration 9cf9317984a0b28c). Those sections are not edited.
+
+E0 (reached x >= 400 within 600 frames):
+
+| Arm | Reached | Wilson 95% CI | Timeouts | Deaths | Median frames | GF crossed | GF out max Hz | TTMn max Hz | Mean Left frames | Criterion | Result |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| real | 20/20 | 84-100% | 0 | 0 | 135 | 0/20 | 0.0 | 0.012 | 0 | >= 18 | pass |
+| shuffled (degree) | 0/20 | 0-16% | 20 | 0 | none | 20/20 | 12.0 | 0.780 | 600 | <= 2 | pass |
+| shuffled_class | 0/20 | 0-16% | 20 | 0 | none | 0/20 | 0.0 | 0.101 | 596.3 | informative | n/a |
+| real_no_landmark | 0/20 | 0-16% | 20 | 0 | none | 0/20 | 0.0 | 0.013 | 0 | should fail | fails as expected |
+
+E3 (reached the mushroom within 150 frames):
+
+| Arm | Reached | Wilson 95% CI | Timeouts | Deaths | Median frames | GF crossed | GF out max Hz | TTMn max Hz | Mean Left frames | Criterion | Result |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| real | 20/20 | 84-100% | 0 | 0 | 105 | 0/20 | 0.0 | 0.013 | 0 | >= 14 | pass |
+| shuffled (degree) | 0/20 | 0-16% | 20 | 0 | none | 15/20 | 12.0 | 0.539 | 110.0 | <= 2 | pass |
+| shuffled_class | 3/20 | 5-36% | 17 | 0 | 104 | 0/20 | 0.0 | 0.070 | 72.4 | informative | n/a |
+| real_no_pursuit | 0/20 | 0-16% | 20 | 0 | none | 0/20 | 0.0 | 0.012 | 0 | should fail | fails as expected |
+
+Findings. The earlier claims hold under the current calibration: E0 real 20/20 vs degree-shuffled 0/20, E3 real 20/20 vs 0/20, E3 class-shuffle 3/20 (same as before, informative only), necessity arms 0/20. Caveats: E0 real is again one deterministic trajectory (median 135 frames, x median 402, Left frames 0, no GF/A activity), and E3 real is again near-deterministic (median 105). The necessity result and the shuffle nulls stand against that. The degree shuffles fail by wandering left (E0 Left 600 frames) and, in E0/E3, fire the GF (20/20, 15/20), i.e. they fail in a different way than real.
+
+E1 on 3200-3219 (round 3 above, restated): pass at the boundary, not robust. Real 16/20, Wilson CI 58-92%, 15/20 would fail; 9/20 one-frame-or-short (<= 2 frame) A taps (all 4 deaths were taps, plus 5 survivors); class-shuffled equal (16/20), so E1 does not separate real from class-preserving wiring.
+
+## Full root tests after lesion-test rewrite
+2026-10-04, repo `.venv`, `OMP_NUM_THREADS=1`, all 40 test files of `tests/` (goldens included), run once in three parallel chunks split alphabetically by file (13 + 14 + 13 files): chunk 1 95 passed (10 min 10 s), chunk 2 74 passed (6 min 9 s), chunk 3 93 passed (5 min 25 s). Total **262 passed, 0 failed, 0 skipped** (warnings only: gym/nes-py deprecation notices). The rewritten GF-lesion control test passes. Golden tests are byte-identical.
