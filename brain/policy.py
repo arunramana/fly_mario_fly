@@ -16,24 +16,36 @@ from bridge.perception import VisibleRegistry
 from brain import builder
 from brain.brain import Brain, Readout
 from brain.calibration import ELEVATION_LIMIT_DEG, Calibration
-from brain.mechanisms import LoomingMechanism
+from brain.mechanisms import HomeLandmarkMechanism, LoomingMechanism, PursuitMechanism
 from brain.motor_map import Buttons, MotorMap
-from brain.perception import enemy_thetas
+from brain.perception import enemy_thetas, pursuit_target
+from brain.settings import SenseSettings
 from mario.actions.actions import action_from_buttons
 from mario.entities.registry import DEFAULT as DEFAULT_REGISTRY
 
 
 class BrainPolicy:
     def __init__(self, network: builder.BuiltNetwork | None = None, calibration: Calibration | None = None,
-                 shuffle_seed: int | None = None, lesion: tuple[str, ...] = ()):
-        """`lesion` is a control-only argument, passed by brain/e1.py's `lesion_gf` arm and nothing else."""
+                 shuffle_seed: int | None = None, lesion: tuple[str, ...] = (),
+                 settings: SenseSettings | None = None, shuffle_mode: str = "degree"):
+        """`lesion` is a control-only argument, passed by brain/e1.py's `lesion_gf` arm and nothing else. `settings`
+        (docs/SPEC_phase3.md) attaches pursuit (when kinds are listed) and the home landmark (when its strength > 0); the
+        default is looming only, as in Phase 1 and 2. The shuffled arms receive exactly the same cues."""
         net = network or builder.load_or_build()
         if shuffle_seed is not None:
-            net = net.shuffled(shuffle_seed)
+            net = net.shuffled(shuffle_seed, shuffle_mode)
         self.cal = calibration or Calibration.load()
         self.brain = Brain(net, self.cal, lesion=lesion)
         self.looming = LoomingMechanism(net)
         self.brain.attach(self.looming)
+        self.settings = settings or SenseSettings()
+        self.pursuit = self.landmark = None
+        if self.settings.pursuit_kinds:
+            self.pursuit = PursuitMechanism(net)
+            self.brain.attach(self.pursuit)
+        if self.settings.goal_cue_salience > 0:
+            self.landmark = HomeLandmarkMechanism(net, self.settings.goal_cue_salience)
+            self.brain.attach(self.landmark)
         self.motor = MotorMap(self.cal.motor)
         self._registry = VisibleRegistry(DEFAULT_REGISTRY)
         self.last_readout: Readout | None = None
@@ -43,6 +55,9 @@ class BrainPolicy:
     def reset(self, seed: int) -> None:
         self.brain.reset(seed)
         self.motor.reset()
+        self.last_readout = None
+        self._positions = {}
+        self.last_target, self.last_arousal = None, 0.0     # last_arousal is recorded only while pursuit is attached
         self._prev_theta = {"L": 0.0, "R": 0.0}
         self.last_theta, self.last_distance = 0.0, None     # what the fly saw last frame (rad, px), for records only
 
@@ -51,10 +66,19 @@ class BrainPolicy:
         self._prev_theta = theta
         self.last_theta, self.last_distance = theta["L"], dist["L"]
         self.brain.apply(self.looming.encode(theta, dtheta))
+        if self.pursuit is not None:
+            # arousal = a fly-state input set in the tool (SenseSettings.pursuit_arousal); nothing is read from the fly's output
+            self.last_arousal = self.settings.pursuit_arousal
+            self.last_target, self._positions = pursuit_target(observation.ram, self._positions, self._registry,
+                                                              set(self.settings.pursuit_kinds), ELEVATION_LIMIT_DEG)
+            if self.last_target is not None:
+                self.brain.apply(self.pursuit.encode(self.last_target.azimuth_deg, self.last_target.salience, self.last_arousal))
+        if self.landmark is not None:
+            self.brain.apply(self.landmark.encode())
         self.last_readout = self.brain.step_frame()
         self.last_buttons = b = self.motor.read(self.last_readout)
         return action_from_buttons(right=b.right, left=b.left, down=b.down, up=b.up, a=b.a, b=b.b)
 
     def stamp(self) -> dict:
         """Build rule, calibration hash and mechanism list for whatever result this policy produced."""
-        return self.brain.stamp()
+        return {**self.brain.stamp(), "senses": self.settings.to_dict()}

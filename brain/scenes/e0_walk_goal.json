@@ -1,0 +1,10 @@
+{
+  "id": "e0_walk_goal",
+  "experiment": "E0",
+  "level": "1-1",
+  "description": "Mario stands at the start of level 1-1 on flat ground (flat to the first pipe at x = 448) with no enemies. The fly takes over on the first frame.",
+  "rules": ["clear_enemies"],
+  "action_log": [],
+  "checks": "Written once. Nothing in the log; the only rule is that enemy slots are cleared every frame so the experiment is the home landmark alone.",
+  "takeover": "the reset frame"
+}

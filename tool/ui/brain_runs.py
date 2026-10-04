@@ -12,8 +12,8 @@ import os
 
 from PySide6.QtCore import QObject, QTimer, Signal
 
-from tool.core.brain_runner import (brain_run_slug, run_brain_eval_streaming, run_brain_streaming,
-                                    write_brain_run_note)
+from tool.core.brain_runner import (brain_run_slug, episode_of, load_sense_settings, run_brain_eval_streaming,
+                                    run_brain_streaming, write_brain_run_note)
 from tool.core.run_store import list_runs, next_run_number, record_run
 
 
@@ -44,19 +44,21 @@ class BrainRunController(QObject):
     def active(self) -> bool:
         return self.run_active() or self.eval_active()
 
-    def start_run(self, seed: int, shuffled: bool, shuffle_seed: int = 1) -> bool:
+    def start_run(self, seed: int, shuffled: bool, shuffle_seed: int = 1, experiment: str = "E1", class_shuffle: bool = False) -> bool:
         w = self._window
         if self.active() or (w._process is not None and w._process.is_alive()) or w.training_active():
             w.statusBar().showMessage("Something is already running -- cancel it first.", 5000)
             return False
-        arm = "shuffled" if shuffled else "real"
+        mode = "shuffled_class" if class_shuffle else "shuffled"
+        arm = mode if shuffled else "real"
         number = next_run_number(w.project.name)
-        slug = brain_run_slug(number, arm, seed)
+        slug = brain_run_slug(number, arm, seed, experiment)
         ctx = mp.get_context("spawn")
         self._queue, self._stop = ctx.Queue(), ctx.Event()
-        self._meta = {"number": number, "slug": slug, "seed": seed}
+        self._meta = {"number": number, "slug": slug, "seed": seed, "experiment": experiment}
+        settings = load_sense_settings(w.project.name).to_dict()      # the Mechanisms tab's settings travel with the run
         self._process = ctx.Process(target=run_brain_streaming, args=(
-            w.project.name, slug, seed, shuffle_seed if shuffled else None, self._queue, self._stop))
+            w.project.name, slug, seed, shuffle_seed if shuffled else None, self._queue, self._stop, experiment, settings, mode))
         self._process.start()
         w.run_tab.set_running(True)
         w.run_tab.progress.setValue(0)
@@ -83,7 +85,9 @@ class BrainRunController(QObject):
         if latest is not None:
             run_tab.preview.show_frame(latest[1], latest[2])
             from brain.e1 import E1_MAX_FRAMES
-            run_tab.set_progress(latest[2].get("frame", 0), E1_MAX_FRAMES)
+            from brain.goal_eval import MAX_FRAMES
+            exp = (self._meta or {}).get("experiment", "E1")
+            run_tab.set_progress(latest[2].get("frame", 0), E1_MAX_FRAMES if exp == "E1" else MAX_FRAMES[exp])
         if terminal is None:
             return
         self._timer.stop()
@@ -106,24 +110,33 @@ class BrainRunController(QObject):
         run_tab.refresh_history(list_runs(w.project.name))
         run_tab.select_run(m["number"])
         w.load_history_run({"number": m["number"], "slug": m["slug"], "seed": m["seed"], "summary": info, "run_spec": spec})
-        e = info["e1"]
-        text = (f"Run #{m['number']} (E1, {e['arm']}): {e['outcome']}, survived {e['survived']}, GF before contact "
-                f"{e['gf_before_contact']}, theta at GF "
-                f"{'none' if e['theta_at_gf_deg'] is None else format(e['theta_at_gf_deg'], '.1f') + ' deg'}")
+        e = episode_of(info)
+        if m.get("experiment", "E1") == "E1":
+            text = (f"Run #{m['number']} (E1, {e['arm']}): {e['outcome']}, survived {e['survived']}, GF before contact "
+                    f"{e['gf_before_contact']}, theta at GF "
+                    f"{'none' if e['theta_at_gf_deg'] is None else format(e['theta_at_gf_deg'], '.1f') + ' deg'}")
+        else:
+            text = (f"Run #{m['number']} ({m['experiment']}, {e['arm']}): {e['outcome']}, reached {e['reached']}, GF fired "
+                    f"{e['gf_fired']}, GF output max {e['gf_output_max_hz']:.2f} Hz, TTMn max {e['ttmn_max_hz']:.3f} Hz")
         run_tab.show_result(text)
         w.statusBar().showMessage(text, 10_000)
 
     # ---- the 20-seed evaluation ------------------------------------------------------------------------------------
-    def start_eval(self, n: int | None = None, seed0: int | None = None) -> bool:
+    def start_eval(self, n: int | None = None, seed0: int | None = None, experiment: str = "E1") -> bool:
         if self.active():
             return False
         ctx = mp.get_context("spawn")
         self._eval_queue = ctx.Queue()
         self._eval_process = ctx.Process(target=run_brain_eval_streaming, args=(
-            self._window.project.name, self._eval_queue, max(1, (os.cpu_count() or 2) // 2), n, seed0))
+            self._window.project.name, self._eval_queue, max(1, (os.cpu_count() or 2) // 2), n, seed0, experiment,
+            load_sense_settings(self._window.project.name).to_dict()))
         self._eval_process.start()
         self._eval_timer.start()
-        self.eval_status.emit("E1 evaluation running (real, shuffled and the GF-lesion control, 20 seeds each)...")
+        arms = ("real, shuffled and the GF-lesion control" if experiment == "E1"
+                else "real, degree-preserving shuffled, class-preserving shuffled and "
+                + ("real with the landmark off" if experiment == "E0" else "real with pursuit off"))
+        self._eval_experiment = experiment
+        self.eval_status.emit(f"{experiment} evaluation running ({arms}, 20 seeds each)...")
         return True
 
     def _poll_eval(self) -> None:
@@ -134,8 +147,8 @@ class BrainRunController(QObject):
         self._eval_process.join(timeout=5)
         self._eval_process = None
         if kind == "done":
-            self.eval_status.emit("E1 evaluation finished.")
+            self.eval_status.emit(f"{getattr(self, '_eval_experiment', 'E1')} evaluation finished.")
             self.eval_finished.emit(payload)
         else:
-            self.eval_status.emit(f"E1 evaluation failed: {payload[:300]}")
+            self.eval_status.emit(f"{getattr(self, '_eval_experiment', 'E1')} evaluation failed: {payload[:300]}")
             self.eval_finished.emit(None)

@@ -33,6 +33,7 @@ import mcns  # noqa: E402
 
 CACHE_DIR = mcns.DERIVED
 OTHER_BODY = -1
+SHUFFLE_MODES = ("degree", "class")
 
 
 @dataclass
@@ -180,13 +181,33 @@ class BuiltNetwork:
         assert (self.ids[idx] == body_ids).all(), "bodyId not in the network"
         return idx
 
-    def shuffled(self, seed: int) -> "BuiltNetwork":
+    def shuffled(self, seed: int, mode: str = "degree") -> "BuiltNetwork":
         """The control: same neurons, same signs, same in/out edge counts, edges rewired at random
-        (circuit.shuffle_edges, then the identical normalisation)."""
+        (circuit.shuffle_edges, then the identical normalisation). mode "class" (docs/SPEC_phase3.md section 5) permutes
+        the post column only among edges whose post neuron is in the same tier group (an output or sensory population by
+        name, KC, MBON, DAN, or interior), so random wiring cannot land input on an output cell that has few inputs."""
+        if mode not in SHUFFLE_MODES:
+            raise ValueError(f"shuffle mode {mode!r} not in {SHUFFLE_MODES}")
         e = pd.DataFrame({"body_pre": self.pre, "body_post": self.post, "weight": self.syn})
-        s = circuit.shuffle_edges(e, seed=seed)
-        return BuiltNetwork(self.ids, self.side, self.signs, self.pops, self.pre, s["body_post"].to_numpy(),
-                            self.syn, self.total_in, self.rule, twin_of={"seed": seed, "real_hash": self.build_hash()})
+        if mode == "degree":
+            post = circuit.shuffle_edges(e, seed=seed)["body_post"].to_numpy()
+        else:
+            post = self.post.copy()
+            rng = np.random.default_rng(seed)
+            group = self.tier_groups()[self.post]
+            for g in np.unique(group):
+                rows = np.flatnonzero(group == g)
+                post[rows] = self.post[rows[rng.permutation(len(rows))]]
+        return BuiltNetwork(self.ids, self.side, self.signs, self.pops, self.pre, post,
+                            self.syn, self.total_in, self.rule,
+                            twin_of={"seed": seed, "real_hash": self.build_hash(), "mode": mode})
+
+    def tier_groups(self) -> np.ndarray:
+        """Group label per neuron: its (first) manifest population, or -1 for interior neurons."""
+        group = np.full(self.n_neurons, -1, dtype=np.int64)
+        for k, idx in enumerate(self.pops.values()):
+            group[idx] = k
+        return group
 
     def edge_report(self) -> dict:
         """Both edge counts, and what dropping unknown-transmitter neurons as sources did. `built_edges` are the
@@ -242,7 +263,7 @@ def build(manifest: Manifest | None = None, cache: bool = True) -> BuiltNetwork:
 
 
 def default_path() -> Path:
-    return CACHE_DIR / "brain_k3_N5.npz"
+    return CACHE_DIR / "brain_k3_N5_p3.npz"     # Phase 3: LC10a in the manifest (the Phase 1 file brain_k3_N5.npz is kept)
 
 
 def load_or_build(path: Path | None = None) -> BuiltNetwork:

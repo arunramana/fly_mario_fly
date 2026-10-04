@@ -16,6 +16,8 @@ from typing import Protocol
 
 import numpy as np
 
+from brain import calibration as C
+
 
 @dataclass(frozen=True)
 class Stimulus:
@@ -54,3 +56,64 @@ class LoomingMechanism:
                 ids.append(b)
                 vals.append(np.full(len(b), v))
         return Stimulus(np.concatenate(ids), np.concatenate(vals), self.name)
+
+
+# ---- Phase 3: LC10a mechanisms (docs/SPEC_phase3.md section 4) ------------------------------------------------------------
+def azimuth_shares(azimuth_deg: float, split_deg: float) -> tuple[float, float]:
+    """(left share, right share) of a target at `azimuth_deg` (negative = left of Mario, positive = right): the same-side
+    eye carries it. Beyond +-split_deg the target drives one side only; straight ahead both sides equally."""
+    r = min(1.0, max(0.0, 0.5 + azimuth_deg / (2.0 * split_deg)))
+    return 1.0 - r, r
+
+
+class TargetMechanism:
+    """Base of the two LC10a mechanisms. LC10a neurons respond to small moving objects (Ribeiro et al. 2018 Cell 174:607);
+    left LC10a = left eye. The only population named is LC10a, so Brain.apply refuses anything deeper."""
+    populations = ("LC10a",)
+    name = "target"
+    evidence = ""
+
+    def __init__(self, network):
+        idx = network.pops["LC10a"]
+        self._ids = {s: network.ids[idx[network.side[idx] == s]] for s in ("L", "R")}
+
+    def drive(self, drive_left: float, drive_right: float) -> Stimulus:
+        ids = np.concatenate([self._ids["L"], self._ids["R"]])
+        vals = np.concatenate([np.full(len(self._ids["L"]), drive_left), np.full(len(self._ids["R"]), drive_right)])
+        return Stimulus(ids, vals, self.name)
+
+
+class PursuitMechanism(TargetMechanism):
+    """Pursuit of a small moving object seen on screen: the same-side eye drives an ipsilateral turn (Ribeiro et al. 2018;
+    Hindmarsh Sten et al. 2021 Nature 595:549; the turn direction is the same-side-eye assumption). Drive per side =
+    LC10A_GAIN * arousal * salience * share(azimuth); `arousal` is a fly-state INPUT in [0, 1] set in the tool
+    (SenseSettings.pursuit_arousal), never read from the fly's own output. Which object kinds count is a per-object setting (brain/settings.py)."""
+    name = "pursuit"
+    evidence = ("Ribeiro et al. 2018 Cell 174:607; Hindmarsh Sten et al. 2021 Nature 595:549 (snippet level); "
+                "gain scaled by a fly-state (arousal) input set in the tool; locomotion state raises visual gain in flies "
+                "(Chiappe 2010, Maimon 2010, from memory)")
+
+    def __init__(self, network, gain: float | None = None, split_deg: float | None = None):
+        super().__init__(network)
+        self.gain = C.LC10A_GAIN if gain is None else gain
+        self.split_deg = C.LC10A_AZIMUTH_SPLIT if split_deg is None else split_deg
+
+    def encode(self, azimuth_deg: float, salience: float, arousal_state: float) -> Stimulus:
+        left, right = azimuth_shares(azimuth_deg, self.split_deg)
+        k = self.gain * arousal_state * salience
+        return self.drive(k * left, k * right)
+
+
+class HomeLandmarkMechanism(TargetMechanism):
+    """Home landmark: a persistent static cue on the right, strength GOAL_CUE_SALIENCE (a world property, invented, counted).
+    It moves the 'go right' assumption into the senses; it does not remove it. Not a visible object, and LC10a prefers
+    small moving objects, so the literature does not license a static cue."""
+    name = "home_landmark"
+    evidence = "invented world-level cue (GOAL_CUE_SALIENCE); enters at right LC10a only"
+
+    def __init__(self, network, salience: float | None = None):
+        super().__init__(network)
+        self.salience = C.GOAL_CUE_SALIENCE if salience is None else salience
+
+    def encode(self) -> Stimulus:
+        return self.drive(0.0, self.salience)

@@ -76,3 +76,11 @@ class Calibration:
     @staticmethod
     def file_hash(path: Path = CALIBRATION_FILE) -> str:
         return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+
+# Phase 3 (docs/SPEC_phase3.md section 3). Invented scalars, each fixed by a rule written before the test and run once on
+# synthetic stimuli (a small moving dot, a static cue on the right) with `python -m brain.senses_calibrate`; never on game outcomes.
+LC10A_GAIN = 16.0           # pursuit: per-neuron LC10a drive (rad read as Hz, as looming) at full arousal; midpoint of the window
+LC10A_AZIMUTH_SPLIT = 90.0  # deg: azimuth at which a target is fully lateralised (share 0 / 1 beyond +-SPLIT)
+GOAL_CUE_SALIENCE = 15.0    # home landmark: per-neuron drive onto the right LC10a, a world property set in the tool
+PURSUIT_AROUSAL = 0.65      # fly-state input in [0, 1] scaling pursuit (set in the tool, never read from the fly); midpoint of the window 0.3-1.0
+                            # where the real brain steers right/left/ahead on a synthetic dot and a static dot gives nothing (docs/SPEC_phase3.md section 11)

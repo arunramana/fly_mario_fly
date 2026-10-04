@@ -22,6 +22,7 @@ Validated only on a synthetic ground-level object (tests/test_brain_core.py), ne
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 
 from bridge.perception import _dx
 from mario.entities.kinds import EntityKind
@@ -62,3 +63,50 @@ def enemy_thetas(ram, prev_theta, registry, elevation_limit_deg: float):
             best, best_d = th, d
     theta = {"L": best, "R": best}
     return theta, {s: theta[s] - prev_theta[s] for s in ("L", "R")}, {"L": best_d, "R": best_d}
+
+
+# ---- Phase 3: pursuit target (docs/SPEC_phase3.md section 4) -------------------------------------------------------------
+OBJECT_SLOTS = 6                     # SMB enemy-object slots 0-5: slot 5 holds the power-up (measured on 1-1: type 0x2E, active 1);
+                                     # mario.ram.addresses.N_ENEMY_SLOTS = 5 does not see it, and that frozen constant is left alone
+SCREEN_HALF_PX = 128                 # half the NES screen: dx = +-128 px is azimuth +-90 deg (a fact of the screen, not tuned)
+
+
+@dataclass(frozen=True)
+class PursuitTarget:
+    azimuth_deg: float               # negative = left of Mario, positive = right
+    salience: float                  # elevation weight in [0, 1]
+    slot: int
+    kind: str
+    dx_px: int
+
+
+def visible_positions(ram, registry) -> dict[int, tuple[int, int, int]]:
+    """slot -> (type byte, world x, y byte) for every active enemy-slot object that is on screen: what a change of position
+    is measured against (an object that moves relative to the background changes it; a static one does not)."""
+    from mario.ram.addresses import ADDR_ENEMY_PAGE, ADDR_ENEMY_TYPE, ADDR_ENEMY_X
+    out = {}
+    for slot in range(OBJECT_SLOTS):
+        rec = registry.enemy_record(ram, slot)
+        if rec.active and screen.enemy_on_screen(ram, slot, rec.width):
+            out[slot] = (int(ram[ADDR_ENEMY_TYPE + slot]), int(ram[ADDR_ENEMY_PAGE + slot]) * 256 + int(ram[ADDR_ENEMY_X + slot]),
+                         int(ram[ADDR_ENEMY_Y + slot]))
+    return out
+
+
+def pursuit_target(ram, prev_positions, registry, kinds, elevation_limit_deg: float):
+    """The nearest visible, small (16 px registry sprite), MOVING object whose kind value is in `kinds`. Returns
+    (PursuitTarget | None, positions now). Reads only what is drawn on screen. Azimuth = 90 deg * clip(dx / 128, -1, 1)."""
+    now = visible_positions(ram, registry)
+    mario_x, mario_cy = int(ram[ADDR_MARIO_X]), mario_centre_y(ram)
+    best, best_d = None, None
+    for slot, pos in now.items():
+        rec = registry.enemy_record(ram, slot)
+        if rec.kind.value not in kinds or prev_positions.get(slot) in (None, pos):
+            continue                                  # not a pursued kind, newly seen, or static: nothing to track
+        d = _dx(ram, slot, rec, mario_x, True)
+        elev = math.degrees(math.atan2(abs(enemy_centre_y(ram, slot) - mario_cy), max(abs(d), 1)))
+        w = max(0.0, 1.0 - elev / elevation_limit_deg)
+        if w > 0.0 and (best_d is None or abs(d) < best_d):
+            az = 90.0 * max(-1.0, min(1.0, d / SCREEN_HALF_PX))
+            best, best_d = PursuitTarget(az, w, slot, rec.kind.value, int(d)), abs(d)
+    return best, now

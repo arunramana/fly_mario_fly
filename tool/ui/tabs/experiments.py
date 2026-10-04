@@ -1,11 +1,11 @@
 """tool/ui/tabs/experiments.py -- tab 8: the experiment ladder (docs/REDESIGN_PLAN.md section 4) as a read-only library
-with provenance, plus Run buttons for the experiments that can run today (E1). A run is played in tab 7 (Watch); the
+with provenance, plus Run buttons for the experiments that can run today (E0, E1, E3). A run is played in tab 7 (Watch); the
 real-vs-shuffled evaluation and its results are on tab 10. Nothing here is an input to the brain.
 """
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (QAbstractItemView, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QPushButton, QTableWidget,
+from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QPushButton, QTableWidget,
                                QTableWidgetItem, QTextEdit, QVBoxLayout, QWidget)
 
 from brain.e1 import E1_SEED0   # noqa: F401  (held-out eval seeds, deliberately NOT the Run default)
@@ -65,6 +65,8 @@ class ExperimentsTab(QWidget):
         self.shuffle_spin.setValue(1)
         form.addRow("Shuffle seed (shuffled run)", self.shuffle_spin)
         buttons = QHBoxLayout()
+        self.class_check = QCheckBox("class-preserving shuffle (for the shuffled run; default is degree-preserving)")
+        form.addRow(self.class_check)
         self.run_real_button = QPushButton("Run E1 -- real connectome")
         self.run_shuffled_button = QPushButton("Run E1 -- shuffled connectome")
         self.run_real_button.clicked.connect(lambda: self._run(False))
@@ -72,7 +74,8 @@ class ExperimentsTab(QWidget):
         buttons.addWidget(self.run_real_button)
         buttons.addWidget(self.run_shuffled_button)
         form.addRow(buttons)
-        self.run_note = QLabel("The run plays in tab 7 (Run) with the brain map; the 20-seed real-vs-shuffled evaluation is on tab 10 (Results).")
+        self.run_note = QLabel("The run plays in tab 7 (Run) with the brain map; the 20-seed real-vs-shuffled evaluation is on tab 10 (Results). "
+                               "Pursuit and the home landmark use the settings on tab 9 (Mechanisms), but only in the experiments that list them.")
         self.run_note.setWordWrap(True)
         form.addRow(self.run_note)
         layout.addWidget(box)
@@ -89,8 +92,12 @@ class ExperimentsTab(QWidget):
             return
         self.detail.setHtml(f"<h3>{e.id} -- {e.name}</h3>" + provenance_html(e))
         runnable = e.status == "runnable"
+        self.run_real_button.setText(f"Run {e.id} -- real connectome")
+        self.run_shuffled_button.setText(f"Run {e.id} -- shuffled connectome")
         for b in (self.run_real_button, self.run_shuffled_button):
             b.setEnabled(runnable)
 
     def _run(self, shuffled: bool) -> None:
-        self._window.brain_runs.start_run(self.seed_spin.value(), shuffled, self.shuffle_spin.value())
+        e = self.selected()
+        self._window.brain_runs.start_run(self.seed_spin.value(), shuffled, self.shuffle_spin.value(),
+                                          e.id if e is not None and e.status == "runnable" else "E1", self.class_check.isChecked())

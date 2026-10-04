@@ -67,8 +67,9 @@ seed 1 + i, same noise seed in both arms. The implementer smoke-checks one seed 
 The five numbers (scene walk 60 and settle 50 frames, grace 60, max frames 600, 16 px box) are conventions of the experiment, tagged
 invented in `brain/scalars.py` (31 brain scalars now: 24 invented + 6 calibrated + 1 measured; the sixth is `E1_LESION_CLAMP_HZ`, section 3b).
 
-Note: in the shuffled arm Mario does not stand still after takeover; he retreats Left under noise-driven steering, which is why its
-contact frames spread (116-299): see `docs/NOTE_e1_shuffled_contact_spread.md`. The scene is stationary only at takeover.
+Note: in the shuffled arm Mario does not stand still after takeover; he retreats Left, which is looming-driven (the Goomba's looming
+input reaches MDN through random wiring; with no stimulus the shuffled brain presses Left 0 times, docs/INVESTIGATION_phase3.md rows 10-12; corrected in Phase 3),
+which is why its contact frames spread (116-299): see `docs/NOTE_e1_shuffled_contact_spread.md`. The scene is stationary only at takeover.
 
 ## 3b. GF-lesion control arm (approved-with-fixes round)
 

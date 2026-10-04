@@ -1,5 +1,5 @@
 # What this file does, in plain English:
-# Experiment E1, "jump the Goomba". Mario starts stationary in the E1 scene (the shuffled arm retreats Left under noise) and the
+# Experiment E1, "jump the Goomba". Mario starts stationary in the E1 scene (the shuffled arm's Left presses are looming-driven, not noise) and the
 # first Goomba walks toward him; from the first frame the fly (BrainPolicy) is
 # in control, once with the real connectome and once with a rewired copy. For
 # each run it records whether Mario survived the encounter, whether the Giant
@@ -37,13 +37,15 @@ from brain.scenes import E1_SCENE_ID, SceneSpec, build_scene, check_scene, goomb
 E1_SEED0 = 3000                # held-out: not 1000-1019, 2000-2019 or 9000
 E1_N = 20
 E1_GRACE_FRAMES = 60           # invented convention: alive 1 s after the Goomba stops being a threat
-E1_MAX_FRAMES = 600            # invented bound: the Goomba reaches a Mario who starts stationary in ~150 frames (the shuffled arm retreats Left under noise)
+E1_MAX_FRAMES = 600            # invented bound: the Goomba reaches a Mario who starts stationary in ~150 frames (the shuffled arm's Left presses are looming-driven, not noise)
 SPRITE_PX = 16                 # the registry's sprite width (mario/entities/registry.py); Goomba only
 # Pass criterion of the plan (REDESIGN_PLAN section 4, E1): clears it in >= 16/20 real, shuffled <= 2/20. Reported, not tuned.
 CRITERION = {"real_survived_min": 16, "shuffled_survived_max": 2, "n": 20}
 # Control arms. "lesion_gf": the real connectome with both Giant Fiber (DNp01) cells held at zero output (docs/SPEC_tool_phase2.md
 # 3b). It can be requested only here (eval/CLI); the tool's Run tab, Watch, play and the mechanism library never pass it.
 ARMS = ("real", "shuffled", "lesion_gf")
+SHUFFLED_ARMS = ("shuffled", "shuffled_class")     # shuffled_class (docs/SPEC_phase3.md section 5): not a default arm, via --arms
+ARM_CHOICES = ARMS + ("shuffled_class",)
 LESION_POPULATIONS = ("GF",)
 E1_LESION_CLAMP_HZ = LESION_CLAMP_HZ    # invented convention: a lesioned output cell is held at zero activity
 
@@ -98,7 +100,7 @@ def run_e1_episode(seed: int, shuffle_seed: int | None = None, scene: SceneSpec 
     `arm` is "real", "shuffled" or the control "lesion_gf"; default: "shuffled" if a shuffle seed is given, else "real"."""
     from brain.policy import BrainPolicy
     arm = arm or ("real" if shuffle_seed is None else "shuffled")
-    if arm not in ARMS or (arm == "shuffled") != (shuffle_seed is not None):
+    if arm not in ARM_CHOICES or (arm in SHUFFLED_ARMS) != (shuffle_seed is not None):
         raise ValueError(f"arm {arm!r} with shuffle_seed {shuffle_seed!r}: shuffled needs a shuffle seed, the others none")
     from mario.emulator.env import make_env
     from mario.ram import screen
@@ -107,6 +109,7 @@ def run_e1_episode(seed: int, shuffle_seed: int | None = None, scene: SceneSpec 
     from mario.entities.registry import GOOMBA_TYPE_BYTE
     scene = scene or load_scene()
     policy = BrainPolicy(network=network, calibration=calibration, shuffle_seed=shuffle_seed,
+                         shuffle_mode="class" if arm == "shuffled_class" else "degree",
                          lesion=LESION_POPULATIONS if arm == "lesion_gf" else ())
     env = make_env(scene.level)
     build_scene(env, scene)
@@ -216,7 +219,7 @@ def run_eval(n: int = E1_N, seed0: int = E1_SEED0, workers: int = 1, max_frames:
     """Real connectome vs degree-preserving shuffle (shuffle seed 1 + i) vs the GF-lesion control (real connectome, both GF
     cells silenced), seeds seed0..seed0+n-1, same noise seeds in every arm."""
     from brain.policy import BrainPolicy
-    jobs = [(seed0 + i, 1 + i if arm == "shuffled" else None, max_frames, arm) for arm in arms for i in range(n)]
+    jobs = [(seed0 + i, 1 + i if arm in SHUFFLED_ARMS else None, max_frames, arm) for arm in arms for i in range(n)]
     if workers > 1:
         with mp.get_context("spawn").Pool(workers) as pool:
             results = pool.map(_job, jobs)
@@ -257,7 +260,7 @@ def main(argv=None) -> None:
     ap.add_argument("--seed0", type=int, default=E1_SEED0)
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--max-frames", type=int, default=E1_MAX_FRAMES)
-    ap.add_argument("--arms", nargs="+", choices=ARMS, default=list(ARMS),
+    ap.add_argument("--arms", nargs="+", choices=ARM_CHOICES, default=list(ARMS),
                     help="arms to run; lesion_gf is the control-only GF silencing arm")
     ap.add_argument("--out", default=None, help="write the full result (per-episode rows included) as JSON")
     args = ap.parse_args(argv)

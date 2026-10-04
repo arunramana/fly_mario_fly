@@ -16,7 +16,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from brain.e1 import CRITERION
-from brain.scenes import E1_SCENE_ID
+from brain.goal_eval import CRITERIA, E0_GOAL_X, E0_MAX_FRAMES, E3_MAX_FRAMES
+from brain.scenes import E0_SCENE_ID, E1_SCENE_ID, E3_SCENE_ID
 
 PLAN = "docs/REDESIGN_PLAN.md"
 
@@ -59,8 +60,13 @@ MECHANISMS: tuple[MechanismEntry, ...] = (
     MechanismEntry("expanding_obstacle", "Expanding obstacle", "a wall or pipe ahead", "same looming entry", "feature-level (D1)",
                    "same as looming", PLAN + " 3.3 (built opt-in in the legacy path only)", "planned",
                    "Not ported to the new path yet. Sprite geometry for non-Goomba objects must be re-validated first."),
-    MechanismEntry("food_smell", "Food smell", "a mushroom or '?' block", "attractive olfactory receptor neurons, left and right",
-                   "receptor", "to verify (INVEST_phase0)", PLAN + " 3.3; legacy odour circuit enters mid-pathway", "planned"),
+    MechanismEntry("food_smell", "Food smell (no innate effect; revisit with learning)", "a mushroom or '?' block",
+                   "attractive olfactory receptor neurons, left and right", "receptor",
+                   "docs/INVESTIGATION_phase3.md: on the real wiring attractive receptor neurons never drive walking and drive steering at "
+                   "< 0.3 x threshold even at 200 Hz; their net effect on DNp09 and MDN is inhibitory",
+                   PLAN + " 3.3; legacy odour circuit enters mid-pathway", "no innate effect",
+                   "Kept in the library as an honest innate fail: not used by any experiment. Revisit once the mushroom body can learn "
+                   "(Phase 4)."),
     MechanismEntry("aversive_smell", "Aversive smell", "an enemy", "aversive olfactory receptor neurons", "receptor",
                    "to verify", PLAN + " 3.3", "planned"),
     MechanismEntry("sweet_taste", "Sweet taste (reward)", "touching the mushroom, hitting '?'",
@@ -68,9 +74,22 @@ MECHANISMS: tuple[MechanismEntry, ...] = (
                    "No dopamine injection: reward arrives only through the sensed pathway."),
     MechanismEntry("pain", "Pain or heat (punishment)", "getting hit, dying", "nociceptive neurons, then dopamine neurons through real wiring",
                    "receptor", "to verify", PLAN + " 3.3", "planned"),
-    MechanismEntry("goal_direction", "Goal direction", "'right is the way'", "a light or attractive cue to the right (phototaxis)",
-                   "feature-level (D1)", "to verify", PLAN + " 3.3, decision D2", "planned",
-                   "Replaces the legacy home_bias and walk_drive (both injected drives)."),
+    MechanismEntry("pursuit", "Pursuit of small moving objects", "a visible, small, moving object of a pursued kind (set per object kind "
+                   "on the Mechanisms tab; default: mushroom / other collectibles, a Goomba is NOT pursued)",
+                   "LC10a, left and right (same-side eye -> ipsilateral turn)", "feature-level (D1)",
+                   "Ribeiro et al. 2018 Cell 174:607; Hindmarsh Sten et al. 2021 Nature 595:549 (snippet level; the turn direction is an "
+                   "assumption). Gain is scaled by a fly-state arousal input set in the tool (Chiappe 2010; Maimon 2010, from memory).",
+                   "brain/mechanisms.py PursuitMechanism; docs/SPEC_phase3.md sections 3-4", "built",
+                   "Scalars LC10A_GAIN and LC10A_AZIMUTH_SPLIT are invented, fixed on a synthetic dot test, never on the game. "
+                   "Arousal (PURSUIT_AROUSAL, invented, default fixed on the same synthetic dot test) is a fly-state INPUT set on the Mechanisms tab; "
+                   "nothing reads the fly's own output for it. Necessity control in E3: the real_no_pursuit arm (eval only)."),
+    MechanismEntry("goal_direction", "Home landmark (goal on the right)", "a persistent cue on the right; strength GOAL_CUE_SALIENCE "
+                   "(a world property, set on the Mechanisms tab)", "right LC10a only", "feature-level (D1)",
+                   "invented world-level cue: LC10a prefers small moving objects, so the literature does not license a static cue",
+                   "brain/mechanisms.py HomeLandmarkMechanism; docs/SPEC_phase3.md", "built",
+                   "HONEST LABEL: this moves the 'go right' assumption into the senses; it does not remove it. The scalar is invented and "
+                   "counted. The shuffled arms always receive the same cue. Replaces the legacy home_bias and walk_drive. Necessity control in "
+                   "E0: the real_no_landmark arm (eval only). E0's 20/20 is one deterministic trajectory, not 20 independent successes."),
     MechanismEntry("gap_width", "Gap width", "a pit ahead", "C2/C3 (parallax) toward the central complex", "feature-level (D1)",
                    "Pick & Strauss 2005, Triphan 2010/2016, Krause 2019", PLAN + " 3.3, decision D3", "investigation",
                    "The route in MaleCNS is not yet traced."),
@@ -78,8 +97,12 @@ MECHANISMS: tuple[MechanismEntry, ...] = (
 )
 
 EXPERIMENTS: tuple[ExperimentEntry, ...] = (
-    ExperimentEntry("E0", "Walk to the goal", "flat ground", ("goal_direction",), "reaches the right edge in >= 18/20; shuffled does not",
-                    CONTROLS, PLAN + " section 4", "planned"),
+    ExperimentEntry("E0", "Walk to the goal", E0_SCENE_ID, ("goal_direction",),
+                    f"reaches world x {E0_GOAL_X} within {E0_MAX_FRAMES} frames in >= {CRITERIA['E0']['real_reached_min']}/20; "
+                    f"shuffled <= {CRITERIA['E0']['shuffled_reached_max']}/20 (also reported: frames to reach, GF fired, GF output and TTMn max)",
+                    CONTROLS + "; plus a class-preserving shuffle arm. The landmark is an invented world cue: it moves the 'go right' "
+                    "assumption to the senses, it does not remove it",
+                    PLAN + " section 4; scene brain/scenes/e0_walk_goal.json (level start, enemies cleared)", "runnable", "brain.goal_eval"),
     ExperimentEntry("E1", "Jump the Goomba", E1_SCENE_ID, ("looming",),
                     f"survives the encounter in >= {CRITERION['real_survived_min']}/20; shuffled <= {CRITERION['shuffled_survived_max']}/20 "
                     "(also reported: GF fired before contact, theta and distance at the first GF spike)",
@@ -89,8 +112,15 @@ EXPERIMENTS: tuple[ExperimentEntry, ...] = (
                     "runnable", "brain.e1"),
     ExperimentEntry("E2a", "Obstacle", "one pipe", ("looming", "expanding_obstacle"), "gets past in >= 14/20", CONTROLS, PLAN + " section 4", "planned"),
     ExperimentEntry("E2b", "Gap", "one pit", ("looming", "gap_width"), "crosses crossable gaps, refuses wide ones", CONTROLS, PLAN + " section 4", "planned"),
-    ExperimentEntry("E3", "Find food", "mushroom released from a block", ("looming", "food_smell"), "touches the mushroom in >= 14/20",
-                    CONTROLS, PLAN + " section 4", "planned"),
+    ExperimentEntry("E3", "Pursue the mushroom by sight", E3_SCENE_ID, ("pursuit",),
+                    f"reaches the mushroom within {E3_MAX_FRAMES} frames in >= {CRITERIA['E3']['real_reached_min']}/20; "
+                    f"shuffled <= {CRITERIA['E3']['shuffled_reached_max']}/20 (a Mario who presses nothing does not reach it in that time)",
+                    CONTROLS + "; plus a class-preserving shuffle arm and the necessity control real_no_pursuit (real wiring, pursuit off; E0 has real_no_landmark); both eval-only controls, not selectable in Run/play. Smell is NOT used (no innate effect, see the food_smell mechanism)",
+                    PLAN + " section 4 (smell replaced by sight, docs/INVESTIGATION_phase3.md); scene brain/scenes/e3_mushroom.json "
+                    "(action log, deterministic). Fresh-seed result (seeds 5100-5119): real 20/20 (near-deterministic, median 105.5, "
+                    "frames 102-106), real_no_pursuit 0/20, but the class-shuffle control FAILED (3/20 vs criterion <= 2: class-preserving wiring "
+                    "also reaches the mushroom sometimes). Also: E1 class-shuffled survives 13/20 vs real 12/20, so E1 survival does not separate "
+                    "real from class-preserving wiring", "runnable", "brain.goal_eval"),
     ExperimentEntry("E4", "Learn from reward", "E3 repeated", ("food_smell", "sweet_taste"), "touch rate rises with training; shuffled does not",
                     CONTROLS, PLAN + " section 4", "planned"),
     ExperimentEntry("E5", "Learn from mistakes", "E1 repeated with hits", ("looming", "pain"), "hit rate falls with training", CONTROLS,

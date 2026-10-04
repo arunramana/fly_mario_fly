@@ -25,7 +25,7 @@ Seed 9100 re-run via CLI (--n 1): real survived, GF before contact, theta 41.7 a
 
 Videos: projects/redesign_e1/runs/211a_e1_real_seed9200.mp4 and 211b_e1_shuffled_seed9200.mp4 (+ .md, telemetry CSVs); docs/RUNS.md entry 211 appended. The tool renders no mp4 itself; rendered via render.brain_panel.render_run with the imageio_ffmpeg binary copied to a scratch ffmpeg.exe on PATH (no system ffmpeg).
 
-Surprises: none in the gate. Note for the reader: shuffled arm GF never fires at all, so there is no jump; shuffled Mario retreats Left under noise-driven steering (see docs/NOTE_e1_shuffled_contact_spread.md) and still dies; the real arm's 2 deaths pressed A only 3-4 frames.
+Surprises: none in the gate. Note for the reader: shuffled arm GF never fires at all, so there is no jump; shuffled Mario retreats Left, looming-driven (corrected in Phase 3: the Left is the MDN back rule driven by looming through random wiring, not noise; see docs/NOTE_e1_shuffled_contact_spread.md) and still dies; the real arm's 2 deaths pressed A only 3-4 frames.
 
 ## Round notes (approved-with-fixes, implementer, 2026-10-04)
 
@@ -65,3 +65,14 @@ Pairing: seed lists identical across arms (3000-3019), and `run_e1_episode` call
 Lesion per run: every run died, frames 130, contact frame 120, A frames 0, GF output 0.0 Hz. GF-before-contact in all 20, first GF frame 108-113, theta at GF median 40.0 deg (38.4-43.6), distance median 22 px. Seeds 3018 and 3019: GF at frame 110 (theta 40.0), no A, contact 120, death 130, like the other 18. Real-arm comparison for those two: A held 3 and 4 frames, contact 126/124, death 130.
 
 Reading: with the GF still crossing threshold (20/20, same frames and angles as real) but its output cut, survival goes from 18/20 to 0/20 and no jump (A) is issued in any run. Survival depends on the GF output, not just on threshold crossing. Lesion arm survival equals shuffled (0/20) but by a different route (shuffled: GF never fires; lesion: GF fires, no output). Residual TTMn activity is about 0.01 Hz, effectively none.
+
+## Annotation 2026-10-04 (Phase 3 review)
+
+E1 caveat (stated plainly): the Phase 2 result 18/20 belongs to the Phase 2 network (`brain_k3_N5.npz`, hash `4736dc554136ac98`). On the Phase 3 network
+(`3848f3e70b2051ef`, LC10a added) the same E1 regression gives real 13/20 (the criterion >= 16 FAILS), shuffled 0/20, lesion 0/20, on the previously used
+seeds 3000-3019, so it is not a fresh held-out result. The GF still fires before contact in 20/20; deaths held A for 4-9 frames against 11-20 for survivors.
+The cause was not diagnosed (a correlation only).
+
+## Annotation 2026-10-04 (reviewer, append)
+
+On fresh seeds 3100-3119 the Phase 3 network gives E1 real 12/20 (FAILS >= 16), matching 13/20 on replayed seeds (not seed luck), while the class-preserving shuffle survives 13/20: near-equal with overlapping CIs, so E1 survival does not separate the real wiring from class-preserving rewiring. The A-hold diagnosis is correlational (brain-only, not a paired closed-loop test). See docs/RUNS.md entry 217.

@@ -75,7 +75,7 @@ def test_experiments_library_lists_the_ladder_read_only_with_provenance(window):
 
 def test_mechanisms_library_labels_each_mechanisms_input_tier(window):
     tab = _tab(window, "mechanisms")
-    assert tab.table.rowCount() == 9
+    assert tab.table.rowCount() == 10
     html = tab.detail.toHtml()
     assert "LPLC2" in html and "feature-level (D1)" in html and "E1" in html
     tab.table.selectRow(2)
@@ -160,3 +160,108 @@ def test_the_results_evaluation_runs_in_a_child_process_and_is_saved(qtbot, wind
     qtbot.waitUntil(lambda: tab.summary_table.item(0, 0) is not None, timeout=10_000)
     assert tab.summary_table.item(0, 1).text().endswith("/1") and tab.summary_table.item(1, 0).text() == "shuffled"
     assert tab.summary_table.rowCount() == 3 and tab.summary_table.item(2, 0).text() == "lesion_gf (control)"
+
+
+# ---- Phase 3 (docs/SPEC_phase3.md): E0 / E3 in the tool, Mechanisms settings ------------------------------------------------------
+def _fake_goal_eval(experiment="E0"):
+    def arm(k):
+        return {"n": 20, "reached": k, "reached_ci": [0.1, 0.3], "deaths": 0, "timeouts": 20 - k, "lost": 0, "collected": 0,
+                "gf_fired": 3 if k == 0 else 0, "a_pressed_runs": 0, "gf_output_max_hz": 6.0 if k == 0 else 0.0, "ttmn_max_hz": 0.07,
+                "frames_to_reach": {"n": k, "median": 135.0 if k else None}, "left_frames_mean": 600.0 if k == 0 else 0.0, "max_x_median": 40.0}
+    ep = {"experiment": experiment, "arm": "real", "seed": 4000, "shuffle_seed": None, "reached": True, "outcome": "reached", "died": False,
+          "frames": 135, "reached_frame": 135, "max_x": 402, "gf_fired": False, "first_gf_frame": None, "gf_output_max_hz": 0.0,
+          "ttmn_max_hz": 0.009, "a_pressed": False, "a_frames": 0, "left_frames": 0, "right_frames": 135, "b_frames": 135, "collected": False}
+    return {"experiment": experiment, "metric": "reached world x 400 within 600 frames", "seeds": [4000, 4019], "max_frames": 600,
+            "scene": {"id": "e0_walk_goal", "scene_hash": "abc"}, "stamp": {"build_hash": "h", "neurons": 16464, "calibration_hash": "c",
+                                                                           "senses": {"pursuit_kinds": [], "goal_cue_salience": 15.0}},
+            "criterion": {"real_reached_min": 18, "shuffled_reached_max": 2, "n": 20},
+            "arms": ["real", "shuffled", "shuffled_class", "real_no_landmark"], "real": arm(19), "shuffled": arm(0), "shuffled_class": arm(0),
+            "real_no_landmark": arm(0),
+            "episodes": [ep, {**ep, "arm": "shuffled", "reached": False, "outcome": "timeout", "reached_frame": None},
+                         {**ep, "arm": "shuffled_class", "reached": False, "outcome": "timeout", "reached_frame": None},
+                         {**ep, "arm": "real_no_landmark", "reached": False, "outcome": "timeout", "reached_frame": None}]}
+
+
+def test_results_shows_an_e0_evaluation_with_gf_and_ttmn_fields_for_every_arm(window):
+    from tool.core.brain_runner import save_brain_eval
+    from tool.ui.tabs import results
+    save_brain_eval(PROJECT_NAME, _fake_goal_eval())
+    tab = _tab(window, "results")
+    tab.refresh()
+    assert tab.summary_table.rowCount() == 4 and tab.summary_table.item(2, 0).text().startswith("shuffled_class")
+    assert tab.summary_table.item(3, 0).text() == "real_no_landmark (control)"           # control-only, labelled like the lesion arm
+    headers = [tab.summary_table.horizontalHeaderItem(c).text() for c in range(tab.summary_table.columnCount())]
+    assert "GF crossed threshold" in headers and "GF output / TTMn max (Hz)" in headers
+    assert tab.summary_table.item(1, 8).text() == "6.00 / 0.070" and tab.summary_table.item(0, 1).text() == "19/20"
+    assert "met" in tab.criterion_label.text() and "not met" not in tab.criterion_label.text()
+    assert tab.episode_table.rowCount() == 4 and "E0" in tab.header_label.text() and "senses" in tab.header_label.text()
+    tab.experiment_combo.setCurrentText("E3")
+    assert "5100-5119" in tab.run_button.text() and "held-out, run once" in tab.run_button.text()
+    bad = _fake_goal_eval()
+    bad["real"]["reached"] = 5
+    assert "not met" in results.criterion_text(bad)
+
+
+def test_e1_results_still_show_the_gf_and_ttmn_columns(window):
+    from tool.core.brain_runner import save_brain_eval
+    save_brain_eval(PROJECT_NAME, _fake_eval())
+    tab = _tab(window, "results")
+    tab.refresh()
+    headers = [tab.summary_table.horizontalHeaderItem(c).text() for c in range(tab.summary_table.columnCount())]
+    assert "GF crossed threshold" in headers and "GF output / TTMn max (Hz)" in headers
+
+
+def test_experiments_tab_runs_e0_and_e3_and_keeps_the_development_seed(window):
+    tab = _tab(window, "experiments")
+    for row, eid in ((0, "E0"), (4, "E3")):
+        tab.table.selectRow(row)
+        assert tab.selected().id == eid and tab.run_real_button.isEnabled()
+        assert eid in tab.run_real_button.text() and eid in tab.run_shuffled_button.text()
+    assert tab.seed_spin.value() == 9100
+    assert "landmark" in tab.run_note.text() and tab.class_check.text().startswith("class-preserving")
+
+
+def test_mechanisms_tab_has_the_per_object_pursuit_setting_and_the_landmark_strength(window):
+    from brain import calibration as C
+    from tool.core.brain_runner import load_sense_settings
+    tab = _tab(window, "mechanisms")
+    assert set(tab.kind_checks) == {"goomba", "koopa", "enemy", "powerup"}
+    assert tab.kind_checks["powerup"].isChecked() and not tab.kind_checks["goomba"].isChecked()      # Goomba NOT pursued by default
+    assert tab.landmark_spin.value() == C.GOAL_CUE_SALIENCE
+    tab.kind_checks["goomba"].setChecked(True)
+    tab.landmark_spin.setValue(9.5)
+    assert tab.arousal_spin.value() == C.PURSUIT_AROUSAL and (tab.arousal_spin.minimum(), tab.arousal_spin.maximum()) == (0.0, 1.0)
+    tab.arousal_spin.setValue(0.4)
+    saved = load_sense_settings(PROJECT_NAME)
+    assert set(saved.pursuit_kinds) == {"powerup", "goomba"} and saved.goal_cue_salience == 9.5 and saved.pursuit_arousal == 0.4
+    assert tab.settings() == saved
+    html = tab.detail.toHtml()
+    tab.table.selectRow(next(i for i, m in enumerate(__import__("brain.library", fromlist=["x"]).MECHANISMS) if m.id == "goal_direction"))
+    text = tab.detail.toPlainText()
+    assert "does not remove it" in text and "invented" in text                                         # the honest label
+    tab.table.selectRow(2)
+    assert "no innate effect" in tab.detail.toPlainText().lower() or "no innate effect" in tab.table.item(2, 0).text().lower()
+
+
+def test_goal_run_note_is_auto_filled(clean_project):
+    from tool.core.brain_runner import write_brain_run_note
+    e = {"experiment": "E0", "arm": "shuffled", "shuffle_seed": 1, "frames": 600, "outcome": "timeout", "reached": False,
+         "reached_frame": None, "max_x": 40, "gf_fired": True, "first_gf_frame": 50, "gf_output_max_hz": 6.0, "ttmn_max_hz": 0.073,
+         "a_pressed": False, "a_frames": 0, "left_frames": 600, "right_frames": 0, "b_frames": 600}
+    text = write_brain_run_note(PROJECT_NAME, 2, "002_e0_shuffled_seed9100", 9100, {"experiment": "E0", "episode": e}).read_text(encoding="utf-8")
+    assert "fill in" not in text and "E0 walk to the goal" in text and "Left pressed 600" in text and "6.00 Hz" in text
+
+
+@needs_net
+def test_an_e0_run_is_recorded_and_loads_in_the_watch_tab(window):
+    from tool.core.brain_runner import run_brain_one, write_brain_run_note
+    from tool.core.run_store import list_runs, record_run
+    slug = "001_e0_real_seed9100"
+    tel, info, spec = run_brain_one(PROJECT_NAME, slug, 9100, None, experiment="E0")
+    assert spec["kind"] == "brain_e0" and info["episode"]["reached"] and info["actions_prefix_len"] == 0
+    assert {"arousal", "pursuit_az"} <= set(tel.columns)
+    record_run(PROJECT_NAME, 1, slug, 9100, info, spec)
+    write_brain_run_note(PROJECT_NAME, 1, slug, 9100, info)
+    window.run_tab.refresh_history(list_runs(PROJECT_NAME))
+    window.load_history_run(list_runs(PROJECT_NAME)[0])
+    assert window.run_tab.player._n_frames == len(tel)

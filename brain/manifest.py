@@ -71,6 +71,8 @@ class MotorRow:
 POPULATIONS = (
     Population("LC4", SENSORY, Select(types=("LC4",)), 126, "vision entry tier D1: loom speed (Ache 2019)"),
     Population("LPLC2", SENSORY, Select(types=("LPLC2",)), 185, "vision entry tier D1: loom size (Ache 2019)"),
+    Population("LC10a", SENSORY, Select(types=("LC10a",)), 275,
+               "vision entry tier D1: small moving object (pursuit) and the home landmark (Ribeiro 2018; Phase 3)"),
     Population("ORN", SENSORY, Select(cls="olfactory"), 2639, "olfactory receptor neurons (no mechanism yet)"),
     Population("GRN_head", SENSORY, Select(cls="gustatory", superclass="cb_sensory"), 275,
                "head taste neurons (no mechanism yet)"),
@@ -89,6 +91,7 @@ POPULATIONS = (
 # Segmented union (docs/INVEST_phase0.md 2.4 B). The whole mushroom body is added on top.
 SEGMENTS = (
     Segment("vision->outputs", ("LC4", "LPLC2"), ("GF", "TTMn", "DNp09", "DNa01", "DNa02", "MDN")),
+    Segment("LC10a->outputs", ("LC10a",), ("GF", "TTMn", "DNp09", "DNa01", "DNa02", "MDN")),
     Segment("ORN->KC", ("ORN",), ("KC",)),
     Segment("GRN->DAN", ("GRN_head",), ("DAN",)),
     Segment("thermo->DAN", ("THERMO",), ("DAN",)),

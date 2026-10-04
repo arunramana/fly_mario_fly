@@ -25,12 +25,14 @@ a_frames=0 is true; the presses are Left (and some B/R), not A.
 
 **Validity of the shuffled control.** It does not affect the verdict. Every shuffled episode dies, with zero GF
 spikes and zero A presses, so survival is 0/20 either way. The spread is delayed passive death, because the
-shuffled fly's noise-driven Left walking happens to be a bit of accidental retreat. Caveats: (1) "Mario stationary"
+shuffled fly's looming-driven Left walking happens to be a bit of accidental retreat. Caveats: (1) "Mario stationary"
 is not true for the shuffled arm; describe it as "no jump", not "no movement"; (2) any metric using contact_frame,
 or time to death, compared across arms is confounded by this retreat; (3) the retreat means the Goomba can
 in principle be outrun in a longer scene, so a max_frames larger than 600 is not an issue here (death at 308) but
 a scene with more room to the left could let a noisy shuffled arm survive by walking away, which would be a
 fly-driven (not forced) behaviour, still not a jump.
 
-**Open question.** Why the shuffled network drives DNa01/DNa02 into Left so often while the real one does not
-(mean pooled DNa01 0.0137, DNa02 0.0133 in seed 9303 shuffled) was not investigated.
+**Open question (answered in Phase 3, docs/INVESTIGATION_phase3.md rows 10-12).** Why the shuffled network presses Left so often while the real one does not:
+the Left is looming-driven, not noise. Replaying seed 9200 reproduces all 91 Left frames to 1e-16 and with no stimulus the same brain presses Left 0 times;
+the looming input (LPLC2) reaches MDN through random wiring and Left comes from the MDN "back" rule (backing up = Left button; Left beats Right).
+Earlier wording in this note, "noise-driven", was wrong.

@@ -59,6 +59,10 @@ def _constants() -> list[BrainScalar]:
         S("MOTOR_FLOOR_HZ", C.MOTOR_FLOOR_HZ, "Hz", INVENTED, 0.0, 0.1, "a motor threshold is never below this"),
         S("ELEVATION_LIMIT_DEG", C.ELEVATION_LIMIT_DEG, "deg", INVENTED, 10.0, 90.0,
           "elevation beyond which an object leaves the looming field (same as the validated bio_strict path)"),
+        S("LC10A_GAIN", C.LC10A_GAIN, "Hz per unit salience", INVENTED, 0.0, 100.0, "pursuit drive onto LC10a at full arousal; midpoint of the window where the real brain steers correctly and MDN stays silent (docs/SPEC_phase3.md section 3, synthetic dot test only)"),
+        S("LC10A_AZIMUTH_SPLIT", C.LC10A_AZIMUTH_SPLIT, "deg", INVENTED, 1.0, 90.0, "azimuth beyond which a target drives one LC10a side only; largest candidate that still steers and walks correctly on the synthetic dot test (docs/SPEC_phase3.md section 3)"),
+        S("PURSUIT_AROUSAL", C.PURSUIT_AROUSAL, "fraction", INVENTED, 0.0, 1.0, "default of the tool's fly-state arousal input that scales pursuit; midpoint of the window where the real brain steers correctly on a synthetic dot and a static dot gives nothing (docs/SPEC_phase3.md section 11). Not read from the fly's output"),
+        S("GOAL_CUE_SALIENCE", C.GOAL_CUE_SALIENCE, "Hz", INVENTED, 0.0, 100.0, "home landmark: static drive onto the right LC10a. It moves the 'go right' assumption to the senses, it does not remove it; midpoint of the window where the real brain walks right and nothing presses Left (docs/SPEC_phase3.md section 3)"),
         S("K_HOPS", M.K_HOPS, "hops", INVENTED, 1, 6, "network rule: neurons within k hops of a path (INVEST_phase0 2.4 B)"),
         S("MIN_SYNAPSES", M.MIN_SYNAPSES, "synapses", INVENTED, 1, 50, "network rule: smallest connection kept (INVEST_phase0 2.4 B)"),
     ] + [S(f"CALIBRATION_LV_MS[{i}]", v, "ms", INVENTED, 5, 200, "disc speeds used to derive the GF threshold") for i, v in enumerate(C.CALIBRATION_LV_MS)]
@@ -73,9 +77,25 @@ def _experiments() -> list[BrainScalar]:
         S("E1_SCENE_WALK_FRAMES", log[0][1], "frames", INVENTED, 1, 300, "scene log: run right from reset until the first Goomba is on screen (checked only that it is)"),
         S("E1_SCENE_SETTLE_FRAMES", log[1][1], "frames", INVENTED, 1, 120, "scene log: release all buttons so Mario's x speed decays to zero"),
         S("E1_GRACE_FRAMES", e1.E1_GRACE_FRAMES, "frames", INVENTED, 1, 600, "survived = alive this long after the Goomba stops being a threat (1 s)"),
-        S("E1_MAX_FRAMES", e1.E1_MAX_FRAMES, "frames", INVENTED, 100, 3000, "episode bound; the Goomba reaches a Mario who starts stationary in ~150 frames (the shuffled arm retreats Left under noise)"),
+        S("E1_MAX_FRAMES", e1.E1_MAX_FRAMES, "frames", INVENTED, 100, 3000, "episode bound; the Goomba reaches a Mario who starts stationary in ~150 frames (the shuffled arm's Left presses are looming-driven, not noise)"),
         S("E1_SPRITE_PX", e1.SPRITE_PX, "px", INVENTED, 8, 32, "contact box = the registry's 16 px sprite width (Goomba and small Mario only)"),
         S("E1_LESION_CLAMP_HZ", e1.E1_LESION_CLAMP_HZ, "Hz", INVENTED, 0.0, 0.0, "control-only lesion arm: both Giant Fiber cells held at zero output (removal, never injection); 0 is the definition of silenced"),
+    ] + _phase3_experiments()
+
+
+def _phase3_experiments() -> list[BrainScalar]:
+    """E0 and E3 conventions (docs/SPEC_phase3.md section 6): experiment definitions fixed before any run, not circuit scalars."""
+    from brain import goal_eval
+    from brain.scenes import E3_SCENE_ID, load_scene
+    S, log = BrainScalar, load_scene(E3_SCENE_ID).log
+    return [
+        S("E0_GOAL_X", goal_eval.E0_GOAL_X, "px", INVENTED, 100, 440, "E0 goal: world x on the flat stretch before the first pipe (x = 448); reached = Mario's x at or beyond it"),
+        S("E0_MAX_FRAMES", goal_eval.E0_MAX_FRAMES, "frames", INVENTED, 100, 3000, "E0 episode bound (10 s)"),
+        S("E3_MAX_FRAMES", goal_eval.E3_MAX_FRAMES, "frames", INVENTED, 50, 3000, "E3 episode bound: below the frame (183) at which the returning mushroom reaches a Mario who presses nothing, so passivity cannot pass"),
+        S("E3_SCENE_WALK_FRAMES", log[0][1], "frames", INVENTED, 1, 300, "scene log: walk right to the first power-up block (checked only that a mushroom is released)"),
+        S("E3_SCENE_STAND_FRAMES", log[1][1], "frames", INVENTED, 1, 120, "scene log: stand still under the block"),
+        S("E3_SCENE_JUMP_FRAMES", log[2][1], "frames", INVENTED, 1, 60, "scene log: A held to jump straight up and hit the block"),
+        S("E3_SCENE_LAND_FRAMES", log[3][1], "frames", INVENTED, 1, 120, "scene log: release everything so Mario lands and stands still"),
     ]
 
 
