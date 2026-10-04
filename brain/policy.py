@@ -25,12 +25,13 @@ from mario.entities.registry import DEFAULT as DEFAULT_REGISTRY
 
 class BrainPolicy:
     def __init__(self, network: builder.BuiltNetwork | None = None, calibration: Calibration | None = None,
-                 shuffle_seed: int | None = None):
+                 shuffle_seed: int | None = None, lesion: tuple[str, ...] = ()):
+        """`lesion` is a control-only argument, passed by brain/e1.py's `lesion_gf` arm and nothing else."""
         net = network or builder.load_or_build()
         if shuffle_seed is not None:
             net = net.shuffled(shuffle_seed)
         self.cal = calibration or Calibration.load()
-        self.brain = Brain(net, self.cal)
+        self.brain = Brain(net, self.cal, lesion=lesion)
         self.looming = LoomingMechanism(net)
         self.brain.attach(self.looming)
         self.motor = MotorMap(self.cal.motor)
@@ -43,10 +44,12 @@ class BrainPolicy:
         self.brain.reset(seed)
         self.motor.reset()
         self._prev_theta = {"L": 0.0, "R": 0.0}
+        self.last_theta, self.last_distance = 0.0, None     # what the fly saw last frame (rad, px), for records only
 
     def act(self, observation) -> int:
-        theta, dtheta, _ = enemy_thetas(observation.ram, self._prev_theta, self._registry, ELEVATION_LIMIT_DEG)
+        theta, dtheta, dist = enemy_thetas(observation.ram, self._prev_theta, self._registry, ELEVATION_LIMIT_DEG)
         self._prev_theta = theta
+        self.last_theta, self.last_distance = theta["L"], dist["L"]
         self.brain.apply(self.looming.encode(theta, dtheta))
         self.last_readout = self.brain.step_frame()
         self.last_buttons = b = self.motor.read(self.last_readout)

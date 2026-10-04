@@ -40,13 +40,13 @@ def test_a_dummy_tab_entry_appears_in_the_tab_widget(qtbot, clean_project, dummy
     window = MainWindow(project)
     qtbot.addWidget(window)
 
-    assert window.tabs.count() == 8
-    assert window.tabs.tabText(7) == "8 Dummy"
-    assert isinstance(window.tabs.widget(7), QLabel)
+    assert window.tabs.count() == 11
+    assert window.tabs.tabText(10) == "8 Dummy"
+    assert isinstance(window.tabs.widget(10), QLabel)
     window.save()
 
 
-def test_the_real_registry_still_builds_exactly_seven_tabs_without_the_dummy(qtbot, clean_project):
+def test_the_real_registry_still_builds_exactly_ten_tabs_without_the_dummy(qtbot, clean_project):
     from tool.core.project import ToolProject
     from tool.ui.main_window import MainWindow
 
@@ -54,7 +54,7 @@ def test_the_real_registry_still_builds_exactly_seven_tabs_without_the_dummy(qtb
     window = MainWindow(project)
     qtbot.addWidget(window)
 
-    assert window.tabs.count() == 7
+    assert window.tabs.count() == 10
     assert window.character_tab is window.tabs.widget(0)
     assert window.run_tab is window.tabs.widget(6)
     window.save()

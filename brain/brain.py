@@ -28,6 +28,9 @@ from fly.network.integrator import Integrator
 from fly.network.network import Network
 
 
+LESION_CLAMP_HZ = 0.0     # activity a lesioned output cell is held at: silenced (registered as E1_LESION_CLAMP_HZ)
+
+
 class StimulusError(ValueError):
     """Raised when a stimulus names a neuron that is not in the manifest's sensory tier."""
 
@@ -49,7 +52,7 @@ class Readout:
 
 class Brain:
     def __init__(self, network: BuiltNetwork, calibration: Calibration, manifest: Manifest | None = None,
-                 seed: int = 0, calibration_hash: str | None = None):
+                 seed: int = 0, calibration_hash: str | None = None, lesion: tuple[str, ...] = ()):
         real_hash = network.build_hash() if network.twin_of is None else network.twin_of["real_hash"]
         if calibration.network_hash != real_hash:
             raise ValueError(f"calibration was derived on network {calibration.network_hash}, this is {real_hash}: "
@@ -69,6 +72,15 @@ class Brain:
             idx = network.pops[name]
             for s in ("L", "R"):
                 self._out[(name, s)] = idx[network.side[idx] == s]
+        # Control-only lesion (E1 eval's `lesion_gf` arm, docs/SPEC_tool_phase2.md 3b): the named OUTPUT populations are
+        # held at zero activity after every step, i.e. their output edges carry nothing. This removes activity; it never
+        # adds current. Their own membrane still integrates, so `gf_spiked` still reports a threshold crossing.
+        bad = [n for n in lesion if n not in self.manifest.names(OUTPUT)]
+        if bad:
+            raise ValueError(f"lesion applies to output-tier populations only, not {bad}")
+        self.lesioned = tuple(lesion)
+        self._lesion_idx = (np.sort(np.concatenate([network.pops[n] for n in self.lesioned]))
+                            if self.lesioned else None)
         self.reset(seed)
 
     # ---- stimulus API: the only way in ------------------------------------------------------------------------
@@ -113,14 +125,20 @@ class Brain:
         spiked, mem = False, 0.0
         for _ in range(self.cal.substeps):
             h = self._net.step(self._current, noise=self._noise)
+            spiked |= bool(self._net.just_spiked.any())      # threshold crossing, read BEFORE any lesion clamp
+            if self._lesion_idx is not None:
+                self._net.h[self._lesion_idx] = LESION_CLAMP_HZ          # control-only lesion: remove the output, add nothing
             for k, idx in self._out.items():
                 acc[k] += h[idx].mean()
-            spiked |= bool(self._net.just_spiked.any())
             mem = max(mem, float(self._net.integrator.mem.max()))
         self._net.flush_denormals()
         self._current = np.zeros(self.network.n_neurons)
         self._frame += 1
         return Readout({k: v / self.cal.substeps for k, v in acc.items()}, spiked, mem, self._frame)
+
+    def population_rate(self, name: str) -> float:
+        """Mean rate (Hz) of a population at the last substep. Read-only: for telemetry and the tool's brain map."""
+        return float(self._net.h[self.network.pops[name]].mean())
 
     # ---- the record --------------------------------------------------------------------------------------------
     def stamp(self) -> dict:
@@ -129,4 +147,4 @@ class Brain:
                 "neurons": self.network.n_neurons, "edges": self.network.n_edges,
                 **self.network.edge_report(),
                 "calibration_hash": self.calibration_hash, "mechanisms": [m.name for m in self.mechanisms],
-                "shuffled": self.network.twin_of}
+                "lesion": list(self.lesioned), "shuffled": self.network.twin_of}

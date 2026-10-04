@@ -64,6 +64,21 @@ def _constants() -> list[BrainScalar]:
     ] + [S(f"CALIBRATION_LV_MS[{i}]", v, "ms", INVENTED, 5, 200, "disc speeds used to derive the GF threshold") for i, v in enumerate(C.CALIBRATION_LV_MS)]
 
 
+def _experiments() -> list[BrainScalar]:
+    """E1 scene and evaluation conventions (docs/SPEC_tool_phase2.md). Conventions of the experiment, fixed before any run."""
+    from brain import e1
+    from brain.scenes import load_scene
+    S, log = BrainScalar, load_scene().log
+    return [
+        S("E1_SCENE_WALK_FRAMES", log[0][1], "frames", INVENTED, 1, 300, "scene log: run right from reset until the first Goomba is on screen (checked only that it is)"),
+        S("E1_SCENE_SETTLE_FRAMES", log[1][1], "frames", INVENTED, 1, 120, "scene log: release all buttons so Mario's x speed decays to zero"),
+        S("E1_GRACE_FRAMES", e1.E1_GRACE_FRAMES, "frames", INVENTED, 1, 600, "survived = alive this long after the Goomba stops being a threat (1 s)"),
+        S("E1_MAX_FRAMES", e1.E1_MAX_FRAMES, "frames", INVENTED, 100, 3000, "episode bound; the Goomba reaches a Mario who starts stationary in ~150 frames (the shuffled arm retreats Left under noise)"),
+        S("E1_SPRITE_PX", e1.SPRITE_PX, "px", INVENTED, 8, 32, "contact box = the registry's 16 px sprite width (Goomba and small Mario only)"),
+        S("E1_LESION_CLAMP_HZ", e1.E1_LESION_CLAMP_HZ, "Hz", INVENTED, 0.0, 0.0, "control-only lesion arm: both Giant Fiber cells held at zero output (removal, never injection); 0 is the definition of silenced"),
+    ]
+
+
 def _derived(cal: C.Calibration) -> list[BrainScalar]:
     """Numbers worked out on synthetic stimuli (disc or rest test); they carry the hash of the network they came from."""
     S, m = BrainScalar, cal.motor
@@ -78,7 +93,7 @@ def _derived(cal: C.Calibration) -> list[BrainScalar]:
 
 
 def all_scalars() -> list[BrainScalar]:
-    return _constants() + _derived(C.Calibration.load())
+    return _constants() + _experiments() + _derived(C.Calibration.load())
 
 
 def generate() -> str:

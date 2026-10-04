@@ -78,6 +78,10 @@ class MainWindow(QMainWindow):
         self._current_run_slug: str | None = None
         self._current_run_spec: RunSpec | None = None
 
+        # Redesign phase 2: brain-path runs (E1) beside the legacy Play; tabs 8-10 talk to it.
+        from tool.ui.brain_runs import BrainRunController
+        self.brain_runs = BrainRunController(self)
+
         self.setWindowTitle(self._title())
         apply_initial_geometry(self)
 
@@ -220,7 +224,7 @@ class MainWindow(QMainWindow):
             sc.setContext(Qt.ShortcutContext.ApplicationShortcut)
 
         # Ease-of-use redesign: Ctrl+1..Ctrl+7 jump straight to a tab.
-        for i in range(self.tabs.count()):
+        for i in range(min(self.tabs.count(), 9)):      # Ctrl+1..9 (Qt has no single-key Ctrl+10)
             sc = QShortcut(QKeySequence(f"Ctrl+{i + 1}"), self,
                             activated=lambda index=i: self.tabs.setCurrentIndex(index))
             sc.setContext(Qt.ShortcutContext.ApplicationShortcut)
@@ -466,8 +470,8 @@ class MainWindow(QMainWindow):
     def play(self) -> None:
         if self._process is not None and self._process.is_alive():
             return
-        if self.training_active():
-            self.statusBar().showMessage("Training is running -- cancel it first.", 5000)
+        if self.training_active() or self.brain_runs.active():
+            self.statusBar().showMessage("Something is running -- cancel it first.", 5000)
             return
         seed = self.project.tool_settings.experiment.seeds[0]
         number = next_run_number(self.project.name)
@@ -503,6 +507,7 @@ class MainWindow(QMainWindow):
     def cancel(self) -> None:
         if self._stop_event is not None:
             self._stop_event.set()
+        self.brain_runs.cancel()
         self.cancel_training()
 
     # ---- Training (Goal tab's Train button) --------------------------------

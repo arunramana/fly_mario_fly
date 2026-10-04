@@ -65,6 +65,21 @@ def _run_factory(window):
     return RunTab(window)
 
 
+def _experiments_factory(window):
+    from tool.ui.tabs.experiments import ExperimentsTab
+    return ExperimentsTab(window)
+
+
+def _mechanisms_factory(window):
+    from tool.ui.tabs.mechanisms import MechanismsTab
+    return MechanismsTab(window)
+
+
+def _results_factory(window):
+    from tool.ui.tabs.results import ResultsTab
+    return ResultsTab(window)
+
+
 TAB_REGISTRY: list[TabRegistryEntry] = [
     TabRegistryEntry("character", "1 Character", _character_factory, attr_name="character_tab"),
     TabRegistryEntry("enemies", "2 Enemies", _enemies_factory),
@@ -73,4 +88,8 @@ TAB_REGISTRY: list[TabRegistryEntry] = [
     TabRegistryEntry("goal", "5 Goal", _goal_factory),
     TabRegistryEntry("settings", "6 Settings", _settings_factory),
     TabRegistryEntry("run", "7 Run", _run_factory, attr_name="run_tab"),
+    # Redesign phase 2 (docs/SPEC_tool_phase2.md): the brain path. "7 Run" is Watch for brain runs too.
+    TabRegistryEntry("experiments", "8 Experiments", _experiments_factory),
+    TabRegistryEntry("mechanisms", "9 Mechanisms", _mechanisms_factory),
+    TabRegistryEntry("results", "10 Results", _results_factory),
 ]

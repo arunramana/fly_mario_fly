@@ -37,15 +37,15 @@ def _short_project(clean_project):
     return project
 
 
-def test_main_window_builds_all_seven_tabs(qtbot, clean_project):
+def test_main_window_builds_all_ten_tabs(qtbot, clean_project):
     project = _short_project(clean_project)
     from tool.ui.main_window import MainWindow
     window = MainWindow(project)
     qtbot.addWidget(window)
-    assert window.tabs.count() == 7
-    titles = [window.tabs.tabText(i) for i in range(7)]
+    assert window.tabs.count() == 10
+    titles = [window.tabs.tabText(i) for i in range(10)]
     assert titles == ["1 Character", "2 Enemies", "3 Objects", "4 Circuits",
-                       "5 Goal", "6 Settings", "7 Run"]
+                       "5 Goal", "6 Settings", "7 Run", "8 Experiments", "9 Mechanisms", "10 Results"]
 
 
 def test_flipping_a_circuit_control_marks_the_project_dirty(qtbot, clean_project):

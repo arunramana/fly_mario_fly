@@ -141,7 +141,7 @@ class LearningChart(QWidget):
     def tests(self) -> dict[str, list]:
         return self._tests
 
-    def metric(self) -> str:
+    def metric_key(self) -> str:
         return self.metric_combo.currentData()
 
     def series(self) -> dict[str, list]:
@@ -154,8 +154,8 @@ class LearningChart(QWidget):
         self.plot.clear()
         self.plot.plotItem.legend.clear()
         self._scatters = []
-        score_mode = self.metric() == "score"
-        self.plot.setLabel("left", self.metric())
+        score_mode = self.metric_key() == "score"
+        self.plot.setLabel("left", self.metric_key())
         series = self._scores if score_mode else self._series
         if self._baseline is not None and not score_mode:
             self._baseline_line = pg.InfiniteLine(

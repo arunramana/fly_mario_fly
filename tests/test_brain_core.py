@@ -163,14 +163,16 @@ def test_the_sensory_tier_is_exactly_the_manifest_sensory_populations(net):
 
 def test_no_other_path_adds_current():
     public = {n for n, _ in inspect.getmembers(Brain, callable) if not n.startswith("_")}
-    assert public == {"attach", "apply", "stimulate", "reset", "step_frame", "stamp"}      # + the sensory_ids property
+    assert public == {"attach", "apply", "stimulate", "reset", "step_frame", "stamp", "population_rate"}      # + sensory_ids; population_rate only reads
     writes = []
     for f in BRAIN_DIR.glob("*.py"):
         for ln, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
             code = line.split("#")[0]
             if re.search(r"_current\b\s*(\[[^\]]*\])?\s*[+\-*]?=(?!=)|add\.at\(self\._current|\.h\[[^\]]*\]\s*[+\-*]?=(?!=)|\.h\s*\+=", code):
                 writes.append(f"{f.name}:{ln}:{code.strip()}")
-    allowed = ("np.add.at(self._current", "self._current = np.zeros", "net.h[:] = 0.0")
+    # the control-only lesion REMOVES activity of an output population (a write of the 0 clamp, never a positive value)
+    allowed = ("np.add.at(self._current", "self._current = np.zeros", "net.h[:] = 0.0",
+               "self._net.h[self._lesion_idx] = LESION_CLAMP_HZ")
     assert all(any(a in w for a in allowed) for w in writes), writes
     assert sum("np.add.at(self._current" in w for w in writes) == 1
 
