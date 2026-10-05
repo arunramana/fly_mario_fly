@@ -162,7 +162,7 @@ def test_library_is_complete_and_labels_the_input_tier():
         assert m.entry_tier in ("feature-level (D1)", "receptor", "n/a")
     looming = library.mechanism("looming")
     assert looming.status == "built" and looming.entry_tier == "feature-level (D1)"
-    assert [e.id for e in library.EXPERIMENTS if e.status == "runnable"] == ["E0", "E1", "E3", "B11"]
+    assert [e.id for e in library.EXPERIMENTS if e.status == "runnable"] == ["E0", "E1", "E2a", "E3", "B11"]
     assert library.experiment("E1").runner == "brain.e1"
 
 

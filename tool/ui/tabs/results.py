@@ -15,7 +15,7 @@ from tool.ui.widgets.scroll_page import install_scroll_page
 
 SUMMARY_COLUMNS = ("Arm", "Survived", "95% CI", "Deaths", "GF before contact", "A-press runs", "theta at GF (median, deg)",
                    "distance at GF (median, px)", "GF crossed threshold", "GF output / TTMn max (Hz)")
-ARM_LABELS = {"lesion_gf": "lesion_gf (control)", "shuffled_class": "shuffled_class (class-preserving, informative)",
+ARM_LABELS = {"real_no_obstacle": "real_no_obstacle (control)", "lesion_gf": "lesion_gf (control)", "shuffled_class": "shuffled_class (class-preserving, informative)",
               "real_no_landmark": "real_no_landmark (control)", "real_no_pursuit": "real_no_pursuit (control)"}
 GOAL_SUMMARY_COLUMNS = ("Arm", "Reached", "95% CI", "Deaths", "Lost / timeouts", "Median frames to reach", "Mean Left frames",
                         "GF crossed threshold", "GF output / TTMn max (Hz)")
@@ -25,8 +25,11 @@ BASELINE_SUMMARY_COLUMNS = ("Arm", "Max x mean (bootstrap 95% CI)", "Max x media
                             "A-tap episodes", "Power-up collected", "GF crossed threshold", "GF output / TTMn max (Hz)")
 BASELINE_EPISODE_COLUMNS = ("Arm", "Seed", "End", "Frames", "Max x", "Goombas jumped / encountered", "First A run", "Power-up",
                             "GF output max (Hz)", "TTMn max (Hz)")
-EVAL_EXPERIMENTS = ("E1", "E0", "E3", "B11")
-EVAL_SEEDS = {"E1": (3000, 3019), "E0": (4000, 4019), "E3": (5100, 5119), "B11": (6000, 6019)}
+E2A_SUMMARY_COLUMNS = ("Arm", "Cleared", "95% CI", "How runs ended", "GF before the face", "A-press runs (taps)",
+                       "First A x / take-off x (median)", "GF output / TTMn max (Hz)")
+E2A_EPISODE_COLUMNS = ("Arm", "Seed", "Outcome", "Cleared", "Frames", "Max x", "GF before face", "First A x / run", "Take-off x")
+EVAL_EXPERIMENTS = ("E1", "E0", "E3", "E2a", "B11")
+EVAL_SEEDS = {"E1": (3000, 3019), "E0": (4000, 4019), "E3": (5100, 5119), "E2a": (7100, 7119), "B11": (6100, 6119)}
 EPISODE_COLUMNS = ("Arm", "Seed", "Outcome", "Survived", "GF before contact", "theta at GF (deg)", "distance at GF (px)", "A frames")
 
 
@@ -42,8 +45,22 @@ def is_baseline(result: dict) -> bool:
     return result.get("experiment", "E1") == "B11"
 
 
+def is_e2a(result: dict) -> bool:
+    return result.get("experiment", "E1") == "E2a"
+
+
 def summary_rows(result: dict) -> list[list[str]]:
     rows = []
+    if is_e2a(result):
+        for arm in result["arms"]:
+            s = result[arm]
+            lo, hi = s["cleared_ci"]
+            taps = "none" if s["tap_fraction"] is None else f"{s['a_pressed_runs']} ({s['tap_episodes']} taps)"
+            ends = ", ".join(f"{k} {v}" for k, v in s["end_reasons"].items() if v)
+            rows.append([ARM_LABELS.get(arm, arm), f"{s['cleared']}/{s['n']}", f"{_pct(lo)}-{_pct(hi)}", ends,
+                         f"{s['gf_before_face']}/{s['n']}", taps, f"{s['first_a_x_median']} / {s['takeoff_x_median']}",
+                         f"{s.get('gf_output_max_hz', 0.0):.2f} / {s.get('ttmn_max_hz', 0.0):.3f}"])
+        return rows
     if is_baseline(result):
         for arm in result["arms"]:
             s = result[arm]
@@ -74,8 +91,16 @@ def summary_rows(result: dict) -> list[list[str]]:
 
 
 def criterion_text(result: dict) -> str:
+    if is_e2a(result):
+        c = result["criterion"]
+        real, shuf = result["real"], result.get("shuffled")
+        met = real["cleared"] >= c["real_cleared_min"] and (shuf is None or shuf["cleared"] <= c["shuffled_cleared_max"])
+        return (f"Criterion (stated in docs/SPEC_e2a.md before running): real >= {c['real_cleared_min']}/{c['n']} and degree shuffle <= "
+                f"{c['shuffled_cleared_max']}/{c['n']} -> {'met' if met else 'not met'}. Class shuffle is informative only; real_no_obstacle "
+                "(obstacle cue off) is expected to fail. The obstacle cue is a Mario's-eye-view assumption (no source for obstacle-triggered "
+                "jumps in flies); the home landmark is an invented world cue.")
     if is_baseline(result):
-        return ("Baseline, not a criterion: no pass/fail. All three mechanisms on; the home landmark is an invented world cue. "
+        return ("Baseline, not a criterion: no pass/fail. Looming, pursuit, home landmark and (from 2026-10-05) obstacle expansion on; the home landmark is an invented world cue and obstacle expansion a Mario's-eye-view assumption. "
                 f"Tap = first A run <= {result['tap_max_frames']} frames; stuck = no new max x for {result['stuck_frames']} frames.")
     if is_goal(result):
         c, real, shuf = result["criterion"], result["real"], result["shuffled"]
@@ -163,7 +188,14 @@ class ResultsTab(QWidget):
 
     def _show(self, result: dict) -> None:
         st = result["stamp"]
-        if is_baseline(result):
+        if is_e2a(result):
+            self.header_label.setText(
+                f"E2a, scene {result['scene']['id']} ({result['scene']['scene_hash']}), seeds {result['seeds'][0]}-{result['seeds'][1]}, "
+                f"{result['metric']}. Network {st['build_hash']} ({st['neurons']} neurons), calibration {st['calibration_hash']}, "
+                f"senses {st.get('senses')}.")
+            self._set_columns(self.summary_table, E2A_SUMMARY_COLUMNS)
+            self._set_columns(self.episode_table, E2A_EPISODE_COLUMNS)
+        elif is_baseline(result):
             self.header_label.setText(
                 f"B11 1-1 innate baseline, scene {result['scene']['id']} ({result['scene']['scene_hash']}), seeds "
                 f"{result['seeds'][0]}-{result['seeds'][1]}, max {result['max_frames']} frames. Network {st['build_hash']} "
@@ -193,7 +225,10 @@ class ResultsTab(QWidget):
         eps = result["episodes"]
         self.episode_table.setRowCount(len(eps))
         for r, e in enumerate(eps):
-            if is_baseline(result):
+            if is_e2a(result):
+                vals = [ARM_LABELS.get(e["arm"], e["arm"]), str(e["seed"]), e["outcome"], "yes" if e["cleared"] else "no", str(e["frames"]),
+                        str(e["max_x"]), "yes" if e["gf_before_face"] else "no", f"{e['first_a_x']} / {e['first_a_run']}", str(e["takeoff_x"])]
+            elif is_baseline(result):
                 vals = [ARM_LABELS.get(e["arm"], e["arm"]), str(e["seed"]), e["outcome"], str(e["frames"]), str(e["max_x"]),
                         f"{e['goombas_jumped']} / {e['goombas_encountered']}", "-" if e["first_a_run"] is None else str(e["first_a_run"]),
                         "collected" if e["collected"] else ("released" if e["powerup_released"] else "no"),

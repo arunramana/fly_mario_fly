@@ -16,8 +16,9 @@ from bridge.perception import VisibleRegistry
 from brain import builder
 from brain.brain import Brain, Readout
 from brain.calibration import ELEVATION_LIMIT_DEG, Calibration
-from brain.mechanisms import HomeLandmarkMechanism, LoomingMechanism, PursuitMechanism
+from brain.mechanisms import HomeLandmarkMechanism, LoomingMechanism, ObstacleExpansion, PursuitMechanism
 from brain.motor_map import Buttons, MotorMap
+from brain.obstacles import obstacle_thetas
 from brain.perception import enemy_thetas, pursuit_target
 from brain.settings import SenseSettings
 from mario.actions.actions import action_from_buttons
@@ -39,7 +40,10 @@ class BrainPolicy:
         self.looming = LoomingMechanism(net)
         self.brain.attach(self.looming)
         self.settings = settings or SenseSettings()
-        self.pursuit = self.landmark = None
+        self.pursuit = self.landmark = self.obstacle = None
+        if self.settings.obstacle_expansion:
+            self.obstacle = ObstacleExpansion(net)
+            self.brain.attach(self.obstacle)
         if self.settings.pursuit_kinds:
             self.pursuit = PursuitMechanism(net)
             self.brain.attach(self.pursuit)
@@ -60,12 +64,20 @@ class BrainPolicy:
         self.last_target, self.last_arousal = None, 0.0     # last_arousal is recorded only while pursuit is attached
         self._prev_theta = {"L": 0.0, "R": 0.0}
         self.last_theta, self.last_distance = 0.0, None     # what the fly saw last frame (rad, px), for records only
+        self._prev_obstacle_theta = {"L": 0.0, "R": 0.0}
+        self.last_obstacle_theta, self.last_obstacle_distance = 0.0, None
 
     def act(self, observation) -> int:
         theta, dtheta, dist = enemy_thetas(observation.ram, self._prev_theta, self._registry, ELEVATION_LIMIT_DEG)
         self._prev_theta = theta
         self.last_theta, self.last_distance = theta["L"], dist["L"]
         self.brain.apply(self.looming.encode(theta, dtheta))
+        if self.obstacle is not None:
+            # the nearest visible obstacle face, a Mario's-eye-view looming cue; enters at LC4/LPLC2 only, adds to the enemy's
+            o_theta, o_dtheta, o_dist = obstacle_thetas(observation.ram, self._prev_obstacle_theta, ELEVATION_LIMIT_DEG)
+            self._prev_obstacle_theta = o_theta
+            self.last_obstacle_theta, self.last_obstacle_distance = o_theta["L"], o_dist["L"]
+            self.brain.apply(self.obstacle.encode(o_theta, o_dtheta))
         if self.pursuit is not None:
             # arousal = a fly-state input set in the tool (SenseSettings.pursuit_arousal); nothing is read from the fly's output
             self.last_arousal = self.settings.pursuit_arousal

@@ -67,8 +67,10 @@ def test_experiments_library_lists_the_ladder_read_only_with_provenance(window):
     assert tab.seed_spin.value() == 9100 and not 3000 <= tab.seed_spin.value() <= 3019       # Run default is a development seed
     assert "held-out, run once" in _tab(window, "results").run_button.text()
     assert not [b for b in tab.findChildren(type(tab.run_real_button)) if "lesion" in b.text().lower()]
-    tab.table.selectRow(2)                        # E2a: planned, nothing to run
-    assert tab.selected().id == "E2a" and not tab.run_real_button.isEnabled()
+    tab.table.selectRow(2)                        # E2a: runnable (docs/SPEC_e2a.md), labelled as a Mario's-eye-view assumption
+    assert tab.selected().id == "E2a" and tab.run_real_button.isEnabled() and "Mario's-eye-view assumption" in tab.detail.toHtml().replace("&#39;", "'")
+    tab.table.selectRow(3)                        # E2b: planned, nothing to run
+    assert tab.selected().id == "E2b" and not tab.run_real_button.isEnabled()
     from PySide6.QtWidgets import QAbstractItemView
     assert tab.table.editTriggers() == QAbstractItemView.EditTrigger.NoEditTriggers
 
@@ -287,15 +289,34 @@ def test_results_shows_a_b11_baseline_evaluation_without_a_criterion(window):
     assert "not a criterion" in tab.criterion_label.text() and "no pass/fail" in tab.criterion_label.text()
     assert tab.episode_table.rowCount() == 1 and "B11" in tab.header_label.text()
     tab.experiment_combo.setCurrentText("B11")
-    assert "6000-6019" in tab.run_button.text()
+    assert "6100-6119" in tab.run_button.text()
 
 
 def test_experiments_tab_lists_the_b11_baseline_as_runnable_with_honest_labels(window):
     from brain.library import experiment
     e = experiment("B11")
-    assert e.status == "runnable" and e.runner == "brain.baseline" and set(e.mechanisms) == {"looming", "pursuit", "goal_direction"}
+    assert e.status == "runnable" and e.runner == "brain.baseline" and set(e.mechanisms) == {"looming", "pursuit", "goal_direction", "expanding_obstacle"}
     assert "no pass/fail" in e.criterion and "invented world cue" in e.controls
     tab = _tab(window, "experiments")
     row = next(r for r in range(tab.table.rowCount()) if tab.table.item(r, 0).text() == "B11")
     tab.table.selectRow(row)
     assert tab.selected().id == "B11" and tab.run_real_button.isEnabled() and "B11" in tab.run_real_button.text()
+
+
+def test_results_tab_shows_an_e2a_evaluation_minimally(window):
+    from brain import e2a
+    arm = {"n": 20, "cleared": 15, "cleared_ci": [0.5, 0.9], "end_reasons": {"cleared": 15, "died": 0, "stuck": 5, "timeout": 0},
+           "gf_fired": 20, "gf_before_face": 20, "a_pressed_runs": 20, "tap_episodes": 2, "tap_fraction": 0.1,
+           "first_a_x_median": 425.0, "takeoff_x_median": 426.0, "gf_output_max_hz": 12.0, "ttmn_max_hz": 0.3}
+    ep = {"arm": "real", "seed": 7100, "outcome": "cleared", "cleared": True, "frames": 90, "max_x": 500, "gf_before_face": True,
+          "first_a_x": 425, "first_a_run": 9, "takeoff_x": 426}
+    res = {"experiment": "E2a", "metric": e2a.METRIC, "seeds": [7100, 7119], "max_frames": 600, "scene": {"id": "e2a_pipe1", "scene_hash": "x"},
+           "stamp": {"build_hash": "h", "neurons": 1, "calibration_hash": "c", "senses": {}}, "criterion": dict(e2a.CRITERION),
+           "arms": ["real", "shuffled", "real_no_obstacle"], "real": arm, "shuffled": {**arm, "cleared": 0}, "real_no_obstacle": {**arm, "cleared": 0},
+           "episodes": [ep]}
+    from tool.ui.tabs import results
+    assert results.summary_rows(res)[0][:2] == ["real", "15/20"] and results.summary_rows(res)[2][0] == "real_no_obstacle (control)"
+    assert "met" in results.criterion_text(res) and "not met" not in results.criterion_text(res) and "Mario's-eye-view" in results.criterion_text(res)
+    assert results.EVAL_SEEDS["E2a"] == (7100, 7119) and "E2a" in results.EVAL_EXPERIMENTS
+    from tool.core.brain_runner import RUNNABLE
+    assert "E2a" in RUNNABLE

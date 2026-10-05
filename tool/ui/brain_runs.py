@@ -86,9 +86,10 @@ class BrainRunController(QObject):
             run_tab.preview.show_frame(latest[1], latest[2])
             from brain.e1 import E1_MAX_FRAMES
             from brain.baseline import BASELINE_MAX_FRAMES
+            from brain.e2a import E2A_MAX_FRAMES
             from brain.goal_eval import MAX_FRAMES
             exp = (self._meta or {}).get("experiment", "E1")
-            run_tab.set_progress(latest[2].get("frame", 0), E1_MAX_FRAMES if exp == "E1" else {**MAX_FRAMES, "B11": BASELINE_MAX_FRAMES}[exp])
+            run_tab.set_progress(latest[2].get("frame", 0), E1_MAX_FRAMES if exp == "E1" else {**MAX_FRAMES, "B11": BASELINE_MAX_FRAMES, "E2a": E2A_MAX_FRAMES}[exp])
         if terminal is None:
             return
         self._timer.stop()
@@ -116,6 +117,9 @@ class BrainRunController(QObject):
             text = (f"Run #{m['number']} (E1, {e['arm']}): {e['outcome']}, survived {e['survived']}, GF before contact "
                     f"{e['gf_before_contact']}, theta at GF "
                     f"{'none' if e['theta_at_gf_deg'] is None else format(e['theta_at_gf_deg'], '.1f') + ' deg'}")
+        elif m.get("experiment") == "E2a":
+            text = (f"Run #{m['number']} (E2a, {e['arm']}): {e['outcome']}, cleared {e['cleared']}, GF fired {e['gf_fired']} "
+                    f"(before the face {e['gf_before_face']}), first A x {e['first_a_x']}")
         else:
             text = (f"Run #{m['number']} ({m['experiment']}, {e['arm']}): {e['outcome']}, reached {e['reached']}, GF fired "
                     f"{e['gf_fired']}, GF output max {e['gf_output_max_hz']:.2f} Hz, TTMn max {e['ttmn_max_hz']:.3f} Hz")
@@ -136,6 +140,8 @@ class BrainRunController(QObject):
         arms = ("real, shuffled and the GF-lesion control" if experiment == "E1"
                 else "real, degree-preserving shuffled, class-preserving shuffled and "
                 + ("real with the landmark off" if experiment == "E0" else "real with pursuit off"))
+        if experiment == "E2a":
+            arms = "real, degree-preserving shuffled, class-preserving shuffled and real with the obstacle cue off"
         if experiment == "B11":
             arms = "real, degree-preserving shuffled and class-preserving shuffled; a baseline, no pass/fail"
         self._eval_experiment = experiment

@@ -26,6 +26,7 @@ class SenseSettings:
     pursuit_kinds: tuple[str, ...] = ()        # empty = pursuit not attached
     goal_cue_salience: float = 0.0             # 0 = home landmark not attached
     pursuit_arousal: float = C.PURSUIT_AROUSAL  # fly-state input in [0, 1] scaling pursuit's gain (set here, never read from the fly)
+    obstacle_expansion: bool = False           # looming from static obstacles (docs/SPEC_e2a.md); off unless an experiment lists it
 
     def __post_init__(self):
         bad = [k for k in self.pursuit_kinds if k not in PURSUABLE_KINDS]
@@ -39,6 +40,8 @@ class SenseSettings:
     def to_dict(self) -> dict:
         d = asdict(self)
         d["pursuit_kinds"] = list(self.pursuit_kinds)
+        if not self.obstacle_expansion:
+            del d["obstacle_expansion"]        # keeps every stamp recorded before E2a byte-identical
         return d
 
     @classmethod
@@ -46,7 +49,7 @@ class SenseSettings:
         if d is None:
             return cls()                       # nothing given: no mechanisms (callers wanting the tool's defaults use user_default())
         return cls(tuple(d.get("pursuit_kinds", ())), float(d.get("goal_cue_salience", 0.0)),
-                   float(d.get("pursuit_arousal", C.PURSUIT_AROUSAL)))
+                   float(d.get("pursuit_arousal", C.PURSUIT_AROUSAL)), bool(d.get("obstacle_expansion", False)))
 
     @classmethod
     def user_default(cls) -> "SenseSettings":
@@ -60,4 +63,5 @@ def settings_for(experiment_id: str, user: SenseSettings | None = None) -> Sense
     user = user or SenseSettings.user_default()
     on = experiment(experiment_id).mechanisms
     return SenseSettings(user.pursuit_kinds if "pursuit" in on else (),
-                         user.goal_cue_salience if "goal_direction" in on else 0.0, user.pursuit_arousal)
+                         user.goal_cue_salience if "goal_direction" in on else 0.0, user.pursuit_arousal,
+                         "expanding_obstacle" in on)

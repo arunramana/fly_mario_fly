@@ -10,7 +10,7 @@
 # brain; it only watches the game and the fly's outputs.
 """brain/baseline.py -- docs/SPEC_baseline_1-1.md.
 
-    .venv/Scripts/python.exe -m brain.baseline [--n 20] [--seed0 6000] [--workers 8] [--out result.json]
+    .venv/Scripts/python.exe -m brain.baseline [--n 20] [--seed0 6100] [--workers 8] [--out result.json]
 
 Metrics are defined in the SPEC before any run (outcome-neutral); the pure helpers here (`GoombaTracker`, `a_runs`,
 `classify_end`) take plain values so they can be tested on a fake episode.
@@ -30,7 +30,7 @@ from brain.scenes import B11_SCENE_ID, SceneSpec, load_scene
 from brain.settings import SenseSettings, settings_for
 
 EXPERIMENT_ID = "B11"
-BASELINE_SEED0, N = 6000, 20      # fresh seeds; 6000-6029 were noise seeds of Phase 3b diagnostic runs on the E1 scene (disclosed in the SPEC)
+BASELINE_SEED0, N = 6100, 20      # fresh seeds for the obstacle-expansion-ON baseline (docs/SPEC_baseline_1-1.md); the first baseline (obstacle expansion off) used 6000-6019, which were also noise seeds of Phase 3b diagnostics
 BASELINE_MAX_FRAMES = 3000        # invented bound (50 s)
 BASELINE_STUCK_FRAMES = 300       # invented convention: no new max_x for 5 s ends the episode as "stuck"
 BASELINE_TAP_MAX_FRAMES = 2       # invented convention (docs/INVESTIGATION_phase3b.md): a "tap" is a first A run of <= 2 frames

@@ -109,6 +109,20 @@ def _baseline_experiments() -> list[BrainScalar]:
         S("BASELINE_MAX_FRAMES", baseline.BASELINE_MAX_FRAMES, "frames", INVENTED, 100, 20000, "1-1 baseline episode bound (50 s); level 1-1 is about 3150 px"),
         S("BASELINE_STUCK_FRAMES", baseline.BASELINE_STUCK_FRAMES, "frames", INVENTED, 30, 3000, "1-1 baseline: no new max x for this long ends the episode as stuck (5 s)"),
         S("BASELINE_TAP_MAX_FRAMES", baseline.BASELINE_TAP_MAX_FRAMES, "frames", INVENTED, 1, 10, "1-1 baseline: a first A run this short or shorter counts as a tap (docs/INVESTIGATION_phase3b.md)"),
+    ] + _e2a_experiments()
+
+
+def _e2a_experiments() -> list[BrainScalar]:
+    """E2a conventions (docs/SPEC_e2a.md): scene and evaluation definitions fixed before any run. The obstacle encoding itself has
+    no scalar of its own (screen width, tile size, the enemies' elevation weight and limit are reused)."""
+    from brain import e2a
+    from brain.scenes import E2A_SCENE_ID, load_scene
+    S, log = BrainScalar, load_scene(E2A_SCENE_ID).log
+    return [
+        S("E2A_MAX_FRAMES", e2a.E2A_MAX_FRAMES, "frames", INVENTED, 100, 3000, "E2a episode bound (10 s)"),
+        S("E2A_SCENE_WALK_FRAMES", log[0][1], "frames", INVENTED, 1, 300, "scene log: walk right on flat ground (to about 127 px before pipe 1; checked only that the pipe is on screen ahead)"),
+        S("E2A_SCENE_SETTLE_FRAMES", log[1][1], "frames", INVENTED, 1, 120, "scene log: release all buttons so Mario's x speed decays to zero"),
+        S("E2A_PIPE_RIGHT_X", e2a.E2A_PIPE_RIGHT_X, "px", MEASURED, 400, 600, "world x of pipe 1's right edge (448 + 32 - 1) read from the tile map (docs/INVESTIGATION_phase6.md (b)); cleared = Mario's x beyond it"),
     ]
 
 

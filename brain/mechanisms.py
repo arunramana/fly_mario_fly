@@ -58,6 +58,17 @@ class LoomingMechanism:
         return Stimulus(np.concatenate(ids), np.concatenate(vals), self.name)
 
 
+class ObstacleExpansion(LoomingMechanism):
+    """Looming from static obstacles (docs/SPEC_e2a.md). Cue: the face of the nearest wall, pipe, block or step ahead, whose
+    angular size grows only because Mario walks toward it. Same channel and the same encoding as `LoomingMechanism` (it IS
+    that encoding, fed a different theta): LPLC2 gets theta, LC4 gets |dtheta|. Nothing deeper, no new population."""
+    name = "obstacle_expansion"
+    label = ("looming from static obstacles (biology: expansion cue; no source for obstacle-triggered jumps in flies; "
+             "this is a Mario's-eye-view assumption)")
+    evidence = ("Ache et al. 2019 for the detectors; NO source that flies jump at static obstacles (Pick & Strauss 2005: "
+                "flies climb) -- a Mario's-eye-view assumption, entering at the existing looming inputs only")
+
+
 # ---- Phase 3: LC10a mechanisms (docs/SPEC_phase3.md section 4) ------------------------------------------------------------
 def azimuth_shares(azimuth_deg: float, split_deg: float) -> tuple[float, float]:
     """(left share, right share) of a target at `azimuth_deg` (negative = left of Mario, positive = right): the same-side

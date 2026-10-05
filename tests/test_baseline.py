@@ -19,9 +19,11 @@ def test_scene_has_no_log_no_rules_and_the_runner_never_clears_enemies_or_writes
     assert "ram[" not in inspect.getsource(baseline.GoombaTracker)
 
 
-def test_b11_runs_all_three_mechanisms_with_the_user_defaults():
+def test_b11_runs_all_mechanisms_with_the_user_defaults_and_obstacle_expansion_on():
+    import dataclasses
     used = settings_for("B11")
-    assert used == SenseSettings.user_default()
+    assert used == dataclasses.replace(SenseSettings.user_default(), obstacle_expansion=True)    # docs/SPEC_baseline_1-1.md, "Obstacle expansion on"
+    assert baseline.BASELINE_SEED0 == 6100
     assert used.pursuit_kinds == ("powerup",) and used.goal_cue_salience > 0
 
 

@@ -77,3 +77,17 @@ ground AFTER he has been airborne in that window (landing into it); a ground ove
 jumped (a dying Mario closes no window).
 
 Clarification (2026-10-04): "Chosen outcome-neutrally before re-scoring" above is softened to: found in a spot check, fixed before any re-score. The original wording is kept for history.
+
+## Obstacle expansion on (2026-10-05)
+From this date the baseline B11 runs with obstacle expansion ON (docs/SPEC_e2a.md): the library entry B11 lists `expanding_obstacle`, so
+`settings_for("B11")` sets `SenseSettings.obstacle_expansion`. Static obstacles ahead (pipes, blocks, steps) are then seen as looming at
+LC4/LPLC2 (a Mario's-eye-view assumption; no source for obstacle-triggered jumps in flies). Nothing else changes: same scene, same
+metrics, same conventions, same arms, no motor-map, calibration or threshold change.
+- The result recorded earlier (seeds 6000-6019: real max_x 357, 13 die at the first Goomba, 7 stall at pipe 1, 0/20 complete) stays on
+  record as the **baseline without obstacle expansion**. Nothing is edited; re-running with `obstacle_expansion` False reproduces it
+  (E0/E1/E3 stamps and results are unchanged because the settings key is written only when true).
+- The ON baseline is re-run once on **fresh seeds 6100-6119** by the experimenter. CLI: `python -m brain.baseline --n 20 --seed0 6100
+  --workers 8 --out result.json` (the default `--seed0` is now 6100; `--seed0 6000` still runs the old seeds). The result is reported
+  next to the earlier baseline, not instead of it.
+- Disclosure: the obstacle cue is geometry from the visible tile map for ALL static obstacles of 1-1, not pipe 1 only; tile ids
+  other than the ones measured on the first 900 frames (pipes, bricks, ground, "?") are unchecked (coins, hidden blocks).

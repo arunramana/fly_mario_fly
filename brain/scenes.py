@@ -32,7 +32,8 @@ SCENES_DIR = Path(__file__).resolve().parent / "scenes"
 E1_SCENE_ID = "e1_goomba_approach"
 E0_SCENE_ID = "e0_walk_goal"
 E3_SCENE_ID = "e3_mushroom"
-B11_SCENE_ID = "b11_baseline"      # the real level 1-1 from reset: no log, no rules (docs/SPEC_baseline_1-1.md)
+E2A_SCENE_ID = "e2a_pipe1"
+B11_SCENE_ID ="b11_baseline"      # the real level 1-1 from reset: no log, no rules (docs/SPEC_baseline_1-1.md)
 SCENE_RULES = ("clear_enemies",)      # per-frame changes to the surroundings (never to the fly): enemies removed, power-ups kept
 
 
@@ -121,4 +122,15 @@ def check_e3_scene(ram) -> dict:
     dx = [int(ram[ADDR_ENEMY_PAGE + s]) * 256 + int(ram[ADDR_ENEMY_X + s]) - mario_world for s in slots]
     return {"powerup_on_screen": bool(slots), "powerup_ahead": bool(dx) and dx[0] > 0, "powerup_dx_px": dx[0] if dx else None,
             "mario_stationary": int(ram[ADDR_MARIO_XSPEED]) == 0,
+            "no_enemy": not any(ram[ADDR_ENEMY_ACTIVE + s] and ram[ADDR_ENEMY_TYPE + s] != POWERUP_ID for s in range(POWERUP_SLOTS))}
+
+
+def check_e2a_scene(ram) -> dict:
+    """What the E2a manifest promises, nothing about the fly: an obstacle face on screen ahead of a living, stationary Mario, no enemy."""
+    from brain.obstacles import nearest_face, visible_columns
+    from brain.perception import MARIO_BIG_PX, MARIO_SMALL_PX
+    mario_world = int(ram[ADDR_MARIO_PAGE]) * 256 + int(ram[ADDR_MARIO_X])
+    face = nearest_face(visible_columns(ram), mario_world, int(ram[0x04AF]), MARIO_SMALL_PX if int(ram[0x0756]) == 0 else MARIO_BIG_PX)
+    return {"face_on_screen": face is not None, "face_dx_px": None if face is None else face.d_px,
+            "face_w_px": None if face is None else face.w_px, "mario_stationary": int(ram[ADDR_MARIO_XSPEED]) == 0,
             "no_enemy": not any(ram[ADDR_ENEMY_ACTIVE + s] and ram[ADDR_ENEMY_TYPE + s] != POWERUP_ID for s in range(POWERUP_SLOTS))}

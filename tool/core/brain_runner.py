@@ -23,7 +23,7 @@ import numpy as np
 from config.output_routing import PROJECTS_ROOT
 
 BRAIN_RUN_KIND = "brain_e1"          # E1 runs; E0 and E3 runs are "brain_e0" / "brain_e3" (run_kind)
-RUNNABLE = ("E0", "E1", "E3", "B11")
+RUNNABLE = ("E0", "E1", "E2a", "E3", "B11")
 SETTINGS_FILE = "brain_settings.json"   # the Mechanisms tab's per-object pursuit setting and home-landmark strength
 PREVIEW_EVERY_N = 2          # live preview: every 2nd frame (the brain runs well above real time, the queue need not carry all)
 
@@ -58,10 +58,11 @@ def run_brain_one(project_name: str, slug: str, seed: int, shuffle_seed: int | N
     from brain.e1 import run_e1_episode
     from brain.goal_eval import SCENES, run_goal_episode
     from brain.baseline import run_baseline_episode
-    from brain.scenes import B11_SCENE_ID, load_scene
+    from brain.e2a import run_e2a_episode
+    from brain.scenes import B11_SCENE_ID, E2A_SCENE_ID, load_scene
     from brain.settings import SenseSettings
     from tool.core.frame_store import FrameStore
-    scene = load_scene({**SCENES, "B11": B11_SCENE_ID}[experiment]) if experiment != "E1" else load_scene()
+    scene = load_scene({**SCENES, "B11": B11_SCENE_ID, "E2a": E2A_SCENE_ID}[experiment]) if experiment != "E1" else load_scene()
     recorder = FrameStore()
 
     def combined(frame, obs, row):
@@ -76,6 +77,10 @@ def run_brain_one(project_name: str, slug: str, seed: int, shuffle_seed: int | N
         arm = "real" if shuffle_seed is None else shuffle_mode
         result, rows, stamp = run_baseline_episode(seed, arm, shuffle_seed, (SenseSettings.from_dict(settings) if settings is not None else SenseSettings.user_default()),
                                                    scene=scene, on_frame=combined, should_stop=should_stop, record_rows=True)
+    elif experiment == "E2a":
+        arm = "real" if shuffle_seed is None else shuffle_mode
+        result, rows, stamp = run_e2a_episode(seed, arm, shuffle_seed, (SenseSettings.from_dict(settings) if settings is not None else SenseSettings.user_default()),
+                                              scene=scene, on_frame=combined, should_stop=should_stop, record_rows=True)
     else:
         arm = "real" if shuffle_seed is None else shuffle_mode
         result, rows, stamp = run_goal_episode(experiment, seed, arm, shuffle_seed, (SenseSettings.from_dict(settings) if settings is not None else SenseSettings.user_default()),
@@ -134,6 +139,13 @@ def episode_of(info: dict) -> dict:
 
 def _auto_lesson(e: dict) -> str:
     """One auto-filled sentence from the recorded numbers (restates them, no interpretation)."""
+    if "cleared" in e:                         # E2a
+        gf = ("the Giant Fiber never crossed threshold" if not e["gf_fired"]
+              else f"the Giant Fiber crossed threshold at frame {e['first_gf_frame']}"
+              + (" (before the face)" if e["gf_before_face"] else " (not before the face)"))
+        a = "A was never pressed" if not e["a_pressed"] else f"first A at x {e['first_a_x']} for {e['first_a_run']} frames"
+        return (f"Auto-filled from the run's numbers: E2a, {e['arm']} arm, outcome {e['outcome']} "
+                f"({'cleared' if e['cleared'] else 'did not clear'} pipe 1); {gf}; {a}. One seed is an observation, not a result.")
     if "reached" in e:                         # E0 / E3
         gf = ("the Giant Fiber never crossed threshold" if not e["gf_fired"]
               else f"the Giant Fiber crossed threshold at frame {e['first_gf_frame']}")
@@ -160,6 +172,10 @@ def write_brain_run_note(project_name: str, number: int, slug: str, seed: int, i
                 f"GF before contact {e['gf_before_contact']} (theta {e['theta_at_gf_deg']}, distance {e['distance_at_gf_px']}), "
                 f"A pressed {e['a_pressed']}.")
         title = "E1 jump the Goomba"
+    elif exp == "E2a":
+        what = (f"{e['frames']} frames, outcome {e['outcome']}, cleared {e['cleared']}, max x {e['max_x']}, GF fired {e['gf_fired']} "
+                f"(before the face {e['gf_before_face']}), first A x {e['first_a_x']}, take-off x {e['takeoff_x']}, A pressed {e['a_pressed']}.")
+        title = "E2a get past the pipe"
     else:
         what = (f"{e['frames']} frames, outcome {e['outcome']}, reached {e['reached']}, max x {e['max_x']}, GF fired {e['gf_fired']}, "
                 f"GF output max {e['gf_output_max_hz']:.2f} Hz, TTMn max {e['ttmn_max_hz']:.3f} Hz, A pressed {e['a_pressed']}.")
@@ -197,6 +213,11 @@ def run_brain_eval_streaming(project_name: str, queue, workers: int = 4, n: int 
         if experiment == "E1":
             from brain import e1
             result = e1.run_eval(e1.E1_N if n is None else n, e1.E1_SEED0 if seed0 is None else seed0, workers)
+        elif experiment == "E2a":
+            from brain import e2a
+            from brain.settings import SenseSettings
+            result = e2a.run_eval(e2a.N if n is None else n, seed0, workers,
+                                  settings=SenseSettings.from_dict(settings) if settings is not None else None)
         elif experiment == "B11":
             from brain import baseline
             from brain.settings import SenseSettings
@@ -218,6 +239,9 @@ def format_brain_eval(result: dict) -> str:
     if result.get("experiment", "E1") == "B11":
         from brain.baseline import format_eval as format_baseline
         return format_baseline(result)
+    if result.get("experiment", "E1") == "E2a":
+        from brain.e2a import format_eval as format_e2a
+        return format_e2a(result)
     if result.get("experiment", "E1") != "E1":
         from brain.goal_eval import format_eval as format_goal
         return format_goal(result)

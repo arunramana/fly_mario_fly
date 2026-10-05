@@ -18,7 +18,8 @@ from dataclasses import dataclass
 from brain.e1 import CRITERION
 from brain.baseline import BASELINE_MAX_FRAMES, BASELINE_STUCK_FRAMES
 from brain.goal_eval import CRITERIA, E0_GOAL_X, E0_MAX_FRAMES, E3_MAX_FRAMES
-from brain.scenes import B11_SCENE_ID, E0_SCENE_ID, E1_SCENE_ID, E3_SCENE_ID
+from brain.e2a import CRITERION as E2A_CRITERION, E2A_MAX_FRAMES, E2A_PIPE_RIGHT_X
+from brain.scenes import B11_SCENE_ID, E0_SCENE_ID, E1_SCENE_ID, E2A_SCENE_ID, E3_SCENE_ID
 
 PLAN = "docs/REDESIGN_PLAN.md"
 
@@ -58,9 +59,17 @@ MECHANISMS: tuple[MechanismEntry, ...] = (
                    "brain/mechanisms.py LoomingMechanism (ported from bridge/loom_disc.py); theta from brain/perception.py",
                    "built", "Enters at early feature neurons, not photoreceptors: the stimulus is already a looming signal, "
                    "not a retinal image. Validated on the disc and on a ground-level object, never on game outcomes."),
-    MechanismEntry("expanding_obstacle", "Expanding obstacle", "a wall or pipe ahead", "same looming entry", "feature-level (D1)",
-                   "same as looming", PLAN + " 3.3 (built opt-in in the legacy path only)", "planned",
-                   "Not ported to the new path yet. Sprite geometry for non-Goomba objects must be re-validated first."),
+    MechanismEntry("expanding_obstacle", "Expanding obstacle (looming from static obstacles)",
+                   "the face of the nearest wall, pipe, block or step ahead, read from the visible tile map; flat floor is not an obstacle",
+                   "same looming entry (LPLC2 size, LC4 speed), both hemispheres; no new population", "feature-level (D1)",
+                   "Ache et al. 2019 for the detectors. NO source for obstacle-triggered jumps in flies (flies climb; Pick & Strauss 2005): "
+                   "looming from static obstacles (biology: expansion cue; no source for obstacle-triggered jumps in flies; this is a "
+                   "Mario's-eye-view assumption)",
+                   "brain/obstacles.py + brain/mechanisms.py ObstacleExpansion; docs/SPEC_e2a.md; route measured in docs/INVESTIGATION_phase6.md (b)",
+                   "built",
+                   "HONEST LABEL: a Mario's-eye-view assumption. theta = 2 atan(w / 2d) with w = the face's vertical extent, d shrinks only "
+                   "because Mario walks; same elevation weight as enemies; zero new scalars. ON for E2a and the 1-1 baseline B11, OFF for "
+                   "E0, E1, E3. Necessity control in E2a: the real_no_obstacle arm (eval only)."),
     MechanismEntry("food_smell", "Food smell (no innate effect; revisit with learning)", "a mushroom or '?' block",
                    "attractive olfactory receptor neurons, left and right", "receptor",
                    "docs/INVESTIGATION_phase3.md: on the real wiring attractive receptor neurons never drive walking and drive steering at "
@@ -111,7 +120,16 @@ EXPERIMENTS: tuple[ExperimentEntry, ...] = (
                     "run only from the E1 eval/CLI, not selectable here)",
                     PLAN + " section 4; scene brain/scenes/e1_goomba_approach.json (scripted action log, deterministic)",
                     "runnable", "brain.e1"),
-    ExperimentEntry("E2a", "Obstacle", "one pipe", ("looming", "expanding_obstacle"), "gets past in >= 14/20", CONTROLS, PLAN + " section 4", "planned"),
+    ExperimentEntry("E2a", "Get past the pipe", E2A_SCENE_ID, ("looming", "expanding_obstacle", "goal_direction"),
+                    f"cleared = Mario's x beyond pipe 1's right edge (x > {E2A_PIPE_RIGHT_X}) alive within {E2A_MAX_FRAMES} frames in >= "
+                    f"{E2A_CRITERION['real_cleared_min']}/20; degree shuffle <= {E2A_CRITERION['shuffled_cleared_max']}/20 (also reported: GF fired "
+                    "before the face, first-A frame / x / run length, take-off x, tap fraction, how each run ends)",
+                    CONTROLS + "; plus a class-preserving shuffle arm (informative, no pass/fail) and the necessity control real_no_obstacle "
+                    "(real wiring, obstacle expansion off; expected to fail); eval-only controls, not selectable in Run/play. The home landmark "
+                    "is ON (an invented world cue) and the first Goomba is removed by the scene rule; pipes 2-4 are not tested",
+                    PLAN + " section 4; docs/SPEC_e2a.md; scene brain/scenes/e2a_pipe1.json (action log, deterministic). The pipe is perceived "
+                    "as looming from static obstacles: a Mario's-eye-view assumption, no source for obstacle-triggered jumps in flies",
+                    "runnable", "brain.e2a"),
     ExperimentEntry("E2b", "Gap", "one pit", ("looming", "gap_width"), "crosses crossable gaps, refuses wide ones", CONTROLS, PLAN + " section 4", "planned"),
     ExperimentEntry("E3", "Pursue the mushroom by sight", E3_SCENE_ID, ("pursuit",),
                     f"reaches the mushroom within {E3_MAX_FRAMES} frames in >= {CRITERIA['E3']['real_reached_min']}/20; "
@@ -132,12 +150,12 @@ EXPERIMENTS: tuple[ExperimentEntry, ...] = (
                     CONTROLS, PLAN + " section 4", "planned"),
     ExperimentEntry("E8", "Transfer", "1-2, 1-3, 1-4", ("looming", "goal_direction"), "distance vs shuffled, no retraining", CONTROLS,
                     PLAN + " section 4", "planned"),
-    ExperimentEntry("B11", "1-1 innate baseline", B11_SCENE_ID, ("looming", "pursuit", "goal_direction"),
+    ExperimentEntry("B11", "1-1 innate baseline", B11_SCENE_ID, ("looming", "pursuit", "goal_direction", "expanding_obstacle"),
                     "none: a BASELINE, not a criterion, no pass/fail. Reported: max x (mean with bootstrap CI, median), how each run ends "
                     "(level complete, death by enemy / pit / other, stuck, timeout), Goombas jumped, A-tap fraction and A-run lengths, power-up "
                     "reached, GF output and TTMn max",
                     "real vs degree-preserving shuffled vs class-preserving shuffled connectome, 20 seeds (6000-6019: fresh, but 6000-6029 were "
-                    "noise seeds of Phase 3b diagnostic runs on the E1 scene), run once. All three mechanisms are ON; the home landmark is an "
+                    "noise seeds of Phase 3b diagnostic runs on the E1 scene), run once (the first, 'without obstacle expansion' baseline); with obstacle expansion ON the re-run uses fresh seeds 6100-6119 (docs/SPEC_baseline_1-1.md, 'Obstacle expansion on'). All four mechanisms are ON; the home landmark is an "
                     f"invented world cue (it moves the 'go right' assumption into the senses). Bounds are invented conventions: {BASELINE_MAX_FRAMES} "
                     f"frames, stuck = no new max x for {BASELINE_STUCK_FRAMES} frames",
                     "docs/SPEC_baseline_1-1.md; real level 1-1 from reset (brain/scenes/b11_baseline.json: no actions, no enemy clearing, no RAM edits)",
