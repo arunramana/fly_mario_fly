@@ -75,3 +75,5 @@ with Mario alive. A "ground hit" is a 16 px box overlap in both axes (as the dea
 ground AFTER he has been airborne in that window (landing into it); a ground overlap before his first airborne frame in the window
 (approach, take-off frame) is not a hit. Walking into a Goomba and dying on the ground, or dying having never been airborne, is not
 jumped (a dying Mario closes no window).
+
+Clarification (2026-10-04): "Chosen outcome-neutrally before re-scoring" above is softened to: found in a spot check, fixed before any re-score. The original wording is kept for history.
