@@ -53,3 +53,13 @@ Root tests/: 295 collected, 295 passed, 0 failed, 0 skipped (three disjoint file
 - Dose-response: BETTER on survival, SAME on speed.
 
 Video: projects/redesign_e1/runs/228a_b11_real_seed9200.mp4 (seed 9200, stuck at pipe 3, x 722, 542 frames).
+
+## Corrections and additions (2026-10-06, after review; append-only)
+
+D1 dose-response reconciliation. Recomputed read-only from audit/p10_dose.json (seeds 6200-6219) and audit/p16_dose.json (seeds 6600-6619): both use the same field, `curve[v].real.first_goomba.survived` of `n` = 20 (died_enemy + survived = 20, unresolved 0, no_contact 0 in both). Definition and denominator therefore MATCH; the table in section 4 stands (previous 1/10/9/8, now 5/19/20/20). So the 20-point swing is real in the data but NOT attributable: the code changed (step 4) and the seed set changed (6200 vs 6600) together, and no run exists with the old code on the new seeds or the new code on the old seeds. "BETTER on survival" in section 4 and the Verdict should be read as "higher on different seeds, cause not separated from seed noise". The earlier hedge about "a different denominator" is withdrawn: the denominators are the same.
+
+D3 additions to the verdict.
+- (i) The step-3 B11 pipe-2 regression (docs/RESULTS_5c_step3.md section 4, "cause not diagnosed") was never diagnosed and recurs here: 8/20 real runs stall at x 596 (pipe 2); pipe 2 cleared 12/20.
+- (ii) E1 real 10/20 (30-70%) is not distinguishable from class shuffle 15/20 (53-89%): the CIs overlap. E1 therefore does not show that specific wiring matters for the escape jump.
+- (iii) The B11 698-vs-385 comparison is across different seed sets (6500-6519 vs 6400-6419) and different code; the gain comes from first-Goomba survival (15/20 deaths -> 0/20), after which stalls move to pipes 2 and 3. Seed noise applies, and B11 real is near-deterministic (few distinct trajectories).
+- Scope of the enemy hitbox (w 10, left 3): measured for Goomba (presumed Koopa) only; not valid for other enemy kinds. 1-1 is unaffected. Elevation still uses sprite centres (open item, step 5 candidate).

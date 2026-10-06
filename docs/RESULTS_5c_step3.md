@@ -38,3 +38,6 @@ So 2/5 still stall at pipe 3 (x 722) and 3/5 now stall EARLIER, at pipe 2 (x 596
 
 ## 4. Verdict
 E2a: better or the same (real 20/20 vs 18/20 on different seeds; criteria all met; take-off inside the pipe-1 window). B11: worse at the margin and no better overall: mean 385 vs 374/417 is within seed noise (the max_x of 15/20 is fixed by the first Goomba at x 315), but the 5 survivors that previously passed pipe 2 and reached x 724 now stall at pipe 2 (x 596) in 5/5 here and 3/5 in the replay. Pipe 2 cleared 0/5 (before: 5/5 in 6100-6119). Step 3 helped the pipe-1 scene, did not fix pipe 3 (2/5 still stall at 722), and appears to have moved a stall from pipe 3 to pipe 2 for the remaining. Cause not diagnosed. No video: pipe 3 itself did not change qualitatively (it still stalls, 722); pipe 2 changed, but the rule asked for pipe-3 change only.
+
+## Correction (2026-10-06, after review; append-only)
+Section 4's "No video: ... the rule asked for pipe-3 change only" was wrong as a reason. The pipe-2 behaviour DID change (5/5 and 3/5 now stall at x 596 where all passed pipe 2 before), and CLAUDE.md requires a recorded run for any change in what the agent does, not only for the targeted pipe. The missing video is a gap, not a justified skip. The pipe-2 regression was never diagnosed; it recurs at step 4 (8/20 stall at x 596, docs/RESULTS_5c_step4.md).

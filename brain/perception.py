@@ -16,6 +16,9 @@ Here the vertical centre of each object is taken from where its sprite really is
   Mario: feet = bottom of his hitbox (RAM 0x04AF, screen y, any size), height 16 px small / 32 px big (RAM 0x0756)
   enemy: sprite top = Enemy_Y_Position + 8, height 16 px (the registry models every enemy as 16 px), feet = byte + 24
 Measured offsets (small Mario, 1-1): Mario byte 176, hitbox bottom 208; Goomba byte 184, feet 208 (same floor).
+Distance contract (Phase 5c step 4, docs/SPEC_geometry_5c.md): d is SURFACE TO SURFACE, from the front edge of Mario's hitbox to the
+nearest hitbox face of the target (d = centre-to-centre dx + enemy box left offset - Mario front edge), not centre to centre. Whether an
+enemy is "ahead" is still decided on the centre-to-centre sign. Elevation still uses sprite centres (open item, step 5 candidate).
 Validated only on a synthetic ground-level object (tests/test_brain_core.py), never on game outcomes.
 """
 
@@ -35,7 +38,8 @@ SPRITE_PX = 16                       # every enemy is modelled 16 px (mario/enti
 MARIO_SMALL_PX, MARIO_BIG_PX = 16, 32
 # Phase 5c step 4 (docs/SPEC_geometry_5c.md sections 1 and 7): distance is surface to surface, from the eye at the centre of the
 # FRONT edge of Mario's hitbox to the target's nearest hitbox face. Numbers are the engine's own collision boxes (RAM 0x04AC..).
-ENEMY_HITBOX_W_PX = 10                       # Goomba box = sprite x + 3 .. + 13; applied to every enemy
+ENEMY_HITBOX_W_PX = 10                       # Goomba box = sprite x + 3 .. + 13; measured for Goomba (presumed Koopa) ONLY, applied to every enemy
+                                             # kind; NOT valid for piranha, bullet bill, hammer bro etc. (1-1 has only Goombas/Koopas)
 ENEMY_BOX_LEFT_PX = 3                        # enemy box left edge = rec.x + 3
 MARIO_FRONT_EDGE_SMALL_PX, MARIO_FRONT_EDGE_BIG_PX = 13, 14   # Mario box right edge: drawn x + 13 (small) / + 14 (big)
 

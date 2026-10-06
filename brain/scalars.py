@@ -20,6 +20,7 @@ from pathlib import Path
 
 from brain import calibration as C
 from brain import manifest as M
+from brain import perception as P
 
 MEASURED, CALIBRATED, INVENTED = "measured", "calibrated", "invented"
 KINDS = (MEASURED, CALIBRATED, INVENTED)
@@ -35,6 +36,7 @@ class BrainScalar:
     lo: float                 # allowed range, a sanity bound, not a search interval
     hi: float
     source: str               # where the value or its convention comes from
+    inert: bool = False       # retired: no live code path reads it any more; the row is kept for provenance
 
     def __post_init__(self):
         assert self.kind in KINDS, self.kind
@@ -60,9 +62,16 @@ def _constants() -> list[BrainScalar]:
         S("CALIBRATION_SEED0", C.CALIBRATION_SEED0, "seed", INVENTED, 0, 10**6, "first calibration noise seed (7000-7029); an identifier, not a tuned value"),
         S("MOTOR_FLOOR_HZ", C.MOTOR_FLOOR_HZ, "Hz", INVENTED, 0.0, 0.1, "a motor threshold is never below this"),
         S("ELEVATION_LIMIT_DEG", C.ELEVATION_LIMIT_DEG, "deg", INVENTED, 10.0, 90.0,
-          "elevation beyond which an object leaves the looming field (same as the validated bio_strict path)"),
+          "elevation beyond which an object leaves the looming field (same as the validated bio_strict path). "
+          "STILL LIVE for enemies (brain/policy.py enemy_thetas and the pursuit-target thetas, brain/e2a_synth.py). "
+          "Its OBSTACLE use is inert since Phase 5c step 3: obstacle_thetas passes it to theta_of, but an extended-object face has "
+          "elevation 0 for every selected face, so the (1 - elev / limit) factor is always 1. Not retired, because the enemy path reads it"),
+        S("ENEMY_HITBOX_W_PX", P.ENEMY_HITBOX_W_PX, "px", MEASURED, 1, 32, "RAM collision-box bytes (enemy box 0x04B0 + 4 * slot): Goomba box width 10 px. Measured for Goomba (presumed Koopa) only; NOT valid for other enemy kinds (docs/SPEC_geometry_5c.md). Pinned by tests/test_hitbox_pin.py"),
+        S("ENEMY_BOX_LEFT_PX", P.ENEMY_BOX_LEFT_PX, "px", MEASURED, 0, 16, "RAM enemy box bytes: left edge = drawn x + 3 (Goomba). Same scope limit as ENEMY_HITBOX_W_PX; pinned by tests/test_hitbox_pin.py"),
+        S("MARIO_FRONT_EDGE_SMALL_PX", P.MARIO_FRONT_EDGE_SMALL_PX, "px", MEASURED, 0, 32, "RAM Mario box bytes (0x04AC-0x04AF): right edge = drawn x + 13 for small Mario; pinned by tests/test_hitbox_pin.py"),
+        S("MARIO_FRONT_EDGE_BIG_PX", P.MARIO_FRONT_EDGE_BIG_PX, "px", MEASURED, 0, 32, "RAM Mario box bytes (0x04AC-0x04AF): right edge = drawn x + 14 for big Mario; pinned by tests/test_hitbox_pin.py"),
         S("LC10A_GAIN", C.LC10A_GAIN, "Hz per unit salience", INVENTED, 0.0, 100.0, "pursuit drive onto LC10a at full arousal; midpoint of the window where the real brain steers correctly and MDN stays silent (docs/SPEC_phase3.md section 3, synthetic dot test only). Provenance: invented gain in a window found on a synthetic dot. E3 seed 9300 (Phase 5b, before step 2 of 5c): mean R drive 4.1 Hz, max 8.2 Hz at arousal 0.65"),
-        S("LC10A_AZIMUTH_SPLIT", C.LC10A_AZIMUTH_SPLIT, "deg", INVENTED, 1.0, 90.0, "INERT since Phase 5c step 2 (pursuit azimuth is always 0, shares 0.5 / 0.5 for any split); kept only so the synthetic calibration record and mechanism interface stay valid. Earlier meaning: not a visual azimuth. The NES side view has no lateral axis; 'azimuth' was the signed horizontal screen distance dx between Mario and the target, 90 deg * clip(dx / 128, -1, 1) (128 px = half the screen width is a fact; the dx -> angle mapping was invented). dx is the same axis that gives looming its depth, so a target touching Mario read 0 deg and one 128 px ahead 90 deg (right only); every target ahead had right share >= 0.5, i.e. the channel carried ahead (Right) vs behind (Left), the legacy 'ahead = Right' convention, not a retinal position. E3 reached 6/6 with the term removed (az = 0) and 0/6 with its sign flipped (Phase 5b)"),
+        S("LC10A_AZIMUTH_SPLIT", C.LC10A_AZIMUTH_SPLIT, "deg", INVENTED, 1.0, 90.0, "INERT since Phase 5c step 2 (pursuit azimuth is always 0, shares 0.5 / 0.5 for any split); kept only so the synthetic calibration record and mechanism interface stay valid. Earlier meaning: not a visual azimuth. The NES side view has no lateral axis; 'azimuth' was the signed horizontal screen distance dx between Mario and the target, 90 deg * clip(dx / 128, -1, 1) (128 px = half the screen width is a fact; the dx -> angle mapping was invented). dx is the same axis that gives looming its depth, so a target touching Mario read 0 deg and one 128 px ahead 90 deg (right only); every target ahead had right share >= 0.5, i.e. the channel carried ahead (Right) vs behind (Left), the legacy 'ahead = Right' convention, not a retinal position. E3 reached 6/6 with the term removed (az = 0) and 0/6 with its sign flipped (Phase 5b)", inert=True),
         S("PURSUIT_AROUSAL", C.PURSUIT_AROUSAL, "fraction", INVENTED, 0.0, 1.0, "default of the tool's fly-state arousal input that scales pursuit; midpoint of the window where the real brain steers correctly on a synthetic dot and a static dot gives nothing (docs/SPEC_phase3.md section 11). Not read from the fly's output"),
         S("GOAL_CUE_SALIENCE", C.GOAL_CUE_SALIENCE, "Hz", INVENTED, 0.0, 100.0, "home landmark: static drive onto the right LC10a. It moves the 'go right' assumption to the senses, it does not remove it; midpoint of the window where the real brain walks right and nothing presses Left (docs/SPEC_phase3.md section 3). Provenance: a static, right-only drive that is not a visible object (LC10a prefers small moving objects). In B11 (seed 9300, first 446 frames) it was 100% of right-LC10a drive (15.0 Hz every frame, left 0); pursuit contributed nothing until a mushroom is pursued. E3 has no landmark"),
         S("K_HOPS", M.K_HOPS, "hops", INVENTED, 1, 6, "network rule: neurons within k hops of a path (INVEST_phase0 2.4 B)"),
@@ -145,12 +154,15 @@ def all_scalars() -> list[BrainScalar]:
 
 def generate() -> str:
     rows = all_scalars()
-    counts = {k: sum(r.kind == k for r in rows) for k in KINDS}
+    active = [r for r in rows if not r.inert]
+    n_inert = len(rows) - len(active)
+    counts = {k: sum(r.kind == k for r in active) for k in KINDS}
     cal = C.Calibration.load()
     out = ["# Brain scalars (generated)", "",
            "Generated by `python -m brain.scalars` from `brain/calibration.py`, `brain/manifest.py` and `brain/calibration.json`. "
            "Do not edit by hand. The legacy registry (`config/params.py`, `docs/SCALARS.md`) is separate and frozen.", "",
-           f"Total: **{len(rows)}** = {counts[INVENTED]} invented + {counts[CALIBRATED]} calibrated + {counts[MEASURED]} measured. "
+           f"Total: **{len(active)} active + {n_inert} inert** ({len(rows)} rows). Active = {counts[INVENTED]} invented + {counts[CALIBRATED]} calibrated + {counts[MEASURED]} measured. "
+           "Inert rows (marked INERT in the Kind column) are retired scalars no live code path reads; they are kept for provenance and excluded from the active count. "
            f"Derived numbers belong to network `{cal.network_hash}` (calibration file hash `{C.Calibration.file_hash()}`).", "",
            "Note: *measured* here means taken from the literature or the data, unlike the legacy registry (docs/SCALARS.md), where it means simulated and picked by a sweep. "
            "Kinds: *measured* = taken from the literature or the data; *calibrated* = derived on a synthetic stimulus "
@@ -164,7 +176,7 @@ def generate() -> str:
            "The hitbox is the less favourable, honest choice.", "",
            "| Name | Value | Unit | Kind | Range | Source |", "|---|---|---|---|---|---|"]
     for r in rows:
-        out.append(f"| `{r.name}` | {r.value:.6g} | {r.unit} | {r.kind} | [{r.lo:g}, {r.hi:g}] | {r.source} |")
+        out.append(f"| `{r.name}` | {r.value:.6g} | {r.unit} | {r.kind}{' (INERT)' if r.inert else ''} | [{r.lo:g}, {r.hi:g}] | {r.source} |")
     out.append("")
     return "\n".join(out)
 
