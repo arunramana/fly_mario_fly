@@ -81,3 +81,5 @@ NEW `brain/obstacles.py` (face geometry from RAM), `brain/e2a.py` (episode, eval
 `brain/settings.py`, `brain/library.py` (E2a runnable, B11 lists the mechanism), `brain/scenes.py` (id), `brain/scalars.py`,
 `docs/SCALARS_BRAIN.md` (regenerated), `docs/SPEC_baseline_1-1.md` (appended section), tool dispatch (`tool/core/brain_runner.py`,
 `tool/ui/brain_runs.py`, `tool/ui/tabs/results.py`). Frozen legacy untouched; motor map, calibration, manifest untouched.
+
+Note (2026-10-05): the pipe-1 taps stay under option E (reported as measured, not made to jump; no change to the circuit or scalars).

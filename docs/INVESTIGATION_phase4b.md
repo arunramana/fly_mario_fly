@@ -131,3 +131,11 @@ At drive 30 all values are 0.28x of the drive-100 ones (linear). The PPL1 types 
 3. Decide whether to verify the MBON targets (Hige 2015 Neuron figure 1 spike counts and Aso/Owald baselines) before kappa is fixed; do not use kappa before then.
 4. Drop heat/pain as punishment; if a punishment is wanted, state it as an invented sensed event (not heat), and expect PPL1/PAM non-separation (1.04) to keep valence the model's, not the connectome's.
 5. DNp09: keep walk/B as "forward-walking program" in the motor map but label it as an interpretation; note the pooled map ignores P9's unilateral ipsilateral turn and the freezing literature (Zacarias) predicts a stop under looming at low speed, which the map would convert into a rightward run.
+
+## 6. Decision (Arun, strict track), 2026-10-05
+
+- **No learning demo.** E4 and E5 stay dropped.
+- **This verdict is the strict finding.** Learned odour approach/avoidance is reachable only as steering and backing, at 2-5% of motor
+  threshold, after two stage gains and an order-dependent plasticity rule. Reward or punishment in Mario's world (touching a mushroom,
+  being hit) would be an invented sensory event routed through real wiring, so it is not part of the strict track.
+- **Heat is DROPPED as a punishment (learning) signal.** Decision 4 above is settled as "drop"; no replacement punishment is built.

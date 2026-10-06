@@ -147,3 +147,11 @@ says nothing about the brain's looming circuit, which the disc test covers.
 
 Sprite geometry caveat: the 16 px sprite / 8 px Y-byte offset used for enemy centres (section 6) is validated for small Mario vs a
 Goomba on flat ground only. Re-validate in Phase 2 before Koopas or other tall enemies, and for big Mario.
+
+## Note (2026-10-05): the DNp09 walk reading is an interpretation
+
+The motor map's "walk" row (DNp09 -> go right and run, B held) is an INTERPRETATION of the forward-walking program (P9: Bidaye et al. 2020,
+Neuron), not a measured Mario button. Zacarias et al. 2018 points the other way: activating these cells gives running and then freezing,
+with freezing in 85% of trials at low speed against 55% at high speed, in a looming context; a freeze under looming would be a stop, where
+the map converts the same activity into a rightward run. The pooled reading also ignores P9's unilateral (ipsilateral) turn. Comments and
+library text only; no behaviour or threshold changed.

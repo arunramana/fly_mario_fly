@@ -159,8 +159,10 @@ class GoombaTracker:
 # ---- one episode --------------------------------------------------------------------------------------------------
 def run_baseline_episode(seed: int, arm: str = "real", shuffle_seed: int | None = None, settings: SenseSettings | None = None,
                          scene: SceneSpec | None = None, max_frames: int | None = None, network=None, calibration=None,
-                         on_frame=None, should_stop=None, record_rows: bool = False):
-    """One 1-1 episode from reset. Returns (BaselineResult, rows, stamp). No scene rule is applied and no RAM byte is written."""
+                         on_frame=None, should_stop=None, record_rows: bool = False, probe=None):
+    """One 1-1 episode from reset. Returns (BaselineResult, rows, stamp). No scene rule is applied and no RAM byte is written.
+    `probe(frame, ram, mario_x)` is an optional read-only observer (frame 0 = after reset, then once per frame after the step);
+    brain/dose_response.py uses it. It is None in every other run, which are unchanged."""
     if arm not in ARMS or (arm in SHUFFLED_ARMS) != (shuffle_seed is not None):
         raise ValueError(f"arm {arm!r} with shuffle_seed {shuffle_seed!r}: shuffled arms need a shuffle seed, real none")
     from brain.e1 import _row, _vertical_gap, is_contact
@@ -181,6 +183,8 @@ def run_baseline_episode(seed: int, arm: str = "real", shuffle_seed: int | None 
     ram = env.unwrapped.ram
     size0 = int(ram[ADDR_MARIO_SIZE])
     policy.reset(seed)
+    if probe is not None:
+        probe(0, ram, int(ram[ADDR_MARIO_PAGE]) * 256 + int(ram[ADDR_MARIO_X]))
 
     class _Obs:
         pass
@@ -209,6 +213,8 @@ def run_baseline_episode(seed: int, arm: str = "real", shuffle_seed: int | None 
         gf_out_max, ttmn_max = max(gf_out_max, readout.pooled("GF")), max(ttmn_max, readout.pooled("TTMn"))
         screen_obs, _, done, info = env.step(action)
         mario_x = int(ram[ADDR_MARIO_PAGE]) * 256 + int(ram[ADDR_MARIO_X])
+        if probe is not None:
+            probe(frames, ram, mario_x)
         if mario_x > max_x:
             max_x, last_progress = mario_x, frames
         if collected_frame is None and int(ram[ADDR_MARIO_SIZE]) != size0:

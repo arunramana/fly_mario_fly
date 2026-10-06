@@ -4,11 +4,16 @@
 # neurons -> left or right, backward-walking neuron -> back up. It only reads
 # the brain; it never feeds anything back. Down and Up have no neuron and are
 # never pressed. The thresholds come from synthetic tests, not from game runs.
+# The walking neuron's reading as "go right and run" is an interpretation (see the module docstring).
 """brain/motor_map.py -- docs/SPEC_brain_core.md section 7.
 
 Read-only: `read()` takes a Readout and returns buttons. There is no path from here into the brain. The one piece of
 state is the A "muscle": a leaky integral of the TTMn onset (a muscle low-passes its motor neuron, and a saturated
 TTMn pool stays high long after the twitch), like bridge/controller_modules.MotorDirectModule without its game hooks.
+
+The "walk" row (DNp09 -> Right + B) is an INTERPRETATION of the forward-walking program (P9: Bidaye et al. 2020, Neuron), not a measured
+Mario button. Zacarias et al. 2018 points the other way (activation gives running then freezing; freezing 85% at low speed vs 55% at high,
+in a looming context), and the pooled reading ignores P9's unilateral ipsilateral turn. See docs/SPEC_brain_core.md (note, 2026-10-05).
 """
 
 from __future__ import annotations

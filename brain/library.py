@@ -99,7 +99,10 @@ MECHANISMS: tuple[MechanismEntry, ...] = (
                    "brain/mechanisms.py HomeLandmarkMechanism; docs/SPEC_phase3.md", "built",
                    "HONEST LABEL: this moves the 'go right' assumption into the senses; it does not remove it. The scalar is invented and "
                    "counted. The shuffled arms always receive the same cue. Replaces the legacy home_bias and walk_drive. Necessity control in "
-                   "E0: the real_no_landmark arm (eval only). E0's 20/20 is one deterministic trajectory, not 20 independent successes."),
+                   "E0: the real_no_landmark arm (eval only). E0's 20/20 is one deterministic trajectory, not 20 independent successes. "
+                   "Motor map note: reading DNp09 as 'walk right' is an INTERPRETATION of the forward-walking program (P9: Bidaye et al. 2020 "
+                   "Neuron); Zacarias et al. 2018 (activation gives running then freezing; freezing 85% at low speed vs 55% at high; looming "
+                   "context) points the other way, and the pooled reading ignores the unilateral turn."),
     MechanismEntry("gap_width", "Gap width", "a pit ahead", "C2/C3 (parallax) toward the central complex", "feature-level (D1)",
                    "Pick & Strauss 2005, Triphan 2010/2016, Krause 2019", PLAN + " 3.3, decision D3", "investigation",
                    "The route in MaleCNS is not yet traced."),

@@ -105,3 +105,40 @@ def test_arm_validation():
         baseline.run_baseline_episode(1, "shuffled", None)
     with pytest.raises(ValueError):
         baseline.run_baseline_episode(1, "real", 3)
+
+
+# ---- dose-response harness (docs/SPEC_dose_response.md) ----------------------------------------------------------
+def test_dose_override_changes_only_the_landmark_drive_and_absent_override_is_the_default():
+    import dataclasses
+    from brain import calibration as C
+    from brain.dose_response import VALUES, settings_with_salience
+    default = settings_for("B11")
+    assert settings_with_salience(None) == SenseSettings.user_default() and settings_for("B11", settings_with_salience(None)) == default
+    assert settings_for("B11", settings_with_salience(None)).to_dict() == default.to_dict()      # stamp unchanged when absent
+    assert 15.0 in VALUES and C.GOAL_CUE_SALIENCE == 15.0
+    for v in VALUES:
+        used = settings_for("B11", settings_with_salience(v))
+        assert used == dataclasses.replace(default, goal_cue_salience=v)       # nothing but the landmark strength differs
+        assert used.pursuit_kinds == default.pursuit_kinds and used.pursuit_arousal == default.pursuit_arousal
+        assert used.obstacle_expansion
+    assert C.GOAL_CUE_SALIENCE == 15.0                                          # the registry is never touched
+
+
+def test_dose_probe_speed_window_and_first_goomba_classification():
+    from brain.dose_response import DoseProbe
+    p = DoseProbe()
+    p.xs = [40 + 2 * i for i in range(301)]
+    assert p.speed() == 2.0                                   # no contact: window = min(100, last frame)
+    p.contact_frame, p.contact_x = 50, 140
+    assert p.speed() == 2.0 and p.first_goomba("died_enemy") == "died_enemy" and p.first_goomba("stuck") == "unresolved"
+    p.resolved = True
+    assert p.first_goomba("timeout") == "survived"
+    q = DoseProbe()
+    q.xs = [40, 41, 42]
+    assert q.speed() == 1.0 and q.first_goomba("stuck") == "no_contact"
+
+
+def test_probe_is_read_only_and_optional():
+    src = inspect.getsource(baseline.run_baseline_episode)
+    assert "probe=None" in src and src.count("probe(frame") + src.count("probe(0") + src.count("probe(frames") >= 2
+    assert not re.search(r"ram\[[^\]]+\]\s*=(?!=)", inspect.getsource(__import__("brain.dose_response", fromlist=["x"]).DoseProbe))
