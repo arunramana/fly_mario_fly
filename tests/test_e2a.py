@@ -39,17 +39,38 @@ def cal():
     return Calibration.load()
 
 
-def _face(world, x, feet=208, h=16):
+def _face(world, x, feet=208, h=12):
     return obstacles.nearest_face(S.visible(world, x), x, feet, h)
 
 
 # ---- pure: the encoding rule -----------------------------------------------------------------------------------------------
 def test_pipe_face_is_32_wide_and_its_distance_is_left_edge_minus_mario():
     f = _face(S.GEOMETRIES["pipe_32x32"], 408)
-    assert (f.d_px, f.w_px) == (40.0, 32.0) and f.centre_y == 192.0
-    th, d = obstacles.theta_of(f, 200.0, ELEVATION_LIMIT_DEG)
-    elev = math.degrees(math.atan2(8.0, 40.0))
-    assert d == 40.0 and th == pytest.approx(2 * math.atan(32 / 80) * (1 - elev / 60.0))      # the enemies' weight function
+    assert (f.d_px, f.w_px) == (40.0, 32.0) and f.centre_y == 192.0 and (f.top_y, f.bottom_y) == (176.0, 208.0)
+    th, d = obstacles.theta_of(f, 196.0, 208.0, ELEVATION_LIMIT_DEG)
+    assert d == 40.0 and th == pytest.approx(2 * math.atan(32 / 80))                        # face overlaps the body: elevation 0, weight 1
+
+
+def test_obstacle_face_is_an_extended_object_its_elevation_is_that_of_its_nearest_point():
+    for tiles, w in ((2, 32.0), (3, 48.0), (4, 64.0)):                       # pipes 1/2/3: theta is 2 atan(H / 2d), no centre-point inversion
+        f = _face({448: S.stack(tiles)}, 400)
+        th = [obstacles.theta_of(_face({448: S.stack(tiles)}, x), 196.0, 208.0, ELEVATION_LIMIT_DEG)[0] for x in range(300, 430, 2)]
+        assert f.w_px == w and all(b >= a for a, b in zip(th, th[1:]))
+    f = _face({448: S.stack(2)}, 400)                                            # face y 176..208
+    assert obstacles.elevation_deg(f, 196.0, 208.0, 48.0) == 0.0                 # overlapping the body: 0 (the old centre rule gave 9.5 deg)
+    assert obstacles.elevation_deg(f, 140.0, 172.0, 48.0) == pytest.approx(math.degrees(math.atan2(4.0, 48.0)))  # body above: gap to the top edge
+    assert obstacles.elevation_deg(f, 220.0, 240.0, 48.0) == pytest.approx(math.degrees(math.atan2(12.0, 48.0)))  # body below: gap to bottom
+    cap = obstacles.theta_of(f, 100.0, 112.0, ELEVATION_LIMIT_DEG)[0]            # 12 px body well above: still weighted down by the unchanged cap
+    assert cap < obstacles.theta_of(f, 196.0, 208.0, ELEVATION_LIMIT_DEG)[0]
+
+
+def test_mario_body_is_the_hitbox_12_small_24_big():
+    assert (obstacles.BODY_SMALL_PX, obstacles.BODY_BIG_PX) == (12, 24)
+    col = [0] * 13
+    col[9] = 0x51                                                                # tile row 9: y 176..192
+    assert obstacles.nearest_face([(448, col)], 400, 208, 12) is None            # small hitbox top y 196: below the tile
+    assert obstacles.nearest_face([(448, col)], 400, 208, 24) is not None        # big hitbox top y 184 < tile bottom 192: overlaps
+
 
 
 def test_block_and_first_stair_step_are_16_px_faces_and_only_the_nearest_column_counts():
@@ -61,7 +82,7 @@ def test_block_and_first_stair_step_are_16_px_faces_and_only_the_nearest_column_
 def test_flat_floor_is_not_an_obstacle_and_gives_theta_zero():
     flat = {c * 16: S.stack(0) for c in range(0, 200)}
     assert all(_face(flat, x) is None for x in range(40, 3000, 7))
-    assert obstacles.theta_of(None, 200.0, 60.0) == (0.0, None)
+    assert obstacles.theta_of(None, 196.0, 208.0, 60.0) == (0.0, None)
     assert all(r["theta"] == 0.0 and r["d"] is None for r in S.face_trace(flat, 3.0, 40, 400))
 
 
@@ -72,15 +93,15 @@ def test_a_face_must_be_ahead_and_overlap_mario_body():
     assert _face(pipe, 312) is not None
     assert _face(pipe, 400, feet=176) is None                                    # Mario above the pipe top (feet at y 176): nothing at body height
     block_high = {448: [0] * 8 + [0x51] + [0] * 4}                               # one floating tile in row 8 (y 160-176)
-    assert _face(block_high, 400, h=16) is None                                  # small Mario's body is row 10
-    assert _face(block_high, 400, h=32) is None                                  # big Mario: body rows 9-10, still below it
-    assert _face(block_high, 400, feet=176, h=16).w_px == 16.0                   # standing on a pipe top: it is level with him
+    assert _face(block_high, 400, h=12) is None                                  # small Mario's body is row 10
+    assert _face(block_high, 400, h=24) is None                                  # big Mario: body y 184-208, still below it
+    assert _face(block_high, 400, feet=176, h=12).w_px == 16.0                   # standing on a pipe top: it is level with him
 
 
 def test_a_tall_wall_is_one_run_and_the_longest_overlapping_run_wins():
     col = [0] * 13
     col[8] = col[9] = col[10] = 0x51                                             # rows 8-10 form one run of 3 tiles
-    f = obstacles.nearest_face([(448, col)], 400, 208, 32)
+    f = obstacles.nearest_face([(448, col)], 400, 208, 24)
     assert f.w_px == 48.0
 
 

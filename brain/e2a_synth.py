@@ -22,12 +22,12 @@ from brain.brain import Brain
 from brain.calibration import ELEVATION_LIMIT_DEG
 from brain.mechanisms import HomeLandmarkMechanism, LoomingMechanism, ObstacleExpansion
 from brain.motor_map import MotorMap
-from brain.obstacles import FLOOR_ROW, nearest_face, theta_of
+from brain.obstacles import BODY_SMALL_PX, FLOOR_ROW, nearest_face, theta_of
 
 FACE_X = 448                      # pipe 1's left edge
 STALL_X = 434                     # measured: small Mario stalls here at the pipe (docs/INVESTIGATION_phase6.md (b))
-WALK_PX_PER_FRAME, RUN_PX_PER_FRAME = 1.75, 3.0   # measured xspeed 28/16 and 48/16
-FEET_Y, SMALL_PX = 208, 16        # small Mario standing on the floor
+WALK_PX_PER_FRAME, RUN_PX_PER_FRAME = 2.57, 3.0   # walking / running speed (Phase 5c bench values; was 1.75 walking)
+FEET_Y, SMALL_PX = 208, BODY_SMALL_PX   # small Mario standing on the floor; body = the 12 px hitbox (5c step 3)
 TAKEOFF_WINDOW_1FRAME = (5, 29)   # px before the stall point where a 1-frame A tap clears pipe 1 (INVESTIGATION_phase6 (b))
 SCREEN_PX = 256
 SCROLL_DRAWN_X = 111              # Mario's drawn x once the screen scrolls (measured at the stall: 0x03AD = 111)
@@ -48,6 +48,9 @@ def stack(height_tiles: int) -> list[int]:
 
 GEOMETRIES = {
     "pipe_32x32": {FACE_X: stack(2), FACE_X + 16: stack(2)},                      # pipe 1: two columns, two tiles high
+    "pipe_48x3": {FACE_X: stack(3), FACE_X + 16: stack(3)},                       # pipe 2: three tiles high
+    "pipe_64x4": {FACE_X: stack(4), FACE_X + 16: stack(4)},                       # pipe 3: four tiles high
+    "step_16": {FACE_X: stack(1), FACE_X + 16: stack(1)},                         # a one-tile step (two columns wide)
     "block_16": {FACE_X: stack(1)},                                                # one 16 px block
     "stairs_1_2_3_4": {FACE_X + 16 * i: stack(i + 1) for i in range(4)},           # staircase, first step one tile
 }
@@ -65,7 +68,7 @@ def face_trace(world: dict[int, list[int]], speed: float, x0: float, frames: int
     for f in range(frames):
         x = min(x0 + speed * f, stall_x)
         face = nearest_face(visible(world, x), x, FEET_Y, SMALL_PX)
-        th, d = theta_of(face, FEET_Y - SMALL_PX / 2.0, ELEVATION_LIMIT_DEG)
+        th, d = theta_of(face, FEET_Y - SMALL_PX, FEET_Y, ELEVATION_LIMIT_DEG)
         out.append({"frame": f, "x": x, "d": d, "theta": th, "dtheta": th - prev})
         prev = th
     return out

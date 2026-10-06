@@ -17,11 +17,11 @@ import math
 from dataclasses import dataclass
 from typing import Iterable, Sequence
 
-from brain.perception import MARIO_BIG_PX, MARIO_SMALL_PX, mario_centre_y
 from mario.ram import screen, tile_ram
 from mario.ram.addresses import ADDR_MARIO_PAGE, ADDR_MARIO_SIZE, ADDR_MARIO_X
 
 ADDR_PLAYER_HITBOX_BOTTOM = 0x04AF
+BODY_SMALL_PX, BODY_BIG_PX = 12, 24   # Mario's hitbox heights (docs/SPEC_geometry_5c.md section 1; the game's own collision box)
 TILE_PX = 16
 TILE_TOP_Y = 32                 # screen y of metatile row 0 (measured: the floor row 11 starts at y 208 = 32 + 16 * 11)
 FLOOR_ROW = tile_ram.GROUND_ROW  # rows >= FLOOR_ROW are the floor: never an obstacle
@@ -33,6 +33,8 @@ class Face:
     d_px: float          # face left edge minus Mario's left edge (same convention as enemies)
     w_px: float          # vertical extent of the contiguous solid run (picture plane, perpendicular to the approach)
     centre_y: float      # screen y of the run's centre
+    top_y: float         # screen y of the run's top edge
+    bottom_y: float      # screen y of the run's bottom edge (the face is an extended object, not its centre point)
 
 
 def _runs(tiles: Sequence[int]) -> list[tuple[int, int]]:
@@ -63,7 +65,8 @@ def nearest_face(columns: Iterable[tuple[int, Sequence[int]]], mario_x: float, f
         if not hit:
             continue
         a, b = max(hit, key=lambda ab: ab[1] - ab[0])
-        best = Face(float(d), float(TILE_PX * (b - a + 1)), TILE_TOP_Y + TILE_PX * (a + b + 1) / 2.0)
+        best = Face(float(d), float(TILE_PX * (b - a + 1)), TILE_TOP_Y + TILE_PX * (a + b + 1) / 2.0,
+                    float(TILE_TOP_Y + TILE_PX * a), float(TILE_TOP_Y + TILE_PX * (b + 1)))
     return best
 
 
@@ -79,20 +82,28 @@ def visible_columns(ram) -> list[tuple[int, list[int]]]:
     return out
 
 
-def theta_of(face: Face | None, mario_cy: float, elevation_limit_deg: float) -> tuple[float, float | None]:
-    """(theta rad, d px) for a face: 2 atan(w / 2d) x max(0, 1 - elev / limit); the enemies' weight function, face centre as object centre."""
+def elevation_deg(face: Face, body_top: float, body_bottom: float, d: float) -> float:
+    """Elevation of the NEAREST POINT of the face to Mario's body: the vertical gap between the face extent and the body extent
+    (0 when they overlap), seen from distance d. An extended object, not its centre point (docs/SPEC_geometry_5c.md step 3)."""
+    gap = max(0.0, face.top_y - body_bottom, body_top - face.bottom_y)
+    return math.degrees(math.atan2(gap, d))
+
+
+def theta_of(face: Face | None, body_top: float, body_bottom: float, elevation_limit_deg: float) -> tuple[float, float | None]:
+    """(theta rad, d px) for a face: 2 atan(w / 2d) x max(0, 1 - elev / limit); the enemies' weight function, nearest-point elevation."""
     if face is None:
         return 0.0, None
     d = max(face.d_px, 1.0)
-    elev = math.degrees(math.atan2(abs(face.centre_y - mario_cy), d))
+    elev = elevation_deg(face, body_top, body_bottom, d)
     return 2.0 * math.atan(face.w_px / (2.0 * d)) * max(0.0, 1.0 - elev / elevation_limit_deg), face.d_px
 
 
 def obstacle_thetas(ram, prev_theta, elevation_limit_deg: float):
     """Same contract as `brain.perception.enemy_thetas` (theta, dtheta, distance per hemisphere), for the nearest obstacle face."""
     mario_x = int(ram[ADDR_MARIO_PAGE]) * 256 + int(ram[ADDR_MARIO_X])
-    height = MARIO_SMALL_PX if int(ram[ADDR_MARIO_SIZE]) == 0 else MARIO_BIG_PX
-    face = nearest_face(visible_columns(ram), mario_x, int(ram[ADDR_PLAYER_HITBOX_BOTTOM]), height)
-    th, d = theta_of(face, mario_centre_y(ram), elevation_limit_deg)
+    height = BODY_SMALL_PX if int(ram[ADDR_MARIO_SIZE]) == 0 else BODY_BIG_PX
+    feet = int(ram[ADDR_PLAYER_HITBOX_BOTTOM])
+    face = nearest_face(visible_columns(ram), mario_x, feet, height)
+    th, d = theta_of(face, feet - height, feet, elevation_limit_deg)
     theta = {"L": th, "R": th}
     return theta, {s: theta[s] - prev_theta[s] for s in ("L", "R")}, {"L": d, "R": d}

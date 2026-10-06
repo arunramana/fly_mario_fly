@@ -42,3 +42,36 @@ Report-only rules: if a step makes the GF fire earlier or later than the measure
 
 ## 4. Tests (affected only)
 Step 1/2: `tests/test_phase3.py` (pursuit target azimuth now 0 for ahead and behind; registry rows), `tests/test_scalars_doc.py` (generated doc equals generator), `tests/test_baseline.py`, `tests/test_e1.py`. `tool/tests/test_brain_tool.py` only if the tool is touched (it is not).
+
+## 5. Step 3 (2026-10-06): obstacle face as an extended object. Written BEFORE the code change and before any run of the step.
+Test: "would we make this change if it made Mario worse?" Yes: the old rule evaluates the elevation weight at the run CENTRE, a point, for an object that is 16-64 px tall. That is a modelling artefact (investigation 3.2), not a result.
+
+**Rule.**
+1. Mario's body for the obstacle overlap is `[feet - h, feet)` with h = 12 (small) / 24 (big), the hitbox heights of section 1 (was 16 / 32). Small vs big is still read from the RAM size byte (0x0756). `feet` is the hitbox bottom byte (0x04AF), unchanged.
+2. An obstacle face is the visible solid run overlapping that body, nearest column first, longest overlapping run wins (unchanged). Its width for theta is `w = 16 px * run length` (unchanged). The face now also carries its vertical extent `[top_y, bottom_y]` (screen y of the run's top and bottom edges).
+3. Elevation is that of the NEAREST POINT of the face to Mario's body: the vertical gap between the interval `[top_y, bottom_y]` and the body interval `[feet - h, feet]`, zero when they overlap. Face selection (step 2 above) requires overlap, so the elevation is 0 for every face that is selected, grounded or airborne; the weight is evaluated through the general nearest-point function so it stays correct if selection changes later. Elevation angle = `atan(gap / d)`.
+4. `theta = 2 atan(w / (2 d)) * max(0, 1 - elev / ELEVATION_LIMIT_DEG)`, `d` unchanged (left edge of face minus left edge of Mario, `max(d, 1)`; the surface-to-surface shift is step 4). The weight function shape and the 60 deg cap (invented `ELEVATION_LIMIT_DEG`) are unchanged. Enemies are untouched (`mario_centre_y`, `enemy_centre_y` stay). No new scalar, motor map, calibration, threshold, LC10a gain or landmark change.
+
+**Expected effect (investigation 3.2, 3.3).** With the centre-point artefact gone the theta of a tall face is simply `2 atan(H / 2d)`, monotone in approach. The GF (theta about 40 deg) should first fire at d about 43 (pipe 1, 32 px), 63-65 (pipe 2, 48 px) and 84-87 (pipe 3, 64 px), earlier than before for the tall faces. Presses may therefore be EARLY relative to the take-off windows measured in the stall doc (pipe 1: 1-frame tap window 5-29 px before the stall point, longer holds 35-65; pipe 3: hold >= 10 needed, window 8-35 px before the stall point). 
+
+**REPORT-ONLY rule.** If the GF fires or A is first pressed too early or too late versus those windows, that is reported. No threshold, gain, convention or window is adjusted. A worse Mario is the result.
+
+**Validation (synthetic only).** `audit/e2a_synth.py` (pipes 1/2/3 = 32/48/64 px, a 16 px block, a 1-tile step; running 3.0 and walking 2.57 px/frame; real vs 5 degree shuffles; landmark off and on): theta trace, GF first-spike d and theta, first A press px before the stall point versus the windows; flat ground theta 0; disc 38-48 deg with the mechanism on; rest silent. Numbers are recorded in section 6 after the run. Smoke seed 9100 only. Tests: `tests/test_e2a.py` (old centre-point assertions updated, extended-object elevation test added).
+
+## 6. Step 3 synthetic validation numbers (2026-10-06; `audit/e2a_synth.py --noise-seeds 1 --shuffles 5`, noise seed 9100, 5 degree shuffles, open loop from x 318, stall point x 434 = face 448 - 14; nothing tuned)
+Bench changes (stimulus values, not scalars): walking speed 2.57 px/frame (was 1.75), Mario body 12 px, geometries pipe_48x3 / pipe_64x4 / step_16 added. Stairs first step and block_16 give the same nearest face as step_16 (identical traces).
+
+| Face | Speed | Peak theta (d<=14) | GF first spike d / theta / px before stall (landmark off) | First A, px before stall (off / on) | Versus window |
+|---|---|---|---|---|---|
+| pipe 1 (32) | run 3.0 | 97.6 | 43.0 / 40.8 / 29 | 23 / 17 | inside 5-29 (GF at its far edge) |
+| pipe 1 | walk 2.57 | 97.6 | 42.6 / 41.2 / 28.6 | 18.3 / 18.3 | inside |
+| pipe 2 (48) | run | 119.5 | 61.0 / 43.0 / 47 | 41 / 32 | no measured window (reported only) |
+| pipe 2 | walk | 119.5 | 63.2 / 41.6 / 49.2 | 44 / 41.5 | no measured window |
+| pipe 3 (64) | run | 132.7 | 85.0 / 41.3 / 71 | 65 / 65 | EARLY: window 8-35, A about 30 px before its far edge |
+| pipe 3 | walk | 132.7 | 81.2 / 43.0 / 67.2 | 59.5 / 46.6 | EARLY by about 25 (off) / 12 (on) px |
+| 1-tile step / block (16) | run | 59.5 | 19.0 / 45.7 / 5 | 5 / 2 | at the near edge of the 1-frame window (no own window measured) |
+| 1-tile step / block | walk | 59.5 | 19.5 / 44.6 / 5.5 | 2.9 / 2.9 | same |
+
+Monotone theta for all pipes (the old inversion is gone). The GF distances are the predicted 43 / 61-63 / 81-85. Shuffled (degree), landmark off: 0 GF spikes and no A in all 5 shuffles for every geometry and speed. Real, landmark on equals landmark off for GF (the landmark shifts A by 0-13 px later in some rows). Shuffled with landmark ON: the GF fires at frame 0 (d about 129, theta of the face only 7-28 deg) in 5/5 shuffles, A in 3/5: the landmark alone drives the shuffled network; this is a property of the landmark mechanism on a rewired network, not of step 3 (stimulus at that frame is not the obstacle), reported only.
+Flat ground: 3000 frames, theta != 0 in 0 frames. Disc with the mechanism attached and landmark on: first GF spike at 47.2 / 47.2 / 40.6 / 43.6 deg for l/v 10 / 20 / 40 / 80 ms (all within 38-48). Rest 1000 frames: 0 GF spikes (real, landmark off and on; shuffled 1-3).
+Reported, not adjusted: the GF/A press for pipe 3 comes earlier than the 8-35 px take-off window (A 47-65 px before the stall point), as the investigation's caveat predicted; a ground press that early is a hop that lands before the pipe or too high-energy for the window, so a different failure (early press) is expected in the game, to be judged by the experimenter's seeds.
