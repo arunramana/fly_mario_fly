@@ -17,6 +17,7 @@ import math
 from dataclasses import dataclass
 from typing import Iterable, Sequence
 
+from brain.perception import front_edge_offset_px
 from mario.ram import screen, tile_ram
 from mario.ram.addresses import ADDR_MARIO_PAGE, ADDR_MARIO_SIZE, ADDR_MARIO_X
 
@@ -30,7 +31,7 @@ EMPTY = tile_ram.EMPTY_ID
 
 @dataclass(frozen=True)
 class Face:
-    d_px: float          # face left edge minus Mario's left edge (same convention as enemies)
+    d_px: float          # face left edge minus Mario's left edge (face selection); the eye distance subtracts Mario's front-edge offset in theta_of
     w_px: float          # vertical extent of the contiguous solid run (picture plane, perpendicular to the approach)
     centre_y: float      # screen y of the run's centre
     top_y: float         # screen y of the run's top edge
@@ -89,13 +90,17 @@ def elevation_deg(face: Face, body_top: float, body_bottom: float, d: float) -> 
     return math.degrees(math.atan2(gap, d))
 
 
-def theta_of(face: Face | None, body_top: float, body_bottom: float, elevation_limit_deg: float) -> tuple[float, float | None]:
-    """(theta rad, d px) for a face: 2 atan(w / 2d) x max(0, 1 - elev / limit); the enemies' weight function, nearest-point elevation."""
+def theta_of(face: Face | None, body_top: float, body_bottom: float, elevation_limit_deg: float,
+             eye_offset_px: float = 0.0) -> tuple[float, float | None]:
+    """(theta rad, d px) for a face: 2 atan(w / 2d) x max(0, 1 - elev / limit); the enemies' weight function, nearest-point elevation.
+    d = Face.d_px - eye_offset_px: surface to surface when the offset is Mario's front-edge offset (13 small / 14 big, step 4,
+    what `obstacle_thetas` passes). The default 0 is the pre-step-4 convention (left edge to left edge), kept for old-behaviour tests."""
     if face is None:
         return 0.0, None
-    d = max(face.d_px, 1.0)
+    d_surface = face.d_px - eye_offset_px
+    d = max(d_surface, 1.0)
     elev = elevation_deg(face, body_top, body_bottom, d)
-    return 2.0 * math.atan(face.w_px / (2.0 * d)) * max(0.0, 1.0 - elev / elevation_limit_deg), face.d_px
+    return 2.0 * math.atan(face.w_px / (2.0 * d)) * max(0.0, 1.0 - elev / elevation_limit_deg), d_surface
 
 
 def obstacle_thetas(ram, prev_theta, elevation_limit_deg: float):
@@ -104,6 +109,6 @@ def obstacle_thetas(ram, prev_theta, elevation_limit_deg: float):
     height = BODY_SMALL_PX if int(ram[ADDR_MARIO_SIZE]) == 0 else BODY_BIG_PX
     feet = int(ram[ADDR_PLAYER_HITBOX_BOTTOM])
     face = nearest_face(visible_columns(ram), mario_x, feet, height)
-    th, d = theta_of(face, feet - height, feet, elevation_limit_deg)
+    th, d = theta_of(face, feet - height, feet, elevation_limit_deg, front_edge_offset_px(ram[ADDR_MARIO_SIZE]))
     theta = {"L": th, "R": th}
     return theta, {s: theta[s] - prev_theta[s] for s in ("L", "R")}, {"L": d, "R": d}

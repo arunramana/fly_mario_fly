@@ -64,6 +64,22 @@ def test_obstacle_face_is_an_extended_object_its_elevation_is_that_of_its_neares
     assert cap < obstacles.theta_of(f, 196.0, 208.0, ELEVATION_LIMIT_DEG)[0]
 
 
+def test_obstacle_distance_is_surface_to_surface_front_edge_13_small_14_big():
+    f = _face(S.GEOMETRIES["pipe_32x32"], 408)                                   # left-edge distance 40
+    th0, d0 = obstacles.theta_of(f, 196.0, 208.0, ELEVATION_LIMIT_DEG)           # old convention is the default, kept for tests
+    th, d = obstacles.theta_of(f, 196.0, 208.0, ELEVATION_LIMIT_DEG, obstacles.front_edge_offset_px(0))
+    assert d0 == 40.0 and d == 27.0 and th == pytest.approx(2 * math.atan(32 / 54)) and th > th0
+    assert obstacles.theta_of(f, 184.0, 208.0, ELEVATION_LIMIT_DEG, obstacles.front_edge_offset_px(1))[1] == 26.0
+    assert obstacles.theta_of(f, 196.0, 208.0, ELEVATION_LIMIT_DEG, 100.0)[0] == pytest.approx(2 * math.atan(16.0))  # clamp d >= 1
+
+
+def test_theta_reaches_40_deg_on_a_tall_face_at_the_frozen_surface_distance():
+    d_surface = 32 / math.tan(math.radians(20))                                  # pipe 3 (64 px): 87.9 px
+    f = obstacles.Face(d_surface + 13, 64.0, 176.0, 144.0, 208.0)
+    th, d = obstacles.theta_of(f, 196.0, 208.0, ELEVATION_LIMIT_DEG, obstacles.front_edge_offset_px(0))
+    assert d == pytest.approx(d_surface) and math.degrees(th) == pytest.approx(40.0)
+
+
 def test_mario_body_is_the_hitbox_12_small_24_big():
     assert (obstacles.BODY_SMALL_PX, obstacles.BODY_BIG_PX) == (12, 24)
     col = [0] * 13
@@ -232,7 +248,7 @@ def test_flat_start_of_level_gives_no_obstacle_stimulus_until_the_pipe_is_drawn(
             assert first_seen is None
         elif first_seen is None:
             first_seen = x
-            assert dist["L"] == 448 - x                                             # the first obstacle ever seen is pipe 1
+            assert dist["L"] == 448 - x - 13                                        # pipe 1; surface distance = left-edge distance - 13 (step 4)
         prev = theta
     assert first_seen is not None and 300 <= first_seen <= 320                     # drawn once the screen scrolls it in (x > 303)
 

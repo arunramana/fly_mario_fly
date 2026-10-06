@@ -23,6 +23,7 @@ from brain.calibration import ELEVATION_LIMIT_DEG
 from brain.mechanisms import HomeLandmarkMechanism, LoomingMechanism, ObstacleExpansion
 from brain.motor_map import MotorMap
 from brain.obstacles import BODY_SMALL_PX, FLOOR_ROW, nearest_face, theta_of
+from brain.perception import front_edge_offset_px
 
 FACE_X = 448                      # pipe 1's left edge
 STALL_X = 434                     # measured: small Mario stalls here at the pipe (docs/INVESTIGATION_phase6.md (b))
@@ -68,7 +69,7 @@ def face_trace(world: dict[int, list[int]], speed: float, x0: float, frames: int
     for f in range(frames):
         x = min(x0 + speed * f, stall_x)
         face = nearest_face(visible(world, x), x, FEET_Y, SMALL_PX)
-        th, d = theta_of(face, FEET_Y - SMALL_PX, FEET_Y, ELEVATION_LIMIT_DEG)
+        th, d = theta_of(face, FEET_Y - SMALL_PX, FEET_Y, ELEVATION_LIMIT_DEG, front_edge_offset_px(0))
         out.append({"frame": f, "x": x, "d": d, "theta": th, "dtheta": th - prev})
         prev = th
     return out

@@ -128,9 +128,9 @@ def check_e3_scene(ram) -> dict:
 def check_e2a_scene(ram) -> dict:
     """What the E2a manifest promises, nothing about the fly: an obstacle face on screen ahead of a living, stationary Mario, no enemy."""
     from brain.obstacles import nearest_face, visible_columns
-    from brain.perception import MARIO_BIG_PX, MARIO_SMALL_PX
+    from brain.obstacles import BODY_BIG_PX, BODY_SMALL_PX      # 12 / 24 hitbox heights (5c step 3); nearest_face only reads this to find the overlapping run
     mario_world = int(ram[ADDR_MARIO_PAGE]) * 256 + int(ram[ADDR_MARIO_X])
-    face = nearest_face(visible_columns(ram), mario_world, int(ram[0x04AF]), MARIO_SMALL_PX if int(ram[0x0756]) == 0 else MARIO_BIG_PX)
+    face = nearest_face(visible_columns(ram), mario_world, int(ram[0x04AF]), BODY_SMALL_PX if int(ram[0x0756]) == 0 else BODY_BIG_PX)
     return {"face_on_screen": face is not None, "face_dx_px": None if face is None else face.d_px,
             "face_w_px": None if face is None else face.w_px, "mario_stationary": int(ram[ADDR_MARIO_XSPEED]) == 0,
             "no_enemy": not any(ram[ADDR_ENEMY_ACTIVE + s] and ram[ADDR_ENEMY_TYPE + s] != POWERUP_ID for s in range(POWERUP_SLOTS))}

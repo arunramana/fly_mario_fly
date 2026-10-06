@@ -311,18 +311,21 @@ def test_same_level_object_has_zero_elevation_and_full_theta_at_several_distance
     for d in (22, 30, 45, 70, 120):
         ram = _ground_scene(d)
         theta, _, dist = enemy_thetas(ram, {"L": 0.0, "R": 0.0}, reg, ELEVATION_LIMIT_DEG)
-        assert dist["R"] == d
-        assert theta["L"] == theta["R"] == pytest.approx(2 * math.atan(8 / d), rel=1e-12)       # weight exactly 1
+        assert dist["R"] == d - 10                                                             # step 4: surface to surface (small Mario)
+        assert theta["L"] == theta["R"] == pytest.approx(2 * math.atan(5 / (d - 10)), rel=1e-12)  # w = 10 hitbox, weight exactly 1
         old, _, _ = bio_enemy_thetas(ram, {"L": 0.0, "R": 0.0}, reg, SimpleNamespace(elevation_limit_deg=ELEVATION_LIMIT_DEG))
         if d <= 45:
-            assert old["R"] < theta["R"] * 0.9           # the frozen raw-byte version reads this as an elevated object
-    # the calibrated GF angle (40 deg) is reachable by an object on the floor, at d = 22 px
-    th, _, _ = enemy_thetas(_ground_scene(22), {"L": 0.0, "R": 0.0}, reg, ELEVATION_LIMIT_DEG)
+            assert old["R"] < 2 * math.atan(8 / d) * 0.9  # the frozen raw-byte version (w = 16, centre d) reads this as an elevated object
+    # the calibrated GF angle (40 deg) is reachable by an object on the floor, at d_centre = 23.7 px (surface 13.74; step 4)
+    th, _, _ = enemy_thetas(_ground_scene(24), {"L": 0.0, "R": 0.0}, reg, ELEVATION_LIMIT_DEG)
     assert math.degrees(th["R"]) == pytest.approx(40.0, abs=1.5)
+    assert math.degrees(2 * math.atan(5 / (5 / math.tan(math.radians(20))))) == pytest.approx(40.0)   # the frozen distance 13.74
+    big, _, bdist = enemy_thetas(_ground_scene(30, size=1), {"L": 0.0, "R": 0.0}, reg, ELEVATION_LIMIT_DEG)
+    assert bdist["R"] == 30 - 11                                                          # big Mario: front edge 14, so d_centre - 11
     # an object raised 16 px (not same level) is down-weighted, and one behind Mario contributes nothing
-    up, _, _ = enemy_thetas(_ground_scene(22, enemy_y_byte=184 - 16), {"L": 0.0, "R": 0.0}, reg, ELEVATION_LIMIT_DEG)
+    up, _, _ = enemy_thetas(_ground_scene(24, enemy_y_byte=184 - 16), {"L": 0.0, "R": 0.0}, reg, ELEVATION_LIMIT_DEG)
     assert 0.0 < up["R"] < th["R"] * 0.5
-    ram = _ground_scene(22)
+    ram = _ground_scene(24)
     ram[0x87] = 60
     assert enemy_thetas(ram, {"L": 0.0, "R": 0.0}, reg, ELEVATION_LIMIT_DEG)[0]["R"] == 0.0
 

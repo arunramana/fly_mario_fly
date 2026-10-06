@@ -33,6 +33,16 @@ ADDR_PLAYER_HITBOX_BOTTOM = 0x04AF   # screen y of the bottom edge of Mario's co
 ENEMY_Y_BYTE_TO_TOP_PX = 8           # Enemy_Y_Position is 8 px above the sprite top
 SPRITE_PX = 16                       # every enemy is modelled 16 px (mario/entities/registry.py)
 MARIO_SMALL_PX, MARIO_BIG_PX = 16, 32
+# Phase 5c step 4 (docs/SPEC_geometry_5c.md sections 1 and 7): distance is surface to surface, from the eye at the centre of the
+# FRONT edge of Mario's hitbox to the target's nearest hitbox face. Numbers are the engine's own collision boxes (RAM 0x04AC..).
+ENEMY_HITBOX_W_PX = 10                       # Goomba box = sprite x + 3 .. + 13; applied to every enemy
+ENEMY_BOX_LEFT_PX = 3                        # enemy box left edge = rec.x + 3
+MARIO_FRONT_EDGE_SMALL_PX, MARIO_FRONT_EDGE_BIG_PX = 13, 14   # Mario box right edge: drawn x + 13 (small) / + 14 (big)
+
+
+def front_edge_offset_px(size_byte: int) -> int:
+    """Offset of the front (right) edge of Mario's hitbox from his x byte; RAM size byte 0 = small. Used by enemies and obstacles."""
+    return MARIO_FRONT_EDGE_SMALL_PX if int(size_byte) == 0 else MARIO_FRONT_EDGE_BIG_PX
 
 
 def mario_centre_y(ram) -> float:
@@ -46,19 +56,21 @@ def enemy_centre_y(ram, slot: int) -> float:
 
 def enemy_thetas(ram, prev_theta, registry, elevation_limit_deg: float):
     """Same contract as bridge.perception.bio_enemy_thetas (theta, dtheta, distance per hemisphere), visible enemies
-    ahead of Mario only, theta = 2 atan(w / 2d) weighted by max(0, 1 - elev / limit); only elev changes: it is the angle
+    ahead of Mario only (w = 10 px hitbox, d surface to surface), theta = 2 atan(w / 2d) weighted by max(0, 1 - elev / limit); only elev changes: it is the angle
     between Mario's and the enemy's vertical centres over the horizontal distance."""
     mario_x, mario_cy = int(ram[ADDR_MARIO_X]), mario_centre_y(ram)
+    front = front_edge_offset_px(ram[ADDR_MARIO_SIZE])
     best, best_d = 0.0, None
     for slot, rec in enumerate(registry.enemy_records(ram)):
         if not rec.active or rec.kind == EntityKind.POWERUP or not screen.enemy_on_screen(ram, slot, rec.width):
             continue
-        d = _dx(ram, slot, rec, mario_x, True)
-        if d < 0:
+        d_centre = _dx(ram, slot, rec, mario_x, True)
+        if d_centre < 0:                                     # "ahead" is still decided on the old centre-to-centre test
             continue
+        d = d_centre + ENEMY_BOX_LEFT_PX - front             # = d_centre - 10 small / - 11 big: enemy box left edge minus Mario's front edge
         elev = math.degrees(math.atan2(abs(enemy_centre_y(ram, slot) - mario_cy), max(d, 1)))
         w = max(0.0, 1.0 - elev / elevation_limit_deg)
-        th = 2.0 * math.atan(rec.width / (2.0 * max(d, 1))) * w
+        th = 2.0 * math.atan(ENEMY_HITBOX_W_PX / (2.0 * max(d, 1))) * w
         if th > best:
             best, best_d = th, d
     theta = {"L": best, "R": best}
