@@ -68,7 +68,10 @@ def enemy_thetas(ram, prev_theta, registry, elevation_limit_deg: float):
 # ---- Phase 3: pursuit target (docs/SPEC_phase3.md section 4) -------------------------------------------------------------
 OBJECT_SLOTS = 6                     # SMB enemy-object slots 0-5: slot 5 holds the power-up (measured on 1-1: type 0x2E, active 1);
                                      # mario.ram.addresses.N_ENEMY_SLOTS = 5 does not see it, and that frozen constant is left alone
-SCREEN_HALF_PX = 128                 # half the NES screen: dx = +-128 px is azimuth +-90 deg (a fact of the screen, not tuned)
+PURSUIT_AZIMUTH_DEG = 0.0            # Phase 5c step 2 (docs/SPEC_geometry_5c.md): a pursued object is on Mario's line of sight, so
+                                     # it drives both LC10a sides equally. Before this the azimuth was 90 deg * clip(dx / 128), an
+                                     # INVENTED projection of the forward (depth) axis onto a lateral angle; 128 px is half the screen
+                                     # width (a fact), treating dx as an azimuth was not.
 
 
 @dataclass(frozen=True)
@@ -95,7 +98,8 @@ def visible_positions(ram, registry) -> dict[int, tuple[int, int, int]]:
 
 def pursuit_target(ram, prev_positions, registry, kinds, elevation_limit_deg: float):
     """The nearest visible, small (16 px registry sprite), MOVING object whose kind value is in `kinds`. Returns
-    (PursuitTarget | None, positions now). Reads only what is drawn on screen. Azimuth = 90 deg * clip(dx / 128, -1, 1)."""
+    (PursuitTarget | None, positions now). Reads only what is drawn on screen. Azimuth = 0 (symmetric drive; step 2 of
+    docs/SPEC_geometry_5c.md). The sign of dx no longer reaches the brain; dx_px is kept for telemetry."""
     now = visible_positions(ram, registry)
     mario_x, mario_cy = int(ram[ADDR_MARIO_X]), mario_centre_y(ram)
     best, best_d = None, None
@@ -107,6 +111,5 @@ def pursuit_target(ram, prev_positions, registry, kinds, elevation_limit_deg: fl
         elev = math.degrees(math.atan2(abs(enemy_centre_y(ram, slot) - mario_cy), max(abs(d), 1)))
         w = max(0.0, 1.0 - elev / elevation_limit_deg)
         if w > 0.0 and (best_d is None or abs(d) < best_d):
-            az = 90.0 * max(-1.0, min(1.0, d / SCREEN_HALF_PX))
-            best, best_d = PursuitTarget(az, w, slot, rec.kind.value, int(d)), abs(d)
+            best, best_d = PursuitTarget(PURSUIT_AZIMUTH_DEG, w, slot, rec.kind.value, int(d)), abs(d)
     return best, now

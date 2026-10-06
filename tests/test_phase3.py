@@ -170,12 +170,11 @@ def test_pursuit_needs_a_moving_object_of_a_pursued_kind_and_sees_the_powerup_sl
     t0, pos0 = _target(_ram(dx=40), {})
     assert t0 is None and 5 in pos0                                              # first sight: nothing to track; slot 5 is read
     t1, pos1 = _target(_ram(dx=41), pos0)                                        # moved by 1 px relative to the background
-    assert t1 is not None and t1.kind == "powerup" and t1.slot == 5 and t1.dx_px == 41 and t1.azimuth_deg > 0
+    assert t1 is not None and t1.kind == "powerup" and t1.slot == 5 and t1.dx_px == 41 and t1.azimuth_deg == 0.0
     t2, _ = _target(_ram(dx=41), pos1)
     assert t2 is None                                                            # now static: a static object drives nothing
     behind, _ = _target(_ram(dx=-39), _target(_ram(dx=-40), {})[1])
-    assert behind is not None and behind.azimuth_deg < 0                         # behind Mario -> left eye
-    assert t1.azimuth_deg == pytest.approx(90.0 * 41 / 128)
+    assert behind is not None and behind.dx_px < 0 and behind.azimuth_deg == 0.0  # step 2 (5c): no dx -> azimuth ramp, symmetric
 
 
 def test_a_goomba_is_not_pursued_unless_its_kind_is_chosen():

@@ -61,10 +61,10 @@ def _constants() -> list[BrainScalar]:
         S("MOTOR_FLOOR_HZ", C.MOTOR_FLOOR_HZ, "Hz", INVENTED, 0.0, 0.1, "a motor threshold is never below this"),
         S("ELEVATION_LIMIT_DEG", C.ELEVATION_LIMIT_DEG, "deg", INVENTED, 10.0, 90.0,
           "elevation beyond which an object leaves the looming field (same as the validated bio_strict path)"),
-        S("LC10A_GAIN", C.LC10A_GAIN, "Hz per unit salience", INVENTED, 0.0, 100.0, "pursuit drive onto LC10a at full arousal; midpoint of the window where the real brain steers correctly and MDN stays silent (docs/SPEC_phase3.md section 3, synthetic dot test only)"),
-        S("LC10A_AZIMUTH_SPLIT", C.LC10A_AZIMUTH_SPLIT, "deg", INVENTED, 1.0, 90.0, "azimuth beyond which a target drives one LC10a side only; largest candidate that still steers and walks correctly on the synthetic dot test (docs/SPEC_phase3.md section 3)"),
+        S("LC10A_GAIN", C.LC10A_GAIN, "Hz per unit salience", INVENTED, 0.0, 100.0, "pursuit drive onto LC10a at full arousal; midpoint of the window where the real brain steers correctly and MDN stays silent (docs/SPEC_phase3.md section 3, synthetic dot test only). Provenance: invented gain in a window found on a synthetic dot. E3 seed 9300 (Phase 5b, before step 2 of 5c): mean R drive 4.1 Hz, max 8.2 Hz at arousal 0.65"),
+        S("LC10A_AZIMUTH_SPLIT", C.LC10A_AZIMUTH_SPLIT, "deg", INVENTED, 1.0, 90.0, "INERT since Phase 5c step 2 (pursuit azimuth is always 0, shares 0.5 / 0.5 for any split); kept only so the synthetic calibration record and mechanism interface stay valid. Earlier meaning: not a visual azimuth. The NES side view has no lateral axis; 'azimuth' was the signed horizontal screen distance dx between Mario and the target, 90 deg * clip(dx / 128, -1, 1) (128 px = half the screen width is a fact; the dx -> angle mapping was invented). dx is the same axis that gives looming its depth, so a target touching Mario read 0 deg and one 128 px ahead 90 deg (right only); every target ahead had right share >= 0.5, i.e. the channel carried ahead (Right) vs behind (Left), the legacy 'ahead = Right' convention, not a retinal position. E3 reached 6/6 with the term removed (az = 0) and 0/6 with its sign flipped (Phase 5b)"),
         S("PURSUIT_AROUSAL", C.PURSUIT_AROUSAL, "fraction", INVENTED, 0.0, 1.0, "default of the tool's fly-state arousal input that scales pursuit; midpoint of the window where the real brain steers correctly on a synthetic dot and a static dot gives nothing (docs/SPEC_phase3.md section 11). Not read from the fly's output"),
-        S("GOAL_CUE_SALIENCE", C.GOAL_CUE_SALIENCE, "Hz", INVENTED, 0.0, 100.0, "home landmark: static drive onto the right LC10a. It moves the 'go right' assumption to the senses, it does not remove it; midpoint of the window where the real brain walks right and nothing presses Left (docs/SPEC_phase3.md section 3)"),
+        S("GOAL_CUE_SALIENCE", C.GOAL_CUE_SALIENCE, "Hz", INVENTED, 0.0, 100.0, "home landmark: static drive onto the right LC10a. It moves the 'go right' assumption to the senses, it does not remove it; midpoint of the window where the real brain walks right and nothing presses Left (docs/SPEC_phase3.md section 3). Provenance: a static, right-only drive that is not a visible object (LC10a prefers small moving objects). In B11 (seed 9300, first 446 frames) it was 100% of right-LC10a drive (15.0 Hz every frame, left 0); pursuit contributed nothing until a mushroom is pursued. E3 has no landmark"),
         S("K_HOPS", M.K_HOPS, "hops", INVENTED, 1, 6, "network rule: neurons within k hops of a path (INVEST_phase0 2.4 B)"),
         S("MIN_SYNAPSES", M.MIN_SYNAPSES, "synapses", INVENTED, 1, 50, "network rule: smallest connection kept (INVEST_phase0 2.4 B)"),
     ] + [S(f"CALIBRATION_LV_MS[{i}]", v, "ms", INVENTED, 5, 200, "disc speeds used to derive the GF threshold") for i, v in enumerate(C.CALIBRATION_LV_MS)]
@@ -156,6 +156,12 @@ def generate() -> str:
            "Kinds: *measured* = taken from the literature or the data; *calibrated* = derived on a synthetic stimulus "
            "(disc or rest test) and then fixed; *invented* = a modelling choice or convention. None is tuned on game outcomes. "
            "Ranges are sanity bounds, not search intervals.", "",
+           "Stimulus-geometry notes (docs/SPEC_geometry_5c.md). Looming reaches both hemispheres identically (`theta = {'L': th, 'R': th}`), so the L/R split is decorative "
+           "for the looming channel; the wiring is lateralised (invariant 5), the looming stimulus for a frontal object is deliberately symmetric. "
+           "Convention frozen for Phase 5c: hitboxes from the game's collision boxes, not sprite size. With w = 10 (hitbox) theta = 40 deg is reached at d = 23.7 px; "
+           "with w = 16 (sprite) at d = 22.0 px, so the hitbox choice LOSES about 1.7 px of lead (about half a frame at 3.5 px/frame). "
+           "The 4.6-frame figure in docs/INVESTIGATION_stimulus_geometry.md is the surface-vs-centre lead (d - 16 vs centre-to-centre), a different quantity. "
+           "The hitbox is the less favourable, honest choice.", "",
            "| Name | Value | Unit | Kind | Range | Source |", "|---|---|---|---|---|---|"]
     for r in rows:
         out.append(f"| `{r.name}` | {r.value:.6g} | {r.unit} | {r.kind} | [{r.lo:g}, {r.hi:g}] | {r.source} |")
