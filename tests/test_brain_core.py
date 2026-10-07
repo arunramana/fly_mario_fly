@@ -198,7 +198,38 @@ def test_looming_mechanism_drives_only_lc4_and_lplc2_with_the_right_values(net):
     for b in lc4:
         assert val[b] == pytest.approx(0.01 if side[b] == "L" else 0.02)
     for b in lplc2:
-        assert val[b] == pytest.approx(0.5 if side[b] == "L" else 0.25)
+        assert val[b] == pytest.approx(0.0 if side[b] == "L" else 0.25)    # L is shrinking: gated off (Step 7); R expands
+
+
+def _loom_vals(net, theta, dtheta):
+    """(LPLC2 value, LC4 value) of the left hemisphere for one encode call."""
+    s = LoomingMechanism(net).encode({"L": theta, "R": theta}, {"L": dtheta, "R": dtheta})
+    side, val = dict(zip(net.ids, net.side)), dict(zip(s.body_ids, s.values))
+    pick = lambda pop: {val[b] for b in net.ids[net.pops[pop]] if side[b] == "L"}
+    (lplc2,), (lc4,) = pick("LPLC2"), pick("LC4")
+    return lplc2, lc4
+
+
+@needs_net
+def test_expansion_gate_size_channel_needs_strictly_positive_dtheta(net):
+    """Step 7: looming means expansion. theta reaches LPLC2 only while dtheta > 0; LC4 stays |dtheta| in every case."""
+    assert _loom_vals(net, 0.5, 0.01) == pytest.approx((0.5, 0.01))        # expanding: passes
+    assert _loom_vals(net, 3.0, 0.0) == (0.0, 0.0)                           # wall at touching distance (theta ~ 172 deg, dtheta 0): no size cue
+    assert _loom_vals(net, 0.5, -0.02) == pytest.approx((0.0, 0.02))       # receding: no size cue, LC4 still fires (existing property)
+
+
+@needs_net
+def test_expansion_gate_first_frame_of_an_object_has_no_size_cue(net):
+    """prev theta undefined (0): dtheta == theta, which is an appearance, not an observed expansion. LC4 still sees it."""
+    assert _loom_vals(net, 0.4, 0.4) == pytest.approx((0.0, 0.4))
+    assert _loom_vals(net, 0.5, 0.1) == pytest.approx((0.5, 0.1))          # second frame: prev 0.4 > 0
+
+
+@needs_net
+def test_obstacle_expansion_inherits_the_same_gate(net):
+    from brain.mechanisms import ObstacleExpansion
+    s = ObstacleExpansion(net).encode({"L": 3.0, "R": 3.0}, {"L": 0.0, "R": 0.0})
+    assert not s.values.any()
 
 
 @needs_net

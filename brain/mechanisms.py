@@ -36,7 +36,11 @@ class Mechanism(Protocol):
 class LoomingMechanism:
     """Looming threat. Cue: an enemy ahead whose angular size theta = 2 atan(w / 2|d|) grows. Channel: LPLC2 (size)
     and LC4 (speed), the detectors Ache et al. 2019 identified. Encoding (ported from bridge/loom_disc.py, which is
-    what the calibration was derived on): theta (rad) into LPLC2, |dtheta| (rad/frame) into LC4, per hemisphere."""
+    what the calibration was derived on): theta (rad) into LPLC2, |dtheta| (rad/frame) into LC4, per hemisphere.
+
+    Expansion gate (docs/SPEC_geometry_5c.md Step 7): looming means expansion, so LPLC2 carries theta only while dtheta > 0
+    strictly and the previous theta was > 0 (an expansion has been observed; the first frame of an object has no cue). Not a
+    scalar: no epsilon, no smoothing. LC4 stays |dtheta| (it also fires for a receding stimulus; existing property)."""
     name = "looming"
     populations = ("LC4", "LPLC2")
     evidence = "Ache et al. 2019 Curr Biol 29:1073 (GF fires at ~40 deg); vision entry tier D1 (feature neurons)"
@@ -51,7 +55,8 @@ class LoomingMechanism:
     def encode(self, theta: dict[str, float], dtheta: dict[str, float]) -> Stimulus:
         ids, vals = [], []
         for s in ("L", "R"):
-            for pop, v in (("LC4", abs(dtheta[s])), ("LPLC2", theta[s])):
+            expanding = dtheta[s] > 0.0 and (theta[s] - dtheta[s]) > 0.0
+            for pop, v in (("LC4", abs(dtheta[s])), ("LPLC2", theta[s] if expanding else 0.0)):
                 b = self._ids[(pop, s)]
                 ids.append(b)
                 vals.append(np.full(len(b), v))

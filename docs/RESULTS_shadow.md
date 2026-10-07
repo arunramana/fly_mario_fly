@@ -322,3 +322,33 @@ Segment summaries after the guard (headline lines; full tables in `audit/p19_sha
 - 002 pipe 3 (f1126): obstacle 176.4 deg (d = -1 reported, so a 0 < d < 1 frame or the previous frame), GF every frame -90..-15, max drive 0.128 (below a_thr 0.1323); fly would-be A: none; human A -90, -79, -66, -37, +18.
 - 007 pipe 3 (f864): 172.8 deg, min d -2; GF -90..-49; drive 0.399; A -90, -55, +15.
 - gap 1 (pit): GF 0.00 Hz in both crossings, drive 0.015-0.020, obstacle theta 14.7 / 29.9 deg, min d 62 / 30 px; human A at -9 in both. The pit stimulus never reaches the Giant Fiber (unchanged by the guard).
+
+
+---
+
+# After Step 7 (expansion gate) replay
+
+Replay of the same saved human actions (002, 007) through the gated size channel (docs/SPEC_geometry_5c.md Step 7): `002_clean_replay_step7.csv`, `007_clean_replay_step7.csv` (originals untouched; Mario x/y equal the originals on 100% of frames in both). Report-only; shadow data diagnoses, it never scores. Raw: `audit/p22_shadow.txt` (script `audit/p22_shadow.py`).
+
+| metric | 002 step 5 | 002 step 7 | 007 step 5 | 007 step 7 |
+|---|---|---|---|---|
+| Q1 A-held frames drive >= a_thr | 25.5% | 20.3% | 23.5% | 31.1% |
+| Q1 at onset frame | 18.1% | 16.9% | 17.9% | 17.9% |
+| Q2 spikes with a press within +-5 | 17.4% | 17.2% | 17.6% | 20.6% |
+| Q3 walk drive on | 100% | 100% | 100% | 100% |
+| Q4 presses with no spike within +-30 | 37/83 | 37/83 | 11/39 | 6/39 |
+| Q4 median offset (spiked presses) | 0 | 2.5 | 0 | 1.0 |
+| Q4 median abs offset (absent = inf) | 19 | 27 | 10 | 9 |
+| GF spikes | 1143 | 551 | 615 | 412 |
+| spikes per human A press (flood) | 13.8 | 6.6 | 15.8 | 10.6 |
+| frames obstacle theta > 172 deg | 143 | 143 | 8 | 8 |
+| spikes at d <= 0 | 36 | 0 | 26 | 0 |
+| spikes at 0 < d <= 5 | 200 | 62 (202 frames) | 36 | 34 (37 frames) |
+| spikes at the d = 1 clamp | 148 | 21 (148 frames) | 6 | 6 |
+| wall latch frames (Right held, x unchanged 10 f) | 186 | 186 | 104 | 104 |
+| GF spike rate inside the latch | 34% | 0% | 17% | 1% |
+| decision (SPEC rule) | NO, brain | NO, brain | NO, brain | NO, brain |
+
+(Before the guard, step 3: flood 20.5 and 21.3 per press.) GF spike rate by obstacle-theta band, step 7 (step 5 in brackets). 002: <0.01 rad 2779 frames, 1.2% (2.0%); 0.1-0.3 657 f, 0.9% (0.2%); 0.3-0.7 440 f, 2.7% (3.8%); 0.7-2.0 1072 f, 29.8% (97.9%); >2.0 rad 423 f, 42.8% (100%). 007: <0.01 1404 f, 2.1% (2.7%); 0.1-0.3 108 f, 4.6% (1.1%); 0.3-0.7 256 f, 1.2% (7.1%); 0.7-2.0 503 f, 46.3% (98.2%); >2.0 216 f, 65.7% (100%). The band frame counts differ from step 5 because the theta read in the replay telemetry is now the gated quantity. High-theta frames spike 30-66% of the time instead of 98-100%. Spikes with obstacle theta > 0.7: 500 of 551 (002), 375 of 412 (007); enemy theta > 0.7 on 0 and 1 frames, 0 and 1 spikes; neither 51 and 36.
+
+Read: the flood roughly halved (13.8 -> 6.6 and 15.8 -> 10.6 spikes per press) and the spikes inside the latch are gone (34% -> 0%, 17% -> 1%), but the latch frames themselves are unchanged (the human pushing against the wall). Presence (Q1 at onset, Q2, Q4-absent) is unchanged or within noise: 002 Q4-absent 37/83 both, 007 11/39 -> 6/39. Timing: median offset of spiked presses moved from 0 to 2.5 and 1.0 frames; median abs offset (absent = inf) 19 -> 27 and 10 -> 9. Decision under the SPEC rule: NO, brain, before and after. The gate cut the false-positive flood and the stationary-wall firing; it did not make the fly's spikes line up with a competent human's presses better. Confound as before: the human jumps early; the circuit engages when contact is imminent. Shadow data diagnoses, it never scores.

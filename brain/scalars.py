@@ -174,6 +174,10 @@ def generate() -> str:
            "with w = 16 (sprite) at d = 22.0 px, so the hitbox choice LOSES about 1.7 px of lead (about half a frame at 3.5 px/frame). "
            "The 4.6-frame figure in docs/INVESTIGATION_stimulus_geometry.md is the surface-vs-centre lead (d - 16 vs centre-to-centre), a different quantity. "
            "The hitbox is the less favourable, honest choice.", "",
+           "Expansion gate (docs/SPEC_geometry_5c.md Step 7), no scalar: looming means expansion. In the shared looming encoding "
+           "(`LoomingMechanism.encode`, used by enemies and, through `ObstacleExpansion`, by obstacles) the size channel (LPLC2) carries theta "
+           "only while dtheta > 0 strictly and the previous theta was > 0; the first frame of an object emits no size cue. It is the definition "
+           "of the word, not a tuned number: no epsilon, hysteresis or smoothing. The velocity channel (LC4) is unchanged: |dtheta|, which also fires for a receding stimulus.", "",
            "| Name | Value | Unit | Kind | Range | Source |", "|---|---|---|---|---|---|"]
     for r in rows:
         out.append(f"| `{r.name}` | {r.value:.6g} | {r.unit} | {r.kind}{' (INERT)' if r.inert else ''} | [{r.lo:g}, {r.hi:g}] | {r.source} |")
