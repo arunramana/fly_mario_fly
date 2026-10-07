@@ -18,12 +18,12 @@ from __future__ import annotations
 
 import dataclasses
 import json
-import multiprocessing as mp
 import os
 from dataclasses import asdict, dataclass
 
 import numpy as np
 
+from brain.workers import WorkerPool
 from brain import calibration as C
 from brain.baseline import (ADDR_GAME_ENGINE, BASELINE_MAX_FRAMES, ENGINE_DYING, EXPERIMENT_ID, SHUFFLED_ARMS, run_baseline_episode, summarize)
 from brain.e1 import SPRITE_PX
@@ -156,7 +156,7 @@ def run_dose_response(values=VALUES, n: int = N, seed0: int = DOSE_SEED0, worker
     """Same seeds seed0..seed0+n-1 for every value; shuffle seed 1 + i. Registry value untouched."""
     jobs = [(float(v), seed0 + i, arm, 1 + i if arm in SHUFFLED_ARMS else None, max_frames) for v in values for arm in arms for i in range(n)]
     if workers > 1:
-        with mp.get_context("spawn").Pool(workers) as pool:
+        with WorkerPool(workers, [(j[3], "degree") for j in jobs if j[3] is not None]) as pool:
             rows = pool.map(_job, jobs)
     else:
         rows = [_job(j) for j in jobs]

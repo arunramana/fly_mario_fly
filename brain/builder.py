@@ -141,6 +141,16 @@ def spectral_radius(W: sp.csr_matrix, g: float = 1.0) -> float:
     return float(np.max(np.abs(vals)) * abs(g))
 
 
+# Set only inside an evaluation worker (brain/workers.py): an object whose .real() and .variant(net, seed, mode) hand out
+# networks whose arrays live in shared memory, so N workers read one copy of W. None everywhere else (serial path unchanged).
+_SHARED = None
+
+
+def install_shared(provider) -> None:
+    global _SHARED
+    _SHARED = provider
+
+
 @dataclass
 class BuiltNetwork:
     """One brain: neurons, signed sparse weights, populations, and the rule that built it."""
@@ -188,6 +198,10 @@ class BuiltNetwork:
         name, KC, MBON, DAN, or interior), so random wiring cannot land input on an output cell that has few inputs."""
         if mode not in SHUFFLE_MODES:
             raise ValueError(f"shuffle mode {mode!r} not in {SHUFFLE_MODES}")
+        if _SHARED is not None:                      # worker process: the same bits, already in shared memory
+            hit = _SHARED.variant(self, seed, mode)
+            if hit is not None:
+                return hit
         e = pd.DataFrame({"body_pre": self.pre, "body_post": self.post, "weight": self.syn})
         if mode == "degree":
             post = circuit.shuffle_edges(e, seed=seed)["body_post"].to_numpy()
@@ -268,6 +282,8 @@ def default_path() -> Path:
 
 def load_or_build(path: Path | None = None) -> BuiltNetwork:
     """The saved brain (rule, k, N and counts inside), or build and save it."""
+    if path is None and _SHARED is not None:
+        return _SHARED.real()
     path = path or default_path()
     if path.exists():
         return BuiltNetwork.load(path)

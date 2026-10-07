@@ -22,12 +22,12 @@ from __future__ import annotations
 import dataclasses
 import json
 import math
-import multiprocessing as mp
 import os
 from dataclasses import asdict, dataclass
 
 import numpy as np
 
+from brain.workers import WorkerPool
 from brain.baseline import ADDR_GAME_ENGINE, BASELINE_STUCK_FRAMES, BASELINE_TAP_MAX_FRAMES, ENGINE_DYING, a_runs
 from brain.scenes import E2A_SCENE_ID, SceneSpec, apply_rules, build_scene, load_scene
 from brain.settings import SenseSettings, settings_for
@@ -220,7 +220,7 @@ def run_eval(n: int = N, seed0: int | None = None, workers: int = 1, max_frames:
     used = settings_for(EXPERIMENT_ID, settings)
     jobs = [(seed0 + i, arm, 1 + i if arm in SHUFFLED_ARMS else None, max_frames, used.to_dict()) for arm in arms for i in range(n)]
     if workers > 1:
-        with mp.get_context("spawn").Pool(workers) as pool:
+        with WorkerPool(workers, [(j[2], "class" if j[1] == "shuffled_class" else "degree") for j in jobs if j[2] is not None]) as pool:
             results = pool.map(_job, jobs)
     else:
         results = [_job(j) for j in jobs]

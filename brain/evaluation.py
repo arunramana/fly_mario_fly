@@ -19,11 +19,12 @@ met, or max_frames. Both arms use the same seeds for the brain noise; the shuffl
 from __future__ import annotations
 
 import json
-import multiprocessing as mp
 import os
 from dataclasses import asdict, dataclass
 
 import numpy as np
+
+from brain.workers import WorkerPool
 
 DEFAULT_N = 20
 DEFAULT_SEED0 = 2000          # fresh and held out: earlier work used 1000-1019 and a 9000 smoke seed
@@ -116,7 +117,7 @@ def run_eval(n: int = DEFAULT_N, seed0: int = DEFAULT_SEED0, workers: int = 1,
     """Real connectome vs degree-preserving shuffle (shuffle seed 1 + i) on seeds seed0..seed0+n-1."""
     jobs = [(seed0 + i, None, max_frames) for i in range(n)] + [(seed0 + i, 1 + i, max_frames) for i in range(n)]
     if workers > 1:
-        with mp.get_context("spawn").Pool(workers) as pool:
+        with WorkerPool(workers, [(j[1], "degree") for j in jobs if j[1] is not None]) as pool:
             results = pool.map(_job, jobs)
     else:
         results = [_job(j) for j in jobs]

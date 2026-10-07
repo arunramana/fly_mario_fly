@@ -19,12 +19,12 @@ Metrics are defined in the SPEC before any run (outcome-neutral); the pure helpe
 from __future__ import annotations
 
 import json
-import multiprocessing as mp
 import os
 from dataclasses import asdict, dataclass, field
 
 import numpy as np
 
+from brain.workers import WorkerPool
 from brain.e1 import SPRITE_PX
 from brain.scenes import B11_SCENE_ID, SceneSpec, load_scene
 from brain.settings import SenseSettings, settings_for
@@ -305,7 +305,7 @@ def run_eval(n: int = N, seed0: int | None = None, workers: int = 1, max_frames:
     used = settings_for(EXPERIMENT_ID, settings)
     jobs = [(seed0 + i, arm, 1 + i if arm in SHUFFLED_ARMS else None, max_frames, used.to_dict()) for arm in arms for i in range(n)]
     if workers > 1:
-        with mp.get_context("spawn").Pool(workers) as pool:
+        with WorkerPool(workers, [(j[2], "class" if j[1] == "shuffled_class" else "degree") for j in jobs if j[2] is not None]) as pool:
             results = pool.map(_job, jobs)
     else:
         results = [_job(j) for j in jobs]

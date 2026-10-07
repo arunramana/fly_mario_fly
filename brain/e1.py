@@ -25,12 +25,12 @@ from __future__ import annotations
 
 import json
 import math
-import multiprocessing as mp
 import os
 from dataclasses import asdict, dataclass
 
 import numpy as np
 
+from brain.workers import WorkerPool
 from brain.brain import LESION_CLAMP_HZ
 from brain.scenes import E1_SCENE_ID, SceneSpec, build_scene, check_scene, goomba_slots, load_scene
 
@@ -221,7 +221,7 @@ def run_eval(n: int = E1_N, seed0: int = E1_SEED0, workers: int = 1, max_frames:
     from brain.policy import BrainPolicy
     jobs = [(seed0 + i, 1 + i if arm in SHUFFLED_ARMS else None, max_frames, arm) for arm in arms for i in range(n)]
     if workers > 1:
-        with mp.get_context("spawn").Pool(workers) as pool:
+        with WorkerPool(workers, [(j[1], "class" if j[3] == "shuffled_class" else "degree") for j in jobs if j[1] is not None]) as pool:
             results = pool.map(_job, jobs)
     else:
         results = [_job(j) for j in jobs]

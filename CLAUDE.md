@@ -177,9 +177,16 @@ Benchmark both before committing a port, and put the numbers in the commit.
    (that number has no supporting code or RUNS.md entry). The jump circuit
    still doesn't flush: adding it re-baselines every golden and makes runs
    001-026 non-reproducible, so it needs its own dedicated sprint.
-2. **Multiprocess across networks/runs** (~8× on this box). The 21 sweep
-   networks and the 27 battery runs are fully independent. Keep
-   `OMP_NUM_THREADS=1` per worker.
+2. **Multiprocess across networks/runs** -- but NOT ~8x. Measured on the
+   16-thread i7-13620H (6P+4E; E1 real arm, 20 episodes, `scripts/bench_workers.py`,
+   docs/SPEC_redesign_phase6c_part2.md): 8 plain workers gave 2.5x (103 s vs 257 s
+   serial), each job ~2.9x slower than alone (sparse matvec over a 7.4 MB W that
+   each worker held privately: 8 copies overflow the 24 MB L3). `brain/workers.py`
+   (`WorkerPool`: W and the shuffled variants in shared memory, one thread per
+   worker) gives 3.3x at 8 workers (78.5 s; 72.8 s at 12), bit-identical to serial;
+   jobs are still ~2x slower than alone, so more than ~8 workers buys little. A
+   240-episode revalidation: ~51 min serial, ~21 min before, ~16 min now.
+   Use `WorkerPool` for new harnesses; keep `OMP_NUM_THREADS=1` per worker.
 3. **Batch the gain grid as columns.** `g` is a scalar outside the matvec, so
    all 14 gains share one `W @ H` with H of shape (n, 14) instead of 14 separate
    matvecs. Measured 2.0×.
@@ -203,3 +210,6 @@ Keep test runs proportional to the change. The full suites take many minutes.
 - **Tool-only changes** (anything under `tool/`): run only the affected `tool/tests` files.
 - **Changes outside `tool/`** (simulation, circuits, config, bridge, mario): run the full `tests/`, including the goldens.
 - **Full `tool/tests`:** only when Arun asks, or once before a release.
+- **Fast / slow tiers** (`tests/conftest.py` marks them): `pytest -m fast` every sprint (goldens, import and
+  non-influence guards, `test_scalars_doc.py`; 13 tests, ~4 min, almost all of it the goldens). `pytest -m slow`
+  (everything else) on request or before a release.

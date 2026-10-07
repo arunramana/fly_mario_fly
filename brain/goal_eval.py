@@ -24,12 +24,12 @@ from __future__ import annotations
 
 import json
 import math
-import multiprocessing as mp
 import os
 from dataclasses import asdict, dataclass
 
 import numpy as np
 
+from brain.workers import WorkerPool
 from brain.scenes import (E0_SCENE_ID, E3_SCENE_ID, SceneSpec, apply_rules, build_scene, check_e3_scene, load_scene,
                           powerup_slots)
 from brain.settings import SenseSettings, settings_for
@@ -231,7 +231,7 @@ def run_eval(experiment: str, n: int = N, seed0: int | None = None, workers: int
     jobs = [(experiment, seed0 + i, arm, 1 + i if arm in SHUFFLED_ARMS else None, max_frames, used.to_dict())
             for arm in arms for i in range(n)]
     if workers > 1:
-        with mp.get_context("spawn").Pool(workers) as pool:
+        with WorkerPool(workers, [(j[3], "class" if j[2] == "shuffled_class" else "degree") for j in jobs if j[3] is not None]) as pool:
             results = pool.map(_job, jobs)
     else:
         results = [_job(j) for j in jobs]
