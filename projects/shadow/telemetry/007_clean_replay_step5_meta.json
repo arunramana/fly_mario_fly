@@ -1,0 +1,238 @@
+{
+ "label": "clean",
+ "seed": 9400,
+ "frames": 2487,
+ "end_reason": "level_complete",
+ "ttmn_rest_max": 0.012490445474723593,
+ "rest_rule": "max pooled TTMn over 3000 no-stimulus frames after 60 settling frames",
+ "keys": "arrows = D-pad, X = A (jump), Z = B (run), Enter = Start (recorded only), Esc = quit",
+ "stamp": {
+  "build_rule": {
+   "kind": "segmented path-union plus whole mushroom body",
+   "k_hops": 3,
+   "min_synapses": 5,
+   "segments": [
+    {
+     "name": "vision->outputs",
+     "sources": [
+      "LC4",
+      "LPLC2"
+     ],
+     "targets": [
+      "GF",
+      "TTMn",
+      "DNp09",
+      "DNa01",
+      "DNa02",
+      "MDN"
+     ]
+    },
+    {
+     "name": "LC10a->outputs",
+     "sources": [
+      "LC10a"
+     ],
+     "targets": [
+      "GF",
+      "TTMn",
+      "DNp09",
+      "DNa01",
+      "DNa02",
+      "MDN"
+     ]
+    },
+    {
+     "name": "ORN->KC",
+     "sources": [
+      "ORN"
+     ],
+     "targets": [
+      "KC"
+     ]
+    },
+    {
+     "name": "GRN->DAN",
+     "sources": [
+      "GRN_head"
+     ],
+     "targets": [
+      "DAN"
+     ]
+    },
+    {
+     "name": "thermo->DAN",
+     "sources": [
+      "THERMO"
+     ],
+     "targets": [
+      "DAN"
+     ]
+    },
+    {
+     "name": "MBON->outputs",
+     "sources": [
+      "MBON"
+     ],
+     "targets": [
+      "GF",
+      "TTMn",
+      "DNp09",
+      "DNa01",
+      "DNa02",
+      "MDN"
+     ]
+    }
+   ],
+   "whole_populations": [
+    "KC",
+    "MBON",
+    "DAN"
+   ],
+   "weights": "sign(pre, consensus_nt) * synapses / in-network input of post (circuit.py recipe)",
+   "populations": {
+    "LC4": {
+     "role": "sensory",
+     "expected": 126
+    },
+    "LPLC2": {
+     "role": "sensory",
+     "expected": 185
+    },
+    "LC10a": {
+     "role": "sensory",
+     "expected": 275
+    },
+    "ORN": {
+     "role": "sensory",
+     "expected": 2639
+    },
+    "GRN_head": {
+     "role": "sensory",
+     "expected": 275
+    },
+    "THERMO": {
+     "role": "sensory",
+     "expected": 25
+    },
+    "GF": {
+     "role": "output",
+     "expected": 2
+    },
+    "TTMn": {
+     "role": "output",
+     "expected": 2
+    },
+    "DNp09": {
+     "role": "output",
+     "expected": 2
+    },
+    "DNa01": {
+     "role": "output",
+     "expected": 2
+    },
+    "DNa02": {
+     "role": "output",
+     "expected": 2
+    },
+    "MDN": {
+     "role": "output",
+     "expected": 4
+    },
+    "KC": {
+     "role": "mushroom_body",
+     "expected": 4064
+    },
+    "MBON": {
+     "role": "mushroom_body",
+     "expected": 97
+    },
+    "DAN": {
+     "role": "mushroom_body",
+     "expected": 340
+    }
+   },
+   "counts": {
+    "neurons": 16464,
+    "edges": 612566,
+    "populations_in_network": {
+     "LC4": 126,
+     "LPLC2": 185,
+     "LC10a": 275,
+     "ORN": 2638,
+     "GRN_head": 269,
+     "THERMO": 25,
+     "GF": 2,
+     "TTMn": 2,
+     "DNp09": 2,
+     "DNa01": 2,
+     "DNa02": 2,
+     "MDN": 4,
+     "KC": 4064,
+     "MBON": 97,
+     "DAN": 340
+    },
+    "members_not_on_a_path": {
+     "LC4": 0,
+     "LPLC2": 0,
+     "LC10a": 0,
+     "ORN": 1,
+     "GRN_head": 6,
+     "THERMO": 0,
+     "GF": 0,
+     "TTMn": 0,
+     "DNp09": 0,
+     "DNa01": 0,
+     "DNa02": 0,
+     "MDN": 0,
+     "KC": 0,
+     "MBON": 0,
+     "DAN": 0
+    }
+   }
+  },
+  "build_hash": "3848f3e70b2051ef",
+  "neurons": 16464,
+  "edges": 612566,
+  "built_edges": 637176,
+  "nonzero_weights": 612566,
+  "unknown_transmitter_neurons": 433,
+  "unknown_transmitter_by_population": {
+   "GRN_head": 13,
+   "DAN": 2
+  },
+  "edges_dropped_unknown_source": 24610,
+  "calibration_hash": "343d8f60abcdba25",
+  "mechanisms": [
+   "looming",
+   "obstacle_expansion",
+   "pursuit",
+   "home_landmark"
+  ],
+  "lesion": [],
+  "shuffled": null,
+  "senses": {
+   "pursuit_kinds": [
+    "powerup"
+   ],
+   "goal_cue_salience": 15.0,
+   "pursuit_arousal": 0.65,
+   "obstacle_expansion": true
+  },
+  "scene": {
+   "id": "b11_baseline",
+   "level": "1-1",
+   "log_frames": 0,
+   "scene_hash": "c38a02f084313ee0"
+  },
+  "experiment": "B11",
+  "senses_used": {
+   "pursuit_kinds": [
+    "powerup"
+   ],
+   "goal_cue_salience": 15.0,
+   "pursuit_arousal": 0.65,
+   "obstacle_expansion": true
+  },
+  "mode": "shadow (the fly controls nothing)"
+ }
+}

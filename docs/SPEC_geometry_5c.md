@@ -116,3 +116,14 @@ Reported, not adjusted: obstacle GF and A presses are earlier than the measured 
 ## Addendum (2026-10-06, after review)
 - Scope of the enemy hitbox: ENEMY_HITBOX_W_PX = 10 and ENEMY_BOX_LEFT_PX = 3 are measured for the Goomba (presumed for the Koopa) only, from the RAM collision-box bytes (enemy box 0x04B0 + 4 * slot). They are NOT valid for other enemy kinds (piranha plant, bullet bill, hammer bro, etc.). 1-1 results are unaffected because only Goombas and Koopas appear there. The constants are pinned against the RAM boxes by tests/test_hitbox_pin.py (Mario front edge 13 small / 14 big, Goomba box 3..13).
 - Open item (step 5 candidate, no change made): elevation still uses sprite centres (`mario_centre_y`, `enemy_centre_y` in brain/perception.py), not hitbox centres.
+
+## Step 5 (2026-10-06): obstacle behind the leading edge
+Written before the replay results. Cause (shadow runs 002/007, docs/RESULTS_shadow.md): `theta_of` took `d = max(d_surface, 1.0)`, so when the face is at or behind Mario's leading edge (surface d down to -12 px) the clamp gave d = 1 and theta ~ pi (165-179 deg) on ~10% / ~8% of frames. The GF spike rate is 2.3% when obstacle theta < 0.7 rad and 99.1% above it; GF spikes at d <= 0 are 32% / 26% of all spikes.
+
+**Rule.** If surface d = `Face.d_px - front_edge_offset` is <= 0, the face is not approaching and emits NO expansion cue: theta 0 for that face (telemetry distance still reports the signed surface d). This is the obstacle twin of `enemy_thetas` skipping enemies behind Mario. No clamp to 1 for d <= 0. No new scalar: the guard is geometric. `max(d, 1.0)` stays ONLY for 0 < d < 1: a face 0 < d <= 1 px ahead (e.g. the stall point, surface d = 1) still reads as the clamped large theta, 2 atan(w/2). Theta is therefore discontinuous at d = 0 (large just ahead, 0 at or behind); that is the intent. Elevation, weights, thresholds, motor map, calibration, enemies, pursuit: unchanged.
+
+**Correction vs tuning.** Would we make this change if it made Mario worse? Yes: a face at or behind the leading edge is not approaching, and a visual angle of ~pi is a numerical artefact of a clamp, not geometry.
+
+**Expected effects.** Obstacle theta > 172 deg disappears (was ~10% / ~8% of frames in 002/007). Only PART of the GF flood should go: the d <= 0 frames hold 32% / 26% of the GF spikes, so ~68% / ~74% of spikes occurred at d > 0 and remain; the replay reports what remains.
+
+**REPORT-ONLY.** Replay numbers (brain.shadow --replay of the saved actions, brain.shadow_analysis) are diagnosis. No threshold, gain or cap is adjusted from them, and matching human presses is never an objective.

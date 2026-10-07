@@ -98,7 +98,9 @@ def theta_of(face: Face | None, body_top: float, body_bottom: float, elevation_l
     if face is None:
         return 0.0, None
     d_surface = face.d_px - eye_offset_px
-    d = max(d_surface, 1.0)
+    if d_surface <= 0:        # Step 5: a face at or behind the leading edge is not approaching, it emits no expansion cue
+        return 0.0, d_surface  # (same as enemy_thetas ignoring enemies behind). Not clamped to 1: that gave theta ~ pi.
+    d = max(d_surface, 1.0)   # 0 < d < 1 keeps the clamp (a face 0 < d <= 1 px ahead still reads as the large clamped theta)
     elev = elevation_deg(face, body_top, body_bottom, d)
     return 2.0 * math.atan(face.w_px / (2.0 * d)) * max(0.0, 1.0 - elev / elevation_limit_deg), d_surface
 

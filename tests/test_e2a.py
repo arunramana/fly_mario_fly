@@ -70,7 +70,33 @@ def test_obstacle_distance_is_surface_to_surface_front_edge_13_small_14_big():
     th, d = obstacles.theta_of(f, 196.0, 208.0, ELEVATION_LIMIT_DEG, obstacles.front_edge_offset_px(0))
     assert d0 == 40.0 and d == 27.0 and th == pytest.approx(2 * math.atan(32 / 54)) and th > th0
     assert obstacles.theta_of(f, 184.0, 208.0, ELEVATION_LIMIT_DEG, obstacles.front_edge_offset_px(1))[1] == 26.0
-    assert obstacles.theta_of(f, 196.0, 208.0, ELEVATION_LIMIT_DEG, 100.0)[0] == pytest.approx(2 * math.atan(16.0))  # clamp d >= 1
+    assert obstacles.theta_of(f, 196.0, 208.0, ELEVATION_LIMIT_DEG, 100.0)[0] == 0.0  # step 5: behind the leading edge -> no cue
+
+
+def test_step5_face_at_or_behind_leading_edge_emits_no_cue_and_positive_tiny_d_keeps_the_clamp():
+    lim = ELEVATION_LIMIT_DEG
+    for d_px in (13.0, 12.0, 1.0):                                               # surface d = 0, -1, -12 (small Mario, offset 13)
+        th, d = obstacles.theta_of(obstacles.Face(d_px, 32.0, 192.0, 176.0, 208.0), 196.0, 208.0, lim, 13.0)
+        assert th == 0.0 and d == d_px - 13.0
+    big = obstacles.Face(13.5, 32.0, 192.0, 176.0, 208.0)                        # surface d = 0.5 (0 < d < 1): clamped to 1, unchanged
+    assert obstacles.theta_of(big, 196.0, 208.0, lim, 13.0)[0] == pytest.approx(2 * math.atan(16.0))
+    one = obstacles.Face(14.0, 32.0, 192.0, 176.0, 208.0)                        # surface d = 1: the stall point, unchanged
+    assert obstacles.theta_of(one, 196.0, 208.0, lim, 13.0)[0] == pytest.approx(2 * math.atan(16.0))
+    # continuity statement: theta is NOT continuous at d = 0 (large just ahead, 0 at/behind): a face touching the leading edge stops
+    # being "approaching" at that instant. That is the intent; the discontinuity is geometric, not tuned.
+
+
+def test_step5_mario_pressed_against_a_wall_report_only():
+    """Synthetic stall: Mario walks into a pipe and keeps pushing (x stops at the stall point, surface d 1). Report-only record."""
+    face_x = 448
+    rows = []
+    for x in list(range(380, 435)) + [434] * 10 + [436, 438, 440]:               # 436+ = overlapping the face (body inside it)
+        f = _face({face_x: S.stack(2)}, x)
+        rows.append((x, obstacles.theta_of(f, 196.0, 208.0, ELEVATION_LIMIT_DEG, 13.0)[0] if f else 0.0))
+    stall = [t for x, t in rows if x == 434]
+    assert all(t == stall[0] and 0 < t < math.pi for t in stall)                  # stalled at d 1: constant, large (2 atan 16), no change
+    assert all(t == 0.0 for x, t in rows if x >= 436)                            # inside/past the face edge: silent
+    print("stall theta deg", math.degrees(stall[0]), "after overlap", [round(math.degrees(t), 1) for x, t in rows if x >= 436])
 
 
 def test_theta_reaches_40_deg_on_a_tall_face_at_the_frozen_surface_distance():

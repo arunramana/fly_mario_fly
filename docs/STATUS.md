@@ -30,3 +30,5 @@ Caveats, stated plainly:
 - Baselines before step 4 used pre-correction geometry; cross-seed, cross-step comparisons are indicative only.
 
 The headline "the fly's wiring does the work" is therefore NOT claimed for escape, and for pursuit and walking it is claimed only at the level the shuffles above test. README.md and CLAUDE.md state no result of this kind (invariants unchanged), so they were not edited.
+
+Standing practice: re-run the human shadow reference after every stimulus-layer change, and shadow data diagnoses, never scores (CLAUDE.md "Shadow reference runs").

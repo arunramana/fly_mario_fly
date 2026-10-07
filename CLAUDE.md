@@ -75,6 +75,12 @@ working around it.
    rules that violate this are listed in `docs/CONTROL_AUDIT.md`, to be
    replaced by circuit or learned mechanisms.
 
+## Shadow reference runs (standing practice)
+
+(a) Keep one human shadow reference run per level (`brain/shadow.py`) and re-analyse it (`brain/shadow_analysis.py`, replaying the saved `_actions.npy` through the CURRENT brain) after EVERY change to the stimulus layer: `brain/perception.py`, `brain/obstacles.py`, `mechanisms/` encoding. That layer has been the culprit three times out of three (missing body width, obstacle faces collapsed to a centre point, the d <= 0 saturation with theta ~ pi), and it gets far less scrutiny than the wiring.
+
+(b) HARD LINE: shadow data diagnoses, it never scores. Matching human button presses must never become an objective. Fitting thresholds to a human's presses would produce a human imitator wearing a connectome that passes every test we currently have.
+
 ## Every change ends with a video in `projects/<name>/runs/`
 
 Not optional, and not only when asked. Any sprint that changes what the agent
