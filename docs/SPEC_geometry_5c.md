@@ -127,3 +127,14 @@ Written before the replay results. Cause (shadow runs 002/007, docs/RESULTS_shad
 **Expected effects.** Obstacle theta > 172 deg disappears (was ~10% / ~8% of frames in 002/007). Only PART of the GF flood should go: the d <= 0 frames hold 32% / 26% of the GF spikes, so ~68% / ~74% of spikes occurred at d > 0 and remain; the replay reports what remains.
 
 **REPORT-ONLY.** Replay numbers (brain.shadow --replay of the saved actions, brain.shadow_analysis) are diagnosis. No threshold, gain or cap is adjusted from them, and matching human presses is never an objective.
+
+## Step 6 (2026-10-07): nearest_face selects the nearest face that can emit a cue
+Written before the code change.
+
+**(a) Premise check.** A request proposed changing the Step 5 guard to `d - mario_width <= 0`, on the premise that `Face.d_px` is face-left minus Mario-left, so d = 1 would mean Mario's body is 15 px inside the wall. That describes the pre-Step-4 raw `d_px` only. Since Step 4, `theta_of` (brain/obstacles.py lines 100-105) computes `d_surface = Face.d_px - front_edge_offset_px` (13 small / 14 big: the hitbox FRONT edge measured from Mario's left sprite edge, pinned by tests/test_hitbox_pin.py), and the Step 5 guard is `d_surface <= 0`. So d_surface = 1 means the hitbox front is 1 px from the wall, not inside it; subtracting the 12 px width again would double-count the body. The guard is NOT changed. The residual theta spikes at 0 < d <= 5 and at the d = 1 clamp are a face within 5 px of the hitbox front: a legitimate looming cue at touching distance, not a body-inside-wall artefact. The d = 1 clamp stays. The discontinuity at d_surface = 0 stays, stated as a property: a face at or behind the front edge emits nothing.
+
+**(b) Fix.** `nearest_face` currently picks the nearest face by raw d_px and `theta_of` then zeroes it when d_surface <= 0. A face with d_px in 1..13 (already overlapped by the hitbox front) therefore masks a farther face that would legitimately loom. Now `nearest_face(..., eye_offset_px=0.0)` skips faces with `d_px - eye_offset_px <= 0` and selects the nearest face that CAN emit a cue. `obstacle_thetas` passes `front_edge_offset_px(size byte)`. The default 0 keeps the old API (d_px <= 0 skipped, as before). Body-overlap selection is unchanged. No new scalar.
+
+**(c) Correction vs tuning.** Would we make this change if it made Mario worse? Yes: a face already touched cannot approach, a farther one can.
+
+REPORT-ONLY: no threshold, gain or cap is adjusted from any result of this step.

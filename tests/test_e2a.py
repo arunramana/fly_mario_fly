@@ -113,6 +113,17 @@ def test_mario_body_is_the_hitbox_12_small_24_big():
     assert obstacles.nearest_face([(448, col)], 400, 208, 12) is None            # small hitbox top y 196: below the tile
     assert obstacles.nearest_face([(448, col)], 400, 208, 24) is not None        # big hitbox top y 184 < tile bottom 192: overlaps
 
+def test_face_already_touched_does_not_mask_a_farther_face_step6():
+    col = [0] * 13
+    col[10] = 0x51                                                               # tile row 10: y 192..208, overlaps small Mario
+    cols = [(410, col), (440, col)]                                              # d_px 10 (hitbox front 13 already past it) and 40
+    off = obstacles.front_edge_offset_px(0)
+    old = obstacles.nearest_face(cols, 400, 208, 12)                             # default offset 0: the near face is selected...
+    assert old.d_px == 10 and obstacles.theta_of(old, 196.0, 208.0, ELEVATION_LIMIT_DEG, off)[0] == 0.0   # ...and then emits nothing
+    new = obstacles.nearest_face(cols, 400, 208, 12, off)
+    assert new.d_px == 40
+    th, d = obstacles.theta_of(new, 196.0, 208.0, ELEVATION_LIMIT_DEG, off)
+    assert d == 27.0 and th > 0.0
 
 
 def test_block_and_first_stair_step_are_16_px_faces_and_only_the_nearest_column_counts():

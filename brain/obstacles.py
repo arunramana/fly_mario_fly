@@ -52,14 +52,16 @@ def _runs(tiles: Sequence[int]) -> list[tuple[int, int]]:
     return runs
 
 
-def nearest_face(columns: Iterable[tuple[int, Sequence[int]]], mario_x: float, feet_y: float, height_px: float) -> Face | None:
-    """The nearest obstacle face. `columns` = (left x of the column in px, its 13 tile ids) for the visible columns only.
-    A column is a face when it is ahead (d > 0) and a solid run overlaps Mario's body [feet - h, feet)."""
+def nearest_face(columns: Iterable[tuple[int, Sequence[int]]], mario_x: float, feet_y: float, height_px: float,
+                 eye_offset_px: float = 0.0) -> Face | None:
+    """The nearest obstacle face that can emit a cue. `columns` = (left x of the column in px, its 13 tile ids) for the visible columns only.
+    A column is a face when its surface distance d_px - eye_offset_px is > 0 (ahead of Mario's front edge; step 6: a face the
+    hitbox front already overlaps cannot approach and must not mask a farther one) and a solid run overlaps Mario's body [feet - h, feet)."""
     top = feet_y - height_px
     best: Face | None = None
     for col_x, tiles in columns:
         d = col_x - mario_x
-        if d <= 0 or (best is not None and d >= best.d_px):
+        if d - eye_offset_px <= 0 or (best is not None and d >= best.d_px):
             continue
         hit = [(a, b) for a, b in _runs(tiles)
                if TILE_TOP_Y + TILE_PX * a < feet_y and TILE_TOP_Y + TILE_PX * (b + 1) > top]
@@ -110,7 +112,7 @@ def obstacle_thetas(ram, prev_theta, elevation_limit_deg: float):
     mario_x = int(ram[ADDR_MARIO_PAGE]) * 256 + int(ram[ADDR_MARIO_X])
     height = BODY_SMALL_PX if int(ram[ADDR_MARIO_SIZE]) == 0 else BODY_BIG_PX
     feet = int(ram[ADDR_PLAYER_HITBOX_BOTTOM])
-    face = nearest_face(visible_columns(ram), mario_x, feet, height)
+    face = nearest_face(visible_columns(ram), mario_x, feet, height, front_edge_offset_px(ram[ADDR_MARIO_SIZE]))
     th, d = theta_of(face, feet - height, feet, elevation_limit_deg, front_edge_offset_px(ram[ADDR_MARIO_SIZE]))
     theta = {"L": th, "R": th}
     return theta, {s: theta[s] - prev_theta[s] for s in ("L", "R")}, {"L": d, "R": d}
