@@ -113,9 +113,10 @@ def summarize(results: list[EpisodeResult]) -> dict:
 
 
 def run_eval(n: int = DEFAULT_N, seed0: int = DEFAULT_SEED0, workers: int = 1,
-             max_frames: int = DEFAULT_MAX_FRAMES) -> dict:
+             max_frames: int = DEFAULT_MAX_FRAMES, with_degree_shuffle: bool = False) -> dict:
     """Real connectome vs degree-preserving shuffle (shuffle seed 1 + i) on seeds seed0..seed0+n-1."""
-    jobs = [(seed0 + i, None, max_frames) for i in range(n)] + [(seed0 + i, 1 + i, max_frames) for i in range(n)]
+    arms = ("real", "shuffled") if with_degree_shuffle else ("real",)      # routine: no degree shuffle (brain/arms.py)
+    jobs = [(seed0 + i, None, max_frames) for i in range(n)] + ([(seed0 + i, 1 + i, max_frames) for i in range(n)] if with_degree_shuffle else [])
     if workers > 1:
         with WorkerPool(workers, [(j[1], "degree") for j in jobs if j[1] is not None]) as pool:
             results = pool.map(_job, jobs)
@@ -124,7 +125,8 @@ def run_eval(n: int = DEFAULT_N, seed0: int = DEFAULT_SEED0, workers: int = 1,
     from brain.policy import BrainPolicy
     out = {"metric": "past the first Goomba", "level": LEVEL, "seeds": [seed0, seed0 + n - 1], "max_frames": max_frames,
            "stamp": BrainPolicy().stamp()}
-    for arm in ("real", "shuffled"):
+    out["arms"] = list(arms)
+    for arm in arms:
         out[arm] = summarize([r for r in results if r.arm == arm])
     out["episodes"] = [asdict(r) for r in results]
     return out
@@ -136,7 +138,7 @@ def format_eval(res: dict) -> str:
              f"max {res['max_frames']} frames",
              f"network {st['build_hash']} ({st['built_edges']} built edges, {st['nonzero_weights']} non-zero weights), "
              f"calibration {st['calibration_hash']}"]
-    for arm in ("real", "shuffled"):
+    for arm in res.get("arms", ("real", "shuffled")):
         s = res[arm]
         lines.append(f"{arm:9s} past first Goomba {s['passed']}/{s['n']} ({s['pass_rate']:.0%}, 95% CI "
                      f"{s['pass_rate_ci'][0]:.0%}-{s['pass_rate_ci'][1]:.0%}); died {s['died']}; "
@@ -153,8 +155,10 @@ def main(argv=None) -> None:
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--max-frames", type=int, default=DEFAULT_MAX_FRAMES)
     ap.add_argument("--out", default=None, help="write the full result (per-episode rows included) as JSON")
+    from brain.arms import add_flag
+    add_flag(ap)
     args = ap.parse_args(argv)
-    res = run_eval(args.n, args.seed0, args.workers, args.max_frames)
+    res = run_eval(args.n, args.seed0, args.workers, args.max_frames, args.with_degree_shuffle)
     print(format_eval(res))
     if args.out:
         with open(args.out, "w", encoding="utf-8") as f:

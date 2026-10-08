@@ -137,15 +137,15 @@ class BrainRunController(QObject):
             load_sense_settings(self._window.project.name).to_dict()))
         self._eval_process.start()
         self._eval_timer.start()
-        arms = ("real, shuffled and the GF-lesion control" if experiment == "E1"
-                else "real, degree-preserving shuffled, class-preserving shuffled and "
+        arms = ("real and the GF-lesion control" if experiment == "E1"
+                else "real, class-preserving shuffled and "
                 + ("real with the landmark off" if experiment == "E0" else "real with pursuit off"))
         if experiment == "E2a":
-            arms = "real, degree-preserving shuffled, class-preserving shuffled and real with the obstacle cue off"
+            arms = "real, class-preserving shuffled and real with the obstacle cue off"
         if experiment == "B11":
-            arms = "real, degree-preserving shuffled and class-preserving shuffled; a baseline, no pass/fail"
+            arms = "real and class-preserving shuffled; a baseline, no pass/fail"
         self._eval_experiment = experiment
-        self.eval_status.emit(f"{experiment} evaluation running ({arms}, 20 seeds each)...")
+        self.eval_status.emit(f"{experiment} evaluation running ({arms}, 20 seeds each; the degree shuffle is omitted from routine runs, docs/SPEC_fast_iteration.md)...")
         return True
 
     def _poll_eval(self) -> None:

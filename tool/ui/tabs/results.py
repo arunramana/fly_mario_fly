@@ -90,6 +90,10 @@ def summary_rows(result: dict) -> list[list[str]]:
     return rows
 
 
+# Routine runs omit the degree-shuffle arm (docs/SPEC_fast_iteration.md); the criterion line then judges real alone and says so.
+_NO_DEGREE_NOTE = " (degree-shuffle arm not run: routine runs omit it, re-run at release)"
+
+
 def criterion_text(result: dict) -> str:
     if is_e2a(result):
         c = result["criterion"]
@@ -103,14 +107,14 @@ def criterion_text(result: dict) -> str:
         return ("Baseline, not a criterion: no pass/fail. Looming, pursuit, home landmark and (from 2026-10-05) obstacle expansion on; the home landmark is an invented world cue and obstacle expansion a Mario's-eye-view assumption. "
                 f"Tap = first A run <= {result['tap_max_frames']} frames; stuck = no new max x for {result['stuck_frames']} frames.")
     if is_goal(result):
-        c, real, shuf = result["criterion"], result["real"], result["shuffled"]
-        met = real["reached"] >= c["real_reached_min"] and shuf["reached"] <= c["shuffled_reached_max"]
+        c, real, shuf = result["criterion"], result["real"], result.get("shuffled")
+        met = real["reached"] >= c["real_reached_min"] and (shuf is None or shuf["reached"] <= c["shuffled_reached_max"])
         return (f"Plan criterion (reported, not tuned): real >= {c['real_reached_min']}/{c['n']} and shuffled <= "
-                f"{c['shuffled_reached_max']}/{c['n']} -> {'met' if met else 'not met'}")
-    c, real, shuf = result["criterion"], result["real"], result["shuffled"]
-    met = real["survived"] >= c["real_survived_min"] and shuf["survived"] <= c["shuffled_survived_max"]
+                f"{c['shuffled_reached_max']}/{c['n']} -> {'met' if met else 'not met'}" + _NO_DEGREE_NOTE * (shuf is None))
+    c, real, shuf = result["criterion"], result["real"], result.get("shuffled")
+    met = real["survived"] >= c["real_survived_min"] and (shuf is None or shuf["survived"] <= c["shuffled_survived_max"])
     return (f"Plan criterion (reported, not tuned): real >= {c['real_survived_min']}/{c['n']} and shuffled <= "
-            f"{c['shuffled_survived_max']}/{c['n']} -> {'met' if met else 'not met'}")
+            f"{c['shuffled_survived_max']}/{c['n']} -> {'met' if met else 'not met'}" + _NO_DEGREE_NOTE * (shuf is None))
 
 
 class ResultsTab(QWidget):

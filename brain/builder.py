@@ -166,6 +166,7 @@ class BuiltNetwork:
     W: sp.csr_matrix = field(default=None, repr=False)
     insub: np.ndarray = field(default=None, repr=False)
     twin_of: dict | None = None            # shuffle provenance, None for the real network
+    view: object | None = None             # brain/pruned.py PrunedView when this is a speed view of a larger network, else None
 
     def __post_init__(self):
         if self.W is None:
@@ -180,6 +181,8 @@ class BuiltNetwork:
         return self.W.nnz
 
     def build_hash(self) -> str:
+        if self.view is not None:                  # a pruned view reports the hash of the network it is a view of
+            return self.view.full_hash
         h = hashlib.sha256(json.dumps(self.rule, sort_keys=True).encode())
         for a in (self.ids, self.pre, self.post, self.syn):
             h.update(np.ascontiguousarray(a).tobytes())
@@ -198,6 +201,8 @@ class BuiltNetwork:
         name, KC, MBON, DAN, or interior), so random wiring cannot land input on an output cell that has few inputs."""
         if mode not in SHUFFLE_MODES:
             raise ValueError(f"shuffle mode {mode!r} not in {SHUFFLE_MODES}")
+        if self.view is not None:
+            raise ValueError("shuffle the full network, then prune the twin (BrainPolicy does this)")
         if _SHARED is not None:                      # worker process: the same bits, already in shared memory
             hit = _SHARED.variant(self, seed, mode)
             if hit is not None:

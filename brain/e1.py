@@ -30,6 +30,7 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 
+from brain.arms import add_flag, resolve_arms
 from brain.workers import WorkerPool
 from brain.brain import LESION_CLAMP_HZ
 from brain.scenes import E1_SCENE_ID, SceneSpec, build_scene, check_scene, goomba_slots, load_scene
@@ -94,7 +95,7 @@ def _vertical_gap(ram, slot: int) -> tuple[float, int]:
 
 def run_e1_episode(seed: int, shuffle_seed: int | None = None, scene: SceneSpec | None = None,
                    max_frames: int = E1_MAX_FRAMES, network=None, calibration=None, on_frame=None, should_stop=None,
-                   record_rows: bool = False, arm: str | None = None):
+                   record_rows: bool = False, arm: str | None = None, pruned: bool = False):
     """One E1 episode. Returns (E1Result, rows, stamp); rows are per-frame telemetry dicts when `record_rows`.
     `on_frame(frame, obs, row)` is called after every emulator step (the tool's live view and frame recorder).
     `arm` is "real", "shuffled" or the control "lesion_gf"; default: "shuffled" if a shuffle seed is given, else "real"."""
@@ -110,7 +111,7 @@ def run_e1_episode(seed: int, shuffle_seed: int | None = None, scene: SceneSpec 
     scene = scene or load_scene()
     policy = BrainPolicy(network=network, calibration=calibration, shuffle_seed=shuffle_seed,
                          shuffle_mode="class" if arm == "shuffled_class" else "degree",
-                         lesion=LESION_POPULATIONS if arm == "lesion_gf" else ())
+                         lesion=LESION_POPULATIONS if arm == "lesion_gf" else (), pruned=pruned)
     env = make_env(scene.level)
     build_scene(env, scene)
     ram = env.unwrapped.ram
@@ -190,8 +191,8 @@ def _row(frame, ram, policy, readout, buttons, action, mario_x, dx, addr_sx, add
 # ---- evaluation ----------------------------------------------------------------------------------------------------
 def _job(args) -> E1Result:
     os.environ.setdefault("OMP_NUM_THREADS", "1")
-    seed, shuffle_seed, max_frames, arm = args
-    return run_e1_episode(seed, shuffle_seed, max_frames=max_frames, arm=arm)[0]
+    seed, shuffle_seed, max_frames, arm, *rest = args
+    return run_e1_episode(seed, shuffle_seed, max_frames=max_frames, arm=arm, pruned=bool(rest and rest[0]))[0]
 
 
 def summarize(results: list[E1Result]) -> dict:
@@ -215,11 +216,12 @@ def summarize(results: list[E1Result]) -> dict:
 
 
 def run_eval(n: int = E1_N, seed0: int = E1_SEED0, workers: int = 1, max_frames: int = E1_MAX_FRAMES,
-             arms: tuple[str, ...] = ARMS) -> dict:
+             arms: tuple[str, ...] | None = None, with_degree_shuffle: bool = False, pruned: bool = False) -> dict:
     """Real connectome vs degree-preserving shuffle (shuffle seed 1 + i) vs the GF-lesion control (real connectome, both GF
     cells silenced), seeds seed0..seed0+n-1, same noise seeds in every arm."""
     from brain.policy import BrainPolicy
-    jobs = [(seed0 + i, 1 + i if arm in SHUFFLED_ARMS else None, max_frames, arm) for arm in arms for i in range(n)]
+    arms = resolve_arms(arms, ARMS, with_degree_shuffle)      # routine: no degree shuffle (brain/arms.py)
+    jobs = [(seed0 + i, 1 + i if arm in SHUFFLED_ARMS else None, max_frames, arm, pruned) for arm in arms for i in range(n)]
     if workers > 1:
         with WorkerPool(workers, [(j[1], "class" if j[3] == "shuffled_class" else "degree") for j in jobs if j[1] is not None]) as pool:
             results = pool.map(_job, jobs)
@@ -260,11 +262,13 @@ def main(argv=None) -> None:
     ap.add_argument("--seed0", type=int, default=E1_SEED0)
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--max-frames", type=int, default=E1_MAX_FRAMES)
-    ap.add_argument("--arms", nargs="+", choices=ARM_CHOICES, default=list(ARMS),
-                    help="arms to run; lesion_gf is the control-only GF silencing arm")
+    ap.add_argument("--arms", nargs="+", choices=ARM_CHOICES, default=None,
+                    help="arms to run (default: real and lesion_gf; the control-only GF silencing arm is lesion_gf)")
+    add_flag(ap)
+    ap.add_argument("--pruned", action="store_true", help="opt-in speed view: drop neurons with no path to a read population (docs/SPEC_fast_iteration.md)")
     ap.add_argument("--out", default=None, help="write the full result (per-episode rows included) as JSON")
     args = ap.parse_args(argv)
-    res = run_eval(args.n, args.seed0, args.workers, args.max_frames, tuple(args.arms))
+    res = run_eval(args.n, args.seed0, args.workers, args.max_frames, tuple(args.arms) if args.arms else None, args.with_degree_shuffle, args.pruned)
     print(format_eval(res))
     if args.out:
         with open(args.out, "w", encoding="utf-8") as f:

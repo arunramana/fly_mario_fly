@@ -28,13 +28,16 @@ from mario.entities.registry import DEFAULT as DEFAULT_REGISTRY
 class BrainPolicy:
     def __init__(self, network: builder.BuiltNetwork | None = None, calibration: Calibration | None = None,
                  shuffle_seed: int | None = None, lesion: tuple[str, ...] = (),
-                 settings: SenseSettings | None = None, shuffle_mode: str = "degree"):
+                 settings: SenseSettings | None = None, shuffle_mode: str = "degree", pruned: bool = False):
         """`lesion` is a control-only argument, passed by brain/e1.py's `lesion_gf` arm and nothing else. `settings`
         (docs/SPEC_phase3.md) attaches pursuit (when kinds are listed) and the home landmark (when its strength > 0); the
         default is looming only, as in Phase 1 and 2. The shuffled arms receive exactly the same cues."""
         net = network or builder.load_or_build()
         if shuffle_seed is not None:
             net = net.shuffled(shuffle_seed, shuffle_mode)
+        if pruned:                                   # opt-in speed view (brain/pruned.py): same outputs, fewer rows
+            from brain.pruned import prune_network
+            net = prune_network(net)
         self.cal = calibration or Calibration.load()
         self.brain = Brain(net, self.cal, lesion=lesion)
         self.looming = LoomingMechanism(net)

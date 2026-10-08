@@ -32,7 +32,7 @@ from brain.settings import SenseSettings, settings_for
 
 VALUES = (5.0, 8.0, 11.0, 15.0)             # 15 = the registered default (calibration.GOAL_CUE_SALIENCE); window validated 3-25 per neuron
 DOSE_SEED0, N = 6200, 20                    # fresh seeds, used for every value
-DOSE_ARMS = ("real", "shuffled")
+DOSE_ARMS = ("real", "shuffled")      # the routine default drops "shuffled" (brain/arms.py); --with-degree-shuffle restores it
 SPEED_WINDOW_FRAMES = 100                   # speed window: frames 1..min(100, first Goomba contact frame, last frame)
 FIRST_GOOMBA = ("survived", "died_enemy", "unresolved", "no_contact")
 
@@ -152,8 +152,10 @@ def summarize_cell(rows: list[DoseRow]) -> dict:
 
 
 def run_dose_response(values=VALUES, n: int = N, seed0: int = DOSE_SEED0, workers: int = 1, max_frames: int | None = None,
-                      arms=DOSE_ARMS) -> dict:
+                      arms=None, with_degree_shuffle: bool = False) -> dict:
     """Same seeds seed0..seed0+n-1 for every value; shuffle seed 1 + i. Registry value untouched."""
+    from brain.arms import resolve_arms
+    arms = resolve_arms(arms, DOSE_ARMS, with_degree_shuffle)
     jobs = [(float(v), seed0 + i, arm, 1 + i if arm in SHUFFLED_ARMS else None, max_frames) for v in values for arm in arms for i in range(n)]
     if workers > 1:
         with WorkerPool(workers, [(j[3], "degree") for j in jobs if j[3] is not None]) as pool:
@@ -196,10 +198,13 @@ def main(argv=None) -> None:
     ap.add_argument("--seed0", type=int, default=DOSE_SEED0)
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--max-frames", type=int, default=None)
-    ap.add_argument("--arms", nargs="+", choices=DOSE_ARMS, default=list(DOSE_ARMS))
+    ap.add_argument("--arms", nargs="+", choices=DOSE_ARMS, default=None, help="default: real only")
+    from brain.arms import add_flag
+    add_flag(ap)
     ap.add_argument("--out", default=None)
     args = ap.parse_args(argv)
-    res = run_dose_response(tuple(args.values), args.n, args.seed0, args.workers, args.max_frames, tuple(args.arms))
+    res = run_dose_response(tuple(args.values), args.n, args.seed0, args.workers, args.max_frames, tuple(args.arms) if args.arms else None,
+                            args.with_degree_shuffle)
     print(format_curve(res))
     if args.out:
         with open(args.out, "w", encoding="utf-8") as f:

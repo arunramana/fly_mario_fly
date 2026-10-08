@@ -2,6 +2,13 @@
 
 Short current-state summary of the redesigned brain (`brain/`, plan in docs/REDESIGN_PLAN.md). Numbers are copied from docs/RESULTS_5c_step4.md, docs/RESULTS_baseline_1-1.md and the step 2/3 results; each is on the seeds named. Scalar count: docs/SCALARS_BRAIN.md (50 active + 1 inert).
 
+## Routine runs omit the degree-shuffle arm (docs/SPEC_fast_iteration.md)
+The degree-preserving shuffle (`shuffled`) has been 0/20 on every experiment (it never fires the GF or never walks): a settled control. Routine
+E1/E2a/B11/E0/E3/dose-response/evaluation runs no longer include it; `--with-degree-shuffle` (alias `--release`) restores it, an explicit `--arms`
+is always honoured. The class shuffle (`shuffled_class`) stays in the routine defaults. Re-run the degree shuffle after a change to the stimulus
+layer (brain/perception.py, brain/obstacles.py, the mechanisms' encoding), the network hash, or the calibration, and at the release boundary.
+Saved evals that contain `shuffled` still display; the Results tab criterion line judges real alone when the arm is absent and says so.
+
 ## Phase 5c results (two findings, equal weight)
 
 ### (a) Level run B11 improved

@@ -24,6 +24,7 @@ from dataclasses import asdict, dataclass, field
 
 import numpy as np
 
+from brain.arms import add_flag, resolve_arms
 from brain.workers import WorkerPool
 from brain.e1 import SPRITE_PX
 from brain.scenes import B11_SCENE_ID, SceneSpec, load_scene
@@ -159,7 +160,7 @@ class GoombaTracker:
 # ---- one episode --------------------------------------------------------------------------------------------------
 def run_baseline_episode(seed: int, arm: str = "real", shuffle_seed: int | None = None, settings: SenseSettings | None = None,
                          scene: SceneSpec | None = None, max_frames: int | None = None, network=None, calibration=None,
-                         on_frame=None, should_stop=None, record_rows: bool = False, probe=None):
+                         on_frame=None, should_stop=None, record_rows: bool = False, probe=None, pruned: bool = False):
     """One 1-1 episode from reset. Returns (BaselineResult, rows, stamp). No scene rule is applied and no RAM byte is written.
     `probe(frame, ram, mario_x)` is an optional read-only observer (frame 0 = after reset, then once per frame after the step);
     brain/dose_response.py uses it. It is None in every other run, which are unchanged."""
@@ -177,7 +178,7 @@ def run_baseline_episode(seed: int, arm: str = "real", shuffle_seed: int | None 
     max_frames = max_frames or BASELINE_MAX_FRAMES
     used = settings_for(EXPERIMENT_ID, settings)
     policy = BrainPolicy(network=network, calibration=calibration, shuffle_seed=shuffle_seed,
-                         shuffle_mode="class" if arm == "shuffled_class" else "degree", settings=used)
+                         shuffle_mode="class" if arm == "shuffled_class" else "degree", settings=used, pruned=pruned)
     env = make_env(scene.level)
     env.reset()                                          # power-on; the scene has no log and no rules
     ram = env.unwrapped.ram
@@ -265,8 +266,9 @@ def run_baseline_episode(seed: int, arm: str = "real", shuffle_seed: int | None 
 # ---- evaluation ----------------------------------------------------------------------------------------------------
 def _job(args) -> BaselineResult:
     os.environ.setdefault("OMP_NUM_THREADS", "1")
-    seed, arm, shuffle_seed, max_frames, settings = args
-    return run_baseline_episode(seed, arm, shuffle_seed, SenseSettings.from_dict(settings), max_frames=max_frames)[0]
+    seed, arm, shuffle_seed, max_frames, settings, *rest = args
+    return run_baseline_episode(seed, arm, shuffle_seed, SenseSettings.from_dict(settings), max_frames=max_frames,
+                                pruned=bool(rest and rest[0]))[0]
 
 
 def summarize(results: list[BaselineResult]) -> dict:
@@ -297,13 +299,15 @@ def summarize(results: list[BaselineResult]) -> dict:
 
 
 def run_eval(n: int = N, seed0: int | None = None, workers: int = 1, max_frames: int | None = None,
-             arms: tuple[str, ...] = ARMS, settings: SenseSettings | None = None) -> dict:
+             arms: tuple[str, ...] | None = None, settings: SenseSettings | None = None, with_degree_shuffle: bool = False,
+             pruned: bool = False) -> dict:
     """real vs degree-preserving shuffle vs class-preserving shuffle (shuffle seed 1 + i), seeds seed0..seed0+n-1, same noise
     seed and same sense settings in every arm."""
     from brain.policy import BrainPolicy
+    arms = resolve_arms(arms, ARMS, with_degree_shuffle)      # routine: no degree shuffle (brain/arms.py)
     seed0 = BASELINE_SEED0 if seed0 is None else seed0
     used = settings_for(EXPERIMENT_ID, settings)
-    jobs = [(seed0 + i, arm, 1 + i if arm in SHUFFLED_ARMS else None, max_frames, used.to_dict()) for arm in arms for i in range(n)]
+    jobs = [(seed0 + i, arm, 1 + i if arm in SHUFFLED_ARMS else None, max_frames, used.to_dict(), pruned) for arm in arms for i in range(n)]
     if workers > 1:
         with WorkerPool(workers, [(j[2], "class" if j[1] == "shuffled_class" else "degree") for j in jobs if j[2] is not None]) as pool:
             results = pool.map(_job, jobs)
@@ -345,10 +349,12 @@ def main(argv=None) -> None:
     ap.add_argument("--seed0", type=int, default=BASELINE_SEED0)
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--max-frames", type=int, default=None)
-    ap.add_argument("--arms", nargs="+", choices=ARMS, default=list(ARMS))
+    ap.add_argument("--arms", nargs="+", choices=ARMS, default=None, help="default: real and shuffled_class")
+    add_flag(ap)
+    ap.add_argument("--pruned", action="store_true", help="opt-in speed view: drop neurons with no path to a read population (docs/SPEC_fast_iteration.md)")
     ap.add_argument("--out", default=None)
     args = ap.parse_args(argv)
-    res = run_eval(args.n, args.seed0, args.workers, args.max_frames, tuple(args.arms))
+    res = run_eval(args.n, args.seed0, args.workers, args.max_frames, tuple(args.arms) if args.arms else None, with_degree_shuffle=args.with_degree_shuffle, pruned=args.pruned)
     print(format_eval(res))
     if args.out:
         with open(args.out, "w", encoding="utf-8") as f:

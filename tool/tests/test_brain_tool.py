@@ -160,8 +160,9 @@ def test_the_results_evaluation_runs_in_a_child_process_and_is_saved(qtbot, wind
     assert window.brain_runs.start_eval(n=1, seed0=9100)
     qtbot.waitUntil(lambda: not window.brain_runs.eval_active() and len(load_brain_evals(PROJECT_NAME)) == 1, timeout=300_000)
     qtbot.waitUntil(lambda: tab.summary_table.item(0, 0) is not None, timeout=10_000)
-    assert tab.summary_table.item(0, 1).text().endswith("/1") and tab.summary_table.item(1, 0).text() == "shuffled"
-    assert tab.summary_table.rowCount() == 3 and tab.summary_table.item(2, 0).text() == "lesion_gf (control)"
+    assert tab.summary_table.item(0, 1).text().endswith("/1")
+    # routine evaluations omit the degree-shuffle arm (docs/SPEC_fast_iteration.md): real + the lesion control
+    assert tab.summary_table.rowCount() == 2 and tab.summary_table.item(1, 0).text() == "lesion_gf (control)"
 
 
 # ---- Phase 3 (docs/SPEC_phase3.md): E0 / E3 in the tool, Mechanisms settings ------------------------------------------------------

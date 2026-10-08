@@ -27,6 +27,7 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 
+from brain.arms import add_flag, resolve_arms
 from brain.workers import WorkerPool
 from brain.baseline import ADDR_GAME_ENGINE, BASELINE_STUCK_FRAMES, BASELINE_TAP_MAX_FRAMES, ENGINE_DYING, a_runs
 from brain.scenes import E2A_SCENE_ID, SceneSpec, apply_rules, build_scene, load_scene
@@ -92,7 +93,7 @@ def arm_of(arm: str, shuffle_seed: int | None) -> str:
 
 def run_e2a_episode(seed: int, arm: str = "real", shuffle_seed: int | None = None, settings: SenseSettings | None = None,
                     scene: SceneSpec | None = None, max_frames: int | None = None, network=None, calibration=None,
-                    on_frame=None, should_stop=None, record_rows: bool = False):
+                    on_frame=None, should_stop=None, record_rows: bool = False, pruned: bool = False):
     """One E2a episode. Returns (E2aResult, rows, stamp)."""
     arm = arm_of(arm, shuffle_seed)
     from brain.e1 import _row
@@ -103,7 +104,7 @@ def run_e2a_episode(seed: int, arm: str = "real", shuffle_seed: int | None = Non
     max_frames = max_frames or E2A_MAX_FRAMES
     used = arm_settings(arm, settings_for(EXPERIMENT_ID, settings))
     policy = BrainPolicy(network=network, calibration=calibration, shuffle_seed=shuffle_seed,
-                         shuffle_mode="class" if arm == "shuffled_class" else "degree", settings=used)
+                         shuffle_mode="class" if arm == "shuffled_class" else "degree", settings=used, pruned=pruned)
     env = make_env(scene.level)
     build_scene(env, scene)
     ram = env.unwrapped.ram
@@ -181,8 +182,9 @@ def run_e2a_episode(seed: int, arm: str = "real", shuffle_seed: int | None = Non
 # ---- evaluation ----------------------------------------------------------------------------------------------------
 def _job(args) -> E2aResult:
     os.environ.setdefault("OMP_NUM_THREADS", "1")
-    seed, arm, shuffle_seed, max_frames, settings = args
-    return run_e2a_episode(seed, arm, shuffle_seed, SenseSettings.from_dict(settings), max_frames=max_frames)[0]
+    seed, arm, shuffle_seed, max_frames, settings, *rest = args
+    return run_e2a_episode(seed, arm, shuffle_seed, SenseSettings.from_dict(settings), max_frames=max_frames,
+                           pruned=bool(rest and rest[0]))[0]
 
 
 def summarize(results: list[E2aResult]) -> dict:
@@ -211,14 +213,15 @@ def summarize(results: list[E2aResult]) -> dict:
 
 
 def run_eval(n: int = N, seed0: int | None = None, workers: int = 1, max_frames: int | None = None,
-             arms: tuple[str, ...] | None = None, settings: SenseSettings | None = None) -> dict:
+             arms: tuple[str, ...] | None = None, settings: SenseSettings | None = None, with_degree_shuffle: bool = False,
+             pruned: bool = False) -> dict:
     """Real vs degree vs class shuffle (shuffle seed 1 + i) and the real_no_obstacle necessity arm, seeds seed0..seed0+n-1, the
     same noise seed and the same sense settings in every arm (the necessity arm drops obstacle expansion only)."""
-    arms = ARMS + NECESSITY_ARMS if arms is None else arms
+    arms = resolve_arms(arms, ALL_ARMS, with_degree_shuffle)      # routine: no degree shuffle (brain/arms.py)
     from brain.policy import BrainPolicy
     seed0 = E2A_SEED0 if seed0 is None else seed0
     used = settings_for(EXPERIMENT_ID, settings)
-    jobs = [(seed0 + i, arm, 1 + i if arm in SHUFFLED_ARMS else None, max_frames, used.to_dict()) for arm in arms for i in range(n)]
+    jobs = [(seed0 + i, arm, 1 + i if arm in SHUFFLED_ARMS else None, max_frames, used.to_dict(), pruned) for arm in arms for i in range(n)]
     if workers > 1:
         with WorkerPool(workers, [(j[2], "class" if j[1] == "shuffled_class" else "degree") for j in jobs if j[2] is not None]) as pool:
             results = pool.map(_job, jobs)
@@ -264,10 +267,12 @@ def main(argv=None) -> None:
     ap.add_argument("--seed0", type=int, default=E2A_SEED0, help="default: the held-out seeds 7100-7119")
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--max-frames", type=int, default=None)
-    ap.add_argument("--arms", nargs="+", choices=ALL_ARMS, default=list(ALL_ARMS))
+    ap.add_argument("--arms", nargs="+", choices=ALL_ARMS, default=None, help="default: all but the degree shuffle")
+    add_flag(ap)
+    ap.add_argument("--pruned", action="store_true", help="opt-in speed view: drop neurons with no path to a read population (docs/SPEC_fast_iteration.md)")
     ap.add_argument("--out", default=None)
     args = ap.parse_args(argv)
-    res = run_eval(args.n, args.seed0, args.workers, args.max_frames, tuple(args.arms))
+    res = run_eval(args.n, args.seed0, args.workers, args.max_frames, tuple(args.arms) if args.arms else None, with_degree_shuffle=args.with_degree_shuffle, pruned=args.pruned)
     print(format_eval(res))
     if args.out:
         with open(args.out, "w", encoding="utf-8") as f:

@@ -198,6 +198,13 @@ connectome numbers at load time and fail loudly if the data changed underneath
 us. Comment the biology, not the syntax — a reader should learn why LPLC2
 exists, not what a for loop does.
 
+## Routine runs omit the degree-shuffle arm (docs/SPEC_fast_iteration.md)
+
+The degree-preserving shuffle (`shuffled`) is 0/20 on every experiment: a settled control, so routine harness runs (e1, e2a,
+baseline, goal_eval, dose_response, evaluation) leave it out. `--with-degree-shuffle` (alias `--release`) puts it back; an explicit
+`--arms` is always honoured. Re-run it once after any change to the **stimulus layer** (`brain/perception.py`, `brain/obstacles.py`,
+the mechanisms' encoding), the **network hash**, or the **calibration**, and at the **release boundary**. The class shuffle stays.
+
 ## Scope
 
 Scope is set per sprint by the relevant `docs/SPEC_*.md`. Build only what

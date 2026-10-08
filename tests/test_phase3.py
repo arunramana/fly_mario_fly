@@ -214,8 +214,10 @@ def test_e0_e3_defaults_arms_and_criteria():
         assert not banned & set(range(s0, s0 + goal_eval.N))
     assert goal_eval.CRITERIA["E0"]["real_reached_min"] == 18 and goal_eval.CRITERIA["E3"]["real_reached_min"] == 14
     assert goal_eval.ARMS == ("real", "shuffled", "shuffled_class")
-    assert goal_eval.default_arms("E0") == goal_eval.ARMS + ("real_no_landmark",)
-    assert goal_eval.default_arms("E3") == goal_eval.ARMS + ("real_no_pursuit",)
+    # routine defaults omit the degree shuffle (docs/SPEC_fast_iteration.md); the flag restores the full set
+    assert goal_eval.default_arms("E0") == ("real", "shuffled_class", "real_no_landmark")
+    assert goal_eval.default_arms("E3") == ("real", "shuffled_class", "real_no_pursuit")
+    assert goal_eval.default_arms("E0", with_degree_shuffle=True) == goal_eval.ARMS + ("real_no_landmark",)
     assert goal_eval.arm_of("real_no_landmark", None, "E0") == "real_no_landmark"
     for bad in (("real_no_landmark", None, "E3"), ("real_no_pursuit", None, "E0"), ("real_no_pursuit", 1, "E3")):
         with pytest.raises(ValueError):

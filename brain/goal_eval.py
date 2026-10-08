@@ -29,6 +29,7 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 
+from brain.arms import add_flag, routine_arms
 from brain.workers import WorkerPool
 from brain.scenes import (E0_SCENE_ID, E3_SCENE_ID, SceneSpec, apply_rules, build_scene, check_e3_scene, load_scene,
                           powerup_slots)
@@ -78,9 +79,9 @@ class GoalResult:
     collected: bool = False     # E3: Mario's size changed (he picked the mushroom up)
 
 
-def default_arms(experiment: str) -> tuple[str, ...]:
-    """real, both shuffles, and the experiment's own necessity arm."""
-    return ARMS + tuple(a for a, e in NECESSITY_ARMS.items() if e == experiment)
+def default_arms(experiment: str, with_degree_shuffle: bool = False) -> tuple[str, ...]:
+    """Routine: real, the class shuffle and the experiment's own necessity arm; the degree shuffle only when asked for."""
+    return routine_arms(ARMS + tuple(a for a, e in NECESSITY_ARMS.items() if e == experiment), with_degree_shuffle)
 
 
 def arm_settings(experiment: str, arm: str, used: SenseSettings) -> SenseSettings:
@@ -220,11 +221,11 @@ def summarize(results: list[GoalResult]) -> dict:
 
 
 def run_eval(experiment: str, n: int = N, seed0: int | None = None, workers: int = 1, max_frames: int | None = None,
-             arms: tuple[str, ...] | None = None, settings: SenseSettings | None = None) -> dict:
+             arms: tuple[str, ...] | None = None, settings: SenseSettings | None = None, with_degree_shuffle: bool = False) -> dict:
     """Real vs degree-preserving shuffle vs class-preserving shuffle (shuffle seed 1 + i for both), plus the experiment's
     necessity arm (real connectome, one mechanism off), seeds seed0..seed0+n-1, the same noise seed in every arm and the same
     sense settings (the shuffled arms get exactly the same cues)."""
-    arms = default_arms(experiment) if arms is None else arms
+    arms = tuple(arms) if arms else default_arms(experiment, with_degree_shuffle)
     from brain.policy import BrainPolicy
     seed0 = SEED0[experiment] if seed0 is None else seed0
     used = settings_for(experiment, settings)
@@ -269,10 +270,12 @@ def main(argv=None) -> None:
     ap.add_argument("--seed0", type=int, default=None, help="default: the held-out seeds of the experiment")
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--max-frames", type=int, default=None)
-    ap.add_argument("--arms", nargs="+", choices=ALL_ARMS, default=None, help="default: real, shuffled, shuffled_class and the necessity arm")
+    ap.add_argument("--arms", nargs="+", choices=ALL_ARMS, default=None, help="default: real, shuffled_class and the necessity arm")
+    add_flag(ap)
     ap.add_argument("--out", default=None)
     args = ap.parse_args(argv)
-    res = run_eval(args.experiment, args.n, args.seed0, args.workers, args.max_frames, tuple(args.arms) if args.arms else None)
+    res = run_eval(args.experiment, args.n, args.seed0, args.workers, args.max_frames, tuple(args.arms) if args.arms else None,
+                   with_degree_shuffle=args.with_degree_shuffle)
     print(format_eval(res))
     if args.out:
         with open(args.out, "w", encoding="utf-8") as f:

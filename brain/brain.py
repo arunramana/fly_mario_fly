@@ -116,7 +116,9 @@ class Brain:
         integ._refractory_left[:] = 0
         integ.just_spiked = np.zeros(len(integ.spike_idx), dtype=bool)
         self._current = np.zeros(self.network.n_neurons)
-        self._noise = NoiseConfig(self.cal.noise_sigma, np.random.default_rng(seed))
+        rng = np.random.default_rng(seed)
+        view = self.network.view       # a pruned view draws the full population's noise and slices it (brain/pruned.py)
+        self._noise = view.noise(self.cal.noise_sigma, rng) if view is not None else NoiseConfig(self.cal.noise_sigma, rng)
         self._frame = 0
 
     def step_frame(self) -> Readout:
@@ -147,4 +149,5 @@ class Brain:
                 "neurons": self.network.n_neurons, "edges": self.network.n_edges,
                 **self.network.edge_report(),
                 "calibration_hash": self.calibration_hash, "mechanisms": [m.name for m in self.mechanisms],
-                "lesion": list(self.lesioned), "shuffled": self.network.twin_of}
+                "lesion": list(self.lesioned), "shuffled": self.network.twin_of,
+                **({"view": self.network.view.summary()} if self.network.view is not None else {})}
