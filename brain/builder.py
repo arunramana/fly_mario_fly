@@ -34,6 +34,11 @@ import mcns  # noqa: E402
 CACHE_DIR = mcns.DERIVED
 OTHER_BODY = -1
 SHUFFLE_MODES = ("degree", "class")
+# Control-only constructions of docs/SPEC_e1_features.md: class shuffle restricted to one side of the escape-pathway edge set.
+# Reachable from brain/e1.py (--arms) only, never from the tool's Run/play path.
+PATH_MODES = ("path_kept", "path_shuffled")
+ALL_SHUFFLE_MODES = SHUFFLE_MODES + PATH_MODES
+PATH_SOURCES, PATH_TARGETS = ("LC4", "LPLC2"), ("GF", "TTMn")
 
 
 @dataclass
@@ -199,8 +204,8 @@ class BuiltNetwork:
         (circuit.shuffle_edges, then the identical normalisation). mode "class" (docs/SPEC_phase3.md section 5) permutes
         the post column only among edges whose post neuron is in the same tier group (an output or sensory population by
         name, KC, MBON, DAN, or interior), so random wiring cannot land input on an output cell that has few inputs."""
-        if mode not in SHUFFLE_MODES:
-            raise ValueError(f"shuffle mode {mode!r} not in {SHUFFLE_MODES}")
+        if mode not in ALL_SHUFFLE_MODES:
+            raise ValueError(f"shuffle mode {mode!r} not in {ALL_SHUFFLE_MODES}")
         if self.view is not None:
             raise ValueError("shuffle the full network, then prune the twin (BrainPolicy does this)")
         if _SHARED is not None:                      # worker process: the same bits, already in shared memory
@@ -210,16 +215,50 @@ class BuiltNetwork:
         e = pd.DataFrame({"body_pre": self.pre, "body_post": self.post, "weight": self.syn})
         if mode == "degree":
             post = circuit.shuffle_edges(e, seed=seed)["body_post"].to_numpy()
+        elif mode == "class":
+            post = self._class_permuted_post(seed, np.ones(len(self.post), dtype=bool))
         else:
-            post = self.post.copy()
-            rng = np.random.default_rng(seed)
-            group = self.tier_groups()[self.post]
-            for g in np.unique(group):
-                rows = np.flatnonzero(group == g)
-                post[rows] = self.post[rows[rng.permutation(len(rows))]]
+            # path_kept: edges among the escape pathway P stay as real, every other edge is class-shuffled.
+            # path_shuffled: only the edges among P are class-shuffled (among themselves), everything else stays as real.
+            among = self.path_edge_mask()
+            post = self._class_permuted_post(seed, ~among if mode == "path_kept" else among)
         return BuiltNetwork(self.ids, self.side, self.signs, self.pops, self.pre, post,
                             self.syn, self.total_in, self.rule,
                             twin_of={"seed": seed, "real_hash": self.build_hash(), "mode": mode})
+
+    def _class_permuted_post(self, seed: int, subset: np.ndarray) -> np.ndarray:
+        """The class-shuffle machinery on the edges in `subset` (boolean over the edge list): the post column is permuted
+        only among subset edges whose post neuron is in the same tier group; sign (a property of pre), synapse count and
+        every pre are untouched. With an all-True subset this is exactly the "class" mode."""
+        post = self.post.copy()
+        rng = np.random.default_rng(seed)
+        group = self.tier_groups()[self.post]
+        for g in np.unique(group[subset]):
+            rows = np.flatnonzero(subset & (group == g))
+            post[rows] = self.post[rows[rng.permutation(len(rows))]]
+        return post
+
+    def path_set(self) -> np.ndarray:
+        """Boolean mask over neurons of the escape-pathway set P (docs/SPEC_e1_features.md): LC4, LPLC2, GF (DNp01) and
+        TTMn, plus every neuron X with a non-zero W entry from some LC4/LPLC2 neuron into X AND from X into some GF/TTMn
+        neuron (one intermediate). Always computed on the real topology (a shuffled twin reports the same P as its parent)."""
+        A = (self.W != 0).tocsr()                                  # post x pre
+        src = np.concatenate([self.pops[n] for n in PATH_SOURCES])
+        tgt = np.concatenate([self.pops[n] for n in PATH_TARGETS])
+        from_src = np.asarray(A[:, src].sum(axis=1)).ravel() > 0   # X receives from LC4/LPLC2
+        to_tgt = np.asarray(A[tgt, :].sum(axis=0)).ravel() > 0     # X projects to GF/TTMn
+        P = from_src & to_tgt
+        P[src] = True
+        P[tgt] = True
+        return P
+
+    def path_edge_mask(self) -> np.ndarray:
+        """Boolean over the edge list: both endpoints in P (edge list of the real network; `pre` is never shuffled and the
+        set P is defined on the real wiring, so a twin must be asked of its real parent)."""
+        if self.twin_of is not None:
+            raise ValueError("the pathway edge set is defined on the real network")
+        P = self.path_set()
+        return P[self.pre] & P[self.post]
 
     def tier_groups(self) -> np.ndarray:
         """Group label per neuron: its (first) manifest population, or -1 for interior neurons."""

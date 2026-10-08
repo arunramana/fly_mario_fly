@@ -45,8 +45,11 @@ CRITERION = {"real_survived_min": 16, "shuffled_survived_max": 2, "n": 20}
 # Control arms. "lesion_gf": the real connectome with both Giant Fiber (DNp01) cells held at zero output (docs/SPEC_tool_phase2.md
 # 3b). It can be requested only here (eval/CLI); the tool's Run tab, Watch, play and the mechanism library never pass it.
 ARMS = ("real", "shuffled", "lesion_gf")
-SHUFFLED_ARMS = ("shuffled", "shuffled_class")     # shuffled_class (docs/SPEC_phase3.md section 5): not a default arm, via --arms
-ARM_CHOICES = ARMS + ("shuffled_class",)
+# shuffled_class (docs/SPEC_phase3.md section 5): not a default arm, via --arms. path_kept / path_shuffled (docs/SPEC_e1_features.md):
+# control-only class shuffles of the edges outside / inside the escape pathway; via --arms only, never from the tool.
+ARM_SHUFFLE_MODE = {"shuffled": "degree", "shuffled_class": "class", "path_kept": "path_kept", "path_shuffled": "path_shuffled"}
+SHUFFLED_ARMS = tuple(ARM_SHUFFLE_MODE)
+ARM_CHOICES = ARMS + ("shuffled_class", "path_kept", "path_shuffled")
 LESION_POPULATIONS = ("GF",)
 E1_LESION_CLAMP_HZ = LESION_CLAMP_HZ    # invented convention: a lesioned output cell is held at zero activity
 
@@ -223,7 +226,7 @@ def run_eval(n: int = E1_N, seed0: int = E1_SEED0, workers: int = 1, max_frames:
     arms = resolve_arms(arms, ARMS, with_degree_shuffle)      # routine: no degree shuffle (brain/arms.py)
     jobs = [(seed0 + i, 1 + i if arm in SHUFFLED_ARMS else None, max_frames, arm, pruned) for arm in arms for i in range(n)]
     if workers > 1:
-        with WorkerPool(workers, [(j[1], "class" if j[3] == "shuffled_class" else "degree") for j in jobs if j[1] is not None]) as pool:
+        with WorkerPool(workers, [(j[1], ARM_SHUFFLE_MODE[j[3]]) for j in jobs if j[1] is not None]) as pool:
             results = pool.map(_job, jobs)
     else:
         results = [_job(j) for j in jobs]
