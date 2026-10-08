@@ -74,3 +74,6 @@ Decision: fix the rule (B-E, each with a cost above) vs accept a ceiling (A). My
 2. B11 shuffles not run (step-4 shuffles stuck at start); E2a class gives no GF/A; E2a degree not re-run.
 3. GF output rate in the near vs far regime was not logged; "TTMn amplitude follows stimulus" is inferred.
 4. Edge counts use edges >= 2 synapses; single-synapse edges and electrical coupling are not counted.
+
+## Decision (Arun), 2026-10-07
+Accept the ceiling. The hold-duration option list is CLOSED: options A-E are not pursued.

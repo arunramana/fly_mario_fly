@@ -28,7 +28,7 @@ Fine wiring (neuron-level; degree-preserving or class-preserving shuffle vs real
 - Pursuit (E3, seeds 5300-5319): real 20/20 vs class-shuffled 2/20, degree shuffle 0/20.
 - The level run (B11): both shuffles stay at x = 40 while real reaches mean 698. And E2a (real 20/20 vs degree 0/20).
 
-It does NOT matter for the escape jump (E1): the class shuffle survives as often as or more often than real (15 vs 10 here, 16 vs 16 before). The degree shuffle fails only because it never fires the GF. Type-level (class-level) wiring suffices for the jump.
+SUPERSEDED (2026-10-08, E1 n = 50, gate on): the earlier reading "it does NOT matter for the escape jump (E1); type-level wiring suffices" was drawn from pre-gate sets (class 15 vs real 10; 16 vs 16) and does not hold for the gated system. On seeds 3700-3749 real survives 46/50 vs class shuffle 31/50 (Fisher p = 0.00064; difference +0.30, Newcombe 95% CI +0.14 to +0.45), so fine wiring DOES matter for the jump with the expansion gate on (docs/RESULTS_e1_n50.md). The degree shuffle fails because it never fires the GF. Which wiring feature matters is not shown.
 
 Caveats, stated plainly:
 - Under the landmark drive the shuffled brains saturate or do not walk. Some 0/20 results (B11 shuffles at x = 40, E2a degree and class shuffle) mean "does not walk / no GF", not a failure specific to the obstacle or the Goomba. They show the shuffled brain is not a working walker, not which wiring feature is needed.
@@ -39,3 +39,8 @@ Caveats, stated plainly:
 The headline "the fly's wiring does the work" is therefore NOT claimed for escape, and for pursuit and walking it is claimed only at the level the shuffles above test. README.md and CLAUDE.md state no result of this kind (invariants unchanged), so they were not edited.
 
 Standing practice: re-run the human shadow reference after every stimulus-layer change, and shadow data diagnoses, never scores (CLAUDE.md "Shadow reference runs").
+
+## Update 2026-10-07: expansion gate and the fourth "the fly doesn't have this"
+- The expansion gate (Step 7) exposed a FOURTH thing the fly does not have: a wall-jump. Pick & Strauss 2005 (flies climb obstacles); no source supports jumping at static obstacles. Listed with: no brake, no sustained jump, no pit sense.
+- The pipe-clearing drop after the gate (pipe 2: 8 -> 5, pipe 3: 2 -> 0) is the gate removing a false alarm (the cue was a size-only alarm at the wall), not a regression.
+- E1 at n = 50 on the gated system (seeds 3700-3749): real 46/50 vs class shuffle 31/50, Fisher p = 0.00064. The earlier "type-level wiring suffices for the jump" (above) does not hold for the gated system; see docs/RESULTS_e1_n50.md.
