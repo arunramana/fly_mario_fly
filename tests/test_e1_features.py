@@ -128,3 +128,38 @@ def test_parallel_workers_bit_identical_to_serial_for_the_path_arms():
     parallel = e1.run_eval(n=3, seed0=9500, workers=2, max_frames=40, arms=arms)
     assert len(serial["episodes"]) == 6 and serial["episodes"] == parallel["episodes"]
     assert builder._SHARED is None
+
+
+@pytest.mark.parametrize("arm", ["shuffled", "shuffled_class", "path_kept", "path_shuffled"])
+def test_each_arm_hands_its_own_shuffle_mode_to_the_policy(arm, monkeypatch):
+    """Regression (docs/SPEC_e1_features.md, Debug 2026-10-08): run_e1_episode used to pass "degree" to BrainPolicy for the path
+    arms, so both ran the same degree-shuffled network (GF silent, identical episodes) and missed the worker's shared
+    (seed, mode) variants. The mode the policy shuffles with must be the one the pool prepared: ARM_SHUFFLE_MODE[arm]."""
+    import brain.policy as policy
+
+    class Stop(Exception):
+        pass
+
+    seen = {}
+
+    class Probe:
+        def __init__(self, *a, **k):
+            seen.update(k)
+            raise Stop
+
+    monkeypatch.setattr(policy, "BrainPolicy", Probe)
+    with pytest.raises(Stop):
+        e1.run_e1_episode(9700, 1, arm=arm)
+    assert seen["shuffle_mode"] == e1.ARM_SHUFFLE_MODE[arm]
+
+
+def test_degree_shuffle_starves_gf_but_path_and_class_arms_do_not(net):
+    """What the defect did: a degree shuffle leaves ~0.02 of the GF's incoming |W| from LC4/LPLC2 (real 0.63); the class and path
+    arms keep the tier group, so they stay comparable to real."""
+    def lc_to_gf(n):
+        a = abs(n.W[net.pops["GF"], :]).sum(axis=0).A1
+        return a[net.pops["LC4"]].sum() + a[net.pops["LPLC2"]].sum()
+    real = lc_to_gf(net)
+    assert lc_to_gf(net.shuffled(1, "degree")) < 0.1 * real
+    for mode in ("class", "path_kept", "path_shuffled"):
+        assert lc_to_gf(net.shuffled(1, mode)) > 0.8 * real

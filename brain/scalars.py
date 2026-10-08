@@ -82,6 +82,7 @@ def _constants() -> list[BrainScalar]:
 def _experiments() -> list[BrainScalar]:
     """E1 scene and evaluation conventions (docs/SPEC_tool_phase2.md). Conventions of the experiment, fixed before any run."""
     from brain import e1
+    from brain import scenes as sc
     from brain.scenes import load_scene
     S, log = BrainScalar, load_scene().log
     return [
@@ -91,6 +92,10 @@ def _experiments() -> list[BrainScalar]:
         S("E1_MAX_FRAMES", e1.E1_MAX_FRAMES, "frames", INVENTED, 100, 3000, "episode bound; the Goomba reaches a Mario who starts stationary in ~150 frames (the shuffled arm's Left presses are looming-driven, not noise)"),
         S("E1_SPRITE_PX", e1.SPRITE_PX, "px", INVENTED, 8, 32, "contact box = the registry's 16 px sprite width (Goomba and small Mario only)"),
         S("E1_LESION_CLAMP_HZ", e1.E1_LESION_CLAMP_HZ, "Hz", INVENTED, 0.0, 0.0, "control-only lesion arm: both Giant Fiber cells held at zero output (removal, never injection); 0 is the definition of silenced"),
+        S("E1D_WALK_MIN", sc.E1D_WALK_MIN, "frames", INVENTED, 1, 300, "E1d scene distribution: shortest right-walk from reset; 50 is the first length with the Goomba on screen (docs/SPEC_e1_scene_dist.md)"),
+        S("E1D_WALK_MAX", sc.E1D_WALK_MAX, "frames", INVENTED, 1, 300, "E1d: longest right-walk; keeps the Goomba at least three sprite widths (48 px) ahead for every settle length"),
+        S("E1D_SETTLE_MIN", sc.E1D_SETTLE_MIN, "frames", INVENTED, 1, 120, "E1d: shortest release-all settle; 40 is the first length with Mario's x speed at zero"),
+        S("E1D_SETTLE_MAX", sc.E1D_SETTLE_MAX, "frames", INVENTED, 1, 120, "E1d: longest settle; with E1D_WALK_MAX keeps the Goomba at least 48 px ahead (the Goomba walks 0.625 px per frame)"),
     ] + _phase3_experiments()
 
 

@@ -33,7 +33,8 @@ import numpy as np
 from brain.arms import add_flag, resolve_arms
 from brain.workers import WorkerPool
 from brain.brain import LESION_CLAMP_HZ
-from brain.scenes import E1_SCENE_ID, SceneSpec, build_scene, check_scene, goomba_slots, load_scene
+from brain.scenes import (E1_SCENE_ID, SceneSpec, build_scene, check_scene, distribution_dict, draw_scene,
+                          goomba_slots, load_scene, scene_ok)
 
 E1_SEED0 = 3000                # held-out: not 1000-1019, 2000-2019 or 9000
 E1_N = 20
@@ -77,6 +78,13 @@ class E1Result:
     ttmn_max_hz: float = 0.0            # peak TTMn (jump muscle motor neuron) output over the episode
 
 
+@dataclass
+class E1dResult(E1Result):
+    """E1 under the scene distribution: the same result plus the drawn scene and the per-frame A trace (for trajectories)."""
+    scene_draw: dict | None = None
+    a_trace: str = ""
+
+
 def is_contact(active: bool, dx: int | None, vertical_gap: float, mario_height: int) -> bool:
     """Boxes overlap: the Goomba is active, horizontally within one sprite width and vertically within the summed half heights."""
     return bool(active) and abs(dx) < SPRITE_PX and vertical_gap < (SPRITE_PX + mario_height) / 2.0
@@ -98,10 +106,11 @@ def _vertical_gap(ram, slot: int) -> tuple[float, int]:
 
 def run_e1_episode(seed: int, shuffle_seed: int | None = None, scene: SceneSpec | None = None,
                    max_frames: int = E1_MAX_FRAMES, network=None, calibration=None, on_frame=None, should_stop=None,
-                   record_rows: bool = False, arm: str | None = None, pruned: bool = False):
+                   record_rows: bool = False, arm: str | None = None, pruned: bool = False, scene_dist: bool = False):
     """One E1 episode. Returns (E1Result, rows, stamp); rows are per-frame telemetry dicts when `record_rows`.
     `on_frame(frame, obs, row)` is called after every emulator step (the tool's live view and frame recorder).
-    `arm` is "real", "shuffled" or the control "lesion_gf"; default: "shuffled" if a shuffle seed is given, else "real"."""
+    `arm` is "real", "shuffled" or the control "lesion_gf"; default: "shuffled" if a shuffle seed is given, else "real".
+    `scene_dist` (E1d, docs/SPEC_e1_scene_dist.md): the scene is the seed's draw from the scene distribution."""
     from brain.policy import BrainPolicy
     arm = arm or ("real" if shuffle_seed is None else "shuffled")
     if arm not in ARM_CHOICES or (arm in SHUFFLED_ARMS) != (shuffle_seed is not None):
@@ -111,13 +120,15 @@ def run_e1_episode(seed: int, shuffle_seed: int | None = None, scene: SceneSpec 
     from mario.ram.addresses import (ADDR_ENEMY_ACTIVE, ADDR_ENEMY_PAGE, ADDR_ENEMY_TYPE, ADDR_ENEMY_X, ADDR_MARIO_PAGE,
                                      ADDR_MARIO_SCREEN_X, ADDR_MARIO_X, ADDR_MARIO_Y)
     from mario.entities.registry import GOOMBA_TYPE_BYTE
-    scene = scene or load_scene()
+    scene = scene or (draw_scene(seed) if scene_dist else load_scene())
     policy = BrainPolicy(network=network, calibration=calibration, shuffle_seed=shuffle_seed,
-                         shuffle_mode="class" if arm == "shuffled_class" else "degree",
+                         shuffle_mode=ARM_SHUFFLE_MODE.get(arm, "degree"),
                          lesion=LESION_POPULATIONS if arm == "lesion_gf" else (), pruned=pruned)
     env = make_env(scene.level)
     build_scene(env, scene)
     ram = env.unwrapped.ram
+    if scene.draw is not None and not scene_ok(check_scene(ram)):
+        raise RuntimeError(f"scene {scene.id} draw {scene.draw}: check_scene failed {check_scene(ram)}")
     on_screen = [s for s in goomba_slots(ram) if screen.enemy_on_screen(ram, s, SPRITE_PX)]
     if not on_screen:
         raise RuntimeError(f"scene {scene.id}: no Goomba on screen at takeover")
@@ -133,6 +144,7 @@ def run_e1_episode(seed: int, shuffle_seed: int | None = None, scene: SceneSpec 
     a_frames, max_x, died, kind = 0, 0, False, None
     gf_out_max = ttmn_max = 0.0
     rows: list[dict] = []
+    a_trace: list[str] = []
     frames = 0
     for frames in range(1, max_frames + 1):
         if should_stop is not None and should_stop():
@@ -143,6 +155,7 @@ def run_e1_episode(seed: int, shuffle_seed: int | None = None, scene: SceneSpec 
             first_gf, theta_gf = frames, math.degrees(policy.last_theta)
             dist_gf = None if policy.last_distance is None else float(policy.last_distance)
         a_frames += int(buttons.a)
+        a_trace.append("1" if buttons.a else "0")
         gf_out_max, ttmn_max = max(gf_out_max, readout.pooled("GF")), max(ttmn_max, readout.pooled("TTMn"))
         screen_obs, _, done, info = env.step(action)
         mario_x = int(ram[ADDR_MARIO_PAGE]) * 256 + int(ram[ADDR_MARIO_X])
@@ -170,10 +183,11 @@ def run_e1_episode(seed: int, shuffle_seed: int | None = None, scene: SceneSpec 
     survived = (not died) and resolved is not None and frames >= resolved + E1_GRACE_FRAMES
     outcome = "died" if died else (kind if survived else "timeout")
     gf_before = first_gf is not None and (contact is None or first_gf <= contact)
-    res = E1Result(arm, seed, shuffle_seed, survived, outcome, died, frames,
-                   contact, resolved, first_gf is not None, first_gf, gf_before, theta_gf, dist_gf, a_frames > 0,
-                   a_frames, max_x, gf_out_max, ttmn_max)
-    stamp = {**policy.stamp(), "scene": scene.to_dict(), "experiment": "E1", "grace_frames": E1_GRACE_FRAMES}
+    fields = (arm, seed, shuffle_seed, survived, outcome, died, frames,
+              contact, resolved, first_gf is not None, first_gf, gf_before, theta_gf, dist_gf, a_frames > 0,
+              a_frames, max_x, gf_out_max, ttmn_max)
+    res = E1dResult(*fields, scene_draw=dict(scene.draw), a_trace="".join(a_trace)) if scene.draw is not None else E1Result(*fields)
+    stamp = {**policy.stamp(), "scene": scene.to_dict(), "experiment": "E1d" if scene.draw is not None else "E1", "grace_frames": E1_GRACE_FRAMES}
     return res, rows, stamp
 
 
@@ -195,7 +209,8 @@ def _row(frame, ram, policy, readout, buttons, action, mario_x, dx, addr_sx, add
 def _job(args) -> E1Result:
     os.environ.setdefault("OMP_NUM_THREADS", "1")
     seed, shuffle_seed, max_frames, arm, *rest = args
-    return run_e1_episode(seed, shuffle_seed, max_frames=max_frames, arm=arm, pruned=bool(rest and rest[0]))[0]
+    return run_e1_episode(seed, shuffle_seed, max_frames=max_frames, arm=arm, pruned=bool(rest and rest[0]),
+                          scene_dist=bool(len(rest) > 1 and rest[1]))[0]
 
 
 def summarize(results: list[E1Result]) -> dict:
@@ -219,19 +234,21 @@ def summarize(results: list[E1Result]) -> dict:
 
 
 def run_eval(n: int = E1_N, seed0: int = E1_SEED0, workers: int = 1, max_frames: int = E1_MAX_FRAMES,
-             arms: tuple[str, ...] | None = None, with_degree_shuffle: bool = False, pruned: bool = False) -> dict:
+             arms: tuple[str, ...] | None = None, with_degree_shuffle: bool = False, pruned: bool = False,
+             scene_dist: bool = False) -> dict:
     """Real connectome vs degree-preserving shuffle (shuffle seed 1 + i) vs the GF-lesion control (real connectome, both GF
     cells silenced), seeds seed0..seed0+n-1, same noise seeds in every arm."""
     from brain.policy import BrainPolicy
     arms = resolve_arms(arms, ARMS, with_degree_shuffle)      # routine: no degree shuffle (brain/arms.py)
-    jobs = [(seed0 + i, 1 + i if arm in SHUFFLED_ARMS else None, max_frames, arm, pruned) for arm in arms for i in range(n)]
+    jobs = [(seed0 + i, 1 + i if arm in SHUFFLED_ARMS else None, max_frames, arm, pruned, scene_dist) for arm in arms for i in range(n)]
     if workers > 1:
         with WorkerPool(workers, [(j[1], ARM_SHUFFLE_MODE[j[3]]) for j in jobs if j[1] is not None]) as pool:
             results = pool.map(_job, jobs)
     else:
         results = [_job(j) for j in jobs]
-    out = {"experiment": "E1", "metric": "survived the encounter", "seeds": [seed0, seed0 + n - 1],
-           "max_frames": max_frames, "grace_frames": E1_GRACE_FRAMES, "scene": load_scene().to_dict(),
+    out = {"experiment": "E1d" if scene_dist else "E1", "metric": "survived the encounter", "seeds": [seed0, seed0 + n - 1],
+           "max_frames": max_frames, "grace_frames": E1_GRACE_FRAMES,
+           "scene": distribution_dict() if scene_dist else load_scene().to_dict(),
            "stamp": BrainPolicy().stamp(), "criterion": dict(CRITERION)}
     out["arms"] = list(arms)
     for arm in arms:
@@ -269,9 +286,10 @@ def main(argv=None) -> None:
                     help="arms to run (default: real and lesion_gf; the control-only GF silencing arm is lesion_gf)")
     add_flag(ap)
     ap.add_argument("--pruned", action="store_true", help="opt-in speed view: drop neurons with no path to a read population (docs/SPEC_fast_iteration.md)")
+    ap.add_argument("--scene-dist", action="store_true", help="E1d: one scene draw per seed (docs/SPEC_e1_scene_dist.md) instead of the fixed E1 scene")
     ap.add_argument("--out", default=None, help="write the full result (per-episode rows included) as JSON")
     args = ap.parse_args(argv)
-    res = run_eval(args.n, args.seed0, args.workers, args.max_frames, tuple(args.arms) if args.arms else None, args.with_degree_shuffle, args.pruned)
+    res = run_eval(args.n, args.seed0, args.workers, args.max_frames, tuple(args.arms) if args.arms else None, args.with_degree_shuffle, args.pruned, args.scene_dist)
     print(format_eval(res))
     if args.out:
         with open(args.out, "w", encoding="utf-8") as f:

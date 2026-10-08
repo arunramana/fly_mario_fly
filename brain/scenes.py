@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import numpy as np
@@ -34,6 +34,11 @@ E0_SCENE_ID = "e0_walk_goal"
 E3_SCENE_ID = "e3_mushroom"
 E2A_SCENE_ID = "e2a_pipe1"
 B11_SCENE_ID ="b11_baseline"      # the real level 1-1 from reset: no log, no rules (docs/SPEC_baseline_1-1.md)
+E1D_SCENE_ID = "e1d_goomba_dist"
+# E1d scene distribution (docs/SPEC_e1_scene_dist.md): invented experiment conventions, fixed before any run from game facts.
+E1D_WALK_MIN, E1D_WALK_MAX = 50, 65        # right-walk frames from reset (50 = first length with the Goomba on screen)
+E1D_SETTLE_MIN, E1D_SETTLE_MAX = 40, 70    # release-all frames (40 = first length with Mario's x speed at zero)
+E1D_STREAM_TAG = 0x53434E45                # scene RNG = default_rng([tag, seed]): a stream separate from the brain's default_rng(seed)
 SCENE_RULES = ("clear_enemies",)      # per-frame changes to the surroundings (never to the fly): enemies removed, power-ups kept
 
 
@@ -46,6 +51,7 @@ class SceneSpec:
     log: tuple[tuple[tuple[str, ...], int], ...]     # (buttons, frames) segments, in order
     raw: str                                          # the manifest text (hashed into the run stamp)
     rules: tuple[str, ...] = ()                       # per-frame scene rules (SCENE_RULES), applied while the log replays and after
+    draw: dict | None = None                          # E1d only: the drawn scene parameters (None for every fixed scene)
 
     @property
     def n_frames(self) -> int:
@@ -65,7 +71,10 @@ class SceneSpec:
         return hashlib.sha256(self.raw.encode("utf-8")).hexdigest()[:16]
 
     def to_dict(self) -> dict:
-        return {"id": self.id, "level": self.level, "log_frames": self.n_frames, "scene_hash": self.hash()}
+        d = {"id": self.id, "level": self.level, "log_frames": self.n_frames, "scene_hash": self.hash()}
+        if self.draw is not None:
+            d["draw"] = dict(self.draw)
+        return d
 
 
 def load_scene(scene_id: str = E1_SCENE_ID) -> SceneSpec:
@@ -134,3 +143,35 @@ def check_e2a_scene(ram) -> dict:
     return {"face_on_screen": face is not None, "face_dx_px": None if face is None else face.d_px,
             "face_w_px": None if face is None else face.w_px, "mario_stationary": int(ram[ADDR_MARIO_XSPEED]) == 0,
             "no_enemy": not any(ram[ADDR_ENEMY_ACTIVE + s] and ram[ADDR_ENEMY_TYPE + s] != POWERUP_ID for s in range(POWERUP_SLOTS))}
+
+
+# ---- E1d: a scene distribution, one draw per episode seed (docs/SPEC_e1_scene_dist.md) -------------------------------------
+def draw_scene_params(seed: int) -> dict:
+    """The E1d scene draw for an episode seed: integers, uniform, from a stream that is not the brain's noise stream.
+    Only the lengths of the two segments of the E1 action log vary; the game itself then produces Mario's x offset, the
+    Goomba's distance and its sub-pixel walking phase. Nothing is read from, or tuned on, how the fly does."""
+    rng = np.random.default_rng([E1D_STREAM_TAG, int(seed)])
+    return {"walk_frames": int(rng.integers(E1D_WALK_MIN, E1D_WALK_MAX + 1)),
+            "settle_frames": int(rng.integers(E1D_SETTLE_MIN, E1D_SETTLE_MAX + 1))}
+
+
+def draw_scene(seed: int) -> SceneSpec:
+    """The E1 scene with the two log segments set to the seed's draw (same buttons, same level, same rules)."""
+    base = load_scene(E1_SCENE_ID)
+    d = draw_scene_params(seed)
+    log = ((base.log[0][0], d["walk_frames"]), (base.log[1][0], d["settle_frames"]))
+    raw = base.raw + json.dumps({"e1d_draw": d}, sort_keys=True)
+    return replace(base, id=E1D_SCENE_ID, log=log, raw=raw, draw=d)
+
+
+def scene_ok(c: dict) -> bool:
+    """check_scene's promises all hold: a Goomba on screen and ahead, Mario stationary."""
+    return bool(c["goomba_on_screen"] and c["goomba_ahead"] and c["mario_stationary"])
+
+
+def distribution_dict() -> dict:
+    """What the whole E1d distribution is, for the result JSON and its hash."""
+    d = {"id": E1D_SCENE_ID, "walk_frames": [E1D_WALK_MIN, E1D_WALK_MAX], "settle_frames": [E1D_SETTLE_MIN, E1D_SETTLE_MAX],
+         "stream_tag": E1D_STREAM_TAG, "base_scene_hash": load_scene(E1_SCENE_ID).hash()}
+    d["scene_hash"] = hashlib.sha256(json.dumps(d, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+    return d

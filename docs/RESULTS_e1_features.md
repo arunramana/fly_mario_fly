@@ -112,3 +112,10 @@ motion after the press and is not a pure sensory measurement; no claim is made t
 Affected tests (tests/test_e1_features.py, test_workers.py, test_e1.py): 26 passed. Root `tests`: 338 collected (unique), 3 disjoint
 chunks of 47 files, 3 processes: 91 + 123 + 124 = 338 passed, 0 failed. `pytest -m fast tests`: 13 passed, 325 deselected. Logs:
 audit/p24_pytest_aff.log, audit/p24_pytest{0,1,2}.log. No repo code, config or tests were edited.
+
+---
+VOID NOTE (2026-10-08, appended, nothing above rewritten): the path_kept and path_shuffled results in section 2 (4/50 and 4/50, GF silent in 100/100,
+status N/N, reading "anomalous", the "worse than the class shuffle" and "identical episode by episode" statements) are VOID. Cause: brain/e1.py
+`run_e1_episode` passed shuffle_mode "degree" to the policy for the path arms, so both ran plain degree-shuffled networks. Fixed in brain/e1.py;
+corrected re-run in docs/RESULTS_e1_followup.md (path_kept 33/50, path_shuffled 42/50; mechanical reading "lies outside the pathway", not
+supported at the trajectory level). Sections 1 (real vs class re-analysis) and 3 (sensory vs motor) do not use those arms and are unaffected.

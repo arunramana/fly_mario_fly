@@ -91,3 +91,31 @@ Unit = TRAJECTORY (the tuple of SPEC_e1_n50, section 3), because identical traje
   - sensory side: fraction with GF fired, first-GF frame, distance and theta at the first GF spike, spike-to-contact lead.
   - motor side: A-run shape (share of runs of 6-10 frames vs taps <= 2 vs 11+), number of A runs, A onset delay (first A frame
     minus first GF frame) when both exist.
+
+## Debug 2026-10-08: path_kept / path_shuffled silent GF and identical episodes
+
+Verdict: DEFECT in the episode runner, not in the arms' networks. `brain/e1.py::run_e1_episode` built the policy with
+`shuffle_mode="class" if arm == "shuffled_class" else "degree"`, so `path_kept` and `path_shuffled` were run on the plain
+degree-shuffled network of shuffle seed 1+i (same for both arms, hence bit-identical episodes). `ARM_SHUFFLE_MODE` was used
+only to prepare the worker's shared variants (seed, "path_*"), which the policy then never requested.
+
+| network (shuffle seed 1) | hash | LC4+LPLC2 -> GF abs W | rho(W) |
+|---|---|---|---|
+| real | 3848f3e70b2051ef | 0.632 | 1.000 |
+| degree (what both arms actually ran) | 3524e6683b63eac7 | 0.024 | 0.425 |
+| class | aee8904316dd7842 | 0.632 | 0.682 |
+| path_kept (as built) | ca1612606bcbbb37 | 0.632 | 0.767 |
+| path_shuffled (as built) | 7f1cc8ff0417e7da | ~0.63 | 1.000 |
+
+The arms as built are correct: P-P edges unchanged in path_kept, non-P unchanged in path_shuffled, row normalisation holds
+(GF rows sum to ~1.0 in every variant; W is rebuilt from the edge list by the same `weight_matrix`), signs are a property of
+pre and untouched. rho differs per arm but class mode does not renormalise either, so this is not a difference in treatment.
+Replay (seeds 9700, 9701; not eval seeds): as run, both arms `died` at 202 and 146 frames, GF never fired, identical;
+with `shuffle_mode=ARM_SHUFFLE_MODE[arm]` GF fires in all four episodes and the arms differ (path_kept: stomped/died,
+path_shuffled: stomped/stomped).
+
+Fix needed in `brain/e1.py` (not edited here, owned by another agent): pass `shuffle_mode=ARM_SHUFFLE_MODE.get(arm, "degree")`
+to `BrainPolicy` (and fix the same pattern if the arms are ever added to baseline/e2a/goal_eval, which have the identical line
+but do not accept the path arms). Regression tests: `test_each_arm_hands_its_own_shuffle_mode_to_the_policy` (fails until
+that line is fixed for path_kept/path_shuffled) and `test_degree_shuffle_starves_gf_but_path_and_class_arms_do_not`.
+The 3700-3749 path-arm results in audit/p24_e1_paths.json and the claims built on them are void.
