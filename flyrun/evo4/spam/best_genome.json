@@ -1,0 +1,47 @@
+{
+  "fitness": 1169.0,
+  "u": [
+    0.609835035122854,
+    0.25429489313722886
+  ],
+  "genome": {
+    "A_HOLD": 21,
+    "COOLDOWN": 8
+  },
+  "gen": 1,
+  "train": {
+    "fitness": 1169.0,
+    "mean_max_x": 2469.0,
+    "min_max_x": 2469,
+    "flag_rate": 0.0,
+    "a_frac": 0.7232605337681034,
+    "blind_presses": 26.0,
+    "n_onsets": 56.0,
+    "max_x": [
+      2469,
+      2469,
+      2469
+    ],
+    "ends": [
+      [
+        "died",
+        2469,
+        "pit"
+      ],
+      [
+        "died",
+        2469,
+        "pit"
+      ],
+      [
+        "died",
+        2469,
+        "pit"
+      ]
+    ],
+    "flag_all": false
+  },
+  "restart": 1,
+  "arm": "spam",
+  "start": "default"
+}

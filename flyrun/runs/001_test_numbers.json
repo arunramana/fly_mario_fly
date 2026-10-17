@@ -1,0 +1,251 @@
+{
+  "level_map_reached_x": 3161,
+  "pipe_ab": {
+    "off": {
+      "max_x": 435,
+      "score": 0,
+      "flag_get": false,
+      "frames": 418,
+      "end_reason": "stuck",
+      "x_at_end": 434,
+      "cause": "wall H32 @448",
+      "blind_presses": 0,
+      "n_onsets": 1,
+      "a_frac": 0.028708133971291867,
+      "A_frac": 0.028708133971291867,
+      "longest_A_run": 12,
+      "first_pipe_A_x": null,
+      "first_pipe_A_d": null,
+      "cleared_pipe1": false
+    },
+    "on": {
+      "max_x": 723,
+      "score": 0,
+      "flag_get": false,
+      "frames": 614,
+      "end_reason": "stuck",
+      "x_at_end": 722,
+      "cause": "wall H64 @736",
+      "blind_presses": 2,
+      "n_onsets": 16,
+      "a_frac": 0.3127035830618892,
+      "A_frac": 0.3127035830618892,
+      "longest_A_run": 12,
+      "first_pipe_A_x": 410,
+      "first_pipe_A_d": 40.0,
+      "cleared_pipe1": true
+    }
+  },
+  "pit_ab": {
+    "off": {
+      "max_x": 1138,
+      "score": 0,
+      "flag_get": false,
+      "frames": 737,
+      "end_reason": "died",
+      "x_at_end": 1138,
+      "cause": "pit",
+      "blind_presses": 0,
+      "n_onsets": 0,
+      "a_frac": 0.3039348710990502,
+      "takeover_x": 1038,
+      "first_pit_A_x": null,
+      "first_pit_A_d": null,
+      "cleared_pit1": false,
+      "air_jumps_x": [
+        [
+          1101,
+          1138
+        ]
+      ]
+    },
+    "on": {
+      "max_x": 1402,
+      "score": 100,
+      "flag_get": false,
+      "frames": 888,
+      "end_reason": "died",
+      "x_at_end": 1402,
+      "cause": "pit",
+      "blind_presses": 1,
+      "n_onsets": 6,
+      "a_frac": 0.3333333333333333,
+      "takeover_x": 1038,
+      "first_pit_A_x": 1066,
+      "first_pit_A_d": 39.0,
+      "cleared_pit1": true,
+      "air_jumps_x": [
+        [
+          1068,
+          1122
+        ],
+        [
+          1219,
+          1250
+        ],
+        [
+          1257,
+          1289
+        ],
+        [
+          1318,
+          1402
+        ]
+      ]
+    }
+  },
+  "death_map_default": {
+    "summary": {
+      "max_x": 723,
+      "score": 0,
+      "flag_get": false,
+      "frames": 614,
+      "end_reason": "stuck",
+      "x_at_end": 722,
+      "cause": "wall H64 @736",
+      "blind_presses": 2,
+      "n_onsets": 16,
+      "a_frac": 0.3127035830618892
+    },
+    "mario_x_at_end": 722,
+    "mario_y": 176,
+    "enemies_at_end": [
+      {
+        "slot": 0,
+        "type": "0x6",
+        "x": 687,
+        "dx": -35
+      },
+      {
+        "slot": 1,
+        "type": "0x6",
+        "x": 813,
+        "dx": 91
+      },
+      {
+        "slot": 2,
+        "type": "0x6",
+        "x": 838,
+        "dx": 116
+      }
+    ],
+    "a_onsets": [
+      {
+        "frame": 155,
+        "x": 289,
+        "stim_src": "goomba",
+        "stim_d": 20.0,
+        "theta": 0.7610127542247298
+      },
+      {
+        "frame": 252,
+        "x": 410,
+        "stim_src": "pipe",
+        "stim_d": 40.0,
+        "theta": 0.7610127542247298
+      },
+      {
+        "frame": 274,
+        "x": 448,
+        "stim_src": "pipe",
+        "stim_d": 1.0,
+        "theta": 3.0167550335978786
+      },
+      {
+        "frame": 325,
+        "x": 538,
+        "stim_src": "pipe",
+        "stim_d": 72.0,
+        "theta": 0.7654870196911511
+      },
+      {
+        "frame": 347,
+        "x": 576,
+        "stim_src": "pipe",
+        "stim_d": 34.0,
+        "theta": 1.3785809152593567
+      },
+      {
+        "frame": 369,
+        "x": 594,
+        "stim_src": "pipe",
+        "stim_d": 14.0,
+        "theta": 2.243529545094259
+      },
+      {
+        "frame": 391,
+        "x": 602,
+        "stim_src": "pipe",
+        "stim_d": 7.0,
+        "theta": 2.721882510489018
+      },
+      {
+        "frame": 416,
+        "x": 642,
+        "stim_src": "pipe",
+        "stim_d": 96.0,
+        "theta": 0.8560308345754419
+      },
+      {
+        "frame": 438,
+        "x": 680,
+        "stim_src": "pipe",
+        "stim_d": 58.0,
+        "theta": 1.6518330317515906
+      },
+      {
+        "frame": 460,
+        "x": 719,
+        "stim_src": "pipe",
+        "stim_d": 19.0,
+        "theta": 2.4020090855236322
+      },
+      {
+        "frame": 482,
+        "x": 722,
+        "stim_src": "pipe",
+        "stim_d": 14.0,
+        "theta": 2.72982576978955
+      },
+      {
+        "frame": 504,
+        "x": 722,
+        "stim_src": "pipe",
+        "stim_d": 14.0,
+        "theta": 2.817977830192912
+      },
+      {
+        "frame": 526,
+        "x": 722,
+        "stim_src": "pipe",
+        "stim_d": 14.0,
+        "theta": 2.8805776604755584
+      },
+      {
+        "frame": 548,
+        "x": 722,
+        "stim_src": "pipe",
+        "stim_d": 14.0,
+        "theta": 2.849462036433463
+      },
+      {
+        "frame": 570,
+        "x": 722,
+        "stim_src": "pipe",
+        "stim_d": 14.0,
+        "theta": 2.746801533890032
+      },
+      {
+        "frame": 592,
+        "x": 722,
+        "stim_src": "pipe",
+        "stim_d": 14.0,
+        "theta": 2.6803634004586634
+      }
+    ],
+    "src_last30": {
+      "pipe": 30
+    },
+    "a_last30": 12
+  }
+}

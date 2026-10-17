@@ -1,0 +1,7 @@
+{
+ "spam": 756.9218654632568,
+ "theta": 629.2256472110748,
+ "fly": 475.85248732566833,
+ "total": 1862,
+ "note": "fly time = total minus spam and theta (the process crashed on the final state save, after all 3 fly restarts had finished)"
+}

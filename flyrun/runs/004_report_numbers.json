@@ -1,0 +1,1882 @@
+{
+  "reference_holdout": {
+    "fly_part4_hopper": {
+      "fitness": 5878.0,
+      "mean_max_x": 2173.0,
+      "min_max_x": 1127,
+      "flag_rate": 0.5,
+      "a_frac": 0.733297611488915,
+      "blind_presses": 25.9,
+      "n_onsets": 61.9,
+      "max_x": [
+        3161,
+        3161,
+        3161,
+        3161,
+        3161,
+        1220,
+        1127,
+        1220,
+        1138,
+        1220
+      ],
+      "ends": [
+        [
+          "flag",
+          3161,
+          "flag"
+        ],
+        [
+          "flag",
+          3161,
+          "flag"
+        ],
+        [
+          "flag",
+          3161,
+          "flag"
+        ],
+        [
+          "flag",
+          3161,
+          "flag"
+        ],
+        [
+          "flag",
+          3161,
+          "flag"
+        ],
+        [
+          "died",
+          1219,
+          "enemy dx=10"
+        ],
+        [
+          "died",
+          1127,
+          "pit"
+        ],
+        [
+          "died",
+          1219,
+          "enemy dx=10"
+        ],
+        [
+          "died",
+          1138,
+          "pit"
+        ],
+        [
+          "died",
+          1219,
+          "enemy dx=10"
+        ]
+      ]
+    },
+    "theta_part4": {
+      "fitness": 1540.6,
+      "mean_max_x": 1655.6,
+      "min_max_x": 679,
+      "flag_rate": 0.0,
+      "a_frac": 0.39138933830306744,
+      "blind_presses": 2.3,
+      "n_onsets": 22.8,
+      "max_x": [
+        1657,
+        1657,
+        1657,
+        1657,
+        1657,
+        679,
+        1807,
+        1659,
+        1657,
+        2469
+      ],
+      "ends": [
+        [
+          "died",
+          1657,
+          "enemy dx=11"
+        ],
+        [
+          "died",
+          1657,
+          "enemy dx=11"
+        ],
+        [
+          "died",
+          1657,
+          "enemy dx=11"
+        ],
+        [
+          "died",
+          1657,
+          "enemy dx=11"
+        ],
+        [
+          "died",
+          1657,
+          "enemy dx=11"
+        ],
+        [
+          "died",
+          679,
+          "enemy dx=6"
+        ],
+        [
+          "died",
+          1807,
+          "enemy dx=-17"
+        ],
+        [
+          "died",
+          1659,
+          "enemy dx=9"
+        ],
+        [
+          "died",
+          1657,
+          "enemy dx=11"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ]
+      ]
+    },
+    "spam_fixed_18_3": {
+      "fitness": 188.0,
+      "mean_max_x": 1138.0,
+      "min_max_x": 1138,
+      "flag_rate": 0.0,
+      "a_frac": 0.8353479214240309,
+      "blind_presses": 19.0,
+      "n_onsets": 39.0,
+      "max_x": [
+        1138,
+        1138,
+        1138,
+        1138,
+        1138,
+        1138,
+        1138,
+        1138,
+        1138,
+        1138
+      ],
+      "ends": [
+        [
+          "died",
+          1138,
+          "pit"
+        ],
+        [
+          "died",
+          1138,
+          "pit"
+        ],
+        [
+          "died",
+          1138,
+          "pit"
+        ],
+        [
+          "died",
+          1138,
+          "pit"
+        ],
+        [
+          "died",
+          1138,
+          "pit"
+        ],
+        [
+          "died",
+          1138,
+          "pit"
+        ],
+        [
+          "died",
+          1138,
+          "pit"
+        ],
+        [
+          "died",
+          1138,
+          "pit"
+        ],
+        [
+          "died",
+          1138,
+          "pit"
+        ],
+        [
+          "died",
+          1138,
+          "pit"
+        ]
+      ]
+    }
+  },
+  "reference_train": {
+    "fly_part4_hopper": {
+      "fitness": 596.6666666666666,
+      "mean_max_x": 1430.0,
+      "min_max_x": 1138,
+      "flag_rate": 0.0,
+      "a_frac": 0.7254929121887433,
+      "blind_presses": 16.666666666666668,
+      "n_onsets": 39.333333333333336,
+      "max_x": [
+        1138,
+        2014,
+        1138
+      ],
+      "ends": [
+        [
+          "died",
+          1138,
+          "pit"
+        ],
+        [
+          "died",
+          2014,
+          "enemy dx=7"
+        ],
+        [
+          "died",
+          1138,
+          "pit"
+        ]
+      ]
+    },
+    "theta_part4": {
+      "fitness": 1849.0,
+      "mean_max_x": 1965.6666666666667,
+      "min_max_x": 1415,
+      "flag_rate": 0.0,
+      "a_frac": 0.40633382295344805,
+      "blind_presses": 2.3333333333333335,
+      "n_onsets": 27.333333333333332,
+      "max_x": [
+        2470,
+        2012,
+        1415
+      ],
+      "ends": [
+        [
+          "died",
+          2470,
+          "pit"
+        ],
+        [
+          "died",
+          2012,
+          "enemy dx=9"
+        ],
+        [
+          "died",
+          1415,
+          "pit"
+        ]
+      ]
+    },
+    "spam_fixed_18_3": {
+      "fitness": 188.0,
+      "mean_max_x": 1138.0,
+      "min_max_x": 1138,
+      "flag_rate": 0.0,
+      "a_frac": 0.8499394542765991,
+      "blind_presses": 19.0,
+      "n_onsets": 39.0,
+      "max_x": [
+        1138,
+        1138,
+        1138
+      ],
+      "ends": [
+        [
+          "died",
+          1138,
+          "pit"
+        ],
+        [
+          "died",
+          1138,
+          "pit"
+        ],
+        [
+          "died",
+          1138,
+          "pit"
+        ]
+      ]
+    }
+  },
+  "fly": {
+    "best": {
+      "fitness": 4878.333333333333,
+      "u": [
+        0.4800631552586259,
+        0.6895616194337983,
+        0.9538595610109525,
+        0.20347827396814072,
+        0.2909674393580627,
+        0.500522199275137
+      ],
+      "genome": {
+        "G": 0.8240821018362137,
+        "TTMN_THRESH": 0.2820334153848434,
+        "A_HOLD": 31,
+        "COOLDOWN": 6,
+        "HOME_R": 0.652838134780319,
+        "PIT_GAIN": 2.502610996375685
+      },
+      "gen": 8,
+      "train": {
+        "fitness": 4878.333333333333,
+        "mean_max_x": 2378.3333333333335,
+        "min_max_x": 1222,
+        "flag_rate": 0.3333333333333333,
+        "a_frac": 0.7042186265880019,
+        "blind_presses": 16.666666666666668,
+        "n_onsets": 35.333333333333336,
+        "max_x": [
+          2752,
+          1222,
+          3161
+        ],
+        "ends": [
+          [
+            "died",
+            2752,
+            "enemy dx=9"
+          ],
+          [
+            "died",
+            1219,
+            "enemy dx=10"
+          ],
+          [
+            "flag",
+            3161,
+            "flag"
+          ]
+        ],
+        "flag_all": false
+      },
+      "restart": 3,
+      "arm": "fly",
+      "start": "fresh"
+    },
+    "genome": {
+      "G": 0.8240821018362137,
+      "TTMN_THRESH": 0.2820334153848434,
+      "A_HOLD": 31,
+      "COOLDOWN": 6,
+      "HOME_R": 0.652838134780319,
+      "PIT_GAIN": 2.502610996375685
+    },
+    "train": {
+      "fitness": 4878.333333333333,
+      "mean_max_x": 2378.3333333333335,
+      "min_max_x": 1222,
+      "flag_rate": 0.3333333333333333,
+      "a_frac": 0.7042186265880019,
+      "blind_presses": 16.666666666666668,
+      "n_onsets": 35.333333333333336,
+      "max_x": [
+        2752,
+        1222,
+        3161
+      ],
+      "ends": [
+        [
+          "died",
+          2752,
+          "enemy dx=9"
+        ],
+        [
+          "died",
+          1219,
+          "enemy dx=10"
+        ],
+        [
+          "flag",
+          3161,
+          "flag"
+        ]
+      ]
+    },
+    "holdout": {
+      "fitness": 1537.4,
+      "mean_max_x": 2487.4,
+      "min_max_x": 1421,
+      "flag_rate": 0.0,
+      "a_frac": 0.714734955409157,
+      "blind_presses": 19.0,
+      "n_onsets": 38.9,
+      "max_x": [
+        2754,
+        2754,
+        2754,
+        2754,
+        2754,
+        2754,
+        1421,
+        1421,
+        2754,
+        2754
+      ],
+      "ends": [
+        [
+          "died",
+          2754,
+          "enemy dx=8"
+        ],
+        [
+          "died",
+          2754,
+          "enemy dx=8"
+        ],
+        [
+          "died",
+          2754,
+          "enemy dx=8"
+        ],
+        [
+          "died",
+          2754,
+          "enemy dx=8"
+        ],
+        [
+          "died",
+          2754,
+          "enemy dx=8"
+        ],
+        [
+          "died",
+          2754,
+          "enemy dx=8"
+        ],
+        [
+          "died",
+          1421,
+          "pit"
+        ],
+        [
+          "died",
+          1421,
+          "pit"
+        ],
+        [
+          "died",
+          2754,
+          "enemy dx=8"
+        ],
+        [
+          "died",
+          2754,
+          "enemy dx=8"
+        ]
+      ]
+    },
+    "holdout_sigma0": {
+      "fitness": 1704.0,
+      "mean_max_x": 2754.0,
+      "min_max_x": 2754,
+      "flag_rate": 0.0,
+      "a_frac": 0.725199308922433,
+      "blind_presses": 21.0,
+      "n_onsets": 44.0,
+      "max_x": [
+        2754,
+        2754,
+        2754,
+        2754,
+        2754
+      ],
+      "ends": [
+        [
+          "died",
+          2754,
+          "enemy dx=8"
+        ],
+        [
+          "died",
+          2754,
+          "enemy dx=8"
+        ],
+        [
+          "died",
+          2754,
+          "enemy dx=8"
+        ],
+        [
+          "died",
+          2754,
+          "enemy dx=8"
+        ],
+        [
+          "died",
+          2754,
+          "enemy dx=8"
+        ]
+      ]
+    },
+    "holdout_sigma005": {
+      "fitness": 1370.8,
+      "mean_max_x": 2220.8,
+      "min_max_x": 1421,
+      "flag_rate": 0.0,
+      "a_frac": 0.704270601895881,
+      "blind_presses": 17.0,
+      "n_onsets": 33.8,
+      "max_x": [
+        2754,
+        1421,
+        1421,
+        2754,
+        2754
+      ],
+      "ends": [
+        [
+          "died",
+          2754,
+          "enemy dx=8"
+        ],
+        [
+          "died",
+          1421,
+          "pit"
+        ],
+        [
+          "died",
+          1421,
+          "pit"
+        ],
+        [
+          "died",
+          2754,
+          "enemy dx=8"
+        ],
+        [
+          "died",
+          2754,
+          "enemy dx=8"
+        ]
+      ]
+    },
+    "start_label": "fresh",
+    "restarts": {
+      "1": {
+        "start": "part4_default",
+        "gens": 13,
+        "best_fit": 4844.0,
+        "train_mean_max_x": 2144.0,
+        "train_flag": 0.3333333333333333,
+        "blind": 12.666666666666666,
+        "genome": "{\"G\": 0.5224692743512636, \"TTMN_THRESH\": 0.056748227037806936, \"A_HOLD\": 18, \"COOLDOWN\": 3, \"HOME_R\": 0.8853966729506418, \"PIT_GAIN\": 2.105756576808894}"
+      },
+      "2": {
+        "start": "part4_restart3",
+        "gens": 18,
+        "best_fit": 4462.333333333333,
+        "train_mean_max_x": 1812.3333333333333,
+        "train_flag": 0.3333333333333333,
+        "blind": 13.666666666666666,
+        "genome": "{\"G\": 0.7907748923156144, \"TTMN_THRESH\": 0.1158055780595543, \"A_HOLD\": 30, \"COOLDOWN\": 7, \"HOME_R\": 0.749660972787772, \"PIT_GAIN\": 1.7043690522147315}"
+      },
+      "3": {
+        "start": "fresh",
+        "gens": 19,
+        "best_fit": 4878.333333333333,
+        "train_mean_max_x": 2378.333333333333,
+        "train_flag": 0.3333333333333333,
+        "blind": 16.666666666666668,
+        "genome": "{\"G\": 0.8240821018362137, \"TTMN_THRESH\": 0.2820334153848434, \"A_HOLD\": 31, \"COOLDOWN\": 6, \"HOME_R\": 0.652838134780319, \"PIT_GAIN\": 2.502610996375685}"
+      }
+    },
+    "display": {
+      "max_x": 2754,
+      "score": 300,
+      "flag_get": false,
+      "frames": 1820,
+      "end_reason": "died",
+      "x_at_end": 2754,
+      "cause": "enemy dx=8",
+      "blind_presses": 21,
+      "n_onsets": 44,
+      "a_frac": 0.7329670329670329
+    },
+    "obstacles": [
+      {
+        "kind": "wall",
+        "x": 448,
+        "size": 32,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 608,
+        "size": 48,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 736,
+        "size": 64,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 912,
+        "size": 48,
+        "cleared": true
+      },
+      {
+        "kind": "pit",
+        "x": 1104,
+        "size": 32,
+        "cleared": true
+      },
+      {
+        "kind": "pit",
+        "x": 1376,
+        "size": 48,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2144,
+        "size": 16,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2160,
+        "size": 32,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2176,
+        "size": 48,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2192,
+        "size": 64,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2240,
+        "size": 64,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2256,
+        "size": 48,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2272,
+        "size": 32,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2288,
+        "size": 16,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2368,
+        "size": 16,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2384,
+        "size": 32,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2400,
+        "size": 48,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2416,
+        "size": 64,
+        "cleared": true
+      },
+      {
+        "kind": "pit",
+        "x": 2448,
+        "size": 32,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2480,
+        "size": 64,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2496,
+        "size": 48,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2512,
+        "size": 32,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2528,
+        "size": 16,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2608,
+        "size": 32,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2864,
+        "size": 32,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2896,
+        "size": 16,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2912,
+        "size": 32,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2928,
+        "size": 48,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2944,
+        "size": 64,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2960,
+        "size": 80,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2976,
+        "size": 96,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2992,
+        "size": 112,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 3008,
+        "size": 128,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 3168,
+        "size": 16,
+        "cleared": false
+      }
+    ],
+    "behaviour": {
+      "A_frac": 0.7329670329670329,
+      "n_onsets": 44,
+      "median_interval": 37.0,
+      "silence_600f": {
+        "A_frac": 0.0,
+        "ttmn_max": 0.013963897102481035
+      }
+    },
+    "montage_stages": [
+      [
+        0,
+        1281.0
+      ],
+      [
+        1,
+        1998.6666666666667
+      ],
+      [
+        8,
+        2378.333333333333
+      ]
+    ]
+  },
+  "theta": {
+    "best": {
+      "fitness": 2218.6666666666665,
+      "u": [
+        0.5407906695480139,
+        0.7070901685282681,
+        0.01736678991198059
+      ],
+      "genome": {
+        "THETA_RULE_DEG": 47.039533477400695,
+        "A_HOLD": 24,
+        "COOLDOWN": 1
+      },
+      "gen": 29,
+      "train": {
+        "fitness": 2218.6666666666665,
+        "mean_max_x": 2318.6666666666665,
+        "min_max_x": 2008,
+        "flag_rate": 0.0,
+        "a_frac": 0.47213117445184505,
+        "blind_presses": 2.0,
+        "n_onsets": 29.0,
+        "max_x": [
+          2008,
+          2474,
+          2474
+        ],
+        "ends": [
+          [
+            "died",
+            2008,
+            "enemy dx=8"
+          ],
+          [
+            "died",
+            2474,
+            "pit"
+          ],
+          [
+            "died",
+            2474,
+            "pit"
+          ]
+        ],
+        "flag_all": false
+      },
+      "restart": 1,
+      "arm": "theta",
+      "start": "default"
+    },
+    "genome": {
+      "THETA_RULE_DEG": 47.039533477400695,
+      "A_HOLD": 24,
+      "COOLDOWN": 1
+    },
+    "train": {
+      "fitness": 2218.6666666666665,
+      "mean_max_x": 2318.6666666666665,
+      "min_max_x": 2008,
+      "flag_rate": 0.0,
+      "a_frac": 0.47213117445184505,
+      "blind_presses": 2.0,
+      "n_onsets": 29.0,
+      "max_x": [
+        2008,
+        2474,
+        2474
+      ],
+      "ends": [
+        [
+          "died",
+          2008,
+          "enemy dx=8"
+        ],
+        [
+          "died",
+          2474,
+          "pit"
+        ],
+        [
+          "died",
+          2474,
+          "pit"
+        ]
+      ]
+    },
+    "holdout": {
+      "fitness": 1956.4,
+      "mean_max_x": 2056.4,
+      "min_max_x": 2010,
+      "flag_rate": 0.0,
+      "a_frac": 0.4243154130781675,
+      "blind_presses": 2.0,
+      "n_onsets": 23.0,
+      "max_x": [
+        2010,
+        2010,
+        2010,
+        2010,
+        2010,
+        2010,
+        2010,
+        2010,
+        2010,
+        2474
+      ],
+      "ends": [
+        [
+          "died",
+          2010,
+          "enemy dx=6"
+        ],
+        [
+          "died",
+          2010,
+          "enemy dx=7"
+        ],
+        [
+          "died",
+          2010,
+          "enemy dx=7"
+        ],
+        [
+          "died",
+          2010,
+          "enemy dx=7"
+        ],
+        [
+          "died",
+          2010,
+          "enemy dx=6"
+        ],
+        [
+          "died",
+          2010,
+          "enemy dx=6"
+        ],
+        [
+          "died",
+          2010,
+          "enemy dx=7"
+        ],
+        [
+          "died",
+          2010,
+          "enemy dx=7"
+        ],
+        [
+          "died",
+          2010,
+          "enemy dx=5"
+        ],
+        [
+          "died",
+          2474,
+          "pit"
+        ]
+      ]
+    },
+    "holdout_sigma0": {
+      "fitness": 1910.0,
+      "mean_max_x": 2010.0,
+      "min_max_x": 2010,
+      "flag_rate": 0.0,
+      "a_frac": 0.4185103973085578,
+      "blind_presses": 2.0,
+      "n_onsets": 22.0,
+      "max_x": [
+        2010,
+        2010,
+        2010,
+        2010,
+        2010
+      ],
+      "ends": [
+        [
+          "died",
+          2010,
+          "enemy dx=6"
+        ],
+        [
+          "died",
+          2010,
+          "enemy dx=7"
+        ],
+        [
+          "died",
+          2010,
+          "enemy dx=7"
+        ],
+        [
+          "died",
+          2010,
+          "enemy dx=7"
+        ],
+        [
+          "died",
+          2010,
+          "enemy dx=6"
+        ]
+      ]
+    },
+    "holdout_sigma005": {
+      "fitness": 2002.8,
+      "mean_max_x": 2102.8,
+      "min_max_x": 2010,
+      "flag_rate": 0.0,
+      "a_frac": 0.4301204288477772,
+      "blind_presses": 2.0,
+      "n_onsets": 24.0,
+      "max_x": [
+        2010,
+        2010,
+        2010,
+        2010,
+        2474
+      ],
+      "ends": [
+        [
+          "died",
+          2010,
+          "enemy dx=6"
+        ],
+        [
+          "died",
+          2010,
+          "enemy dx=7"
+        ],
+        [
+          "died",
+          2010,
+          "enemy dx=7"
+        ],
+        [
+          "died",
+          2010,
+          "enemy dx=5"
+        ],
+        [
+          "died",
+          2474,
+          "pit"
+        ]
+      ]
+    },
+    "start_label": "default",
+    "restarts": {
+      "1": {
+        "start": "default",
+        "gens": 40,
+        "best_fit": 2218.6666666666665,
+        "train_mean_max_x": 2318.6666666666665,
+        "train_flag": 0.0,
+        "blind": 2.0,
+        "genome": "{\"THETA_RULE_DEG\": 47.039533477400695, \"A_HOLD\": 24, \"COOLDOWN\": 1}"
+      },
+      "2": {
+        "start": "default",
+        "gens": 17,
+        "best_fit": 1108.0,
+        "train_mean_max_x": 1174.6666666666667,
+        "train_flag": 0.0,
+        "blind": 1.3333333333333333,
+        "genome": "{\"THETA_RULE_DEG\": 33.63032493571775, \"A_HOLD\": 31, \"COOLDOWN\": 30}"
+      },
+      "3": {
+        "start": "default",
+        "gens": 30,
+        "best_fit": 2216.333333333333,
+        "train_mean_max_x": 2316.333333333333,
+        "train_flag": 0.0,
+        "blind": 2.0,
+        "genome": "{\"THETA_RULE_DEG\": 47.07903225037714, \"A_HOLD\": 22, \"COOLDOWN\": 3}"
+      }
+    },
+    "display": {
+      "max_x": 2010,
+      "score": 500,
+      "flag_get": false,
+      "frames": 1192,
+      "end_reason": "died",
+      "x_at_end": 2010,
+      "cause": "enemy dx=6",
+      "blind_presses": 2,
+      "n_onsets": 22,
+      "a_frac": 0.42533557046979864
+    },
+    "obstacles": [
+      {
+        "kind": "wall",
+        "x": 448,
+        "size": 32,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 608,
+        "size": 48,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 736,
+        "size": 64,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 912,
+        "size": 48,
+        "cleared": true
+      },
+      {
+        "kind": "pit",
+        "x": 1104,
+        "size": 32,
+        "cleared": true
+      },
+      {
+        "kind": "pit",
+        "x": 1376,
+        "size": 48,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2144,
+        "size": 16,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2160,
+        "size": 32,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2176,
+        "size": 48,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2192,
+        "size": 64,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2240,
+        "size": 64,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2256,
+        "size": 48,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2272,
+        "size": 32,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2288,
+        "size": 16,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2368,
+        "size": 16,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2384,
+        "size": 32,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2400,
+        "size": 48,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2416,
+        "size": 64,
+        "cleared": false
+      },
+      {
+        "kind": "pit",
+        "x": 2448,
+        "size": 32,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2480,
+        "size": 64,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2496,
+        "size": 48,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2512,
+        "size": 32,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2528,
+        "size": 16,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2608,
+        "size": 32,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2864,
+        "size": 32,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2896,
+        "size": 16,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2912,
+        "size": 32,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2928,
+        "size": 48,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2944,
+        "size": 64,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2960,
+        "size": 80,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2976,
+        "size": 96,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2992,
+        "size": 112,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 3008,
+        "size": 128,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 3168,
+        "size": 16,
+        "cleared": false
+      }
+    ],
+    "behaviour": {
+      "A_frac": 0.42533557046979864,
+      "n_onsets": 22,
+      "median_interval": 31.0
+    },
+    "montage_stages": [
+      [
+        0,
+        1614.0
+      ],
+      [
+        3,
+        1773.3333333333333
+      ],
+      [
+        9,
+        1893.0
+      ],
+      [
+        10,
+        2201.333333333333
+      ],
+      [
+        17,
+        2318.0
+      ],
+      [
+        29,
+        2318.6666666666665
+      ]
+    ]
+  },
+  "spam": {
+    "best": {
+      "fitness": 1169.0,
+      "u": [
+        0.609835035122854,
+        0.25429489313722886
+      ],
+      "genome": {
+        "A_HOLD": 21,
+        "COOLDOWN": 8
+      },
+      "gen": 1,
+      "train": {
+        "fitness": 1169.0,
+        "mean_max_x": 2469.0,
+        "min_max_x": 2469,
+        "flag_rate": 0.0,
+        "a_frac": 0.7232605337681034,
+        "blind_presses": 26.0,
+        "n_onsets": 56.0,
+        "max_x": [
+          2469,
+          2469,
+          2469
+        ],
+        "ends": [
+          [
+            "died",
+            2469,
+            "pit"
+          ],
+          [
+            "died",
+            2469,
+            "pit"
+          ],
+          [
+            "died",
+            2469,
+            "pit"
+          ]
+        ],
+        "flag_all": false
+      },
+      "restart": 1,
+      "arm": "spam",
+      "start": "default"
+    },
+    "genome": {
+      "A_HOLD": 21,
+      "COOLDOWN": 8
+    },
+    "train": {
+      "fitness": 1169.0,
+      "mean_max_x": 2469.0,
+      "min_max_x": 2469,
+      "flag_rate": 0.0,
+      "a_frac": 0.7232605337681034,
+      "blind_presses": 26.0,
+      "n_onsets": 56.0,
+      "max_x": [
+        2469,
+        2469,
+        2469
+      ],
+      "ends": [
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ]
+      ]
+    },
+    "holdout": {
+      "fitness": 1169.0,
+      "mean_max_x": 2469.0,
+      "min_max_x": 2469,
+      "flag_rate": 0.0,
+      "a_frac": 0.7168627139885042,
+      "blind_presses": 26.0,
+      "n_onsets": 56.0,
+      "max_x": [
+        2469,
+        2469,
+        2469,
+        2469,
+        2469,
+        2469,
+        2469,
+        2469,
+        2469,
+        2469
+      ],
+      "ends": [
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ]
+      ]
+    },
+    "holdout_sigma0": {
+      "fitness": 1169.0,
+      "mean_max_x": 2469.0,
+      "min_max_x": 2469,
+      "flag_rate": 0.0,
+      "a_frac": 0.7168627139885043,
+      "blind_presses": 26.0,
+      "n_onsets": 56.0,
+      "max_x": [
+        2469,
+        2469,
+        2469,
+        2469,
+        2469
+      ],
+      "ends": [
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ]
+      ]
+    },
+    "holdout_sigma005": {
+      "fitness": 1169.0,
+      "mean_max_x": 2469.0,
+      "min_max_x": 2469,
+      "flag_rate": 0.0,
+      "a_frac": 0.7168627139885043,
+      "blind_presses": 26.0,
+      "n_onsets": 56.0,
+      "max_x": [
+        2469,
+        2469,
+        2469,
+        2469,
+        2469
+      ],
+      "ends": [
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ],
+        [
+          "died",
+          2469,
+          "pit"
+        ]
+      ]
+    },
+    "start_label": "default",
+    "restarts": {
+      "1": {
+        "start": "default",
+        "gens": 12,
+        "best_fit": 1169.0,
+        "train_mean_max_x": 2469.0,
+        "train_flag": 0.0,
+        "blind": 26.0,
+        "genome": "{\"A_HOLD\": 21, \"COOLDOWN\": 8}"
+      },
+      "2": {
+        "start": "default",
+        "gens": 18,
+        "best_fit": 1169.0,
+        "train_mean_max_x": 2469.0,
+        "train_flag": 0.0,
+        "blind": 26.0,
+        "genome": "{\"A_HOLD\": 21, \"COOLDOWN\": 8}"
+      },
+      "3": {
+        "start": "default",
+        "gens": 23,
+        "best_fit": 1169.0,
+        "train_mean_max_x": 2469.0,
+        "train_flag": 0.0,
+        "blind": 26.0,
+        "genome": "{\"A_HOLD\": 21, \"COOLDOWN\": 8}"
+      }
+    },
+    "display": {
+      "max_x": 2469,
+      "score": 300,
+      "flag_get": false,
+      "frames": 1621,
+      "end_reason": "died",
+      "x_at_end": 2469,
+      "cause": "pit",
+      "blind_presses": 26,
+      "n_onsets": 56,
+      "a_frac": 0.7254780999383097
+    },
+    "obstacles": [
+      {
+        "kind": "wall",
+        "x": 448,
+        "size": 32,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 608,
+        "size": 48,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 736,
+        "size": 64,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 912,
+        "size": 48,
+        "cleared": true
+      },
+      {
+        "kind": "pit",
+        "x": 1104,
+        "size": 32,
+        "cleared": true
+      },
+      {
+        "kind": "pit",
+        "x": 1376,
+        "size": 48,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2144,
+        "size": 16,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2160,
+        "size": 32,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2176,
+        "size": 48,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2192,
+        "size": 64,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2240,
+        "size": 64,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2256,
+        "size": 48,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2272,
+        "size": 32,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2288,
+        "size": 16,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2368,
+        "size": 16,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2384,
+        "size": 32,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2400,
+        "size": 48,
+        "cleared": true
+      },
+      {
+        "kind": "wall",
+        "x": 2416,
+        "size": 64,
+        "cleared": true
+      },
+      {
+        "kind": "pit",
+        "x": 2448,
+        "size": 32,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2480,
+        "size": 64,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2496,
+        "size": 48,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2512,
+        "size": 32,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2528,
+        "size": 16,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2608,
+        "size": 32,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2864,
+        "size": 32,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2896,
+        "size": 16,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2912,
+        "size": 32,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2928,
+        "size": 48,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2944,
+        "size": 64,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2960,
+        "size": 80,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2976,
+        "size": 96,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 2992,
+        "size": 112,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 3008,
+        "size": 128,
+        "cleared": false
+      },
+      {
+        "kind": "wall",
+        "x": 3168,
+        "size": 16,
+        "cleared": false
+      }
+    ],
+    "behaviour": {
+      "A_frac": 0.7254780999383097,
+      "n_onsets": 56,
+      "median_interval": 29.0
+    },
+    "montage_stages": [
+      [
+        0,
+        1789.6666666666667
+      ],
+      [
+        1,
+        2469.0
+      ]
+    ]
+  },
+  "timing_s": {
+    "spam": 756.9218654632568,
+    "theta": 629.2256472110748,
+    "fly": 475.85248732566833,
+    "total": 1862,
+    "note": "fly time = total minus spam and theta (the process crashed on the final state save, after all 3 fly restarts had finished)"
+  }
+}
