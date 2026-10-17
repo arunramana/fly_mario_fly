@@ -1,0 +1,88 @@
+# Part 7 pre-registration: the 1-1 win search. Single source of truth for 7c-7f (flyrun/part7.py reads ONLY this file).
+# Amendments after the 7a commit must be logged in flyrun/runs/008_preregistration.md (date + reason) BEFORE the stage they affect runs.
+track: flyrun (assisted, disclosed)
+
+arm:
+  name: real
+  w_file: W_steer.npy               # tutorials/_cache/; FLYRUN_WFILE must be unset
+  w_sha256: 5c57f81f5b1d260eab6887d92a42544e35e6dfea081c4d29b125e9fba1a8e2cb
+
+# Every tuned knob is INVENTED (evolved); everything else in Knobs stays fixed from knobs.py (SENSOR_NOISE per episode below).
+knobs:
+  - {name: G,           lo: 0.2,  hi: 1.5,  int: false, tag: "INVENTED (evolved)"}
+  - {name: TTMN_THRESH, lo: 0.02, hi: 0.4,  int: false, tag: "INVENTED (evolved)"}
+  - {name: A_HOLD,      lo: 4,    hi: 32,   int: true,  tag: "INVENTED (evolved)"}
+  - {name: COOLDOWN,    lo: 0,    hi: 30,   int: true,  tag: "INVENTED (evolved)"}
+  - {name: HOME_R,      lo: 0.1,  hi: 2.0,  int: false, tag: "INVENTED (evolved)"}
+  - {name: PIT_GAIN,    lo: 0.0,  hi: 5.0,  int: false, tag: "INVENTED (evolved)"}
+
+# Applied only in 7c, and only if the 7b diagnosis finds a mistimed trigger. Not implemented in 7a (nothing in senses/brain/motor changes).
+conditional_knob_rule:
+  applies_in: 7c
+  if: "the 7b diagnosis finds a mistimed trigger"
+  replace_tuned: G
+  with:
+    - {name: LPLC2_GAIN, lo: 0.2, hi: 3.0, applies_to: "input gain on theta", tag: "INVENTED (evolved)"}
+    - {name: LC4_GAIN,   lo: 0.2, hi: 3.0, applies_to: "input gain on |dtheta|", tag: "INVENTED (evolved)"}
+  fix_recurrent_G_at: r3          # the r3 value of G (warm_starts.r3)
+  max_new_knobs_ever: 2
+  otherwise: "the knob list stays as above"
+
+cmaes:
+  popsize: 16
+  sigma0: 0.25
+  max_gens: 80
+  patience: 15                     # early stop after this many generations without improvement
+  bounds: [0, 1]                   # unit cube; decode() maps to the knob ranges
+
+# Restarts in order. u = unit-cube start (knob order above); warm starts are the Part 6b evo6/real restart bests.
+restarts:
+  - {label: warm_r3, kind: warm,  cma_seed: 71, source: {file: flyrun/evo6/real/gen.csv, restart: 3},
+     u: [0.3930940417774047, 0.7245426488116201, 0.5050935339142905, 0.07908409163526009, 0.8337085710162931, 0.2719779860536943]}
+  - {label: warm_r2, kind: warm,  cma_seed: 72, source: {file: flyrun/evo6/real/gen.csv, restart: 2},
+     u: [0.48908509398540945, 0.2112809484257167, 0.9812910142660803, 0.9381237283611376, 0.857954770950063, 0.041387424294943936]}
+  - {label: fresh_97, kind: fresh, cma_seed: 73, rng: 97, fresh_range: [0.05, 0.95]}
+  - {label: fresh_96, kind: fresh, cma_seed: 74, rng: 96, fresh_range: [0.05, 0.95]}
+
+budgets:
+  stage_7d: {restarts: [warm_r3, warm_r2], gens_per_restart: 15}
+  stage_7e: {restarts: [warm_r3, warm_r2, fresh_97, fresh_96], max_gens_per_restart: 80, wall_clock_cap_hours: 3}
+
+episodes:
+  train:                            # noop_start x sigma 0.05; the first three are the Part 4b TRAIN episodes
+    - {noop_start: 0,  seed: 1, sigma: 0.05}
+    - {noop_start: 7,  seed: 2, sigma: 0.05}
+    - {noop_start: 17, seed: 3, sigma: 0.05}
+    - {noop_start: 22, seed: 4, sigma: 0.05}
+    - {noop_start: 29, seed: 5, sigma: 0.05}
+    - {noop_start: 36, seed: 6, sigma: 0.05}
+  holdout:                          # copied from flyrun/episodes4.py (Part 6b); never used in search
+    - {noop_start: 3,  seed: 101, sigma: 0.0}
+    - {noop_start: 11, seed: 102, sigma: 0.0}
+    - {noop_start: 25, seed: 103, sigma: 0.0}
+    - {noop_start: 33, seed: 104, sigma: 0.0}
+    - {noop_start: 41, seed: 105, sigma: 0.0}
+    - {noop_start: 3,  seed: 101, sigma: 0.05}
+    - {noop_start: 11, seed: 102, sigma: 0.05}
+    - {noop_start: 25, seed: 103, sigma: 0.05}
+    - {noop_start: 33, seed: 104, sigma: 0.05}
+    - {noop_start: 41, seed: 105, sigma: 0.05}
+
+fitness:                            # as Part 6b: max_x + FLAG_BONUS*flag - BLIND_PENALTY*blind_presses, mean over episodes
+  flag_bonus: 10000
+  blind_penalty: 50
+  blind_px: 60
+
+constraints:                        # a genome's fitness is -inf if any TRAIN episode fails one
+  silence_a_frac: 0.0               # nothing in view (enemy_input=False, pipe/pit sense off, 600 frames, noop 0): A_frac must be exactly 0
+  silence_max_frames: 600
+  first_a_at_threat: true           # the first A onset has a threat in view: stim_d not NaN and <= blind_px. No A at all = fail
+  max_blind_presses: 8              # per episode
+
+success:
+  holdout_flags_min: 3              # WIN = >= 3 of 10 HOLDOUT flags AND all three constraints on every HOLDOUT episode
+  holdout_episodes: 10
+
+reproduction:                       # Part 6b HOLDOUT numbers (runs/007_fair_eval.json) the check stage must reproduce exactly
+  warm_r3: {mean_max_x: 1405.1, flags: 1}
+  warm_r2: {mean_max_x: 1937.0, flags: 0}
