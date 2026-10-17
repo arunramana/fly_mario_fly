@@ -19,7 +19,7 @@ def test_yaml_loads_and_validates(cfg):
     assert part7.validate(cfg) == []
     assert [k["name"] for k in cfg["knobs"]] == ["G", "TTMN_THRESH", "A_HOLD", "COOLDOWN", "HOME_R", "PIT_GAIN"]
     assert all(k["tag"].startswith("INVENTED") for k in cfg["knobs"])
-    assert [r["label"] for r in cfg["restarts"]] == ["warm_r3", "fresh_97", "fresh_96", "fresh_95"]
+    assert [r["label"] for r in cfg["restarts"]] == ["warm_r3", "fresh_97", "fresh_96", "fresh_95", "warm_7d"]
     assert len(cfg["episodes"]["train"]) == 6 and len(cfg["episodes"]["holdout"]) == 10
 
 

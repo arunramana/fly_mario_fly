@@ -97,6 +97,18 @@ The config sha256 changed because of (a); the value for the amended config is in
 - **7b classified OTHER** (`runs/008b_diagnosis.md`). Arun's decision: no new knobs, skip 7c, run 7d. Fallback if 7d doesn't clear x≈1220: make floating block rows visible as obstacle faces (a stimulus change; requires re-running baselines).
 - **7d budget rule applied.** Rule: if one TRAIN evaluation is <= 10 s wall, 7d = 15 gens per restart; if slower, 10 gens per restart. Re-timed (`--stage check`, commit 8f41622, AC power, no stray python processes, ~31% background load from other apps): one TRAIN evaluation (6 episodes + silence run) took **28.6 s wall** (jobs ~15 s each; the 7a run measured 6.2 s / 3.5 s, same code and genome, cause not found). 28.6 s > 10 s, so **7d = 10 gens per restart** (`stage_7d.gens_per_restart: 15 -> 10` in the yaml; restarts unchanged: warm_r3, fresh_97). Estimated 7d wall at this speed: ~47 min.
 
+### Amendment 3 — 2026-10-17 (before 7e)
+
+Arun's 7e spec, logged before any 7e search runs (yaml: restart `warm_7d` added with cma_seed 76 because seeds must be distinct and 71 belongs to `warm_r3`; the `warm_r3` entry stays for the reproduction check).
+
+a. **7d deviation recorded.** Infeasible genomes are logged with fitness −inf. CMA-ES is told a graded value `−(−1e6 + mean_fitness)`, strictly worse than every feasible genome, so infeasible genomes still rank among themselves (`flyrun/search7.py`). Feasible-vs-infeasible ranking is identical to −inf.
+b. **7e restarts** (replacing "warm r3 + fresh 97/96/95"): R1 `warm_7d` = warm from the 7d best (`evo7d/warm_r3/best_genome.json`, u in the yaml); R2 `fresh_97` = continued from its 7d CMA state (`evo7d/fresh_97/state.pkl` is copied into `evo7e/fresh_97`, generation counter continues at 10, no-improve counter reset to 0); R3 `fresh_96`; R4 `fresh_95`. CMA seeds from the yaml (76, 73, 74, 75).
+c. **Budget.** 3 h wall-clock cap for the whole stage (7e time only). Generations run in 7e: R1 26, R2 22, R3 12, R4 12 (≈ 2.5 min/gen, 7d measured 2.46). Early stop per restart at 15 generations without improvement. Gens a restart does not use go to R1, then R2 (first that can still run), in a second pass after R4, inside the same cap. Actual gens run are logged.
+d. **Final genome selection** (before HOLDOUT): the feasible genome with the highest TRAIN fitness across all 7e restarts (R2's pre-7e generations 0–9 count, they are the same restart). Ties → fewer blind presses. Written to `runs/008e_final_genome.json` and committed before HOLDOUT runs. No other genome is evaluated on HOLDOUT, except the labelled reference below.
+e. **Fallback if no WIN.** Best feasible HOLDOUT mean max_x ≥ 2400 → (b) ship without a win (best selective run + best infeasible flag run, labelled "breaks the ≤ 8 blind-press rule"); otherwise → (a) make floating block rows visible as obstacle faces (new labelled sense), then repeat 7d → 7e. The blind-press limit is never loosened.
+f. **Reference only (not a candidate):** the best INFEASIBLE genome by TRAIN mean max_x across the 7e restarts' `all_evals.csv` (with its failure reason) is run once on HOLDOUT, labelled "reference only". It cannot be the final genome.
+g. **Implementation notes.** `--stage 7e` = search; `--stage 7e_select` = rule (d), writes the final genome and the reference genome; `--stage 7e_holdout` = refuses unless `008e_final_genome.json` is committed and unchanged, and refuses to run twice (HOLDOUT result file must not exist).
+
 ---
 
 ## 7a check output (`python -m flyrun.part7 --config flyrun/configs/part7.yaml --stage check`)

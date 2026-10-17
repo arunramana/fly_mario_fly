@@ -1,6 +1,7 @@
 # Part 7 pre-registration: the 1-1 win search. Single source of truth for 7c-7f (flyrun/part7.py reads ONLY this file).
 # Amendment 2026-10-17 (7b): warm_r2 dropped, fresh_95 added; see runs/008_preregistration.md.
 # Amendment 2 2026-10-17 (7d): stage_7d gens_per_restart 15 -> 10 (timing rule, see the prereg).
+# Amendment 3 2026-10-17 (7e): restarts warm_7d added (seed 76); stage_7e budget = per-restart gens, continue_from, freed-time order; see the prereg.
 # Amendments after the 7a commit must be logged in flyrun/runs/008_preregistration.md (date + reason) BEFORE the stage they affect runs.
 track: flyrun (assisted, disclosed)
 
@@ -44,10 +45,17 @@ restarts:
   - {label: fresh_97, kind: fresh, cma_seed: 73, rng: 97, fresh_range: [0.05, 0.95]}
   - {label: fresh_96, kind: fresh, cma_seed: 74, rng: 96, fresh_range: [0.05, 0.95]}
   - {label: fresh_95, kind: fresh, cma_seed: 75, rng: 95, fresh_range: [0.05, 0.95]}
+  - {label: warm_7d, kind: warm,  cma_seed: 76, source: {file: flyrun/evo7d/warm_r3/best_genome.json},   # 7e R1: warm from the 7d best
+     u: [0.36793416332424145, 0.6819425418310541, 0.5670050300488694, 0.33248883805909024, 0.7920875127017606, 0.43217382487429046]}
 
 budgets:
   stage_7d: {restarts: [warm_r3, fresh_97], gens_per_restart: 10}
-  stage_7e: {restarts: [warm_r3, fresh_97, fresh_96, fresh_95], max_gens_per_restart: 80, wall_clock_cap_hours: 3}
+  stage_7e:
+    restarts: [warm_7d, fresh_97, fresh_96, fresh_95]
+    gens: {warm_7d: 26, fresh_97: 22, fresh_96: 12, fresh_95: 12}   # generations run IN 7e (fresh_97 continues from its 7d CMA state, so it ends at gen 32)
+    continue_from: {fresh_97: evo7d}                                # copy that restart's state from this stage dir; its no-improve counter restarts at 0
+    freed_time_order: [warm_7d, fresh_97]                           # gens a restart does not use (early stop) are added to these, first that can still run
+    wall_clock_cap_hours: 3
 
 episodes:
   train:                            # noop_start x sigma 0.05; the first three are the Part 4b TRAIN episodes

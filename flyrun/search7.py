@@ -12,6 +12,7 @@ import json
 import multiprocessing as mp
 import os
 import pickle
+import shutil
 import time
 from dataclasses import replace
 from pathlib import Path
@@ -163,25 +164,83 @@ def run_restart(pool, cfg, restart, d, gens, stamp, hdr, log=print, deadline=Non
             f"{'FEASIBLE' if gb['feasible'] else 'infeasible:' + '+'.join(gb['fail'])}  {time.time() - t0:.0f}s", flush=True)
         if st["no_improve"] >= cm["patience"]:
             log(f"[{label}] no improvement for {cm['patience']} generations: early stop")
+            st["early_stop"] = True
             break
     st["done"] = True
     _save(state_p, st)
     return st
 
 
+def _seed_continue(cfg, label, d, src):
+    """7e R2: copy a finished 7d restart's files into this stage's dir and re-open its CMA state."""
+    if (d / "state.pkl").exists():
+        return
+    d.mkdir(parents=True, exist_ok=True)
+    for f in ("state.pkl", "gen.csv", "all_evals.csv", "best_genome.json"):
+        shutil.copyfile(src / f, d / f)
+    st = pickle.loads((d / "state.pkl").read_bytes())
+    st.update(done=False, no_improve=0, early_stop=False, gen0=st["gen"], secs0=st["secs"])
+    _save(d / "state.pkl", st)
+
+
+def _state(d):
+    p = d / "state.pkl"
+    return pickle.loads(p.read_bytes()) if p.exists() else None
+
+
 def run_stage(cfg, cfg_path, stage, workers, outdir=None, log=print):
-    """7d / 7e. Refuses a dirty tree (done by the caller). -> {label: state}."""
+    """7d / 7e. Refuses a dirty tree (done by the caller). -> {label: state}.
+    7e: per-restart generation allotments (budgets.stage_7e.gens, counted from the restart's gen at 7e start), a stage-wide
+    wall-clock cap, early stop per restart, and a second pass handing the generations early-stopped restarts did not use to
+    freed_time_order (first restart that can still run)."""
     b = cfg["budgets"]["stage_" + stage]
-    gens = b["gens_per_restart"] if stage == "7d" else b["max_gens_per_restart"]
-    cap = b.get("wall_clock_cap_hours")
     st = P.stamp(cfg_path, cfg)
     hdr = f"# stage {stage}  [{P.stamp_line(st)}]"
     base = outdir or stage_dir(stage)
     t0, out = time.time(), {}
-    with mp.get_context("spawn").Pool(workers, initializer=P._init) as pool:
+    rs = {r["label"]: r for r in cfg["restarts"]}
+    if stage == "7d":
+        cap = b.get("wall_clock_cap_hours")
+        with mp.get_context("spawn").Pool(workers, initializer=P._init) as pool:
+            for label in b["restarts"]:
+                out[label] = run_restart(pool, cfg, rs[label], base / label, b["gens_per_restart"], st, hdr, log,
+                                         deadline=t0 + cap * 3600 if cap else None)
+        return out
+    for label, src in b.get("continue_from", {}).items():
+        _seed_continue(cfg, label, base / label, ROOT / src / label)
+    def spent():
+        s = 0.0
         for label in b["restarts"]:
-            r = next(r for r in cfg["restarts"] if r["label"] == label)
-            out[label] = run_restart(pool, cfg, r, base / label, gens, st, hdr, log, deadline=t0 + cap * 3600 if cap else None)
+            x = _state(base / label)
+            s += (x["secs"] - x.get("secs0", 0.0)) if x else 0.0
+        return s
+    deadline = t0 + b["wall_clock_cap_hours"] * 3600 - spent()
+    log(f"7e: {spent() / 60:.0f} min already spent in earlier sessions; cap leaves {(deadline - t0) / 60:.0f} min")
+    with mp.get_context("spawn").Pool(workers, initializer=P._init) as pool:
+        def go(label, extra=0):
+            x = _state(base / label)
+            gen0 = x.get("gen0", 0) if x else 0
+            if x and extra and x["done"] and x["gen"] < gen0 + b["gens"][label] + extra and not x.get("early_stop"):
+                x["done"] = False                  # re-open a restart that finished its allotment, to spend freed generations
+                _save(base / label / "state.pkl", x)
+            out[label] = run_restart(pool, cfg, rs[label], base / label, gen0 + b["gens"][label] + extra, st, hdr, log,
+                                     deadline=deadline)
+        for label in b["restarts"]:
+            go(label)
+        unused = 0
+        for label in b["restarts"]:
+            x = _state(base / label)
+            if x and x["done"] and x.get("early_stop"):
+                unused += max(0, x.get("gen0", 0) + b["gens"][label] - x["gen"])
+        log(f"7e: {unused} generations freed by early stops")
+        for label in b.get("freed_time_order", []):
+            if unused <= 0 or time.time() > deadline:
+                break
+            x = _state(base / label)
+            if not x or x.get("early_stop"):
+                continue
+            go(label, unused)
+            unused = 0
     return out
 
 
@@ -200,6 +259,8 @@ def montage(cfg, label, d, every=2, scale=2):
         if not keep or r.best_mean_max_x > prev:
             keep.append(r)
         prev = max(prev, r.best_mean_max_x)
+    if not keep:
+        return None
     brain, ep = load_brain(), cfg["episodes"]["train"][0]
     out, writer = d / "montage.mp4", None
     for r in keep:

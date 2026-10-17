@@ -294,7 +294,7 @@ def stage_check(cfg, cfg_path, workers):
     est = lambda gens, w: per_gen_cpu * gens / w
     b7d, b7e = cfg["budgets"]["stage_7d"], cfg["budgets"]["stage_7e"]
     g7d = len(b7d["restarts"]) * b7d["gens_per_restart"]
-    g7e = len(b7e["restarts"]) * b7e["max_gens_per_restart"]
+    g7e = sum(b7e["gens"].values())
     P("## 4. TRAIN timing (r3 genome, 6 TRAIN episodes + 1 silence run)\n")
     P(f"wall for one evaluation on {workers} workers: {wall:.1f}s;  per-job seconds: " + ", ".join(f"{s:.1f}" for s in secs))
     P(f"TRAIN: mean_max_x {tr['mean_max_x']:.0f}, flags {tr['flags']}/6, all constraints ok: {tr['all_constraints_ok']}\n")
@@ -323,7 +323,7 @@ def stage_stub(name):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
-    ap.add_argument("--stage", required=True, choices=["check", "7d", "7e", "replay"])
+    ap.add_argument("--stage", required=True, choices=["check", "7d", "7e", "7e_select", "7e_holdout", "replay"])
     ap.add_argument("--workers", type=int, default=12)
     a = ap.parse_args(argv)
     cfg = load_config(a.config)
@@ -336,7 +336,14 @@ def main(argv=None):
         res = search7.run_stage(cfg, a.config, a.stage, a.workers)
         if a.stage == "7d":
             search7.montage(cfg, "warm_r3", search7.stage_dir("7d") / "warm_r3")
+        else:
+            for label in cfg["budgets"]["stage_7e"]["restarts"]:
+                if (search7.stage_dir("7e") / label / "gen.csv").exists():
+                    search7.montage(cfg, label, search7.stage_dir("7e") / label)
         return res
+    if a.stage in ("7e_select", "7e_holdout"):
+        from . import final7e
+        return final7e.select(cfg, a.config) if a.stage == "7e_select" else final7e.holdout(cfg, a.config, a.workers)
     if a.stage == "replay":
         from .diagnose7b import dump_holdout   # 7b: per-frame replay of warm r3 on HOLDOUT
         return dump_holdout(cfg, stamp(a.config, cfg))
