@@ -1,0 +1,8 @@
+{
+ "git_commit": "ac2e1b699a80af737e506a36d57b32e4c5101a78",
+ "dirty": false,
+ "config_sha256": "54051be754efd6b4a3b931db3258f1c1baf21b44eba924b1fca658d6506da588",
+ "w_sha256": "5c57f81f5b1d260eab6887d92a42544e35e6dfea081c4d29b125e9fba1a8e2cb",
+ "python": "3.12.6 (tags/v3.12.6:a4a2d2b, Sep  6 2024, 20:11:23) [MSC v.1940 64 bit (AMD64)]",
+ "pip_freeze_sha256": "ba762955ba14bb32fa18d0c1219bc4759dd2d834e31697188171f42aeebd23f2"
+}
