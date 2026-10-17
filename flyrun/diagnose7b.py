@@ -15,11 +15,11 @@ OUT = ROOT / "runs" / "008b_replay"
 ADDR_MARIO_Y, ADDR_ENEMY_Y = 0x00CE, 0x00CF   # player screen y; enemy y per slot
 
 
-def capture(knobs, ep, brain, record=False):
+def capture(knobs, ep, brain, record=False, extra=None):
     """-> (summary, df). df = run_episode's telemetry + y, a_left, cool_left, enemies (text), enemy_n."""
     from . import motor, run as R
     env = R._get_env()
-    snaps, mus = [], []
+    snaps, mus, ex = [], [], []
     orig_step, orig_decide = env.step, motor.decide
     cur = {}
 
@@ -40,7 +40,10 @@ def capture(knobs, ep, brain, record=False):
         snaps.append((int(ram[ADDR_MARIO_Y]), " ".join(en), len(en)))
         mus.append((cur.get("a_left", 0), cur.get("cool_left", 0)))
         cur.clear()
-        return orig_step(action)
+        out = orig_step(action)
+        if extra:
+            ex.append(extra(env.unwrapped.ram))      # RAM AFTER the step (fix 1 diagnosis)
+        return out
 
     env.step, motor.decide = step, decide
     try:
@@ -53,6 +56,8 @@ def capture(knobs, ep, brain, record=False):
     df["y"] = [a for a, _, _ in snaps]
     df["enemies"] = [b for _, b, _ in snaps]
     df["enemy_n"] = [c for _, _, c in snaps]
+    if extra:
+        df["extra"] = ex
     df["a_left"] = [a for a, _ in mus]
     df["cool_left"] = [c for _, c in mus]
     return s, df

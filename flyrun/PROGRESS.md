@@ -1,7 +1,7 @@
 # flyrun — PROGRESS (the scoreboard)
 
 ## Where we are
-The best honest result is Part 4b's evolved fly: mean max_x **2487** on the 10 held-out start timings, but **0 flags**. Real-fly flags on held-out episodes so far: the Part 4 "hopper" (5 of 10: all five at σ 0, none at σ 0.05), Part 6b's r3 (1 of 10), and one 7d TRAIN genome that is infeasible (3 of 6 TRAIN). The strict Part 7 rules (silent when nothing is in view, first jump at a Goomba, ≤ 8 blind presses) pushed the best result down to **1629** (7e, 0/10 flags): Mario now clears the floating-ledge Goomba at x≈1220 but dies at x 1532 landing between two Goombas (7 of 10 episodes). Next: fix 1 of 2 (Arun's decision, prereg Amendment 4): diagnose the x 1532 two-Goomba death and fix only that; the floating-ledge sense is dropped because 7e already clears the ledge.
+The best honest result is Part 4b's evolved fly: mean max_x **2487** on the 10 held-out start timings, but **0 flags**. Real-fly flags on held-out episodes so far: the Part 4 "hopper" (5 of 10: all five at σ 0, none at σ 0.05), Part 6b's r3 (1 of 10), and one 7d TRAIN genome that is infeasible (3 of 6 TRAIN). The strict Part 7 rules (silent when nothing is in view, first jump at a Goomba, ≤ 8 blind presses) pushed the best result down to **1629** (7e, 0/10 flags): Mario now clears the floating-ledge Goomba at x≈1220 but dies at x 1532 landing between two Goombas (7 of 10 episodes). Next: Arun's call on the x 1532 death — fix 1 diagnosed it as COOLDOWN_BLOCKED (a second Goomba arrives inside one jump's hold + cooldown), so no new sense was built and no search was run; options are in `runs/009_fix1.md`.
 
 ## Scoreboard (real fly first, oldest first; every number is from the cited file)
 
@@ -20,6 +20,7 @@ The best honest result is Part 4b's evolved fly: mean max_x **2487** on the 10 h
 | 7b | 2026-10-17 | Diagnosed the x≈1220 death (no change) | 1405.1 (`runs/008b_diagnosis.md`) | 1/10 | A floating brick/?-block row the fly cannot see, Goomba on top (class OTHER); 8 of 9 deaths one trajectory | `clips/08b_death_1219.mp4`, `clips/08b_flag_same_spot.mp4` |
 | 7d | 2026-10-17 | Short TRAIN search from r3 and a fresh start | 1798 TRAIN mean (`runs/008d_short_search.md`) | 0/6 TRAIN (one infeasible genome: 3/6) | Warm: Goombas 1805–2015, pit 1409; ledge cleared. Fresh 97: still at the ledge | `evo7d/warm_r3/montage.mp4` (gitignored) |
 | 7e | 2026-10-17 | Full search; one HOLDOUT run of the chosen genome | 1628.8 HOLDOUT mean (`runs/008e_full_search.md`) | **0/10** | Lands between two Goombas at x 1532 (7/10), x≈2015 (2/10) | `clips/P_current_death.mp4`, `evo7e/<restart>/montage.mp4` |
+| Fix 1 | 2026-10-17 | Diagnosed the x 1532 death; no sense built | 1628.8 (unchanged, `runs/009_fix1.md`) | 0/10 | One jump's 20+9 frame hold-and-cooldown can't answer a second Goomba 23 px behind the first; killed by the one ahead (class COOLDOWN_BLOCKED, stopped for Arun's call) | `clips/F1_result.mp4` |
 
 **Controls** (not the real fly):
 - Part 4b: theta rule 2056 mean / 0 flags, evolved timer 2469 (pit 3), fixed timer 1138 (`runs/004_robust.md` §1, §3).
@@ -27,7 +28,7 @@ The best honest result is Part 4b's evolved fly: mean max_x **2487** on the 10 h
 - Part 6b (fair shuffle, `runs/007_fixes.md`): shuffles 1784 / 2470 / **3161 (flag 10/10)**, evolved timer 2469, theta rule 2056. The shuffles that go far do it as free-running A timers (A held ~half of all frames with nothing in view), not as escapes.
 - 7e reference (not a candidate): best infeasible genome, 1788.4 mean, 0 flags, 9–10 blind presses (`runs/008e_full_search.md` §3).
 
-**7e death, where he dies now** (`clips/P_current_death.mp4`, 2.5 s at 0.5× speed, HOLDOUT noop 3 σ 0, x 1400→1532, replay asserted to give the logged max_x 1532): Mario jumps over the first Goomba, then descends with it **behind** him (dx −10 at the last frame; the logged cause is "enemy dx=−12") while a second Goomba is **12 px ahead** (dx +12), so he lands between two. The logged columns do not say which of the two touched him.
+**7e death, where he dies now** (`clips/P_current_death.mp4`, 2.5 s at 0.5× speed, HOLDOUT noop 3 σ 0, x 1400→1532, replay asserted to give the logged max_x 1532): Mario jumps over the first Goomba, then descends with it **behind** him (dx −10 at the last frame; the logged cause is "enemy dx=−12") while a second Goomba is **12 px ahead** (dx +12), so he lands between two. Fix 1's extra RAM reads (`runs/009_fix1.md`) show he stomped the one behind (state change + bounce) and was killed by the one ahead.
 
 ## What's invented (`flyrun/knobs.py` INVENTED; none comes from the connectome)
 
