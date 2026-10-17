@@ -331,6 +331,9 @@ def main(argv=None):
         require_clean(a.config)
     if a.stage == "check":
         return stage_check(cfg, a.config, a.workers)
+    if a.stage == "replay":
+        from .diagnose7b import dump_holdout   # 7b: per-frame replay of warm r3 on HOLDOUT
+        return dump_holdout(cfg, stamp(a.config, cfg))
     stage_stub(a.stage)
 
 
