@@ -331,10 +331,16 @@ def main(argv=None):
         require_clean(a.config)
     if a.stage == "check":
         return stage_check(cfg, a.config, a.workers)
+    if a.stage in ("7d", "7e"):
+        from . import search7
+        res = search7.run_stage(cfg, a.config, a.stage, a.workers)
+        if a.stage == "7d":
+            search7.montage(cfg, "warm_r3", search7.stage_dir("7d") / "warm_r3")
+        return res
     if a.stage == "replay":
         from .diagnose7b import dump_holdout   # 7b: per-frame replay of warm r3 on HOLDOUT
         return dump_holdout(cfg, stamp(a.config, cfg))
-    stage_stub(a.stage)
+    stage_stub(a.stage)   # unreachable now: check, 7d, 7e, replay all dispatch above
 
 
 if __name__ == "__main__":

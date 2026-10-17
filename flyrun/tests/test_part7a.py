@@ -60,12 +60,6 @@ def test_search_stages_refuse_dirty_tree(stage, monkeypatch):
         part7.main(["--config", str(CFG), "--stage", stage])
 
 
-def test_search_stages_are_stubs_on_clean_tree(monkeypatch):
-    monkeypatch.setattr(part7, "git_status", lambda paths: [])
-    with pytest.raises(NotImplementedError):
-        part7.main(["--config", str(CFG), "--stage", "7d"])
-
-
 def test_r3_replay_reproduces_part6b_holdout(cfg):
     import multiprocessing as mp
     r3 = next(r for r in cfg["restarts"] if r["label"] == "warm_r3")
