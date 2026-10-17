@@ -1,4 +1,4 @@
-# Part 7a check  (commit 0baaf03fcb +DIRTY, config 7bd5a1274d80, W 5c57f81f5b1d)
+# Part 7 check  (commit 5a3bcc5043 +DIRTY, config 289b3d51cb29, W 5c57f81f5b1d, python 3.12.6, pip-freeze ba762955ba14)
 
 ## 1. Config validation
 
@@ -12,15 +12,12 @@
 | every restart has an explicit CMA seed    | PASS   |
 | warm_r3: u == evo6/real gen.csv restart 3 | PASS   |
 | warm_r3: yaml decode == genome.decode     | PASS   |
-| warm_r2: u == evo6/real gen.csv restart 2 | PASS   |
-| warm_r2: yaml decode == genome.decode     | PASS   |
 
 ## 2. Part 6b HOLDOUT reproduction
 
 | restart | mean_max_x | expected | flags | expected | max_x list identical | result |
 |---------|------------|----------|-------|----------|----------------------|--------|
 | warm_r3 | 1405.1     | 1405.1   | 1     | 1        | True                 | PASS   |
-| warm_r2 | 1937.0     | 1937.0   | 0     | 0        | True                 | PASS   |
 
 ## 3. Constraints on HOLDOUT, per episode (silence is one run per genome)
 
@@ -39,33 +36,18 @@
 | 33   | 104  | 0.05  | 1129  | pit         | ok      | ok (26px)         | ok (6)   |
 | 41   | 105  | 0.05  | 1220  | enemy dx=10 | ok      | ok (26px)         | ok (5)   |
 
-**warm_r2**  genome {'G': 0.8358106221810324, 'TTMN_THRESH': 0.10028676040177235, 'A_HOLD': 31, 'COOLDOWN': 28, 'HOME_R': 1.7301140648051196, 'PIT_GAIN': 0.20693712147471968}  silence A_frac = 0.000  -> all constraints on every episode: FAIL
-
-| noop | seed | sigma | max_x | end        | silence | first A at threat | blind<=8 |
-|------|------|-------|-------|------------|---------|-------------------|----------|
-| 3    | 101  | 0.0   | 1937  | enemy dx=9 | ok      | FAIL (188px)      | ok (8)   |
-| 11   | 102  | 0.0   | 1937  | enemy dx=9 | ok      | FAIL (188px)      | ok (8)   |
-| 25   | 103  | 0.0   | 1937  | enemy dx=9 | ok      | FAIL (188px)      | ok (8)   |
-| 33   | 104  | 0.0   | 1937  | enemy dx=9 | ok      | FAIL (188px)      | ok (8)   |
-| 41   | 105  | 0.0   | 1937  | enemy dx=9 | ok      | FAIL (188px)      | ok (8)   |
-| 3    | 101  | 0.05  | 1937  | enemy dx=9 | ok      | FAIL (188px)      | ok (8)   |
-| 11   | 102  | 0.05  | 1937  | enemy dx=9 | ok      | FAIL (188px)      | ok (8)   |
-| 25   | 103  | 0.05  | 1937  | enemy dx=9 | ok      | FAIL (188px)      | ok (8)   |
-| 33   | 104  | 0.05  | 1937  | enemy dx=9 | ok      | FAIL (188px)      | ok (8)   |
-| 41   | 105  | 0.05  | 1937  | enemy dx=9 | ok      | FAIL (188px)      | ok (8)   |
-
 ## 4. TRAIN timing (r3 genome, 6 TRAIN episodes + 1 silence run)
 
-wall for one evaluation on 12 workers: 6.2s;  per-job seconds: 6.2, 3.5, 3.5, 3.5, 3.3, 3.5, 0.7
+wall for one evaluation on 12 workers: 25.9s;  per-job seconds: 23.6, 15.8, 15.9, 15.9, 15.0, 16.0, 3.5
 TRAIN: mean_max_x 1415, flags 0/6, all constraints ok: True
 
-One generation = 16 genomes x 7 jobs = 386 worker-s (job speed measured with up to 12 concurrent workers). Estimates assume perfect packing:
+One generation = 16 genomes x 7 jobs = 1692 worker-s (job speed measured with up to 12 concurrent workers). Estimates assume perfect packing:
 
 | stage                                | generations | wall @12 workers | wall @8 workers |
 |--------------------------------------|-------------|------------------|-----------------|
-| 7d short                             | 30          | 16 min           | 24 min          |
-| 7e full (upper bound, no early stop) | 320         | 2.9 h            | 4.3 h           |
+| 7d short                             | 30          | 71 min           | 106 min         |
+| 7e full (upper bound, no early stop) | 320         | 12.5 h           | 18.8 h          |
 
-7e cap 3 h: does not bind
+7e cap 3 h: binds
 
 **check: PASS** (constraint failures on r3/r2 are information, not check failures)

@@ -1,4 +1,4 @@
-# Exact pins from the working tutorials env (pip freeze), trimmed to what flyrun imports.
+# Exact pins from the interpreter actually used for flyrun (system Python 3.12.6, pip freeze), trimmed to what flyrun imports.
 # Python 3.12. `import setuptools` must come before gym (distutils shim); env.py does this.
 numpy==1.26.4
 pandas==2.2.3
@@ -12,3 +12,5 @@ opencv-python==4.11.0.86
 imageio==2.37.0
 pytest==9.0.3
 pyyaml==6.0.2
+cma==4.5.0
+matplotlib==3.10.0

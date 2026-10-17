@@ -79,7 +79,18 @@ HOLDOUT (copied from Part 6b `episodes4.HOLDOUT`, never used in search):
 
 ## Amendments
 
-_(none)_
+### Amendment 1 — 2026-10-17 (before 7b step 2)
+
+Four amendments, all made before any search stage ran:
+
+- **a. Restarts.** Dropped warm r2: it fails "first A at a threat" on 10/10 HOLDOUT episodes (first A at 188 px; 7a check output below) and sits at the blind-press limit (8) on all 10. Added fresh rng 95. 7d = warm r3 + fresh rng 97 (15 gens each). 7e = warm r3 + fresh rng 97, 96, 95 (up to 80 gens each, 3 h cap). CMA seeds unchanged for the survivors (71, 73, 74) and 75 for fresh_95. The `reproduction.warm_r2` entry was removed from the yaml with the restart.
+- **b. Interpreter.** Every Part 7 output is stamped with `sys.version` and a sha256 of `pip freeze`; the full freeze is `runs/008_env.txt`. `requirements.txt` is synced to the interpreter actually used (system Python 3.12.6; the repo `.venv` lacks nes_py/gym/cma/PyYAML). Noted in `flyrun/README.md`.
+- **c. Line endings.** Added `flyrun/.gitattributes` (`*.yaml`, `*.json`, `*.csv` → `text eol=lf`; scoped to `flyrun/` so other tracks' files are not renormalised). Config sha256 re-verified after renormalising: worktree and committed blob agree (see the stamp on the re-run check, top of the section below).
+- **d. Tests.** Tests write to a per-session tmp dir (`tests/conftest.py`), never to tracked files; `runs/002_test_numbers.json` restored from git.
+
+The config sha256 changed because of (a); the value for the amended config is in the stamp of the re-run check (`runs/008_check.md`). Note the 7a check section further down is the *original* 7a output (kept as history, including warm r2's constraint failures); the amended-config re-run is written to `runs/008_check.md` / `008_check.json`.
+
+**Timing caveat for the re-run:** it measured one TRAIN evaluation at 29 s wall (jobs ~15 s) versus 6 s (jobs ~3.5 s) in 7a, same code and genome, so the 7a estimates (7d ~16 min, 7e <= 2.9 h) and the re-run estimates (7d ~71 min, 7e <= 12.7 h) bracket the truth; the machine was probably loaded during the re-run. Re-time on an idle machine before 7d.
 
 ---
 

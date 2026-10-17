@@ -7,6 +7,7 @@ import hashlib
 import json
 import multiprocessing as mp
 import subprocess
+import sys
 import time
 from dataclasses import replace
 from pathlib import Path
@@ -17,6 +18,7 @@ import yaml
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parent
 RUNS = ROOT / "runs"
+LF = chr(10)   # outputs are written with LF endings (flyrun/.gitattributes)
 EP_REQ = {"noop_start", "seed", "sigma"}
 
 
@@ -130,9 +132,26 @@ def w_path(cfg):
     return CACHE / cfg["arm"]["w_file"]
 
 
+def env_freeze():
+    """-> (pip freeze text of the running interpreter, its sha256)."""
+    txt = subprocess.run([sys.executable, "-m", "pip", "freeze"], capture_output=True, text=True, check=True).stdout
+    return txt, hashlib.sha256(txt.encode()).hexdigest()
+
+
 def stamp(cfg_path, cfg):
+    """Provenance on every output: git commit (+dirty), config sha256, W sha256, interpreter version, pip-freeze hash.
+    The full freeze goes to runs/008_env.txt."""
+    freeze, fh = env_freeze()
+    RUNS.mkdir(exist_ok=True)
+    (RUNS / "008_env.txt").write_text(f"# {sys.version}\n# {sys.executable}\n{freeze}", encoding="utf-8", newline=LF)
     return dict(git_commit=_git("rev-parse", "HEAD").strip(), dirty=bool(dirty_paths(cfg_path)),
-                config_sha256=sha256(cfg_path), w_sha256=sha256(w_path(cfg)))
+                config_sha256=sha256(cfg_path), w_sha256=sha256(w_path(cfg)),
+                python=sys.version, pip_freeze_sha256=fh)
+
+
+def stamp_line(st):
+    return (f"commit {st['git_commit'][:10]}{' +DIRTY' if st['dirty'] else ''}, config {st['config_sha256'][:12]}, "
+            f"W {st['w_sha256'][:12]}, python {st['python'].split()[0]}, pip-freeze {st['pip_freeze_sha256'][:12]}")
 
 
 def require_clean(cfg_path):
@@ -209,8 +228,7 @@ def stage_check(cfg, cfg_path, workers):
         print(s, flush=True)
         md.append(s)
 
-    P(f"# Part 7a check  (commit {st['git_commit'][:10]}{' +DIRTY' if st['dirty'] else ''}, "
-      f"config {st['config_sha256'][:12]}, W {st['w_sha256'][:12]})\n")
+    P(f"# Part 7 check  ({stamp_line(st)})\n")
 
     # 1. validation (validate() already ran in load_config)
     ho_ref = [dict(noop_start=e["noop_start"], seed=e["seed"], sigma=e["sigma"]) for e in episodes4.HOLDOUT]
@@ -292,8 +310,8 @@ def stage_check(cfg, cfg_path, workers):
     out["ok"] = all(b for _, b in v) and all(d["reproduces"] for d in out["holdout"].values())
     P(f"\n**check: {'PASS' if out['ok'] else 'FAIL'}** (constraint failures on r3/r2 are information, not check failures)")
     RUNS.mkdir(exist_ok=True)
-    (RUNS / "008_check.json").write_text(json.dumps(out, indent=1, default=str), encoding="utf-8")
-    (RUNS / "008_check.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    (RUNS / "008_check.json").write_text(json.dumps(out, indent=1, default=str), encoding="utf-8", newline=LF)
+    (RUNS / "008_check.md").write_text("\n".join(md) + "\n", encoding="utf-8", newline=LF)
     return out
 
 

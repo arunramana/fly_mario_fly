@@ -1,4 +1,5 @@
 # Part 7 pre-registration: the 1-1 win search. Single source of truth for 7c-7f (flyrun/part7.py reads ONLY this file).
+# Amendment 2026-10-17 (7b): warm_r2 dropped, fresh_95 added; see runs/008_preregistration.md.
 # Amendments after the 7a commit must be logged in flyrun/runs/008_preregistration.md (date + reason) BEFORE the stage they affect runs.
 track: flyrun (assisted, disclosed)
 
@@ -39,14 +40,13 @@ cmaes:
 restarts:
   - {label: warm_r3, kind: warm,  cma_seed: 71, source: {file: flyrun/evo6/real/gen.csv, restart: 3},
      u: [0.3930940417774047, 0.7245426488116201, 0.5050935339142905, 0.07908409163526009, 0.8337085710162931, 0.2719779860536943]}
-  - {label: warm_r2, kind: warm,  cma_seed: 72, source: {file: flyrun/evo6/real/gen.csv, restart: 2},
-     u: [0.48908509398540945, 0.2112809484257167, 0.9812910142660803, 0.9381237283611376, 0.857954770950063, 0.041387424294943936]}
   - {label: fresh_97, kind: fresh, cma_seed: 73, rng: 97, fresh_range: [0.05, 0.95]}
   - {label: fresh_96, kind: fresh, cma_seed: 74, rng: 96, fresh_range: [0.05, 0.95]}
+  - {label: fresh_95, kind: fresh, cma_seed: 75, rng: 95, fresh_range: [0.05, 0.95]}
 
 budgets:
-  stage_7d: {restarts: [warm_r3, warm_r2], gens_per_restart: 15}
-  stage_7e: {restarts: [warm_r3, warm_r2, fresh_97, fresh_96], max_gens_per_restart: 80, wall_clock_cap_hours: 3}
+  stage_7d: {restarts: [warm_r3, fresh_97], gens_per_restart: 15}
+  stage_7e: {restarts: [warm_r3, fresh_97, fresh_96, fresh_95], max_gens_per_restart: 80, wall_clock_cap_hours: 3}
 
 episodes:
   train:                            # noop_start x sigma 0.05; the first three are the Part 4b TRAIN episodes
@@ -85,4 +85,3 @@ success:
 
 reproduction:                       # Part 6b HOLDOUT numbers (runs/007_fair_eval.json) the check stage must reproduce exactly
   warm_r3: {mean_max_x: 1405.1, flags: 1}
-  warm_r2: {mean_max_x: 1937.0, flags: 0}
