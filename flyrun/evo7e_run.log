@@ -1,0 +1,153 @@
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+7e: 0 min already spent in earlier sessions; cap leaves 180 min
+[warm_7d] gen  0  feasible  6/16  best 1589  gen-best mean_max_x 1798 min 1409 flags 0  FEASIBLE  25s
+[warm_7d] gen  1  feasible  7/16  best 1589  gen-best mean_max_x 1147 min 704 flags 0  FEASIBLE  24s
+[warm_7d] gen  2  feasible  4/16  best 1589  gen-best mean_max_x 1410 min 1404 flags 0  FEASIBLE  25s
+[warm_7d] gen  3  feasible  6/16  best 1589  gen-best mean_max_x 680 min 679 flags 0  FEASIBLE  23s
+[warm_7d] gen  4  feasible  7/16  best 1589  gen-best mean_max_x 1243 min 1138 flags 0  FEASIBLE  25s
+[warm_7d] gen  5  feasible  9/16  best 1589  gen-best mean_max_x 1134 min 691 flags 0  FEASIBLE  28s
+[warm_7d] gen  6  feasible 13/16  best 1589  gen-best mean_max_x 1226 min 1225 flags 0  FEASIBLE  30s
+[warm_7d] gen  7  feasible 10/16  best 1589  gen-best mean_max_x 1258 min 1224 flags 0  FEASIBLE  26s
+[warm_7d] gen  8  feasible  7/16  best 1589  gen-best mean_max_x 1128 min 1126 flags 0  FEASIBLE  31s
+[warm_7d] gen  9  feasible 12/16  best 1589  gen-best mean_max_x 1352 min 1227 flags 0  FEASIBLE  31s
+[warm_7d] gen 10  feasible 14/16  best 1589  gen-best mean_max_x 1127 min 1125 flags 0  FEASIBLE  29s
+[warm_7d] gen 11  feasible 11/16  best 1589  gen-best mean_max_x 1137 min 702 flags 0  FEASIBLE  32s
+[warm_7d] gen 12  feasible 15/16  best 1589  gen-best mean_max_x 1252 min 1220 flags 0  FEASIBLE  33s
+[warm_7d] gen 13  feasible 14/16  best 1589  gen-best mean_max_x 1284 min 1221 flags 0  FEASIBLE  33s
+[warm_7d] gen 14  feasible 12/16  best 1589  gen-best mean_max_x 1325 min 1226 flags 0  FEASIBLE  35s
+[warm_7d] gen 15  feasible 14/16  best 1589  gen-best mean_max_x 1252 min 1221 flags 0  FEASIBLE  36s
+[warm_7d] no improvement for 15 generations: early stop
+[fresh_97] gen 10  feasible 14/16  best 1161  gen-best mean_max_x 1225 min 1222 flags 0  FEASIBLE  33s
+[fresh_97] gen 11  feasible 14/16  best 1228  gen-best mean_max_x 1503 min 1223 flags 0  FEASIBLE  30s
+[fresh_97] gen 12  feasible 14/16  best 1228  gen-best mean_max_x 1319 min 1224 flags 0  FEASIBLE  22s
+[fresh_97] gen 13  feasible 15/16  best 1228  gen-best mean_max_x 1410 min 1223 flags 0  FEASIBLE  25s
+[fresh_97] gen 14  feasible 15/16  best 1228  gen-best mean_max_x 1224 min 1223 flags 0  FEASIBLE  25s
+[fresh_97] gen 15  feasible 14/16  best 1296  gen-best mean_max_x 1596 min 1223 flags 0  FEASIBLE  26s
+[fresh_97] gen 16  feasible 16/16  best 1364  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  31s
+[fresh_97] gen 17  feasible 15/16  best 1372  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  31s
+[fresh_97] gen 18  feasible 15/16  best 1372  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  32s
+[fresh_97] gen 19  feasible 13/16  best 1372  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  27s
+[fresh_97] gen 20  feasible 16/16  best 1372  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  31s
+[fresh_97] gen 21  feasible 16/16  best 1372  gen-best mean_max_x 1508 min 696 flags 0  FEASIBLE  30s
+[fresh_97] gen 22  feasible 16/16  best 1449  gen-best mean_max_x 1782 min 1782 flags 0  FEASIBLE  28s
+[fresh_97] gen 23  feasible 16/16  best 1449  gen-best mean_max_x 1504 min 1223 flags 0  FEASIBLE  33s
+[fresh_97] gen 24  feasible 16/16  best 1449  gen-best mean_max_x 1596 min 1223 flags 0  FEASIBLE  31s
+[fresh_97] gen 25  feasible 16/16  best 1449  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  35s
+[fresh_97] gen 26  feasible 16/16  best 1449  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  35s
+[fresh_97] gen 27  feasible 16/16  best 1449  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  36s
+[fresh_97] gen 28  feasible 16/16  best 1449  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  37s
+[fresh_97] gen 29  feasible 16/16  best 1449  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  37s
+[fresh_97] gen 30  feasible 16/16  best 1449  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  37s
+[fresh_97] gen 31  feasible 16/16  best 1449  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  38s
+[fresh_96] gen  0  feasible  2/16  best 824  gen-best mean_max_x 974 min 686 flags 0  FEASIBLE  17s
+[fresh_96] gen  1  feasible  4/16  best 824  gen-best mean_max_x 681 min 677 flags 0  FEASIBLE  25s
+[fresh_96] gen  2  feasible  4/16  best 930  gen-best mean_max_x 1197 min 1127 flags 0  FEASIBLE  17s
+[fresh_96] gen  3  feasible  7/16  best 976  gen-best mean_max_x 1226 min 1225 flags 0  FEASIBLE  19s
+[fresh_96] gen  4  feasible  7/16  best 976  gen-best mean_max_x 1127 min 1127 flags 0  FEASIBLE  23s
+[fresh_96] gen  5  feasible  9/16  best 976  gen-best mean_max_x 1245 min 1137 flags 0  FEASIBLE  25s
+[fresh_96] gen  6  feasible  7/16  best 1056  gen-best mean_max_x 1223 min 1220 flags 0  FEASIBLE  24s
+[fresh_96] gen  7  feasible  8/16  best 1056  gen-best mean_max_x 1226 min 1226 flags 0  FEASIBLE  21s
+[fresh_96] gen  8  feasible 14/16  best 1056  gen-best mean_max_x 1195 min 1128 flags 0  FEASIBLE  18s
+[fresh_96] gen  9  feasible  7/16  best 1056  gen-best mean_max_x 706 min 704 flags 0  FEASIBLE  19s
+[fresh_96] gen 10  feasible 10/16  best 1056  gen-best mean_max_x 1127 min 1125 flags 0  FEASIBLE  20s
+[fresh_96] gen 11  feasible 13/16  best 1056  gen-best mean_max_x 943 min 702 flags 0  FEASIBLE  24s
+[fresh_95] gen  0  feasible  4/16  best 615  gen-best mean_max_x 723 min 723 flags 0  FEASIBLE  19s
+[fresh_95] gen  1  feasible  7/16  best 645  gen-best mean_max_x 762 min 686 flags 0  FEASIBLE  19s
+[fresh_95] gen  2  feasible  6/16  best 645  gen-best mean_max_x 691 min 679 flags 0  FEASIBLE  23s
+[fresh_95] gen  3  feasible  8/16  best 645  gen-best mean_max_x 723 min 723 flags 0  FEASIBLE  17s
+[fresh_95] gen  4  feasible 11/16  best 876  gen-best mean_max_x 1126 min 1126 flags 0  FEASIBLE  24s
+[fresh_95] gen  5  feasible 15/16  best 876  gen-best mean_max_x 1060 min 723 flags 0  FEASIBLE  24s
+[fresh_95] gen  6  feasible  7/16  best 876  gen-best mean_max_x 983 min 684 flags 0  FEASIBLE  27s
+[fresh_95] gen  7  feasible 13/16  best 899  gen-best mean_max_x 1074 min 686 flags 0  FEASIBLE  24s
+[fresh_95] gen  8  feasible 15/16  best 1654  gen-best mean_max_x 1888 min 1409 flags 0  FEASIBLE  28s
+[fresh_95] gen  9  feasible 15/16  best 1654  gen-best mean_max_x 1617 min 1127 flags 0  FEASIBLE  26s
+[fresh_95] gen 10  feasible 16/16  best 1706  gen-best mean_max_x 1864 min 1128 flags 0  FEASIBLE  31s
+[fresh_95] gen 11  feasible 16/16  best 1730  gen-best mean_max_x 1980 min 1805 flags 0  FEASIBLE  29s
+7e: 10 generations freed by early stops
+[fresh_97] gen 32  feasible 16/16  best 1449  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  40s
+[fresh_97] gen 33  feasible 16/16  best 1449  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  42s
+[fresh_97] gen 34  feasible 16/16  best 1449  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  43s
+[fresh_97] gen 35  feasible 16/16  best 1449  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  43s
+[fresh_97] gen 36  feasible 16/16  best 1449  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  43s
+[fresh_97] gen 37  feasible 16/16  best 1449  gen-best mean_max_x 1689 min 1223 flags 0  FEASIBLE  44s
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+[fresh_97] no improvement for 15 generations: early stop
+gen 0 | TRAIN mean max_x 1798 | ep0 enemy dx=-14 (x 1805)
+gen 1 | TRAIN mean max_x 1138 | ep0 pit (x 1138)
+gen 8 | TRAIN mean max_x 1222 | ep0 enemy dx=9 (x 1222)
+gen 9 | TRAIN mean max_x 1411 | ep0 enemy dx=9 (x 1223)
+gen 11 | TRAIN mean max_x 1503 | ep0 enemy dx=9 (x 1223)
+gen 15 | TRAIN mean max_x 1596 | ep0 enemy dx=9 (x 1223)
+gen 16 | TRAIN mean max_x 1689 | ep0 enemy dx=9 (x 1783)
+gen 22 | TRAIN mean max_x 1782 | ep0 enemy dx=9 (x 1783)
+gen 0 | TRAIN mean max_x 974 | ep0 enemy dx=-14 (x 826)
+gen 2 | TRAIN mean max_x 1197 | ep0 enemy dx=10 (x 1221)
+gen 3 | TRAIN mean max_x 1226 | ep0 enemy dx=6 (x 1227)
+gen 0 | TRAIN mean max_x 723 | ep0 wall H64 @736 (x 723)
+gen 1 | TRAIN mean max_x 762 | ep0 enemy dx=8 (x 686)
+gen 4 | TRAIN mean max_x 1126 | ep0 pit (x 1126)
+gen 8 | TRAIN mean max_x 1888 | ep0 pit (x 1410)
+gen 11 | TRAIN mean max_x 1980 | ep0 enemy dx=7 (x 2017)
