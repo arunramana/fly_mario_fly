@@ -62,7 +62,7 @@ Selected by TRAIN mean max_x (1788.8) among infeasible genomes; infeasible becau
 HOLDOUT: **0 flags**, mean max_x 1788.4, every episode dies to an enemy at x 1786–1791 (dx 8–10); blind presses 9–10 per episode (fails the ≤ 8 rule on all 10), first A at stim_d 51–52 (passes). Not a flag run, so it would not help fallback (b) even if (b) applied. (The 7d infeasible genome that flagged 3/6 on TRAIN is in `evo7d/` and was not evaluated on HOLDOUT; the rule here picked the best by TRAIN mean max_x in 7e only.)
 
 ## 4. Caveats
-- TRAIN fitness ranks single genomes on 6 episodes; the final was picked from ~30 near-ties at 1.4–1.7k and landed on HOLDOUT at 1629 mean (TRAIN 1980): a modest generalisation gap, mostly the x 1532 deaths, which are rare on TRAIN (1 of 6 episodes).
+- The final was chosen on 6 TRAIN episodes and scored 1629 mean on HOLDOUT versus 1980 on TRAIN: a generalisation gap, mostly the x 1532 deaths (a Goomba from behind), which never appear in its TRAIN episodes (TRAIN has one behind-contact death at x 1805).
 - 1532 ×7 are one deterministic trajectory, so "7 deaths" is one event.
 - The search plateaued: R1 and R2 early-stopped; R3 and R4 were cut by their 12-generation allotment (R4 was still improving).
 - Nothing was changed in knobs, senses, constraints, or fitness. No clip was rendered (no flag, so no `clips/08e_win.mp4`). Montages: `evo7e/<restart>/montage.mp4` (gitignored).
