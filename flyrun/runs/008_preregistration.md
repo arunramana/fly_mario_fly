@@ -92,6 +92,11 @@ The config sha256 changed because of (a); the value for the amended config is in
 
 **Timing caveat for the re-run:** it measured one TRAIN evaluation at 29 s wall (jobs ~15 s) versus 6 s (jobs ~3.5 s) in 7a, same code and genome, so the 7a estimates (7d ~16 min, 7e <= 2.9 h) and the re-run estimates (7d ~71 min, 7e <= 12.7 h) bracket the truth; the machine was probably loaded during the re-run. Re-time on an idle machine before 7d.
 
+### Amendment 2 — 2026-10-17 (before 7d)
+
+- **7b classified OTHER** (`runs/008b_diagnosis.md`). Arun's decision: no new knobs, skip 7c, run 7d. Fallback if 7d doesn't clear x≈1220: make floating block rows visible as obstacle faces (a stimulus change; requires re-running baselines).
+- **7d budget rule applied.** Rule: if one TRAIN evaluation is <= 10 s wall, 7d = 15 gens per restart; if slower, 10 gens per restart. Re-timed (`--stage check`, commit 8f41622, AC power, no stray python processes, ~31% background load from other apps): one TRAIN evaluation (6 episodes + silence run) took **28.6 s wall** (jobs ~15 s each; the 7a run measured 6.2 s / 3.5 s, same code and genome, cause not found). 28.6 s > 10 s, so **7d = 10 gens per restart** (`stage_7d.gens_per_restart: 15 -> 10` in the yaml; restarts unchanged: warm_r3, fresh_97). Estimated 7d wall at this speed: ~47 min.
+
 ---
 
 ## 7a check output (`python -m flyrun.part7 --config flyrun/configs/part7.yaml --stage check`)

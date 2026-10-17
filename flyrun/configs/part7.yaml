@@ -1,5 +1,6 @@
 # Part 7 pre-registration: the 1-1 win search. Single source of truth for 7c-7f (flyrun/part7.py reads ONLY this file).
 # Amendment 2026-10-17 (7b): warm_r2 dropped, fresh_95 added; see runs/008_preregistration.md.
+# Amendment 2 2026-10-17 (7d): stage_7d gens_per_restart 15 -> 10 (timing rule, see the prereg).
 # Amendments after the 7a commit must be logged in flyrun/runs/008_preregistration.md (date + reason) BEFORE the stage they affect runs.
 track: flyrun (assisted, disclosed)
 
@@ -45,7 +46,7 @@ restarts:
   - {label: fresh_95, kind: fresh, cma_seed: 75, rng: 95, fresh_range: [0.05, 0.95]}
 
 budgets:
-  stage_7d: {restarts: [warm_r3, fresh_97], gens_per_restart: 15}
+  stage_7d: {restarts: [warm_r3, fresh_97], gens_per_restart: 10}
   stage_7e: {restarts: [warm_r3, fresh_97, fresh_96, fresh_95], max_gens_per_restart: 80, wall_clock_cap_hours: 3}
 
 episodes:

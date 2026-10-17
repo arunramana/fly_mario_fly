@@ -1,4 +1,4 @@
-# Part 7 check  (commit 5a3bcc5043 +DIRTY, config 289b3d51cb29, W 5c57f81f5b1d, python 3.12.6, pip-freeze ba762955ba14)
+# Part 7 check  (commit 8f41622562, config 289b3d51cb29, W 5c57f81f5b1d, python 3.12.6, pip-freeze ba762955ba14)
 
 ## 1. Config validation
 
@@ -38,15 +38,15 @@
 
 ## 4. TRAIN timing (r3 genome, 6 TRAIN episodes + 1 silence run)
 
-wall for one evaluation on 12 workers: 25.9s;  per-job seconds: 23.6, 15.8, 15.9, 15.9, 15.0, 16.0, 3.5
+wall for one evaluation on 12 workers: 28.6s;  per-job seconds: 26.5, 15.0, 15.1, 15.1, 14.5, 15.1, 3.4
 TRAIN: mean_max_x 1415, flags 0/6, all constraints ok: True
 
-One generation = 16 genomes x 7 jobs = 1692 worker-s (job speed measured with up to 12 concurrent workers). Estimates assume perfect packing:
+One generation = 16 genomes x 7 jobs = 1677 worker-s (job speed measured with up to 12 concurrent workers). Estimates assume perfect packing:
 
 | stage                                | generations | wall @12 workers | wall @8 workers |
 |--------------------------------------|-------------|------------------|-----------------|
-| 7d short                             | 30          | 71 min           | 106 min         |
-| 7e full (upper bound, no early stop) | 320         | 12.5 h           | 18.8 h          |
+| 7d short                             | 30          | 70 min           | 105 min         |
+| 7e full (upper bound, no early stop) | 320         | 12.4 h           | 18.6 h          |
 
 7e cap 3 h: binds
 
