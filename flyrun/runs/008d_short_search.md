@@ -18,7 +18,7 @@ Setup: TRAIN only (6 episodes + 1 silence run per genome), 16 genomes x 10 gens 
 | feasible by generation | 3,1,3,9,8,10,13,14,14,16 | 0,5,3,6,4,8,8,9,11,15 |
 | improved best at gens | 0 (start), 6 | 1, 8, 9 |
 
-**Rejections (all evaluated genomes; reasons can combine).** warm r3, 69 rejected: first_a only 28; first_a+silence 12; blind+first_a 11; blind+first_a+silence 10; blind only 8. fresh 97, 91 rejected: first_a only 57; first_a+silence 27; blind+first_a+silence 4; blind+first_a 3. "First A at a threat" (first A with stim_d <= 60 px) is the binding constraint: it is in 61/69 and 87/91 of the rejections. Silence failures: 22 and 31 genomes (always with first_a).
+**Rejections (all evaluated genomes; reasons can combine).** warm r3, 69 rejected: first_a only 28; first_a+silence 12; blind+first_a 11; blind+first_a+silence 10; blind only 8. fresh 97, 91 rejected: first_a only 57; first_a+silence 27; blind+first_a+silence 4; blind+first_a 3. "First A at a threat" (first A with stim_d <= 60 px) is the binding constraint: it is in 61 of 69 and 91 of 91 rejections. Silence failures: 22 and 31 genomes (always with first_a).
 
 One notable infeasible genome: warm r3 gen 8 idx 2 reached the **flag on 3 of 6 TRAIN episodes** (max_x 3161 x3, others 826 / 1412 / 824) but is rejected for blind presses (mean 8.3, a per-episode limit of 8 exceeded). Its genome: G .747, TTMN_THRESH .367, A_HOLD 17, COOLDOWN 4, HOME_R 1.56, PIT_GAIN 1.83. Not selected (constraints are pre-registered); recorded as information.
 
