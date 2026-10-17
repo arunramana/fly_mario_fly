@@ -1,7 +1,7 @@
 # flyrun — PROGRESS (the scoreboard)
 
 ## Where we are
-The best honest result is Part 4b's evolved fly: mean max_x **2487** on the 10 held-out start timings, but **0 flags**. Real-fly flags on held-out episodes so far: the Part 4 "hopper" (5 of 10: all five at σ 0, none at σ 0.05), Part 6b's r3 (1 of 10), and one 7d TRAIN genome that is infeasible (3 of 6 TRAIN). The strict Part 7 rules (silent when nothing is in view, first jump at a Goomba, ≤ 8 blind presses) pushed the best result down to **1629** (7e, 0/10 flags): Mario now clears the floating-ledge Goomba at x≈1220 but dies at x 1532 landing between two Goombas (7 of 10 episodes). Next: by the pre-registered rule (7e) the fallback is to make floating block rows visible as obstacle faces (a new labelled sense, then redo 7d → 7e) — waiting for Arun's go.
+The best honest result is Part 4b's evolved fly: mean max_x **2487** on the 10 held-out start timings, but **0 flags**. Real-fly flags on held-out episodes so far: the Part 4 "hopper" (5 of 10: all five at σ 0, none at σ 0.05), Part 6b's r3 (1 of 10), and one 7d TRAIN genome that is infeasible (3 of 6 TRAIN). The strict Part 7 rules (silent when nothing is in view, first jump at a Goomba, ≤ 8 blind presses) pushed the best result down to **1629** (7e, 0/10 flags): Mario now clears the floating-ledge Goomba at x≈1220 but dies at x 1532 landing between two Goombas (7 of 10 episodes). Next: fix 1 of 2 (Arun's decision, prereg Amendment 4): diagnose the x 1532 two-Goomba death and fix only that; the floating-ledge sense is dropped because 7e already clears the ledge.
 
 ## Scoreboard (real fly first, oldest first; every number is from the cited file)
 

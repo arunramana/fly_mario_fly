@@ -109,6 +109,10 @@ e. **Fallback if no WIN.** Best feasible HOLDOUT mean max_x ≥ 2400 → (b) shi
 f. **Reference only (not a candidate):** the best INFEASIBLE genome by TRAIN mean max_x across the 7e restarts' `all_evals.csv` (with its failure reason) is run once on HOLDOUT, labelled "reference only". It cannot be the final genome.
 g. **Implementation notes.** `--stage 7e` = search; `--stage 7e_select` = rule (d), writes the final genome and the reference genome; `--stage 7e_holdout` = refuses unless `008e_final_genome.json` is committed and unchanged, and refuses to run twice (HOLDOUT result file must not exist).
 
+### Amendment 4 — 2026-10-17 (after 7e, before fix 1)
+
+"7e's fallback (a) targeted the x≈1220 ledge, which 7e already clears 10/10. Arun's decision: fix the new main death instead (the x≈1532 two-Goomba death). This is fix 1 of 2 max." Fallback rule (e)(a) is therefore replaced by fix 1 (`runs/009_fix1.md`); constraints, fitness and the WIN criterion are unchanged. `PROGRESS.md` "What's next" updated to match.
+
 ---
 
 ## 7a check output (`python -m flyrun.part7 --config flyrun/configs/part7.yaml --stage check`)
