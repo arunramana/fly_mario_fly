@@ -23,9 +23,9 @@ def capture(knobs, ep, brain, record=False, extra=None):
     orig_step, orig_decide = env.step, motor.decide
     cur = {}
 
-    def decide(h, masks, kn, m):
-        out = orig_decide(h, masks, kn, m)
-        cur["a_left"], cur["cool_left"] = m.a_left, m.cool_left   # state AFTER this frame's decision
+    def decide(h, masks, kn, m, **kw):
+        out = orig_decide(h, masks, kn, m, **kw)
+        cur["a_left"], cur["cool_left"] = getattr(m, "a_left", 0), getattr(m, "cool_left", 0)   # state AFTER this frame's decision (v1 Muscle only)
         return out
 
     def step(action):

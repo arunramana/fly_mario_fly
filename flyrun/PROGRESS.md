@@ -22,6 +22,7 @@ The best honest result is Part 4b's evolved fly: mean max_x **2487** on the 10 h
 | 7e | 2026-10-17 | Full search; one HOLDOUT run of the chosen genome | 1628.8 HOLDOUT mean (`runs/008e_full_search.md`) | **0/10** | Lands between two Goombas at x 1532 (7/10), x≈2015 (2/10) | `clips/P_current_death.mp4`, `evo7e/<restart>/montage.mp4` |
 | Fix 1 | 2026-10-17 | Diagnosed the x 1532 death; no sense built | 1628.8 (unchanged, `runs/009_fix1.md`) | 0/10 | One jump's 20+9 frame hold-and-cooldown can't answer a second Goomba 23 px behind the first; killed by the one ahead (class COOLDOWN_BLOCKED, stopped for Arun's call) | `clips/F1_result.mp4` |
 | S1 | 2026-10-17 | Senses v2 (next threat, 2-D, sizes, faces above feet, pit tiles) | 723 smoke run, default knobs, old motor (`runs/S1_senses_v2.md`) | — | Clip shows the eye locking onto Goomba #1, pipe faces, then pipe 3 (stuck at x 722); θ saturates at ~170° when a face touches him | `clips/S1_senses_v2.mp4` |
+| S2 | 2026-10-17 | Fly-held jump (press + hold by TTMn, release on fade, no cooldown) | 1127 smoke run, default knobs, senses v2 (`runs/S2_fly_held_jump.md`) | — | Pit 1: the pit's loom fades while he is over it, A is released after 7 frames, he falls in (pipes cleared on the second try) | `clips/S2_fly_held_jump.mp4` |
 
 **Controls** (not the real fly):
 - Part 4b: theta rule 2056 mean / 0 flags, evolved timer 2469 (pit 3), fixed timer 1138 (`runs/004_robust.md` §1, §3).

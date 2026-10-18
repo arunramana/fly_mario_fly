@@ -29,7 +29,37 @@ class Muscle:
         return a
 
 
-def decide(h, masks, knobs, m):
+@dataclass
+class Muscle2:
+    """Motor v2 (Part S2): the fly holds the jump. No hold counter, no cooldown.
+    press: grounded AND TTMn >= TTMN_THRESH AND A not already down. hold: A stays down while TTMn >= RELEASE_THRESH.
+    release: TTMn < RELEASE_THRESH. landing reset: on the airborne -> grounded transition A is up for exactly this one frame
+    (SMB needs a release before a new jump); the press rule applies again from the next frame."""
+    down: bool = False
+    prev_air: bool = False
+    why: str = ""        # why A is up this frame if it was released: "loom_faded" | "landing_reset" | ""
+
+    def step(self, ttmn, thr, rel, airborne):
+        self.why = ""
+        landing = self.prev_air and not airborne
+        self.prev_air = airborne
+        if landing:
+            if self.down:
+                self.why = "landing_reset"
+            self.down = False
+            return False
+        if self.down:
+            if ttmn >= rel:
+                return True
+            self.down, self.why = False, "loom_faded"
+            return False
+        if (not airborne) and ttmn >= thr:
+            self.down = True
+            return True
+        return False
+
+
+def decide(h, masks, knobs, m, airborne=False):
     """-> (action index, readouts dict). `m` is a Muscle, updated in place.
 
     A hold + cooldown as in nb 14: TTMn >= thresh starts A for A_HOLD frames, then COOLDOWN
@@ -42,7 +72,11 @@ def decide(h, masks, knobs, m):
     dnp09 = float(h[masks["DNp09"]].mean())
     steer = float(h[masks["DNa_R"]].mean() - h[masks["DNa_L"]].mean())
 
-    a = m.press(ttmn >= knobs.TTMN_THRESH, knobs)
+    if knobs.MOTOR_VERSION == "v2":
+        rel = knobs.TTMN_THRESH if knobs.RELEASE_THRESH is None else knobs.RELEASE_THRESH
+        a = m.step(ttmn, knobs.TTMN_THRESH, rel, airborne)
+    else:
+        a = m.press(ttmn >= knobs.TTMN_THRESH, knobs)
 
     walk = dnp09 >= knobs.DNP09_THRESH
     go_left = steer < -knobs.STEER_THRESH
@@ -53,4 +87,7 @@ def decide(h, masks, knobs, m):
         action = E.RIGHT_A if a else E.RIGHT
     else:
         action = E.NOOP   # a held A with no direction is dropped: our list has no bare A
-    return action, dict(ttmn=ttmn, dnp09=dnp09, steer=steer)
+    out = dict(ttmn=ttmn, dnp09=dnp09, steer=steer)
+    if knobs.MOTOR_VERSION == "v2":
+        out["why"] = m.why
+    return action, out

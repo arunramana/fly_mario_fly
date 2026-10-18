@@ -34,6 +34,8 @@ class Knobs:
     SENSES_VERSION: str = "v1"   # INVENTED (fixed): v1 = senses of Parts 1-7 (unchanged); v2 = Part S1 (flyrun/senses_v2.py)
 
     # --- motor (nb 09/14/19/20) ---
+    MOTOR_VERSION: str = "v1"    # INVENTED (fixed): v1 = A_HOLD + COOLDOWN (Parts 1-7); v2 = Part S2 fly-held jump (needs SENSES_VERSION v2)
+    RELEASE_THRESH: float = None # INVENTED (fixed), v2 only: A is released when TTMn < this; None = TTMN_THRESH (no hysteresis). Not tuned in S2.
     TTMN_THRESH: float = 0.10    # INVENTED (evolved): mean TTMn activity that triggers A (nb 09 cleared value)
     A_HOLD: int = 12             # INVENTED (evolved): frames A stays down once triggered (nb 09/14)
     COOLDOWN: int = 10           # INVENTED (evolved): frames A is refused after a hold (nb 14 grid: hold 24 + cd>=10 clears)
@@ -89,6 +91,8 @@ INVENTED = {
     "SPAM_FIXED_HOLD/COOLDOWN": ("fixed", "spam_fixed baseline cadence 18/3"),
     "RANDOM_A_P": ("fixed", "right_randA baseline P(A)"),
     "SCRIPT_HOLD": ("fixed", "scripted driver jump length (assisted tests only, never in fitness)"),
+    "MOTOR_VERSION": ("fixed", "v1 = forced A_HOLD + COOLDOWN; v2 = the fly holds A while TTMn stays above threshold (Part S2)"),
+    "RELEASE_THRESH": ("fixed", "v2: TTMn level below which A is released (default = TTMN_THRESH)"),
     "SENSES_VERSION": ("fixed", "v1 = old senses (all Part 1-7 results); v2 = Part S1 senses"),
     "SIZE_TABLE / ENEMY_TYPES": ("fixed", "v2 object sizes (Goomba 16x16, Koopa 16x24, shell 16x16) and the RAM type bytes (0x06, 0x00)"),
     "MARIO_BOX / ENEMY_FEET_OFFSET": ("fixed", "v2 geometry: Mario 12x16, enemy feet = RAM y - 8 (measured on 1-1)"),

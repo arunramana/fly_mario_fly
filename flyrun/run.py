@@ -43,7 +43,9 @@ def run_episode(knobs, W, noop_start=0, max_frames=3000, stuck_frames=150, recor
     if controller is not None:
         controller = controller(knobs, rng if rng is not None else np.random.default_rng(0))   # no-brain baseline policy
     h = np.zeros(brain.K)
-    muscle = motor.Muscle()
+    assert knobs.MOTOR_VERSION == "v1" or v2, "MOTOR_VERSION v2 requires SENSES_VERSION v2"
+    muscle = motor.Muscle2() if knobs.MOTOR_VERSION == "v2" else motor.Muscle()
+    left_frames, left_presses, prev_left = 0, 0, 0
     driver = scripted.Driver() if takeover_x is not None else None
     rows, info = [], {}
     Hs = []
@@ -84,7 +86,10 @@ def run_episode(knobs, W, noop_start=0, max_frames=3000, stuck_frames=150, recor
             else:
                 for _ in range(knobs.SUBSTEPS):
                     h = step(h, brain.W, knobs.G, I, knobs.ALPHA, knobs.CLIP)
-                action, read = motor.decide(h, brain.masks, knobs, muscle)
+                if knobs.MOTOR_VERSION == "v2":
+                    action, read = motor.decide(h, brain.masks, knobs, muscle, airborne=int(ram[0x001D]) != 0)
+                else:
+                    action, read = motor.decide(h, brain.masks, knobs, muscle)
             loom = dict(theta=lm.theta, dtheta=lm.dtheta, tau=lm.tau, stim_src=lm.src, stim_d=lm.dist)
             if v2:
                 loom.update(lm.extra)
@@ -97,6 +102,10 @@ def run_episode(knobs, W, noop_start=0, max_frames=3000, stuck_frames=150, recor
             if near_d is None or near_d > BLIND_PX:
                 blind += 1
         prev_a = a_now
+        left_now = int(action in (E.LEFT, E.LEFT_A))
+        left_frames += left_now
+        left_presses += int(left_now and not prev_left)
+        prev_left = left_now
         state, _, done, info = env.step(action)
         if record:
             frames.append(np.asarray(state).copy())
@@ -108,6 +117,7 @@ def run_episode(knobs, W, noop_start=0, max_frames=3000, stuck_frames=150, recor
             a=int(action in (E.RIGHT_A, E.LEFT_A)),
             right=int(action in (E.RIGHT, E.RIGHT_A)),
             left=int(action in (E.LEFT, E.LEFT_A)),
+            **(dict(y=int(ram[0x00CE]), a_why=read.get("why", "")) if knobs.MOTOR_VERSION == "v2" else {}),
         ))
         if x > max_x:
             max_x, best_x_frame = x, frame
@@ -133,6 +143,10 @@ def run_episode(knobs, W, noop_start=0, max_frames=3000, stuck_frames=150, recor
         cause=cause_of(env.unwrapped.ram, end_reason, int(df["x"].iloc[-1])),
         blind_presses=int(blind), n_onsets=int(n_onsets), a_frac=float(df["a"].mean()),
     )
+    if knobs.MOTOR_VERSION == "v2":
+        summary.update(left_frames=left_frames, left_presses=left_presses)
+        if left_presses:
+            summary["LEFT_PRESS_WARNING"] = f"{left_presses} Left presses ({left_frames} frames)"
     return summary, df
 
 
