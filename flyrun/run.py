@@ -26,7 +26,7 @@ def _get_env():
 
 
 def run_episode(knobs, W, noop_start=0, max_frames=3000, stuck_frames=150, record=False,
-                enemy_input=True, takeover_x=None, episode_seed=None, controller=None, record_h=False):
+                enemy_input=True, takeover_x=None, episode_seed=None, controller=None, record_h=False, probe=None):
     """W is a Brain (weights + masks). enemy_input=False is the silence control (test switch,
     not a knob). takeover_x (ASSISTED, diagnostic): a scripted player drives until Mario is on the
     ground at x >= takeover_x, then the fly takes over from a silent brain; rows carry
@@ -120,6 +120,7 @@ def run_episode(knobs, W, noop_start=0, max_frames=3000, stuck_frames=150, recor
             right=int(action in (E.RIGHT, E.RIGHT_A)),
             left=int(action in (E.LEFT, E.LEFT_A)),
             **(dict(y=int(ram[0x00CE]), a_why=read.get("why", "")) if knobs.MOTOR_VERSION == "v2" else {}),
+            **(probe(ram) if probe is not None else {}),     # C1: extra per-frame columns read from RAM (never fed back)
         ))
         if x > max_x:
             max_x, best_x_frame = x, frame

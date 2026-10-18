@@ -66,6 +66,7 @@ SCRIPT_HOLD = 28           # INVENTED (fixed): scripted driver's A frames per ju
 SIZE_TABLE = {"goomba": (16, 16), "koopa": (16, 24), "shell": (16, 16)}   # INVENTED (fixed)
 ENEMY_TYPES = {0x06: "goomba", 0x00: "koopa"}                              # INVENTED (fixed): any other type byte is ignored
 MARIO_BOX = (12, 16)       # INVENTED (fixed): Mario's (w, h) in px (small Mario; x = sprite left edge); deaths happened at gap 0 = dx 12
+MARIO_BOX_BIG = (12, 24)   # INVENTED (fixed), C1: Mario's (w, h) when big / fire (power-up byte 0x0756 >= 1); 24 px tall measured in O0 (player collision box 184..208 standing); same feet reference as small (0xCE = 176)
 ENEMY_FEET_OFFSET = 8      # INVENTED (fixed): an enemy's RAM y (0x00CF+slot) is its feet y + 8 (measured: ground 184 vs surface 176)
 MAX_JUMP_HEIGHT = 68       # INVENTED (fixed), measured (Part S2c, flyrun/measure_jump.py): apex above take-off of a full walking jump, px; caps the S3b pit tower
 HUM_REACH = 64            # INVENTED (fixed), Q1: a '?' block hums only if its underside is <= this many px above the ground under it (a ground jump reaches ~68 px of rise)
@@ -109,6 +110,7 @@ INVENTED = {
     "RELEASE_THRESH": ("fixed", "v2: TTMn level below which A is released (default = TTMN_THRESH)"),
     "SENSES_VERSION": ("fixed", "v1 = old senses (all Part 1-7 results); v2 = Part S1 senses"),
     "SIZE_TABLE / ENEMY_TYPES": ("fixed", "v2 object sizes (Goomba 16x16, Koopa 16x24, shell 16x16) and the RAM type bytes (0x06, 0x00)"),
+    "MARIO_BOX_BIG": ("fixed", "C1: Mario 12x24 when big (0x0756 >= 1), measured in O0; used for the eye point and the head-side gap"),
     "MARIO_BOX / ENEMY_FEET_OFFSET": ("fixed", "v2 geometry: Mario 12x16, enemy feet = RAM y - 8 (measured on 1-1)"),
     "PIT_GAIN_V2": ("fixed", "v2 pit tower theta at gain 1"),
     "MAX_JUMP_HEIGHT": ("fixed", "apex height of a full walking jump (68 px, measured, S2c); caps the S3b pit tower (min(W, 68))"),

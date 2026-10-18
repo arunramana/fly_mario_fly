@@ -11,9 +11,10 @@ import numpy as np
 
 from . import env as E
 from . import level
-from .knobs import ENEMY_FEET_OFFSET, ENEMY_TYPES, MARIO_BOX, HUM_REACH, MAX_JUMP_HEIGHT, PIT_GAIN_V2, SIZE_TABLE
+from .knobs import ENEMY_FEET_OFFSET, ENEMY_TYPES, MARIO_BOX, MARIO_BOX_BIG, HUM_REACH, MAX_JUMP_HEIGHT, PIT_GAIN_V2, SIZE_TABLE
 from .senses import Loom, theta_of
 
+ADDR_POWERUP = 0x0756      # 0 small, 1 big, 2 fire (O0)
 ADDR_MARIO_Y = 0x00CE      # verified: = Mario's FEET y in tile-buffer coordinates (ground 176 = top of row 11, ledge 112 = top of row 7)
 ADDR_ENEMY_Y, ADDR_ENEMY_STATE = 0x00CF, 0x001E
 LIVE_STATES = {"goomba": (0, 1), "koopa": (0,), "shell": (2, 3)}   # RAM state bytes; 4 / 0x22 = stomped / defeated -> ignored
@@ -34,17 +35,22 @@ class Threat:
     dsel: float = 0.0    # distance used to pick between threats
 
 
-def gap(mx, feet, x, top, w, h):
+def mario_box(ram):
+    """C1: Mario's (w, h) from the power-up state (0x0756): small 12 x 16, big / fire 12 x 24 (feet y 0xCE is the same reference for both; his top is 8 px higher)."""
+    return MARIO_BOX_BIG if int(ram[ADDR_POWERUP]) >= 1 else MARIO_BOX
+
+
+def gap(mx, feet, x, top, w, h, box=MARIO_BOX):
     """2-D gap between Mario's box and an object's box (0 on an axis where they overlap)."""
-    mw, mh = MARIO_BOX
+    mw, mh = box
     gx = max(0.0, x - (mx + mw))
     gy = max(0.0, top - feet, (feet - mh) - (top + h))   # object entirely below Mario's feet / entirely above his head
     return float(np.hypot(gx, gy))
 
 
-def over(mx, x0, x1):
-    """His body (MARIO_BOX wide, left edge mx) horizontally overlaps the columns [x0, x1)."""
-    return mx < x1 and mx + MARIO_BOX[0] > x0
+def over(mx, x0, x1, box=MARIO_BOX):
+    """His body (box wide, left edge mx) horizontally overlaps the columns [x0, x1)."""
+    return mx < x1 and mx + box[0] > x0
 
 
 def merge_columns(walls):
@@ -58,15 +64,15 @@ def merge_columns(walls):
     return out
 
 
-def is_cleared(mx, feet, t):
+def is_cleared(mx, feet, t, box=MARIO_BOX):
     """S3e: an enemy is cleared when his feet are at or above its top AND his body is over it (the pipe-face / tower test)."""
-    return feet <= t.top and over(mx, t.x, t.x + t.w)
+    return feet <= t.top and over(mx, t.x, t.x + t.w, box)
 
 
-def hum_block(mx, feet, blocks):
+def hum_block(mx, feet, blocks, box=MARIO_BOX):
     """Q1: the nearest humming block -> (bx, bottom y, d) or None. blocks = [(x, row)] of UNUSED ? blocks. Reachable = the underside is <= 64 px above the ground
     under it (floor 176). Only blocks not fully behind his left edge count. d = distance from his eye (top-front corner of MARIO_BOX) to the block's bottom-centre."""
-    ex, ey = mx + MARIO_BOX[0], feet - MARIO_BOX[1]
+    ex, ey = mx + box[0], feet - box[1]
     best = None
     for bx, row in blocks:
         bottom = (row + 1) * level.TILE
@@ -109,7 +115,7 @@ def rim_top(walls, x):
     return level.ROW_GROUND * level.TILE
 
 
-def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pit_sense=True, ground=None, released=frozenset(), cleared=frozenset()):
+def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pit_sense=True, ground=None, released=frozenset(), cleared=frozenset(), box=MARIO_BOX):
     """-> the chosen Threat (with .d and .theta) or None. walls: [(x, H)] from level.scan_visible, pits: [(x, w)].
     ground = the y of the ground Mario took off from (his current ground while grounded); default = feet (S1 behaviour on the ground).
     released = idents of pit towers already released in this jump: their tower stays 0 until the landing (S3c, no re-appearance).
@@ -117,7 +123,7 @@ def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pi
     ground = feet if ground is None else ground
     cands = []
     if enemy_input:
-        cands += [t for t in enemy_boxes(enemies) if t.ident not in cleared and not is_cleared(mx, feet, t)]
+        cands += [t for t in enemy_boxes(enemies) if t.ident not in cleared and not is_cleared(mx, feet, t, box)]
     if pipe_sense:
         for x0, x1, H in merge_columns(walls):
             top = level.ROW_GROUND * level.TILE - H            # y of the top of that face
@@ -125,7 +131,7 @@ def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pi
                 continue                                        # fully behind his left edge
             # S2c (B6): the face keeps its full height from the take-off ground until his feet are above its top AND his body
             # is over its columns; only then it is 0 (a step)
-            h = 0 if (feet <= top and over(mx, x0, x1)) else ground - top
+            h = 0 if (feet <= top and over(mx, x0, x1, box)) else ground - top
             if h > 0:
                 cands.append(Threat("face", ("face", x0), x0, top, x1 - x0, h))
                 break                                           # the nearest rising face ahead; later ones are behind it
@@ -140,15 +146,15 @@ def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pi
             near_y, far_y = rim_top(walls, px - level.TILE), rim_top(walls, px + pw)
             top = min(near_y, far_y) - min(pw, MAX_JUMP_HEIGHT)
             tx = px + pw
-            h = 0 if (("pit", px) in released or (feet <= top and over(mx, tx, tx + level.TILE))) else ground - top
+            h = 0 if (("pit", px) in released or (feet <= top and over(mx, tx, tx + level.TILE, box))) else ground - top
             t = Threat("pit", ("pit", px), tx, top, level.TILE, max(h, 0))
             t.base = (px, floor, pw, level.TILE)
             t.rims = (near_y, far_y, px - level.TILE, px + pw)     # overlay: the two rim heights and their columns
             cands.append(t)
-    ahead = [t for t in cands if t.x >= mx or t.kind == "pit" or over(mx, t.x, t.x + t.w)]
+    ahead = [t for t in cands if t.x >= mx or t.kind == "pit" or over(mx, t.x, t.x + t.w, box)]
     for t in ahead:
-        t.d = gap(mx, feet, t.x, t.top, t.w, t.h)
-        t.dsel = gap(mx, feet, *t.base) if t.base else t.d    # a pit competes with other threats by its nearest part (the base)
+        t.d = gap(mx, feet, t.x, t.top, t.w, t.h, box)
+        t.dsel = gap(mx, feet, *t.base, box) if t.base else t.d    # a pit competes with other threats by its nearest part (the base)
         t.theta = PIT_GAIN_V2 * theta_of(t.d, t.h) if t.kind == "pit" and t.h > 0 else (0.0 if t.kind == "pit" else theta_of(t.d, t.h))
     return min(ahead, key=lambda t: t.dsel) if ahead else None
 
@@ -173,20 +179,21 @@ class SensesV2:
     def look(self, ram, enemy_input=True):
         """-> (I, Loom). Loom.extra carries the chosen threat for the log / clip."""
         mx, feet, enemies, walls, pits = self.read_ram(ram)
+        box = mario_box(ram)
         if int(ram[0x001D]) == 0 or self.ground is None:
             self.ground = feet
         if int(ram[0x001D]) == 0:
             self.released.clear()
             self.cleared.clear()
         else:
-            self.cleared |= {t.ident for t in enemy_boxes(enemies) if is_cleared(mx, feet, t)}
-        t = choose(mx, feet, enemies, walls, pits, enemy_input, self.k.PIPE_SENSE, self.k.PIT_SENSE, ground=self.ground, released=frozenset(self.released), cleared=frozenset(self.cleared))
+            self.cleared |= {t.ident for t in enemy_boxes(enemies) if is_cleared(mx, feet, t, box)}
+        t = choose(mx, feet, enemies, walls, pits, enemy_input, self.k.PIPE_SENSE, self.k.PIT_SENSE, ground=self.ground, released=frozenset(self.released), cleared=frozenset(self.cleared), box=box)
         if t is not None and t.kind == "pit" and t.h == 0 and int(ram[0x001D]) != 0:
             self.released.add(t.ident)
         I, lm = self.from_threat(t)
         if self.k.HUM_SENSE:
             assert "JO" in self.m, "HUM_SENSE needs the JO brain (W_steer_jo.npy)"
-            hb = hum_block(mx, feet, level.scan_blocks(ram))
+            hb = hum_block(mx, feet, level.scan_blocks(ram), box)
             level_in = self.k.HUM_GAIN * theta_of(hb[2], level.TILE) if hb else 0.0
             I[self.m["JO"]] = level_in
             lm.extra.update(hum_block=None if hb is None else (hb[0], hb[1], hb[2]), hum_level=level_in, jo_input=level_in)
@@ -194,21 +201,21 @@ class SensesV2:
             assert "ORN_L" in self.m, "SMELL_SENSE needs the ORN brain (W_steer_jo_orn.npy)"
             mush = mushroom(ram)
             lvl_l = lvl_r = 0.0
-            box = None
+            sbox = None
             if mush is not None:
                 mxm, ytop = mush
-                d = float(np.hypot(mx + MARIO_BOX[0] - (mxm + 8), (feet - MARIO_BOX[1]) - (ytop + 8)))
+                d = float(np.hypot(mx + box[0] - (mxm + 8), (feet - box[1]) - (ytop + 8)))
                 lvl = self.k.SMELL_GAIN * theta_of(d, 16)
                 sig = self.k.SENSOR_NOISE if self.rng is not None else 0.0
                 if sig > 0:
                     lvl *= 1.0 + sig * self.rng.standard_normal()
-                if mxm + 8 < mx + MARIO_BOX[0] / 2:              # left of Mario's centre -> the left antenna
+                if mxm + 8 < mx + box[0] / 2:              # left of Mario's centre -> the left antenna
                     lvl_l = lvl
                 else:
                     lvl_r = lvl
-                box = (mxm, ytop, 16, 16)
+                sbox = (mxm, ytop, 16, 16)
             I[self.m["ORN_L"]], I[self.m["ORN_R"]] = lvl_l, lvl_r
-            lm.extra.update(smell_box=box, smell_L=lvl_l, smell_R=lvl_r)
+            lm.extra.update(smell_box=sbox, smell_L=lvl_l, smell_R=lvl_r)
         return I, lm
 
     def from_threat(self, t):

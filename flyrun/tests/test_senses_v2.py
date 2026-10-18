@@ -138,7 +138,7 @@ def test_released_tower_does_not_reappear_until_landing():
     se.read_ram = lambda ram: (st["mx"], ram["feet"], [], [], [(96, 32)])
     def look(mx, feet, air):
         st["mx"] = mx
-        return se.look({0x001D: air, "feet": feet})[1].extra["box"][3]
+        return se.look({0x001D: air, 0x0756: 0, "feet": feet})[1].extra["box"][3]
     assert look(60, 176, 0) == 32                       # on the ground: full tower
     assert look(100, 150, 1) == 32                      # rising, not over it
     assert look(117, 144, 1) == 0                       # feet at the top AND over it: released
@@ -231,7 +231,7 @@ def test_senses_tracks_the_take_off_ground():
     se = S.SensesV2(Knobs(), masks(), 6)
     se.read_ram = lambda ram: (40, ram["feet"], [], [(64, 32)], [])
     for feet, air, want in [(176, 0, 32), (160, 1, 32), (146, 1, 32), (140, 1, 32)]:     # S2c: not over the pipe yet
-        I, lm = se.look({0x001D: air, "feet": feet})
+        I, lm = se.look({0x001D: air, 0x0756: 0, "feet": feet})
         assert (lm.extra["box"][3] if lm.extra["box"] else None) == want, (feet, air)
 
 
@@ -290,7 +290,7 @@ def test_single_goomba_unchanged_and_cleared_set_resets_on_landing():
     se.read_ram = lambda ram: (st["mx"], ram["feet"], st["en"], [], [])
     def look(mx, feet, air, en):
         st["mx"], st["en"] = mx, en
-        lm = se.look({0x001D: air, "feet": feet})[1]
+        lm = se.look({0x001D: air, 0x0756: 0, "feet": feet})[1]
         return lm.extra["threat_id"]
     pair = [goomba(100, slot=0), goomba(124, slot=1)]
     assert look(80, 176, 0, pair) == "enemy:0"
@@ -307,7 +307,49 @@ def test_dtheta_is_zero_at_the_g1_to_g2_switch():
     pair = [goomba(100, slot=0), goomba(124, slot=1)]
     for mx, feet, air in ((80, 176, 0), (90, 165, 1), (94, 162, 1)):
         st["mx"], st["en"] = mx, pair
-        se.look({0x001D: air, "feet": feet})
+        se.look({0x001D: air, 0x0756: 0, "feet": feet})
     st["mx"], st["en"] = 96, pair
-    lm = se.look({0x001D: 1, "feet": 140})[1]
+    lm = se.look({0x001D: 1, 0x0756: 0, "feet": 140})[1]
     assert lm.extra["threat_id"] == "enemy:1" and lm.dtheta == 0.0
+
+
+# ---- C1: big Mario ----
+def test_mario_box_follows_the_powerup_byte():
+    from flyrun.knobs import MARIO_BOX, MARIO_BOX_BIG
+    from flyrun.senses_v2 import mario_box
+    ram = np.zeros(2048, dtype=np.uint8)
+    assert mario_box(ram) == MARIO_BOX
+    ram[0x0756] = 1
+    assert mario_box(ram) == MARIO_BOX_BIG == (12, 24)
+    ram[0x0756] = 2
+    assert mario_box(ram) == MARIO_BOX_BIG
+
+
+def test_big_box_moves_the_eye_and_the_head_side_gap_only():
+    from flyrun.knobs import MARIO_BOX, MARIO_BOX_BIG
+    from flyrun.senses_v2 import gap, hum_block, over
+    # an object entirely above his head: 8 px closer when big
+    assert gap(100, 176, 120, 100, 16, 16, MARIO_BOX) - gap(100, 176, 120, 100, 16, 16, MARIO_BOX_BIG) > 0
+    # feet-based and width-based tests do not depend on height
+    assert gap(100, 176, 120, 176, 16, 16, MARIO_BOX) == gap(100, 176, 120, 176, 16, 16, MARIO_BOX_BIG)
+    assert over(100, 108, 120, MARIO_BOX) == over(100, 108, 120, MARIO_BOX_BIG)
+    # the hum eye is 8 px higher when big -> nearer to a block's underside
+    small, big = hum_block(100, 176, [(120, 7)], MARIO_BOX), hum_block(100, 176, [(120, 7)], MARIO_BOX_BIG)
+    assert big[2] < small[2]
+
+
+def test_scripted_powerup_in_the_emulator_gives_the_measured_big_box():
+    """Poke the power-up state in the emulator: the player collision box (0x04AC..AF) is 12 tall small, 24 big, and mario_box follows."""
+    from flyrun import env as E
+    from flyrun.o0_ram import Sim
+    from flyrun.senses_v2 import mario_box
+    sim = Sim()
+    for _ in range(5):
+        sim.step(E.NOOP)
+    small = sim.bbox()
+    assert mario_box(sim.ram) == (12, 16) and small[3] - small[1] == 12
+    sim.ram[0x0756], sim.ram[0x0754] = 1, 0
+    for _ in range(40):
+        sim.step(E.NOOP)
+    big = sim.bbox()
+    assert mario_box(sim.ram) == (12, 24) and big[3] - big[1] == 24 and int(sim.ram[0x00CE]) == 176   # same feet reference
