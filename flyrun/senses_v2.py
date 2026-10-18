@@ -53,26 +53,32 @@ def enemy_boxes(enemies):
     return out
 
 
-def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pit_sense=True):
-    """-> the chosen Threat (with .d and .theta) or None. walls: [(x, H)] from level.scan_visible, pits: [(x, w)]."""
+def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pit_sense=True, ground=None):
+    """-> the chosen Threat (with .d and .theta) or None. walls: [(x, H)] from level.scan_visible, pits: [(x, w)].
+    ground = the y of the ground Mario took off from (his current ground while grounded); default = feet (S1 behaviour on the ground)."""
+    ground = feet if ground is None else ground
     cands = []
     if enemy_input:
         cands += enemy_boxes(enemies)
     if pipe_sense:
         for wx, H in walls:
             top = level.ROW_GROUND * level.TILE - H            # y of the top of that column
-            h = feet - top                                      # the part ABOVE Mario's feet, floored at 0 (B6/B8)
+            # S2b (B6/B8): the face's FULL height from the ground he took off from, constant while he rises, and 0 once his
+            # feet are above its top (a step, not a slope)
+            h = ground - top if feet > top else 0
             if wx >= mx and h > 0:
                 cands.append(Threat("face", ("face", wx), wx, top, level.TILE, h))
                 break                                           # the nearest rising column ahead; later ones are behind it
     if pit_sense:
         for px, pw in pits:
             for wx in range(px, px + pw, level.TILE):
-                if wx >= mx:
+                if wx + level.TILE > mx:                         # S2b (B9): ahead OR under his footprint; fully behind him = past it
                     cands.append(Threat("pit", ("pit", wx), wx, level.ROW_GROUND * level.TILE, level.TILE, level.TILE))
-    ahead = [t for t in cands if t.x >= mx]
+    ahead = [t for t in cands if t.x >= mx or t.kind == "pit"]
     for t in ahead:
-        t.d = gap(mx, feet, t.x, t.top, t.w, t.h)
+        # a pit tile that overlaps his footprint is directly under him: surface gap 0 (B9), whatever his height above it
+        under = t.kind == "pit" and t.x < mx + MARIO_BOX[0]
+        t.d = 0.0 if under else gap(mx, feet, t.x, t.top, t.w, t.h)
         t.theta = (PIT_GAIN_V2 if t.kind == "pit" else 1.0) * theta_of(t.d, t.h)
     return min(ahead, key=lambda t: t.d) if ahead else None
 
@@ -81,6 +87,7 @@ class SensesV2:
     def __init__(self, knobs, masks, K, rng=None):
         self.k, self.m, self.K, self.rng = knobs, masks, K, rng
         self.prev_id, self.prev_theta, self.prev_d = None, 0.0, None
+        self.ground = None       # y of the ground he last stood on (the take-off ground while airborne)
 
     def read_ram(self, ram):
         mx = E.mario_x(ram)
@@ -94,7 +101,9 @@ class SensesV2:
     def look(self, ram, enemy_input=True):
         """-> (I, Loom). Loom.extra carries the chosen threat for the log / clip."""
         mx, feet, enemies, walls, pits = self.read_ram(ram)
-        t = choose(mx, feet, enemies, walls, pits, enemy_input, self.k.PIPE_SENSE, self.k.PIT_SENSE)
+        if int(ram[0x001D]) == 0 or self.ground is None:
+            self.ground = feet
+        t = choose(mx, feet, enemies, walls, pits, enemy_input, self.k.PIPE_SENSE, self.k.PIT_SENSE, ground=self.ground)
         return self.from_threat(t)
 
     def from_threat(self, t):

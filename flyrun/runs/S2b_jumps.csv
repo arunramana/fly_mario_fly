@@ -1,0 +1,13 @@
+frame,x_takeoff,threat,takeoff_d,theta_deg,frames_held,release_reason,landing_frame,x_landing,outcome
+150,280,goomba enemy:0,20.0,43.60281897270362,12,loom_faded,183.0,309,"no contact (not stomped, survived)"
+239,398,face face:448,40.0,43.60281897270362,9,loom_faded,262.0,438,landed on/past the face
+319,538,face face:608,60.0,43.60281897270362,15,loom_faded,355.0,594,short of the face
+357,594,face face:608,2.0,170.47271661854765,15,loom_faded,381.0,605,landed on/past the face
+424,677,goomba enemy:0,19.0,45.66730835583508,12,loom_faded,451.0,723,"no contact (not stomped, survived)"
+466,722,face face:736,2.0,172.8473312500053,26,loom_faded,492.0,725,landed on/past the face
+564,842,face face:912,60.0,43.60281897270362,14,loom_faded,599.0,898,short of the face
+601,898,face face:912,2.0,170.47271661854765,15,loom_faded,635.0,898,short of the face
+637,898,face face:912,2.0,170.47271661854765,15,loom_faded,671.0,898,short of the face
+673,898,face face:912,2.0,170.47271661854765,15,loom_faded,707.0,898,short of the face
+709,898,face face:912,2.0,170.47271661854765,15,loom_faded,756.0,898,landed on enemy (stomped)
+758,898,face face:912,2.0,170.47271661854765,12,died / ended in the air,,898,stuck

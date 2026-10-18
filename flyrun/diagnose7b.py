@@ -15,7 +15,7 @@ OUT = ROOT / "runs" / "008b_replay"
 ADDR_MARIO_Y, ADDR_ENEMY_Y = 0x00CE, 0x00CF   # player screen y; enemy y per slot
 
 
-def capture(knobs, ep, brain, record=False, extra=None):
+def capture(knobs, ep, brain, record=False, extra=None, **run_kw):
     """-> (summary, df). df = run_episode's telemetry + y, a_left, cool_left, enemies (text), enemy_n."""
     from . import motor, run as R
     env = R._get_env()
@@ -48,7 +48,7 @@ def capture(knobs, ep, brain, record=False, extra=None):
     env.step, motor.decide = step, decide
     try:
         s, df = R.run_episode(knobs, brain, noop_start=ep["noop_start"], episode_seed=ep["seed"], stuck_frames=150,
-                              record=record)
+                              record=record, **run_kw)
     finally:
         del env.step                      # drop the instance attribute: back to the class method
         motor.decide = orig_decide

@@ -59,8 +59,10 @@ def test_pit_tiles_are_individual_threats():
     pit = [(96, 32)]
     t = pick(pits=pit, mx=40)
     assert t.kind == "pit" and t.ident == ("pit", 96) and t.h == 16 and t.d == 96 - 52
-    t2 = pick(pits=pit, mx=100)                        # first tile is behind now: the next tile is the threat
-    assert t2.ident == ("pit", 112)
+    t2 = pick(pits=pit, mx=100)                        # S2b (B9): the tile under his footprint is still the threat, d 0
+    assert t2.ident == ("pit", 96) and t2.d == 0.0
+    t3 = pick(pits=pit, mx=116)                        # tile 96 is fully behind his left edge now; 112 is under him
+    assert t3.ident == ("pit", 112)
     assert pick(pits=[], mx=40) is None                # floor all the way ahead: no pit threat
 
 
@@ -118,3 +120,42 @@ def test_v2_episode_runs_and_logs_the_chosen_threat():
     s, df = run_episode(replace(Knobs(), SENSES_VERSION="v2", SENSOR_NOISE=0.0), load_brain(), max_frames=200)
     assert {"threat_kind", "threat_id", "box"} <= set(df.columns)
     assert set(df.threat_kind.dropna()) <= {"goomba", "koopa", "shell", "face", "pit", "none"}
+
+
+# ---------------------------------------------------------------- S2b: face rule (B6/B8) and pit-below rule (B9)
+@pytest.mark.parametrize("H", [32, 64])
+def test_face_height_constant_while_rising_until_feet_clear_the_top(H):
+    top = FEET - H
+    pipe = [(64, H)]
+    for feet in range(FEET, top, -1):                  # every frame of the rise, feet below the top
+        t = pick(walls=pipe, mx=40, feet=feet, ground=FEET)
+        assert t.kind == "face" and t.h == H, feet
+    assert pick(walls=pipe, mx=40, feet=top, ground=FEET) is None        # feet level with / above the top: a step, face height 0
+    assert pick(walls=pipe, mx=40, feet=top - 12, ground=FEET) is None
+
+
+def test_step_face_stays_16_until_feet_clear_the_next_step():
+    walls = [(0, 16), (16, 32)]                        # standing on step 1 (feet 160); step 2 top at 144
+    assert pick(walls=walls, mx=4, feet=160, ground=160).h == 16
+    for feet in range(160, 144, -1):
+        assert pick(walls=walls, mx=4, feet=feet, ground=160).h == 16
+    assert pick(walls=walls, mx=4, feet=144, ground=160) is None
+
+
+def test_airborne_over_a_32px_gap_the_pit_under_him_is_the_threat_every_frame():
+    pit = [(96, 32)]
+    for mx in range(84, 128):                          # from the take-off to just before his left edge passes the far edge
+        t = pick([goomba(mx + 150)], pits=pit, mx=mx, feet=140, ground=FEET)
+        assert t.kind == "pit", mx                     # never a far Goomba mid-gap
+        if mx > 84:
+            assert t.d == 0.0 or t.x >= mx
+    t = pick([goomba(128 + 150)], pits=pit, mx=128, feet=140, ground=FEET)
+    assert t.kind == "goomba"                          # past the far edge: the pit threat is over
+
+
+def test_senses_tracks_the_take_off_ground():
+    se = S.SensesV2(Knobs(), masks(), 6)
+    se.read_ram = lambda ram: (40, ram["feet"], [], [(64, 32)], [])
+    for feet, air, want in [(176, 0, 32), (160, 1, 32), (146, 1, 32), (140, 1, None)]:
+        I, lm = se.look({0x001D: air, "feet": feet})
+        assert (lm.extra["box"][3] if lm.extra["box"] else None) == want, (feet, air)
