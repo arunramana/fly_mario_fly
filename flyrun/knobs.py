@@ -31,6 +31,8 @@ class Knobs:
     PIT_SENSE: bool = True       # INVENTED (fixed): feed pits to the loom detectors (a pit has no face; nb 15)
     PIT_GAIN: float = 1.0        # INVENTED (evolved): scale on the pit's theta (nb 15 used 1.0)
 
+    HUM_SENSE: bool = False      # INVENTED (fixed), Part Q1: unused reachable '?' blocks hum into the 20 JO neurons (needs the JO brain, v2 senses)
+    HUM_GAIN: float = 14.5342    # INVENTED (fixed), Part Q1: hum loudness = HUM_GAIN x theta_block (rad) into each JO neuron. FROZEN: chosen once so the press falls in the middle of the hit window (runs/Q1.md)
     SENSES_VERSION: str = "v1"   # INVENTED (fixed): v1 = senses of Parts 1-7 (unchanged); v2 = Part S1 (flyrun/senses_v2.py)
 
     # --- motor (nb 09/14/19/20) ---
@@ -63,6 +65,7 @@ ENEMY_TYPES = {0x06: "goomba", 0x00: "koopa"}                              # INV
 MARIO_BOX = (12, 16)       # INVENTED (fixed): Mario's (w, h) in px (small Mario; x = sprite left edge); deaths happened at gap 0 = dx 12
 ENEMY_FEET_OFFSET = 8      # INVENTED (fixed): an enemy's RAM y (0x00CF+slot) is its feet y + 8 (measured: ground 184 vs surface 176)
 MAX_JUMP_HEIGHT = 68       # INVENTED (fixed), measured (Part S2c, flyrun/measure_jump.py): apex above take-off of a full walking jump, px; caps the S3b pit tower
+HUM_REACH = 64            # INVENTED (fixed), Q1: a '?' block hums only if its underside is <= this many px above the ground under it (a ground jump reaches ~68 px of rise)
 PIT_GAIN_V2 = 1.0          # INVENTED (fixed): the pit tower's theta at gain 1 (the evolved PIT_GAIN knob is ignored in v2)
 
 # Every non-connectome piece, with how it got its value. clips/numbers.md "Invented pieces" is generated from this.
@@ -93,6 +96,10 @@ INVENTED = {
     "RANDOM_A_P": ("fixed", "right_randA baseline P(A)"),
     "SCRIPT_HOLD": ("fixed", "scripted driver jump length (assisted tests only, never in fitness)"),
     "MOTOR_VERSION": ("fixed", "v1 = forced A_HOLD + COOLDOWN; v2 = the fly holds A while TTMn stays above threshold (Part S2)"),
+    "HUM_SENSE": ("fixed", "Q1: the hum cue (invented): the nearest unused reachable ? block hums into the 20 direct JO -> GF neurons (real wiring); off by default"),
+    "HUM_GAIN": ("fixed", "Q1: hum loudness = HUM_GAIN x the block's angular size (rad); 14.5342, chosen once from the hit window and frozen (runs/Q1.md)"),
+    "HUM_REACH": ("fixed", "Q1: a ? block hums only if its underside is <= 64 px above the ground under it"),
+    "QBLOCK_TILES (level.py)": ("fixed", "tile ids 192 / 193 = unused ? block (hand-identified, O0)"),
     "RELEASE_THRESH": ("fixed", "v2: TTMn level below which A is released (default = TTMN_THRESH)"),
     "SENSES_VERSION": ("fixed", "v1 = old senses (all Part 1-7 results); v2 = Part S1 senses"),
     "SIZE_TABLE / ENEMY_TYPES": ("fixed", "v2 object sizes (Goomba 16x16, Koopa 16x24, shell 16x16) and the RAM type bytes (0x06, 0x00)"),

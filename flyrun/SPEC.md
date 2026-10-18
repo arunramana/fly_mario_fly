@@ -13,3 +13,8 @@ Note: S3c: pit 3 (between staircases), tower anchored to the floor sat below his
 ## Threat choice (S3e)
 Enemy cleared = his feet are at or above the enemy's top AND his body is over it (same test as pipe faces / towers). A cleared enemy drops out of the candidates for the rest of this jump (until landing), so the next threat ahead (e.g. the second Goomba of a pair) is chosen and drawn. Landing on a cleared enemy is still allowed (stomp = safe).
 Note: S3d: with a Goomba pair, Goomba 1 stayed chosen until he was past it; Goomba 2 was invisible mid-jump (Arun, 2026-10-18).
+
+## Q: ?-blocks and mushroom
+Q1 Hum. Every UNUSED, REACHABLE '?' block (tiles 192/193; reachable = bottom ≤ 64 px above the ground under it) hums. Only the nearest humming block ahead of or above him is heard (like the next-threat eye). Loudness = HUM_GAIN × θ_block, where θ_block = the block's angular size from his eye (same theta_of as looming: 2-D distance from the eye point to the block's bottom-centre, size = 16 px). The hum drives the 20 direct JO→GF neurons (13 JO-B1_a, 6 JO-B1_c, 1 JO-CA1) equally; their wiring is real. Once the block is used (tile 35/196) its hum is 0. Jump = the existing fly-held jump (press when TTMn ≥ thresh, hold while above, landing reset). Drawn as a GREEN line under the block. INVENTED (orange): the hum cue and HUM_GAIN. Real (teal): JO → GF → TTMn. Toggle: HUM_SENSE on/off.
+Implementation notes (Q1): the eye point is the top-front corner of MARIO_BOX, (mx + 12, feet − 16), as in S3; "ahead of or above" = the block is not fully behind his left edge (bx + 16 > mx); the nearest is by that distance. Brain = W_steer + the 20 JO neurons only (`tutorials/_cache/W_steer_jo.npy`, `steer_jo_bodies.parquet`; `flyrun/q1_brain.py`).
+

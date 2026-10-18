@@ -21,6 +21,7 @@ ADDR_SCREEN_PAGE, ADDR_SCREEN_X = 0x071A, 0x071C   # world x of the screen's lef
 
 SOLID_WALL = {18, 19, 20, 21, 97}   # INVENTED (fixed), hand-identified on 1-1: pipe pieces + hard (stair) block; run 001 notes
 RIM_TILES = {16, 17}   # INVENTED (fixed), S3 0a: the rim of 1-1 pipe 4 (ids 16/17; pipes 1-3 use 18/19). Only read when scan_visible(rim=True) (senses v2); v1 keeps SOLID_WALL as it was
+QBLOCK_TILES = {192, 193}   # INVENTED (fixed), hand-identified (O0): '?' blocks (192 coin, 193 mushroom); 35 = bump animation, 196 = used
 EMPTY = 0
 
 
@@ -73,6 +74,12 @@ def scan_visible(ram, rim=False):
     if cur is not None:
         pits.append(tuple(cur))   # runs off the right edge of the screen; width is a lower bound
     return walls, pits
+
+
+def scan_blocks(ram):
+    """Part Q1: the UNUSED "?" blocks on the visible screen -> [(x, row)] (tiles 192 / 193; a hit block is 35 then 196)."""
+    left, right = _visible_range(ram)
+    return [(wx, r) for wx in range((left // TILE) * TILE, right, TILE) for r in range(0, ROW_GROUND) if tile(ram, wx, r) in QBLOCK_TILES]
 
 
 def obstacles_ahead(ram):

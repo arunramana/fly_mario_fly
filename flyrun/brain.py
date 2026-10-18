@@ -37,7 +37,8 @@ class Brain:
 def load_brain(cache=CACHE):
     # FLYRUN_WFILE lets a worker pool load a control matrix (Part 5: W_steer_shuf0.npy); default = the real one
     W = np.load(Path(cache) / os.environ.get("FLYRUN_WFILE", "W_steer.npy"))
-    bodies = pd.read_parquet(Path(cache) / "steer_bodies.parquet")
+    # FLYRUN_BODIES: the matching body table for a control / extended matrix (Part Q1: steer_jo_bodies.parquet); default = the real one
+    bodies = pd.read_parquet(Path(cache) / os.environ.get("FLYRUN_BODIES", "steer_bodies.parquet"))
     bodies["somaSide"] = bodies["somaSide"].fillna("")
     types = bodies["type"].to_numpy()
     sides = bodies["somaSide"].to_numpy()
@@ -47,6 +48,9 @@ def load_brain(cache=CACHE):
         if side is not None:
             m &= sides == side
         masks[name] = m
+    jo = np.char.startswith(types.astype(str), "JO")
+    if jo.any():                      # Part Q1: Johnston's organ neurons, present only in the extended brain (W_steer_jo.npy)
+        masks["JO"] = jo
     return Brain(W=W, bodies=bodies, masks=masks)
 
 

@@ -1,0 +1,1284 @@
+{
+ "hum_on": {
+  "max_x": 420,
+  "frames": 231,
+  "end": "died",
+  "a_frac": 0.24675324675324675,
+  "left_presses": 0,
+  "blocks": [
+   {
+    "block_x": 256,
+    "contents_by_id": "coin (192)",
+    "heard": true,
+    "takeoffs": [
+     -18
+    ],
+    "frames_held": [
+     11
+    ],
+    "jumps_needed": 1,
+    "hit": true,
+    "hit_frame": 136,
+    "coin_out": 1,
+    "mushroom_out": false
+   },
+   {
+    "block_x": 336,
+    "contents_by_id": "mushroom (193)",
+    "heard": true,
+    "takeoffs": [
+     -30,
+     9
+    ],
+    "frames_held": [
+     21,
+     11
+    ],
+    "jumps_needed": 2,
+    "hit": false,
+    "hit_frame": null,
+    "coin_out": null,
+    "mushroom_out": false
+   },
+   {
+    "block_x": 368,
+    "contents_by_id": "coin (192)",
+    "heard": true,
+    "takeoffs": [],
+    "frames_held": [],
+    "jumps_needed": 0,
+    "hit": true,
+    "hit_frame": 197,
+    "coin_out": 1,
+    "mushroom_out": false
+   }
+  ],
+  "jumps": [
+   {
+    "frame": 127,
+    "takeoff_x": 238,
+    "block": 256.0,
+    "threat": "none",
+    "frames_held": 11
+   },
+   {
+    "frame": 166,
+    "takeoff_x": 306,
+    "block": 336.0,
+    "threat": "face",
+    "frames_held": 21
+   },
+   {
+    "frame": 188,
+    "takeoff_x": 345,
+    "block": 336.0,
+    "threat": "face",
+    "frames_held": 11
+   },
+   {
+    "frame": 217,
+    "takeoff_x": 396,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 14
+   }
+  ],
+  "powerup_max": 0,
+  "coins": 2,
+  "a_frames": 57,
+  "a_frames_no_block_in_view": 16,
+  "a_frames_no_block_no_threat": 0
+ },
+ "hum_off": {
+  "max_x": 420,
+  "frames": 231,
+  "end": "died",
+  "a_frac": 0.06060606060606061,
+  "left_presses": 0,
+  "blocks": [
+   {
+    "block_x": 256,
+    "contents_by_id": "coin (192)",
+    "heard": false,
+    "takeoffs": [],
+    "frames_held": [],
+    "jumps_needed": 0,
+    "hit": false,
+    "hit_frame": null,
+    "coin_out": null,
+    "mushroom_out": false
+   },
+   {
+    "block_x": 336,
+    "contents_by_id": "mushroom (193)",
+    "heard": false,
+    "takeoffs": [],
+    "frames_held": [],
+    "jumps_needed": 0,
+    "hit": false,
+    "hit_frame": null,
+    "coin_out": null,
+    "mushroom_out": false
+   },
+   {
+    "block_x": 368,
+    "contents_by_id": "coin (192)",
+    "heard": false,
+    "takeoffs": [],
+    "frames_held": [],
+    "jumps_needed": 0,
+    "hit": false,
+    "hit_frame": null,
+    "coin_out": null,
+    "mushroom_out": false
+   }
+  ],
+  "a_frames": 14,
+  "a_frames_no_block_in_view": 14,
+  "a_frames_no_block_no_threat": 0,
+  "jumps": [
+   {
+    "frame": 217,
+    "takeoff_x": 396,
+    "block": null,
+    "threat": "face",
+    "frames_held": 14
+   }
+  ],
+  "powerup_max": 0
+ },
+ "shuf0": {
+  "max_x": 383,
+  "frames": 1500,
+  "end": "timeout",
+  "a_frac": 0.828,
+  "left_presses": 71,
+  "blocks": [
+   {
+    "block_x": 256,
+    "contents_by_id": "coin (192)",
+    "heard": true,
+    "takeoffs": [
+     15,
+     15,
+     15,
+     15
+    ],
+    "frames_held": [
+     44,
+     44,
+     44,
+     44
+    ],
+    "jumps_needed": 4,
+    "hit": false,
+    "hit_frame": null,
+    "coin_out": null,
+    "mushroom_out": false
+   },
+   {
+    "block_x": 336,
+    "contents_by_id": "mushroom (193)",
+    "heard": true,
+    "takeoffs": [
+     -31,
+     7,
+     11
+    ],
+    "frames_held": [
+     21,
+     21,
+     21
+    ],
+    "jumps_needed": 3,
+    "hit": true,
+    "hit_frame": 260,
+    "coin_out": 0,
+    "mushroom_out": true
+   },
+   {
+    "block_x": 368,
+    "contents_by_id": "coin (192)",
+    "heard": true,
+    "takeoffs": [],
+    "frames_held": [],
+    "jumps_needed": 0,
+    "hit": true,
+    "hit_frame": 196,
+    "coin_out": 1,
+    "mushroom_out": true
+   }
+  ],
+  "a_frames": 1242,
+  "a_frames_no_block_in_view": 948,
+  "a_frames_no_block_no_threat": 0,
+  "jumps": [
+   {
+    "frame": 165,
+    "takeoff_x": 305,
+    "block": 336.0,
+    "threat": "face",
+    "frames_held": 21
+   },
+   {
+    "frame": 187,
+    "takeoff_x": 343,
+    "block": 336.0,
+    "threat": "face",
+    "frames_held": 21
+   },
+   {
+    "frame": 209,
+    "takeoff_x": 378,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 230,
+    "takeoff_x": 377,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 251,
+    "takeoff_x": 347,
+    "block": 336.0,
+    "threat": "face",
+    "frames_held": 21
+   },
+   {
+    "frame": 273,
+    "takeoff_x": 328,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 48
+   },
+   {
+    "frame": 322,
+    "takeoff_x": 272,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 367,
+    "takeoff_x": 272,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 412,
+    "takeoff_x": 273,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 457,
+    "takeoff_x": 272,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 502,
+    "takeoff_x": 273,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 547,
+    "takeoff_x": 272,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 41
+   },
+   {
+    "frame": 652,
+    "takeoff_x": 275,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 697,
+    "takeoff_x": 271,
+    "block": 256.0,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 742,
+    "takeoff_x": 274,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 787,
+    "takeoff_x": 273,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 832,
+    "takeoff_x": 271,
+    "block": 256.0,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 877,
+    "takeoff_x": 271,
+    "block": 256.0,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 922,
+    "takeoff_x": 273,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 967,
+    "takeoff_x": 272,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 1012,
+    "takeoff_x": 273,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 1057,
+    "takeoff_x": 273,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 1102,
+    "takeoff_x": 271,
+    "block": 256.0,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 1147,
+    "takeoff_x": 274,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 1192,
+    "takeoff_x": 272,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 1237,
+    "takeoff_x": 273,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 1282,
+    "takeoff_x": 273,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 1327,
+    "takeoff_x": 273,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 1372,
+    "takeoff_x": 273,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 1417,
+    "takeoff_x": 273,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 44
+   },
+   {
+    "frame": 1462,
+    "takeoff_x": 273,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 38
+   }
+  ],
+  "powerup_max": 1
+ },
+ "shuf1": {
+  "max_x": 420,
+  "frames": 1170,
+  "end": "died",
+  "a_frac": 0.7692307692307693,
+  "left_presses": 19,
+  "blocks": [
+   {
+    "block_x": 256,
+    "contents_by_id": "coin (192)",
+    "heard": true,
+    "takeoffs": [],
+    "frames_held": [],
+    "jumps_needed": 0,
+    "hit": false,
+    "hit_frame": null,
+    "coin_out": null,
+    "mushroom_out": false
+   },
+   {
+    "block_x": 336,
+    "contents_by_id": "mushroom (193)",
+    "heard": true,
+    "takeoffs": [
+     -30,
+     9,
+     13,
+     15,
+     9,
+     6,
+     5,
+     14
+    ],
+    "frames_held": [
+     21,
+     21,
+     20,
+     20,
+     20,
+     20,
+     20,
+     21
+    ],
+    "jumps_needed": 8,
+    "hit": true,
+    "hit_frame": 687,
+    "coin_out": 0,
+    "mushroom_out": true
+   },
+   {
+    "block_x": 368,
+    "contents_by_id": "coin (192)",
+    "heard": true,
+    "takeoffs": [],
+    "frames_held": [],
+    "jumps_needed": 0,
+    "hit": true,
+    "hit_frame": 198,
+    "coin_out": 1,
+    "mushroom_out": true
+   }
+  ],
+  "a_frames": 900,
+  "a_frames_no_block_in_view": 742,
+  "a_frames_no_block_no_threat": 0,
+  "jumps": [
+   {
+    "frame": 167,
+    "takeoff_x": 306,
+    "block": 336.0,
+    "threat": "face",
+    "frames_held": 21
+   },
+   {
+    "frame": 189,
+    "takeoff_x": 345,
+    "block": 336.0,
+    "threat": "face",
+    "frames_held": 21
+   },
+   {
+    "frame": 211,
+    "takeoff_x": 381,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 232,
+    "takeoff_x": 381,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 253,
+    "takeoff_x": 353,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 21
+   },
+   {
+    "frame": 275,
+    "takeoff_x": 349,
+    "block": 336.0,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 296,
+    "takeoff_x": 375,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 21
+   },
+   {
+    "frame": 318,
+    "takeoff_x": 375,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 339,
+    "takeoff_x": 351,
+    "block": 336.0,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 360,
+    "takeoff_x": 355,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 381,
+    "takeoff_x": 380,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 402,
+    "takeoff_x": 364,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 21
+   },
+   {
+    "frame": 424,
+    "takeoff_x": 345,
+    "block": 336.0,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 445,
+    "takeoff_x": 360,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 466,
+    "takeoff_x": 384,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 487,
+    "takeoff_x": 368,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 21
+   },
+   {
+    "frame": 509,
+    "takeoff_x": 342,
+    "block": 336.0,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 530,
+    "takeoff_x": 358,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 551,
+    "takeoff_x": 383,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 572,
+    "takeoff_x": 368,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 21
+   },
+   {
+    "frame": 594,
+    "takeoff_x": 341,
+    "block": 336.0,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 615,
+    "takeoff_x": 357,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 636,
+    "takeoff_x": 385,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 657,
+    "takeoff_x": 380,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 678,
+    "takeoff_x": 350,
+    "block": 336.0,
+    "threat": "face",
+    "frames_held": 21
+   },
+   {
+    "frame": 700,
+    "takeoff_x": 347,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 721,
+    "takeoff_x": 375,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 21
+   },
+   {
+    "frame": 743,
+    "takeoff_x": 376,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 764,
+    "takeoff_x": 352,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 785,
+    "takeoff_x": 355,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 806,
+    "takeoff_x": 378,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 827,
+    "takeoff_x": 362,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 21
+   },
+   {
+    "frame": 849,
+    "takeoff_x": 346,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 20
+   },
+   {
+    "frame": 870,
+    "takeoff_x": 362,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 18
+   },
+   {
+    "frame": 889,
+    "takeoff_x": 382,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 62
+   },
+   {
+    "frame": 952,
+    "takeoff_x": 386,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 15
+   },
+   {
+    "frame": 968,
+    "takeoff_x": 387,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 27
+   },
+   {
+    "frame": 1024,
+    "takeoff_x": 403,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 48
+   },
+   {
+    "frame": 1073,
+    "takeoff_x": 378,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 14
+   },
+   {
+    "frame": 1088,
+    "takeoff_x": 352,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 15
+   },
+   {
+    "frame": 1104,
+    "takeoff_x": 350,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 27
+   },
+   {
+    "frame": 1166,
+    "takeoff_x": 414,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 4
+   }
+  ],
+  "powerup_max": 1
+ },
+ "shuf2": {
+  "max_x": 420,
+  "frames": 231,
+  "end": "died",
+  "a_frac": 0.27705627705627706,
+  "left_presses": 0,
+  "blocks": [
+   {
+    "block_x": 256,
+    "contents_by_id": "coin (192)",
+    "heard": true,
+    "takeoffs": [],
+    "frames_held": [],
+    "jumps_needed": 0,
+    "hit": false,
+    "hit_frame": null,
+    "coin_out": null,
+    "mushroom_out": false
+   },
+   {
+    "block_x": 336,
+    "contents_by_id": "mushroom (193)",
+    "heard": true,
+    "takeoffs": [
+     -31,
+     7
+    ],
+    "frames_held": [
+     21,
+     21
+    ],
+    "jumps_needed": 2,
+    "hit": false,
+    "hit_frame": null,
+    "coin_out": null,
+    "mushroom_out": false
+   },
+   {
+    "block_x": 368,
+    "contents_by_id": "coin (192)",
+    "heard": true,
+    "takeoffs": [],
+    "frames_held": [],
+    "jumps_needed": 0,
+    "hit": true,
+    "hit_frame": 196,
+    "coin_out": 1,
+    "mushroom_out": false
+   }
+  ],
+  "a_frames": 64,
+  "a_frames_no_block_in_view": 34,
+  "a_frames_no_block_no_threat": 0,
+  "jumps": [
+   {
+    "frame": 165,
+    "takeoff_x": 305,
+    "block": 336.0,
+    "threat": "face",
+    "frames_held": 21
+   },
+   {
+    "frame": 187,
+    "takeoff_x": 343,
+    "block": 336.0,
+    "threat": "face",
+    "frames_held": 21
+   },
+   {
+    "frame": 209,
+    "takeoff_x": 382,
+    "block": NaN,
+    "threat": "face",
+    "frames_held": 22
+   }
+  ],
+  "powerup_max": 0
+ },
+ "shuf3": {
+  "max_x": 420,
+  "frames": 250,
+  "end": "died",
+  "a_frac": 0.976,
+  "left_presses": 1,
+  "blocks": [
+   {
+    "block_x": 256,
+    "contents_by_id": "coin (192)",
+    "heard": true,
+    "takeoffs": [
+     -161,
+     -76,
+     -12
+    ],
+    "frames_held": [
+     48,
+     48,
+     20
+    ],
+    "jumps_needed": 3,
+    "hit": true,
+    "hit_frame": 152,
+    "coin_out": 1,
+    "mushroom_out": false
+   },
+   {
+    "block_x": 336,
+    "contents_by_id": "mushroom (193)",
+    "heard": true,
+    "takeoffs": [
+     -67,
+     -7
+    ],
+    "frames_held": [
+     33,
+     21
+    ],
+    "jumps_needed": 2,
+    "hit": false,
+    "hit_frame": null,
+    "coin_out": null,
+    "mushroom_out": false
+   },
+   {
+    "block_x": 368,
+    "contents_by_id": "coin (192)",
+    "heard": true,
+    "takeoffs": [
+     -1
+    ],
+    "frames_held": [
+     30
+    ],
+    "jumps_needed": 1,
+    "hit": false,
+    "hit_frame": null,
+    "coin_out": null,
+    "mushroom_out": false
+   }
+  ],
+  "a_frames": 244,
+  "a_frames_no_block_in_view": 58,
+  "a_frames_no_block_no_threat": 58,
+  "jumps": [
+   {
+    "frame": 0,
+    "takeoff_x": 40,
+    "block": NaN,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 45,
+    "takeoff_x": 95,
+    "block": 256.0,
+    "threat": "none",
+    "frames_held": 48
+   },
+   {
+    "frame": 94,
+    "takeoff_x": 180,
+    "block": 256.0,
+    "threat": "none",
+    "frames_held": 48
+   },
+   {
+    "frame": 143,
+    "takeoff_x": 244,
+    "block": 256.0,
+    "threat": "none",
+    "frames_held": 20
+   },
+   {
+    "frame": 164,
+    "takeoff_x": 269,
+    "block": 336.0,
+    "threat": "none",
+    "frames_held": 33
+   },
+   {
+    "frame": 198,
+    "takeoff_x": 329,
+    "block": 336.0,
+    "threat": "none",
+    "frames_held": 21
+   },
+   {
+    "frame": 220,
+    "takeoff_x": 367,
+    "block": 368.0,
+    "threat": "none",
+    "frames_held": 30
+   }
+  ],
+  "powerup_max": 0
+ },
+ "shuf4": {
+  "max_x": 40,
+  "frames": 1500,
+  "end": "timeout",
+  "a_frac": 0.978,
+  "left_presses": 1,
+  "blocks": [
+   {
+    "block_x": 256,
+    "contents_by_id": "coin (192)",
+    "heard": false,
+    "takeoffs": [],
+    "frames_held": [],
+    "jumps_needed": 0,
+    "hit": false,
+    "hit_frame": null,
+    "coin_out": null,
+    "mushroom_out": false
+   },
+   {
+    "block_x": 336,
+    "contents_by_id": "mushroom (193)",
+    "heard": false,
+    "takeoffs": [],
+    "frames_held": [],
+    "jumps_needed": 0,
+    "hit": false,
+    "hit_frame": null,
+    "coin_out": null,
+    "mushroom_out": false
+   },
+   {
+    "block_x": 368,
+    "contents_by_id": "coin (192)",
+    "heard": false,
+    "takeoffs": [],
+    "frames_held": [],
+    "jumps_needed": 0,
+    "hit": false,
+    "hit_frame": null,
+    "coin_out": null,
+    "mushroom_out": false
+   }
+  ],
+  "a_frames": 1467,
+  "a_frames_no_block_in_view": 1467,
+  "a_frames_no_block_no_threat": 1467,
+  "jumps": [
+   {
+    "frame": 0,
+    "takeoff_x": 40,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 45,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 90,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 135,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 180,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 225,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 270,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 315,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 360,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 405,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 450,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 495,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 540,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 585,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 630,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 675,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 720,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 765,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 810,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 855,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 900,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 945,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 990,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 1035,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 1080,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 1125,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 1170,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 1215,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 1260,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 1305,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 1350,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 1395,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 1440,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 44
+   },
+   {
+    "frame": 1485,
+    "takeoff_x": 0,
+    "block": null,
+    "threat": "none",
+    "frames_held": 15
+   }
+  ],
+  "powerup_max": 0
+ }
+}

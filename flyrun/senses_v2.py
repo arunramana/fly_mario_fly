@@ -11,7 +11,7 @@ import numpy as np
 
 from . import env as E
 from . import level
-from .knobs import ENEMY_FEET_OFFSET, ENEMY_TYPES, MARIO_BOX, MAX_JUMP_HEIGHT, PIT_GAIN_V2, SIZE_TABLE
+from .knobs import ENEMY_FEET_OFFSET, ENEMY_TYPES, MARIO_BOX, HUM_REACH, MAX_JUMP_HEIGHT, PIT_GAIN_V2, SIZE_TABLE
 from .senses import Loom, theta_of
 
 ADDR_MARIO_Y = 0x00CE      # verified: = Mario's FEET y in tile-buffer coordinates (ground 176 = top of row 11, ledge 112 = top of row 7)
@@ -61,6 +61,21 @@ def merge_columns(walls):
 def is_cleared(mx, feet, t):
     """S3e: an enemy is cleared when his feet are at or above its top AND his body is over it (the pipe-face / tower test)."""
     return feet <= t.top and over(mx, t.x, t.x + t.w)
+
+
+def hum_block(mx, feet, blocks):
+    """Q1: the nearest humming block -> (bx, bottom y, d) or None. blocks = [(x, row)] of UNUSED ? blocks. Reachable = the underside is <= 64 px above the ground
+    under it (floor 176). Only blocks not fully behind his left edge count. d = distance from his eye (top-front corner of MARIO_BOX) to the block's bottom-centre."""
+    ex, ey = mx + MARIO_BOX[0], feet - MARIO_BOX[1]
+    best = None
+    for bx, row in blocks:
+        bottom = (row + 1) * level.TILE
+        if level.ROW_GROUND * level.TILE - bottom > HUM_REACH or bx + level.TILE <= mx:
+            continue
+        d = float(np.hypot(ex - (bx + level.TILE / 2), ey - bottom))
+        if best is None or d < best[2]:
+            best = (bx, bottom, d)
+    return best
 
 
 def enemy_boxes(enemies):
@@ -159,7 +174,14 @@ class SensesV2:
         t = choose(mx, feet, enemies, walls, pits, enemy_input, self.k.PIPE_SENSE, self.k.PIT_SENSE, ground=self.ground, released=frozenset(self.released), cleared=frozenset(self.cleared))
         if t is not None and t.kind == "pit" and t.h == 0 and int(ram[0x001D]) != 0:
             self.released.add(t.ident)
-        return self.from_threat(t)
+        I, lm = self.from_threat(t)
+        if self.k.HUM_SENSE:
+            assert "JO" in self.m, "HUM_SENSE needs the JO brain (W_steer_jo.npy)"
+            hb = hum_block(mx, feet, level.scan_blocks(ram))
+            level_in = self.k.HUM_GAIN * theta_of(hb[2], level.TILE) if hb else 0.0
+            I[self.m["JO"]] = level_in
+            lm.extra.update(hum_block=None if hb is None else (hb[0], hb[1], hb[2]), hum_level=level_in, jo_input=level_in)
+        return I, lm
 
     def from_threat(self, t):
         if t is None:

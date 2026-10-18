@@ -31,7 +31,7 @@ ST = pd.read_parquet(CACHE / "steer_bodies.parquet")
 ST_E = pd.read_parquet(CACHE / "steer_edges.parquet")
 
 
-def build(extra_ids):
+def build(extra_ids, return_counts=False):
     """-> (W, bodies DataFrame[bodyId, type, side, sign]) for W_steer + extra_ids (annotated bodyIds not already in W_steer)."""
     base = ST.bodyId.to_numpy(np.int64)
     extra = np.array([b for b in extra_ids if b not in set(base.tolist())], dtype=np.int64)
@@ -57,7 +57,8 @@ def build(extra_ids):
     W = np.divide(Wc, rs, out=np.zeros_like(Wc), where=rs > 0) * sign[None, :]
     side = np.concatenate([ST.somaSide.fillna("").to_numpy(), SIDE[ii[len(base):]]])
     typ = np.concatenate([ST.type.to_numpy().astype(str), TYPES[ii[len(base):]]])
-    return W, pd.DataFrame(dict(bodyId=order, type=typ, side=side))
+    bodies = pd.DataFrame(dict(bodyId=order, type=typ, side=side))
+    return (W, bodies, Wc, sign) if return_counts else (W, bodies)
 
 
 def kn_new_ids(src_mask, tgt_mask, k=3):
