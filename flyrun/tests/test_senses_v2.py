@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from flyrun import part7, senses_v2 as S
-from flyrun.knobs import Knobs
+from flyrun.knobs import MAX_JUMP_HEIGHT, Knobs
 
 FEET = 176          # Mario on the ground (RAM 0x00CE)
 GOOMBA, KOOPA = 0x06, 0x00
@@ -58,49 +58,52 @@ def test_step_face_is_16_relative_to_where_he_stands():
     assert t.kind == "face" and t.h == 16 and t.ident == ("face", 16)
 
 
-def test_pit_is_the_hole_with_its_true_angular_size():
+def test_pit_is_a_base_plus_a_tower():
     pit = [(96, 32)]
-    t = pick(pits=pit, mx=40)                          # S3 0b: ONE threat, the hole: near edge -> far edge, one tile deep at floor level
-    assert t.kind == "pit" and t.ident == ("pit", 96) and (t.x, t.top, t.w, t.h) == (96, 176, 32, 16)
-    assert t.d == 96 - 52
-    assert t.theta == pytest.approx(S.hole_theta(40, FEET, 96, 32))
+    t = pick(pits=pit, mx=40)                          # S3b (B9): tower 16 px wide over the midpoint (x 104..120), height = W
+    assert t.kind == "pit" and t.ident == ("pit", 96) and (t.x, t.top, t.w, t.h) == (104, 176 - 32, 16, 32)
+    assert t.base == (96, 176, 32, 16)
+    assert t.d == 104 - 52 and t.theta == pytest.approx(S.theta_of(52, 32))      # the pipe-face height rule on the tower
     assert pick(pits=pit, mx=100).kind == "pit"        # under him
     assert pick(pits=pit, mx=127).kind == "pit"        # body not yet past the far edge
     assert pick(pits=pit, mx=128) is None              # body past the far edge: over
     assert pick(pits=[], mx=40) is None                # floor all the way ahead: no pit threat
 
 
-def test_hole_theta_is_the_angle_the_rectangle_covers_from_the_eye():
-    # eye = (mx + 12, feet - 16) = (52, 160); hole x 96..128, y 176..192. Corner directions: near-top, near-bottom, far-top, far-bottom
-    ex, ey = 52, FEET - 16
-    ang = [np.arctan2(cy - ey, cx - ex) for cx in (96, 128) for cy in (176, 192)]
-    assert S.hole_theta(40, FEET, 96, 32) == pytest.approx(max(ang) - min(ang))
-    assert S.hole_theta(40, FEET, 96, 32) < S.hole_theta(60, FEET, 96, 32)   # nearer = larger
+def test_tower_height_is_W_capped_at_max_jump_height():
+    for W, want in ((32, 32), (48, 48), (64, 64), (80, MAX_JUMP_HEIGHT), (160, MAX_JUMP_HEIGHT)):
+        assert pick(pits=[(300, W)], mx=40).h == want, W
 
 
-def test_on_foot_hole_theta_crosses_the_trigger_angle_within_24px_of_the_edge():
-    """Report: the distance from his front edge to the near edge where theta first reaches the real fly's trigger angle (43.6 deg)."""
+def _onset_distance(W):
+    """Distance from his front edge to the pit's NEAR edge where theta first reaches the trigger angle, on foot."""
     trig = np.radians(TRIGGER_DEG)
-    dist = next(g for g in range(60, -1, -1) if S.hole_theta(100, FEET, 100 + 12 + g, 32) >= trig)
-    print("trigger crossing at", dist, "px")
-    assert dist <= 24
-    assert dist == 17
+    return next(g for g in range(200, -1, -1) if pick(pits=[(100 + 12 + g, W)], mx=100).theta >= trig)
 
 
-@pytest.mark.xfail(strict=True, reason="S3 geometry: with the eye at the top-front corner, airborne over a 32 px hole theta is ~23 deg < the 43.6 deg trigger "
-                                       "(the hole is far below and behind-below the eye). Reported in runs/S3_robustness.md; the rule is not changed.")
-def test_airborne_over_the_gap_theta_stays_above_the_trigger_until_past_the_far_edge():
-    trig = np.radians(TRIGGER_DEG)
-    for mx in range(84, 128):
-        t = pick(pits=[(96, 32)], mx=mx, feet=FEET - 60, ground=FEET)
-        assert t.kind == "pit" and t.theta >= trig, mx
+def test_on_foot_trigger_fires_within_12px_of_three_quarters_W_on_every_1_1_pit():
+    import csv
+    rows = [(int(r["x"]), int(r["size"])) for r in csv.DictReader(open(Path(__file__).resolve().parent.parent / "runs" / "001_level_map.csv")) if r["kind"] == "pit"]
+    assert [w for _, w in rows] == [32, 48, 32]
+    for px, W in rows:
+        g = _onset_distance(W)
+        print("pit", px, "W", W, "trigger at", g, "px before the near edge; 0.75 W =", 0.75 * W)
+        assert abs(g - 0.75 * W) <= 12, (px, W, g)
+        assert g == {32: 32, 48: 44}[W]
 
 
-def test_airborne_over_the_gap_the_pit_is_the_chosen_threat_until_past_the_far_edge():
-    pit = [(96, 32)]
-    for mx in range(84, 128):
-        assert pick([goomba(mx + 150)], pits=pit, mx=mx, feet=FEET - 60, ground=FEET).kind == "pit", mx
-    assert pick([goomba(128 + 150)], pits=pit, mx=128, feet=FEET - 60, ground=FEET).kind == "goomba"
+def test_airborne_the_tower_is_the_chosen_threat_until_the_release_rule_fires():
+    pit = [(96, 32)]                                   # tower x 104..120, top 144
+    for feet in range(FEET, 144, -1):                  # rising, feet below the tower top: full height from the take-off ground
+        t = pick([goomba(100 + 150)], pits=pit, mx=60, feet=feet, ground=FEET)
+        assert t.kind == "pit" and t.h == 32, feet
+    t = pick(pits=pit, mx=95, feet=144, ground=FEET)   # feet level with the top, not over the tower yet (mx + 12 = 107 > 104: over)
+    assert t.kind == "pit" and t.h == 0 and t.theta == 0.0
+    t = pick(pits=pit, mx=80, feet=130, ground=FEET)   # feet above the top but not over it: still the full tower
+    assert t.kind == "pit" and t.h == 32
+    t = pick([goomba(128 + 150)], pits=pit, mx=110, feet=100, ground=FEET)   # over it, released: the pit is still THE threat (base) with theta 0
+    assert t.kind == "pit" and t.theta == 0.0
+    assert pick([goomba(128 + 150)], pits=pit, mx=128, feet=100, ground=FEET).kind == "goomba"   # past the far edge
 
 
 def test_nearest_threat_only_no_sum():

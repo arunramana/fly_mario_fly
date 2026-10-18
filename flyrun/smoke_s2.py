@@ -100,6 +100,10 @@ def write_clip(parts, path, title, fps=30, speed="0.5x"):
                 sx, y0 = bx - r.extra[0], top + 32
                 col = {"goomba": (0, 0, 255), "koopa": (0, 165, 255), "shell": (0, 165, 255), "face": (255, 200, 0), "pit": (255, 0, 255)}.get(r.threat_kind, (255, 255, 255))
                 cv2.rectangle(img, (int(sx * S), int(y0 * S)), (int((sx + bw) * S), int((y0 + bh) * S)), col, 2)
+            if isinstance(getattr(r, "base", None), tuple):      # S3b: the pit's BASE (the hole); the tower is r.box
+                bx, top, bw, bh = r.base
+                sx, y0 = bx - r.extra[0], top + 32
+                cv2.rectangle(img, (int(sx * S), int(y0 * S)), (int((sx + bw) * S), int((y0 + bh) * S)), (0, 140, 255), 2)
             pan = np.full((h * S, 260, 3), 24, np.uint8)
 
             def put(t, y, c=(255, 255, 255), sc=0.5):

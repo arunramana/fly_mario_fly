@@ -62,8 +62,8 @@ SIZE_TABLE = {"goomba": (16, 16), "koopa": (16, 24), "shell": (16, 16)}   # INVE
 ENEMY_TYPES = {0x06: "goomba", 0x00: "koopa"}                              # INVENTED (fixed): any other type byte is ignored
 MARIO_BOX = (12, 16)       # INVENTED (fixed): Mario's (w, h) in px (small Mario; x = sprite left edge); deaths happened at gap 0 = dx 12
 ENEMY_FEET_OFFSET = 8      # INVENTED (fixed): an enemy's RAM y (0x00CF+slot) is its feet y + 8 (measured: ground 184 vs surface 176)
-MAX_JUMP_HEIGHT = 68       # INVENTED (fixed), measured (Part S2c, flyrun/measure_jump.py): apex above take-off of a full walking jump, px. Used by S2c only (its pit wall); unused since S3
-PIT_GAIN_V2 = 1.0          # INVENTED (fixed): each empty floor tile is a 16 px threat at gain 1 (the evolved PIT_GAIN knob is ignored in v2)
+MAX_JUMP_HEIGHT = 68       # INVENTED (fixed), measured (Part S2c, flyrun/measure_jump.py): apex above take-off of a full walking jump, px; caps the S3b pit tower
+PIT_GAIN_V2 = 1.0          # INVENTED (fixed): the pit tower's theta at gain 1 (the evolved PIT_GAIN knob is ignored in v2)
 
 # Every non-connectome piece, with how it got its value. clips/numbers.md "Invented pieces" is generated from this.
 #   "evolved" = searched by CMA-ES on TRAIN episodes; "fixed" = set by hand and never searched.
@@ -97,10 +97,10 @@ INVENTED = {
     "SENSES_VERSION": ("fixed", "v1 = old senses (all Part 1-7 results); v2 = Part S1 senses"),
     "SIZE_TABLE / ENEMY_TYPES": ("fixed", "v2 object sizes (Goomba 16x16, Koopa 16x24, shell 16x16) and the RAM type bytes (0x06, 0x00)"),
     "MARIO_BOX / ENEMY_FEET_OFFSET": ("fixed", "v2 geometry: Mario 12x16, enemy feet = RAM y - 8 (measured on 1-1)"),
-    "PIT_GAIN_V2": ("fixed", "v2 pit hole: its true angular size at gain 1"),
-    "MAX_JUMP_HEIGHT": ("fixed", "apex height of a full walking jump (68 px, measured, S2c); the S2c pit wall used it, S3 removed the wall"),
+    "PIT_GAIN_V2": ("fixed", "v2 pit tower theta at gain 1"),
+    "MAX_JUMP_HEIGHT": ("fixed", "apex height of a full walking jump (68 px, measured, S2c); caps the S3b pit tower (min(W, 68))"),
     "RIM_TILES": ("fixed", "tile ids 16/17 = the rim of 1-1 pipe 4, counted as wall by senses v2 (S3 0a); pipes 1-3 use 18/19"),
-    "eye point (senses_v2.hole_theta)": ("fixed", "S3 0b: Mario's eye = the top-front corner of MARIO_BOX; a pit's theta is the true angle its hole covers from there"),
+    "pit base + tower (senses_v2.choose)": ("fixed", "S3b / SPEC.md B9: base = the hole, tower = 16 px wide over its midpoint, height min(W, MAX_JUMP_HEIGHT); an invented shape"),
     "tile IDs / rows (level.py)": ("fixed", "SOLID_WALL {18..21, 97}, ground rows 11-12, empty 0: hand-identified on 1-1 "
                                             "(run 001 notes); meaning unverified on other levels"),
     "W_steer construction": ("fixed", "cast choice, top-40 LC10a->DNa intermediates, predicted-NT signs, "
