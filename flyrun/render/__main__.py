@@ -26,7 +26,7 @@ def pick_frames_c(base):
     from .panels import Log
     d = Log(base).df
     k = int(d.index[(d.blocks_hit >= 1) & (d.hum_level > 0) & ((d.smell_L > 0) | (d.smell_R > 0))][0]) + 14
-    return dict(R3_3_armC_hum_smell=k)
+    return dict(R3b_armC_216=k)
 
 
 def main():

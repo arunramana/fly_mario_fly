@@ -86,10 +86,11 @@ Z_SPLIT = 52000.0                                    # somata with z below this 
 
 def _smooth_grey(dens):
     """The old `_build` tone: log density -> grey (70, 78, 74) clipped, on the black surface."""
-    tone = np.log1p(dens) / np.log1p(max(dens.max(), 1.0))
+    """R3b: every soma is a 1-px point at low alpha (additive, no blur): one soma = 15 grey levels, capped where they pile up, so the cloud reads as fine points, not blobs."""
+    v = np.clip(dens * 15.0, 0, 70)
     out = np.zeros(dens.shape + (3,), np.float32)
     for c, base in enumerate((70, 78, 74)):
-        out[..., c] = np.maximum(np.clip(tone * base * 2.6, 0, base), BG[c])
+        out[..., c] = np.maximum(v * base / 70.0, BG[c])
     return out
 
 
@@ -140,7 +141,7 @@ class BrainPanel:
         for name, _, c, _ in GROUPS:
             col[self.members[name]] = c
         self.col = col
-        self.rad = np.where(np.isin(t, ["DNp01", "TTMn", "DNp09", "DNa01", "DNa02"]), 3.0, 1.6)
+        self.rad = np.where(np.isin(t, ["DNp01", "TTMn", "DNp09", "DNa01", "DNa02"]), 1.8, 1.0)
         hs = log.hs
         self.nmax = np.maximum(hs.max(0), 0.02)                      # per-neuron run maximum: brightness = rate / its own maximum (the old tool normalised each group the same way)
         self.vmembers = dict(self.members, ORN=np.char.startswith(t.astype("U"), "ORN"))      # the index value / bar of the ORN row counts the receptor neurons only (not the smell-path relays that share the colour)
@@ -157,9 +158,9 @@ class BrainPanel:
         b = 0.28 + 0.72 * a
         layer = np.zeros((H, LEFT_W, 3), np.float32)
         for i in np.argsort(b):
-            r = self.rad[i] * (1 + 0.9 * a[i])
+            r = self.rad[i] * (1 + 0.5 * a[i])
             cv2.circle(layer, (int(round(self.xy[i, 0])), int(round(self.xy[i, 1]))), max(1, int(round(r))), tuple(float(v) * b[i] for v in self.col[i]), -1, cv2.LINE_AA)
-        out = self.bg + layer + cv2.GaussianBlur(layer, (0, 0), 5) * 1.5                        # glow: additive + soft halo
+        out = self.bg + layer + cv2.GaussianBlur(layer, (0, 0), 2.5) * 1.2                        # glow: additive + soft halo
         return np.clip(out, 0, 255).astype(np.uint8)
 
     def draw(self, k):
@@ -188,9 +189,8 @@ class BrainPanel:
         for nm, on in (("→", bool(d.right)), ("←", bool(d.left)), ("A", bool(d.a))):
             dr.text((cx, y + 82), nm, font=font(18, on), fill=(255, 255, 255) if on else (80, 80, 76))
             cx += 34
-        dr.text((x, y + 106), "brightness = rate (each neuron against its own run maximum, floor 0.02)", font=font(16), fill=DIM)
-        dr.text((x, y + 128), "JO/ORN shown at their brain terminals", font=font(16), fill=DIM)
-        dr.text((x, y + 148), "(cell bodies are in the antenna)", font=font(16), fill=DIM)
+        dr.text((x, y + 106), "brightness = activity", font=font(16), fill=DIM)
+        dr.text((x, y + 128), "JO/ORN at their brain terminals (cell bodies in the antenna)", font=font(16), fill=DIM)
         # the INDEX: dot, name, role, activity bar, value; rows of drives that are off are dimmed
         yy = 768
         for name, role, c, drives in GROUPS:
