@@ -1,0 +1,312 @@
+{
+ "motor": {
+  "inject_DNa_L": [
+   {
+    "DNa_L_current": 0.0,
+    "x_start": 280,
+    "x_end": 434,
+    "x_min": 280,
+    "dx": 154,
+    "steer_mean": 0.046831224752337204,
+    "steer_last": 0.04683122475233721,
+    "dnp09_mean": 0.21353910609194718,
+    "frac_Left": 0.0,
+    "frac_Right": 1.0,
+    "frac_none": 0.0,
+    "buttons": {
+     "Right": 150
+    },
+    "died": false
+   },
+   {
+    "DNa_L_current": 0.005,
+    "x_start": 280,
+    "x_end": 434,
+    "x_min": 280,
+    "dx": 154,
+    "steer_mean": 0.0443317092297054,
+    "steer_last": 0.04433122475233721,
+    "dnp09_mean": 0.21353910609194718,
+    "frac_Left": 0.0,
+    "frac_Right": 1.0,
+    "frac_none": 0.0,
+    "buttons": {
+     "Right": 150
+    },
+    "died": false
+   },
+   {
+    "DNa_L_current": 0.01,
+    "x_start": 280,
+    "x_end": 434,
+    "x_min": 280,
+    "dx": 154,
+    "steer_mean": 0.04183219370707362,
+    "steer_last": 0.041831224752337234,
+    "dnp09_mean": 0.21353910609194718,
+    "frac_Left": 0.0,
+    "frac_Right": 1.0,
+    "frac_none": 0.0,
+    "buttons": {
+     "Right": 150
+    },
+    "died": false
+   },
+   {
+    "DNa_L_current": 0.02,
+    "x_start": 280,
+    "x_end": 434,
+    "x_min": 280,
+    "dx": 154,
+    "steer_mean": 0.034555811232004116,
+    "steer_last": 0.03455342311374089,
+    "dnp09_mean": 0.21354032714127874,
+    "frac_Left": 0.0,
+    "frac_Right": 1.0,
+    "frac_none": 0.0,
+    "buttons": {
+     "Right": 150
+    },
+    "died": false
+   },
+   {
+    "DNa_L_current": 0.05,
+    "x_start": 280,
+    "x_end": 434,
+    "x_min": 280,
+    "dx": 154,
+    "steer_mean": 0.004543893450812334,
+    "steer_last": 0.004535660936477365,
+    "dnp09_mean": 0.21354837767988802,
+    "frac_Left": 0.0,
+    "frac_Right": 1.0,
+    "frac_none": 0.0,
+    "buttons": {
+     "Right": 150
+    },
+    "died": false
+   },
+   {
+    "DNa_L_current": 0.1,
+    "x_start": 280,
+    "x_end": 179,
+    "x_min": 179,
+    "dx": -101,
+    "steer_mean": -0.04547596951784057,
+    "steer_last": -0.04549394269229509,
+    "dnp09_mean": 0.2135617952442369,
+    "frac_Left": 1.0,
+    "frac_Right": 0.0,
+    "frac_none": 0.0,
+    "buttons": {
+     "Left": 150
+    },
+    "died": false
+   },
+   {
+    "DNa_L_current": 0.2,
+    "x_start": 280,
+    "x_end": 179,
+    "x_min": 179,
+    "dx": -101,
+    "steer_mean": -0.14551569545514653,
+    "steer_last": -0.1455531499498401,
+    "dnp09_mean": 0.21358863037293468,
+    "frac_Left": 1.0,
+    "frac_Right": 0.0,
+    "frac_none": 0.0,
+    "buttons": {
+     "Left": 150
+    },
+    "died": false
+   },
+   {
+    "DNa_L_current": 0.5,
+    "x_start": 280,
+    "x_end": 179,
+    "x_min": 179,
+    "dx": -101,
+    "steer_mean": -0.4456350058736897,
+    "steer_last": -0.44573090548503985,
+    "dnp09_mean": 0.21366913611242253,
+    "frac_Left": 1.0,
+    "frac_Right": 0.0,
+    "frac_none": 0.0,
+    "buttons": {
+     "Left": 150
+    },
+    "died": false
+   },
+   {
+    "DNa_L_current": 1.0,
+    "x_start": 280,
+    "x_end": 179,
+    "x_min": 179,
+    "dx": -101,
+    "steer_mean": -0.94585304212094,
+    "steer_last": -0.9460464432617383,
+    "dnp09_mean": 0.21380332585224313,
+    "frac_Left": 1.0,
+    "frac_Right": 0.0,
+    "frac_none": 0.0,
+    "buttons": {
+     "Left": 150
+    },
+    "died": false
+   }
+  ],
+  "left_ORN": [
+   {
+    "left_ORN_level": 0,
+    "x_start": 280,
+    "x_end": 434,
+    "x_min": 280,
+    "dx": 154,
+    "steer_mean": 0.04907831566592393,
+    "steer_last": 0.04907831566592394,
+    "dnp09_mean": 0.21298442399935283,
+    "frac_Left": 0.0,
+    "frac_Right": 1.0,
+    "frac_none": 0.0,
+    "buttons": {
+     "Right": 150
+    },
+    "died": false
+   },
+   {
+    "left_ORN_level": 20,
+    "x_start": 280,
+    "x_end": 434,
+    "x_min": 280,
+    "dx": 154,
+    "steer_mean": 0.009774690929429335,
+    "steer_last": 0.00951343675119784,
+    "dnp09_mean": 0.21358704412606708,
+    "frac_Left": 0.0,
+    "frac_Right": 1.0,
+    "frac_none": 0.0,
+    "buttons": {
+     "Right": 150
+    },
+    "died": false
+   },
+   {
+    "left_ORN_level": 50,
+    "x_start": 280,
+    "x_end": 182,
+    "x_min": 182,
+    "dx": -98,
+    "steer_mean": -0.010153712023102864,
+    "steer_last": -0.01042190524051581,
+    "dnp09_mean": 0.2139588567799975,
+    "frac_Left": 0.9866666666666667,
+    "frac_Right": 0.013333333333333334,
+    "frac_none": 0.0,
+    "buttons": {
+     "Left": 148,
+     "Right": 2
+    },
+    "died": false
+   },
+   {
+    "left_ORN_level": 100,
+    "x_start": 280,
+    "x_end": 182,
+    "x_min": 182,
+    "dx": -98,
+    "steer_mean": -0.010153712023102864,
+    "steer_last": -0.01042190524051581,
+    "dnp09_mean": 0.2139588567799975,
+    "frac_Left": 0.9866666666666667,
+    "frac_Right": 0.013333333333333334,
+    "frac_none": 0.0,
+    "buttons": {
+     "Left": 148,
+     "Right": 2
+    },
+    "died": false
+   },
+   {
+    "left_ORN_level": 200,
+    "x_start": 280,
+    "x_end": 182,
+    "x_min": 182,
+    "dx": -98,
+    "steer_mean": -0.010153712023102864,
+    "steer_last": -0.01042190524051581,
+    "dnp09_mean": 0.2139588567799975,
+    "frac_Left": 0.9866666666666667,
+    "frac_Right": 0.013333333333333334,
+    "frac_none": 0.0,
+    "buttons": {
+     "Left": 148,
+     "Right": 2
+    },
+    "died": false
+   }
+  ]
+ },
+ "baseline": {
+  "A": {
+   "x_end": 651,
+   "frames": 363,
+   "a_frac": 0.16804407713498623,
+   "left_presses": 0,
+   "hit": {
+    "256": false,
+    "336": false,
+    "368": false
+   },
+   "mushroom": false,
+   "powerup_max": 0,
+   "jumps_at_x": [
+    397,
+    537
+   ]
+  },
+  "B": {
+   "handover_mario_x": 560,
+   "mushroom": {
+    "slot": 5,
+    "type": 46,
+    "state": 192,
+    "x": 496,
+    "y": 184,
+    "xspd": 16,
+    "yspd": 1
+   },
+   "x_end": 1700,
+   "x_min": 562,
+   "left_presses": 0,
+   "left_frames": 0,
+   "powerup_max": 0,
+   "mushroom_x_track": [
+    497,
+    527,
+    557,
+    587,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "end": "died",
+   "cause": "died (other)"
+  }
+ }
+}

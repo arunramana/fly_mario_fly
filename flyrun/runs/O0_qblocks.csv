@@ -1,0 +1,13 @@
+x,row,tile,underside_above_ground,small_mario_rise_needed,reachable_from_ground,contents
+256,7,192,48,32,True,coin
+336,7,193,48,32,True,mushroom (power-up)
+352,3,192,112,96,False,coin
+368,7,192,48,32,True,coin
+1248,7,193,48,32,True,mushroom (power-up)
+1504,3,192,112,96,False,coin
+1696,7,192,48,32,True,coin
+1744,3,193,112,96,False,mushroom (power-up)
+1744,7,192,48,32,True,coin
+1792,7,192,48,32,True,coin
+2064,3,192,112,96,False,coin
+2080,3,192,112,96,False,coin
