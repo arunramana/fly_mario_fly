@@ -12,15 +12,13 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def pick_frames(base):
-    """(1) walking, nothing in view; (2) the first Goomba jump at GF firing; (3) a pit-tower jump at GF firing; (4) the flag."""
+    """The first Goomba jump (the frame the Giant Fiber fires) and the pit-tower jump of arm A."""
     from .panels import Log
     lg = Log(base)
-    d, gf = lg.df, lg.gf
-    calm = lambda k: not any(0 <= k - f <= 45 for f in lg.fire)       # no ring / JUMP flash left over from an earlier jump
-    walk = int(next(k for k in d.index[(d.threat == "none") & (d.hum_level == 0) & (d.x > 300) & (d.airborne == 0)] if calm(k)))
-    goomba = next(f for f in lg.fire if d.threat[f] == "goomba")      # the frame the Giant Fiber fires / the jump starts, on this kind of threat
+    d = lg.df
+    goomba = next(f for f in lg.fire if d.threat[f] == "goomba")
     pit = next(f for f in lg.fire if d.threat[f] == "pit")
-    return dict(R2_1_walking=walk, R2_2_goomba_jump=goomba, R2_3_pit_tower_jump=pit, R2_4_flag=len(d) - 1)
+    return dict(R3_1_goomba_jump=goomba, R3_2_pit_tower_jump=pit)
 
 
 def pick_frames_c(base):
@@ -28,7 +26,7 @@ def pick_frames_c(base):
     from .panels import Log
     d = Log(base).df
     k = int(d.index[(d.blocks_hit >= 1) & (d.hum_level > 0) & ((d.smell_L > 0) | (d.smell_R > 0))][0]) + 14
-    return dict(R2_5_armC_hum_smell=k)
+    return dict(R3_3_armC_hum_smell=k)
 
 
 def main():
@@ -40,10 +38,10 @@ def main():
         base = ROOT / "runs" / f"R1_{a[1]}"
         fr = pick_frames(base) if a[1] == "armA" else pick_frames_c(base)
         print(fr)
-        stills(base, fr, ROOT / "clips" / "R2_stills")
+        stills(base, fr, ROOT / "clips" / "R3_stills")
         if a[1] == "armA":
             from .panels import Log, title_card
-            title_card(Log(base), ROOT / "clips" / "R2_title_card.png")
+            title_card(Log(base), ROOT / "clips" / "R3_title_card.png")
     elif a[0] == "video":
         from .video import video
         video(ROOT / "runs" / f"R1_{a[1]}", a[2], )

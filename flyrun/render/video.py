@@ -35,7 +35,8 @@ def stills(base, frames, outdir, label=None):
             img = rd.frame(nes, k)
             done[k] = img
         else:
-            rd.brain.draw(k)      # advance the ring state
+            if getattr(rd, 'stateful', True):
+                rd.brain.draw(k)      # advance the ring state
     outdir = Path(outdir)
     outdir.mkdir(parents=True, exist_ok=True)
     for name, k in frames.items():
