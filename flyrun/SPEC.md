@@ -27,3 +27,7 @@ M Smell. The live mushroom (power-up slot) smells sweet. It is drawn as a GREEN 
 - Route: real wiring ORN → PN → … → LAL030 → DNa (O0) → steering.
 INVENTED (orange): the smell cue and SMELL_GAIN. Toggle: SMELL_SENSE.
 Note (Q2): with no smell, the mushroom was eaten only because he was stuck at pipe 1; mushroom-ahead is eaten by walking, so it isn't a smell test.
+
+Four drives, each toggleable: looming (enemy/pipe/pit), home, hum, smell. Every scene states which are on. (Toggles: enemy looming = the `enemy_input` run switch, PIPE_SENSE, PIT_SENSE, HOME_SENSE, HUM_SENSE, SMELL_SENSE; every M2b+ run log records the set via `knobs.toggle_set`.)
+M2 note: M2: the turn happened only after pipe 2 stopped him; the no-smell fly also ate it by contact; margin 2e-5 (smell ≈ home). Not yet a real test.
+

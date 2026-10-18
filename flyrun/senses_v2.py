@@ -230,7 +230,7 @@ class SensesV2:
             if name == "LPLC2_R":
                 th_factor = float(np.mean(noise))
             I[idx] = val * noise
-        I[self.m["LC10a_R"]] = self.k.HOME_R
+        I[self.m["LC10a_R"]] = self.k.HOME_R if self.k.HOME_SENSE else 0.0
         lm = Loom(th, dth, tau, src, d, th * th_factor)
         lm.extra = dict(threat_kind=src, threat_id="" if ident is None else f"{ident[0]}:{ident[1]}",
                         box=None if t is None else (t.x, t.top, t.w, t.h), base=None if t is None else t.base, rims=None if t is None else t.rims)

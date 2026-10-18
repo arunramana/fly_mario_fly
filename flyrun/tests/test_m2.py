@@ -76,3 +76,15 @@ def test_orn_brain_has_ipsilateral_orn_masks_and_smell_off_reproduces_s3e():
         assert (df.x.to_numpy() == ref.x.to_numpy()).all() and (df.a.to_numpy() == ref.a.to_numpy()).all()
     finally:
         del os.environ["FLYRUN_WFILE"], os.environ["FLYRUN_BODIES"]
+
+
+# ---------------------------------------------------------------- M2b: the home toggle
+def test_home_sense_off_zeroes_the_home_input_and_default_is_on():
+    from flyrun.knobs import toggle_set
+    assert Knobs().HOME_SENSE is True
+    I, _ = _look(560, None)
+    assert I[8] == Knobs().HOME_R                             # LC10a_R mask index in _masks
+    I, _ = _look(560, None, replace(KN, HOME_SENSE=False))
+    assert I[8] == 0.0
+    t = toggle_set(replace(KN, HOME_SENSE=False, PIPE_SENSE=False, PIT_SENSE=False), enemy_input=False)
+    assert t == dict(looming_enemy=False, looming_pipe=False, looming_pit=False, home=False, hum=False, smell=True)

@@ -40,11 +40,11 @@ def setup(mushroom=True):
     return sim, dict(mario_x=sim.mx, mario_feet=int(r[0xCE]), mushroom=sim.powerup())
 
 
-def run_fly(wfile, smell, sigma=0.0, seed=0, mushroom=True, record=False, frames=MAX_FRAMES, gain=None):
+def run_fly(wfile, smell, sigma=0.0, seed=0, mushroom=True, record=False, frames=MAX_FRAMES, gain=None, home=True, setup_fn=None):
     os.environ["FLYRUN_WFILE"], os.environ["FLYRUN_BODIES"] = wfile, BODIES
     from . import run as R
     from .brain import load_brain
-    sim, hand = setup(mushroom)
+    sim, hand = (setup_fn or setup)(mushroom)
     brain = load_brain()
     env = R._get_env()
     ram = env.unwrapped.ram
@@ -67,7 +67,7 @@ def run_fly(wfile, smell, sigma=0.0, seed=0, mushroom=True, record=False, frames
             return out[0], out[1], True, out[3]
         return out
     env.step = step
-    kn = replace(KN, SMELL_SENSE=smell, SENSOR_NOISE=sigma, **({"SMELL_GAIN": gain} if gain is not None else {}))
+    kn = replace(KN, SMELL_SENSE=smell, HOME_SENSE=home, SENSOR_NOISE=sigma, **({"SMELL_GAIN": gain} if gain is not None else {}))
     try:
         s, df = R.run_episode(kn, brain, noop_start=0, max_frames=frames, stuck_frames=10 ** 6, record=record, enemy_input=False, episode_seed=seed if sigma > 0 else None)
     finally:
@@ -112,7 +112,7 @@ def summarise(df):
 
 
 def csv_cols(df):
-    out = pd.DataFrame(dict(frame=df.frame, mario_x=df.x, mushroom_x=df.mushroom_x, gap=df.x - df.mushroom_x, smell_L=df.smell_L, smell_R=df.smell_R, steer_RminusL=df.steer, dnp09=df.dnp09,
+    out = pd.DataFrame(dict(frame=df.frame, mario_x=df.x, mushroom_x=df.mushroom_x, gap=df.x - df.mushroom_x, smell_L=df.get("smell_L", 0.0), smell_R=df.get("smell_R", 0.0), steer_RminusL=df.steer, dnp09=df.dnp09,
                             left=df.left, right=df.right, a=df.a, powerup=df.powerup, mushroom_active=df.mushroom_active))
     out["dna_L_minus_R"] = -out.steer_RminusL
     return out.round(5)

@@ -31,6 +31,7 @@ class Knobs:
     PIT_SENSE: bool = True       # INVENTED (fixed): feed pits to the loom detectors (a pit has no face; nb 15)
     PIT_GAIN: float = 1.0        # INVENTED (evolved): scale on the pit's theta (nb 15 used 1.0)
 
+    HOME_SENSE: bool = True      # INVENTED (fixed), Part M2b: the home signal (HOME_R into LC10a-R); off = 0 input (v2 senses). Default on = every earlier result
     HUM_SENSE: bool = False      # INVENTED (fixed), Part Q1: unused reachable '?' blocks hum into the 20 JO neurons (needs the JO brain, v2 senses)
     HUM_GAIN: float = 14.5342    # INVENTED (fixed), Part Q1: hum loudness = HUM_GAIN x theta_block (rad) into each JO neuron. FROZEN: chosen once so the press falls in the middle of the hit window (runs/Q1.md)
     SMELL_SENSE: bool = False    # INVENTED (fixed), Part M2: the live mushroom smells sweet into the attractive ORNs of the antenna on its side (needs the ORN brain, v2 senses)
@@ -98,6 +99,7 @@ INVENTED = {
     "RANDOM_A_P": ("fixed", "right_randA baseline P(A)"),
     "SCRIPT_HOLD": ("fixed", "scripted driver jump length (assisted tests only, never in fitness)"),
     "MOTOR_VERSION": ("fixed", "v1 = forced A_HOLD + COOLDOWN; v2 = the fly holds A while TTMn stays above threshold (Part S2)"),
+    "HOME_SENSE": ("fixed", "M2b: toggle of the home signal (HOME_R into LC10a-R each frame); on by default"),
     "HUM_SENSE": ("fixed", "Q1: the hum cue (invented): the nearest unused reachable ? block hums into the 20 direct JO -> GF neurons (real wiring); off by default"),
     "HUM_GAIN": ("fixed", "Q1: hum loudness = HUM_GAIN x the block's angular size (rad); 14.5342, chosen once from the hit window and frozen (runs/Q1.md)"),
     "SMELL_SENSE": ("fixed", "M2: the smell cue (invented): the live mushroom drives the attractive ORNs (DM1, VA2, DM4) of the antenna on its side; off by default"),
@@ -117,3 +119,8 @@ INVENTED = {
     "W_steer construction": ("fixed", "cast choice, top-40 LC10a->DNa intermediates, predicted-NT signs, "
                                       "row-normalisation (tutorials/20_steering.ipynb)"),
 }
+
+
+def toggle_set(k, enemy_input=True):
+    """The drives switched on in a run (every M2b+ run log records this): looming (enemy / pipe / pit), home, hum, smell."""
+    return dict(looming_enemy=bool(enemy_input), looming_pipe=bool(k.PIPE_SENSE), looming_pit=bool(k.PIT_SENSE), home=bool(k.HOME_SENSE), hum=bool(k.HUM_SENSE), smell=bool(k.SMELL_SENSE))
