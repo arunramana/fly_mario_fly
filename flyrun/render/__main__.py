@@ -20,7 +20,7 @@ def pick_frames(base):
     walk = int(next(k for k in d.index[(d.threat == "none") & (d.hum_level == 0) & (d.x > 300) & (d.airborne == 0)] if calm(k)))
     goomba = next(f for f in lg.fire if d.threat[f] == "goomba")      # the frame the Giant Fiber fires / the jump starts, on this kind of threat
     pit = next(f for f in lg.fire if d.threat[f] == "pit")
-    return dict(R1_1_walking=walk, R1_2_goomba_jump=goomba, R1_3_pit_tower_jump=pit, R1_4_flag=len(d) - 1)
+    return dict(R2_1_walking=walk, R2_2_goomba_jump=goomba, R2_3_pit_tower_jump=pit, R2_4_flag=len(d) - 1)
 
 
 def pick_frames_c(base):
@@ -28,7 +28,7 @@ def pick_frames_c(base):
     from .panels import Log
     d = Log(base).df
     k = int(d.index[(d.blocks_hit >= 1) & (d.hum_level > 0) & ((d.smell_L > 0) | (d.smell_R > 0))][0]) + 14
-    return dict(R1_5_armC_hum_smell=k)
+    return dict(R2_5_armC_hum_smell=k)
 
 
 def main():
@@ -40,10 +40,13 @@ def main():
         base = ROOT / "runs" / f"R1_{a[1]}"
         fr = pick_frames(base) if a[1] == "armA" else pick_frames_c(base)
         print(fr)
-        stills(base, fr, ROOT / "clips" / "R1_stills", label=f"arm {a[1][-1]}   noop 0   sigma 0")
+        stills(base, fr, ROOT / "clips" / "R2_stills")
+        if a[1] == "armA":
+            from .panels import Log, title_card
+            title_card(Log(base), ROOT / "clips" / "R2_title_card.png")
     elif a[0] == "video":
         from .video import video
-        video(ROOT / "runs" / f"R1_{a[1]}", a[2], label=f"arm {a[1][-1]}   noop 0   sigma 0")
+        video(ROOT / "runs" / f"R1_{a[1]}", a[2], )
 
 
 if __name__ == "__main__":
