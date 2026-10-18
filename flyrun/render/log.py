@@ -28,7 +28,7 @@ def soma_all():
     return d.bodyId.to_numpy(), xyz
 
 
-def run_log(arm, name=None, ep=EP0, max_frames=3000):
+def run_log(arm, name=None, ep=EP0, max_frames=3000, prefix="R1"):
     """-> prefix path. Writes runs/R1_<name>.npz (h float16 (frames, neurons), actions), runs/R1_<name>.csv."""
     from ..run import run_episode
     from dataclasses import replace
@@ -47,7 +47,7 @@ def run_log(arm, name=None, ep=EP0, max_frames=3000):
     out["smell_top"] = sb.map(lambda b: b[1] if isinstance(b, tuple) else np.nan)
     out["smell_L"], out["smell_R"] = df.get("smell_L", 0.0), df.get("smell_R", 0.0)
     out["flag"] = int(s["flag_get"])
-    base = ROOT / "runs" / f"R1_{name}"
+    base = ROOT / "runs" / f"{prefix}_{name}"
     out.to_csv(f"{base}.csv", index=False, lineterminator="\n")
     np.savez_compressed(f"{base}.npz", h=df.attrs["H"].astype(np.float16))
     json.dump(dict(summary={k_: v for k_, v in s.items()}, toggles=df.attrs["toggles"], arm=arm, episode=ep), open(f"{base}.json", "w"), indent=1, default=float)

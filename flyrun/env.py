@@ -21,7 +21,9 @@ N_ENEMY_SLOTS, POWERUP_ID = 5, 0x2E
 
 
 def make_env():
-    env = gym_super_mario_bros.make("SuperMarioBros-1-1-v0")
+    # FLYRUN_LEVEL (a harness switch, default "1-1"): L2 runs the same fly on "1-2"
+    import os
+    env = gym_super_mario_bros.make(f"SuperMarioBros-{os.environ.get('FLYRUN_LEVEL', '1-1')}-v0")
     return JoypadSpace(env, COMBOS)
 
 
