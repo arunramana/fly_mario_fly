@@ -3,7 +3,7 @@ Writes runs/<tag>_smoke_log.csv (per frame), runs/<tag>_jumps.csv (per jump), pr
 renders a clip (0.5x, with TTMn / A / airborne overlay and the S1 threat box).
 python -m flyrun.smoke_s2          -> S2 (first three obstacles)
 python -m flyrun.smoke_s2 S2b      -> S2b: from the start, plus an ASSISTED run (scripted driver to x 1000, then the fly) for pit 1
-python -m flyrun.smoke_s2 S2c      -> S2c: same runs with the S2c senses (above-and-over faces, pit virtual wall); clip clips/S2c.mp4"""
+python -m flyrun.smoke_s2 S2c      -> S2c: same runs with the S2c senses (above-and-over faces, pit virtual wall; superseded by S3 senses); clip clips/S2c.mp4"""
 import sys
 from dataclasses import replace
 from pathlib import Path
@@ -83,7 +83,7 @@ def run(tag, **run_kw):
     return s, df
 
 
-def write_clip(parts, path, title):
+def write_clip(parts, path, title, fps=30, speed="0.5x"):
     """parts: [(df, idx, label)]; 0.5x playback (30 fps of the 60 Hz game)."""
     thr = KN.TTMN_THRESH
     vw, n = None, 0
@@ -91,14 +91,14 @@ def write_clip(parts, path, title):
         frames = df.attrs["frames"]
         h, w = frames[0].shape[:2]
         if vw is None:
-            vw = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"mp4v"), 30, (w * S + 260, h * S))
+            vw = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"mp4v"), fps, (w * S + 260, h * S))
         for k in idx:
             r = df.iloc[k]
             img = cv2.cvtColor(cv2.resize(np.ascontiguousarray(frames[k + 1]), None, fx=S, fy=S, interpolation=cv2.INTER_NEAREST), cv2.COLOR_RGB2BGR)
             if isinstance(r.box, tuple):
                 bx, top, bw, bh = r.box
                 sx, y0 = bx - r.extra[0], top + 32
-                col = {"goomba": (0, 0, 255), "koopa": (0, 165, 255), "shell": (0, 165, 255), "face": (255, 200, 0), "pit": (255, 0, 255), "pitwall": (255, 0, 255)}.get(r.threat_kind, (255, 255, 255))
+                col = {"goomba": (0, 0, 255), "koopa": (0, 165, 255), "shell": (0, 165, 255), "face": (255, 200, 0), "pit": (255, 0, 255)}.get(r.threat_kind, (255, 255, 255))
                 cv2.rectangle(img, (int(sx * S), int(y0 * S)), (int((sx + bw) * S), int((y0 + bh) * S)), col, 2)
             pan = np.full((h * S, 260, 3), 24, np.uint8)
 
@@ -107,7 +107,7 @@ def write_clip(parts, path, title):
                 cv2.putText(pan, t, (8, y), cv2.FONT_HERSHEY_SIMPLEX, sc, c, 1, cv2.LINE_AA)
             put(title, 20, sc=0.42)
             put(label, 40, (0, 200, 255) if "ASSISTED" in label else (200, 200, 200), 0.4)
-            put(f"0.5x  frame {int(r.frame)}  x {int(r.x)}", 62, sc=0.42)
+            put(f"{speed}  frame {int(r.frame)}  x {int(r.x)}", 62, sc=0.42)
             put(f"threat {r.threat_kind} {r.threat_id}", 86, sc=0.42)
             sd = "-" if pd.isna(r.stim_d) else f"{r.stim_d:.0f} px"
             put(f"d {sd}  theta {np.degrees(r.theta):.0f} deg", 108, sc=0.42)
@@ -122,7 +122,7 @@ def write_clip(parts, path, title):
             vw.write(np.concatenate([img, pan], axis=1))
             n += 1
     vw.release()
-    print("clip frames", n, "= %.1f s at 0.5x" % (n / 30))
+    print("clip frames", n, "= %.1f s at %s" % (n / fps, speed))
 
 
 def main():

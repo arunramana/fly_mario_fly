@@ -20,6 +20,7 @@ ADDR_MARIO_PAGE, ADDR_MARIO_X = 0x006D, 0x0086
 ADDR_SCREEN_PAGE, ADDR_SCREEN_X = 0x071A, 0x071C   # world x of the screen's left edge
 
 SOLID_WALL = {18, 19, 20, 21, 97}   # INVENTED (fixed), hand-identified on 1-1: pipe pieces + hard (stair) block; run 001 notes
+RIM_TILES = {16, 17}   # INVENTED (fixed), S3 0a: the rim of 1-1 pipe 4 (ids 16/17; pipes 1-3 use 18/19). Only read when scan_visible(rim=True) (senses v2); v1 keeps SOLID_WALL as it was
 EMPTY = 0
 
 
@@ -49,14 +50,15 @@ def _mx(ram):
     return int(ram[ADDR_MARIO_PAGE]) * 256 + int(ram[ADDR_MARIO_X])
 
 
-def scan_visible(ram):
-    """-> (walls, pits) over the visible screen: walls [(x, H)] per column, pits [(x, w)]."""
+def scan_visible(ram, rim=False):
+    """-> (walls, pits) over the visible screen: walls [(x, H)] per column, pits [(x, w)]. rim=True (senses v2) also counts the RIM_TILES as wall."""
+    solid = SOLID_WALL | RIM_TILES if rim else SOLID_WALL
     left, right = _visible_range(ram)
     walls, pits, cur = [], [], None
     for wx in range((left // TILE) * TILE, right, TILE):
-        if tile(ram, wx, ROW_STAND) in SOLID_WALL:
+        if tile(ram, wx, ROW_STAND) in solid:
             r = ROW_STAND
-            while r >= 0 and tile(ram, wx, r) in SOLID_WALL:
+            while r >= 0 and tile(ram, wx, r) in solid:
                 r -= 1
             walls.append((wx, (ROW_STAND - r) * TILE))
         no_ground = tile(ram, wx, ROW_GROUND) == EMPTY and tile(ram, wx, ROW_GROUND + 1) == EMPTY

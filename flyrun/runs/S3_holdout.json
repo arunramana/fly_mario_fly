@@ -1,0 +1,4816 @@
+{
+ "trigger": {
+  "median_deg": 43.60281897270362,
+  "n_onsets": 50,
+  "min_deg": 41.11209043916693,
+  "max_deg": 50.40224729095014
+ },
+ "real": [
+  {
+   "arm": "real",
+   "kind": "episode",
+   "noop_start": 3,
+   "seed": 101,
+   "sigma": 0.0,
+   "max_x": 1128,
+   "flag": false,
+   "end": "died",
+   "x_end": 1128,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.23472222222222222,
+   "onsets": [
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     280
+    ],
+    [
+     43.60281897270362,
+     "face",
+     40.0,
+     398
+    ],
+    [
+     43.60281897270362,
+     "face",
+     60.0,
+     538
+    ],
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     688
+    ],
+    [
+     47.924977949156364,
+     "face",
+     72.0,
+     830
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     43.937080228471174,
+     "pit",
+     17.0,
+     1077
+    ]
+   ],
+   "traj": "ebeed3c251",
+   "frames": 720,
+   "secs": 8.499261856079102
+  },
+  {
+   "arm": "real",
+   "kind": "episode",
+   "noop_start": 11,
+   "seed": 102,
+   "sigma": 0.0,
+   "max_x": 1128,
+   "flag": false,
+   "end": "died",
+   "x_end": 1128,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.23214285714285715,
+   "onsets": [
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     280
+    ],
+    [
+     43.60281897270362,
+     "face",
+     40.0,
+     398
+    ],
+    [
+     43.60281897270362,
+     "face",
+     60.0,
+     538
+    ],
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     688
+    ],
+    [
+     47.924977949156364,
+     "face",
+     72.0,
+     830
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     43.937080228471174,
+     "pit",
+     17.0,
+     1077
+    ]
+   ],
+   "traj": "96438cda00",
+   "frames": 728,
+   "secs": 8.614349126815796
+  },
+  {
+   "arm": "real",
+   "kind": "episode",
+   "noop_start": 25,
+   "seed": 103,
+   "sigma": 0.0,
+   "max_x": 1128,
+   "flag": false,
+   "end": "died",
+   "x_end": 1128,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.22776280323450135,
+   "onsets": [
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     280
+    ],
+    [
+     43.60281897270362,
+     "face",
+     40.0,
+     398
+    ],
+    [
+     43.60281897270362,
+     "face",
+     60.0,
+     538
+    ],
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     688
+    ],
+    [
+     47.924977949156364,
+     "face",
+     72.0,
+     830
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     43.937080228471174,
+     "pit",
+     17.0,
+     1077
+    ]
+   ],
+   "traj": "4a0244cec1",
+   "frames": 742,
+   "secs": 8.982513666152954
+  },
+  {
+   "arm": "real",
+   "kind": "episode",
+   "noop_start": 33,
+   "seed": 104,
+   "sigma": 0.0,
+   "max_x": 1128,
+   "flag": false,
+   "end": "died",
+   "x_end": 1128,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.22533333333333333,
+   "onsets": [
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     280
+    ],
+    [
+     43.60281897270362,
+     "face",
+     40.0,
+     398
+    ],
+    [
+     43.60281897270362,
+     "face",
+     60.0,
+     538
+    ],
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     688
+    ],
+    [
+     47.924977949156364,
+     "face",
+     72.0,
+     830
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     43.937080228471174,
+     "pit",
+     17.0,
+     1077
+    ]
+   ],
+   "traj": "a12d26d9ad",
+   "frames": 750,
+   "secs": 8.714341878890991
+  },
+  {
+   "arm": "real",
+   "kind": "episode",
+   "noop_start": 41,
+   "seed": 105,
+   "sigma": 0.0,
+   "max_x": 1128,
+   "flag": false,
+   "end": "died",
+   "x_end": 1128,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.22295514511873352,
+   "onsets": [
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     280
+    ],
+    [
+     43.60281897270362,
+     "face",
+     40.0,
+     398
+    ],
+    [
+     43.60281897270362,
+     "face",
+     60.0,
+     538
+    ],
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     688
+    ],
+    [
+     47.924977949156364,
+     "face",
+     72.0,
+     830
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     43.937080228471174,
+     "pit",
+     17.0,
+     1077
+    ]
+   ],
+   "traj": "aa7cdd8e74",
+   "frames": 758,
+   "secs": 8.633523225784302
+  },
+  {
+   "arm": "real",
+   "kind": "episode",
+   "noop_start": 3,
+   "seed": 101,
+   "sigma": 0.05,
+   "max_x": 1128,
+   "flag": false,
+   "end": "died",
+   "x_end": 1128,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.2375,
+   "onsets": [
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     280
+    ],
+    [
+     41.708916079156694,
+     "face",
+     42.0,
+     396
+    ],
+    [
+     42.322519633656555,
+     "face",
+     62.0,
+     536
+    ],
+    [
+     50.40224729095014,
+     "goomba",
+     17.0,
+     690
+    ],
+    [
+     47.924977949156364,
+     "face",
+     72.0,
+     830
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     43.937080228471174,
+     "pit",
+     17.0,
+     1077
+    ]
+   ],
+   "traj": "965425bb3e",
+   "frames": 720,
+   "secs": 8.817646026611328
+  },
+  {
+   "arm": "real",
+   "kind": "episode",
+   "noop_start": 11,
+   "seed": 102,
+   "sigma": 0.05,
+   "max_x": 1414,
+   "flag": false,
+   "end": "died",
+   "x_end": 1414,
+   "cause": "pit",
+   "blind": 3,
+   "left_presses": 0,
+   "a_frac": 0.20833333333333334,
+   "onsets": [
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     280
+    ],
+    [
+     43.60281897270362,
+     "face",
+     40.0,
+     398
+    ],
+    [
+     44.958868794206225,
+     "face",
+     58.0,
+     539
+    ],
+    [
+     50.40224729095014,
+     "goomba",
+     17.0,
+     690
+    ],
+    [
+     47.924977949156364,
+     "face",
+     72.0,
+     830
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     48.317425825838114,
+     "pit",
+     13.0,
+     1080
+    ],
+    [
+     58.91249467652,
+     "pit",
+     0.0,
+     1129
+    ],
+    [
+     43.66986479136847,
+     "pit",
+     21.0,
+     1345
+    ]
+   ],
+   "traj": "77550a0cf4",
+   "frames": 888,
+   "secs": 12.147296667098999
+  },
+  {
+   "arm": "real",
+   "kind": "episode",
+   "noop_start": 25,
+   "seed": 103,
+   "sigma": 0.05,
+   "max_x": 1127,
+   "flag": false,
+   "end": "died",
+   "x_end": 1127,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.22807017543859648,
+   "onsets": [
+    [
+     50.40224729095014,
+     "goomba",
+     17.0,
+     282
+    ],
+    [
+     45.66730835583508,
+     "face",
+     38.0,
+     399
+    ],
+    [
+     41.11209043916693,
+     "face",
+     64.0,
+     534
+    ],
+    [
+     50.40224729095014,
+     "goomba",
+     17.0,
+     690
+    ],
+    [
+     47.924977949156364,
+     "face",
+     72.0,
+     830
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     43.937080228471174,
+     "pit",
+     17.0,
+     1077
+    ]
+   ],
+   "traj": "5c0c49b425",
+   "frames": 741,
+   "secs": 10.753193616867065
+  },
+  {
+   "arm": "real",
+   "kind": "episode",
+   "noop_start": 33,
+   "seed": 104,
+   "sigma": 0.05,
+   "max_x": 1128,
+   "flag": false,
+   "end": "died",
+   "x_end": 1128,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.22533333333333333,
+   "onsets": [
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     280
+    ],
+    [
+     45.66730835583508,
+     "face",
+     38.0,
+     399
+    ],
+    [
+     42.322519633656555,
+     "face",
+     62.0,
+     536
+    ],
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     688
+    ],
+    [
+     47.924977949156364,
+     "face",
+     72.0,
+     830
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     43.937080228471174,
+     "pit",
+     17.0,
+     1077
+    ]
+   ],
+   "traj": "ca5d3d5fce",
+   "frames": 750,
+   "secs": 10.777804851531982
+  },
+  {
+   "arm": "real",
+   "kind": "episode",
+   "noop_start": 41,
+   "seed": 105,
+   "sigma": 0.05,
+   "max_x": 1127,
+   "flag": false,
+   "end": "died",
+   "x_end": 1127,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.22324966974900926,
+   "onsets": [
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     280
+    ],
+    [
+     43.60281897270362,
+     "face",
+     40.0,
+     398
+    ],
+    [
+     43.60281897270362,
+     "face",
+     60.0,
+     538
+    ],
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     688
+    ],
+    [
+     47.924977949156364,
+     "face",
+     72.0,
+     830
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     41.882306656982756,
+     "pit",
+     19.0,
+     1075
+    ]
+   ],
+   "traj": "367515fbe2",
+   "frames": 757,
+   "secs": 10.797791957855225
+  },
+  {
+   "arm": "real",
+   "kind": "silence",
+   "a_frac": 0.0
+  }
+ ],
+ "shuf0": [
+  {
+   "arm": "shuf0",
+   "kind": "episode",
+   "noop_start": 3,
+   "seed": 101,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "c0114909ae",
+   "frames": 151,
+   "secs": 2.937770366668701
+  },
+  {
+   "arm": "shuf0",
+   "kind": "episode",
+   "noop_start": 11,
+   "seed": 102,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "1f9c3b799d",
+   "frames": 151,
+   "secs": 3.0512547492980957
+  },
+  {
+   "arm": "shuf0",
+   "kind": "episode",
+   "noop_start": 25,
+   "seed": 103,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "2056a693bd",
+   "frames": 151,
+   "secs": 2.917341470718384
+  },
+  {
+   "arm": "shuf0",
+   "kind": "episode",
+   "noop_start": 33,
+   "seed": 104,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "c45ce97830",
+   "frames": 151,
+   "secs": 2.7086899280548096
+  },
+  {
+   "arm": "shuf0",
+   "kind": "episode",
+   "noop_start": 41,
+   "seed": 105,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "3395d286a5",
+   "frames": 151,
+   "secs": 2.5749237537384033
+  },
+  {
+   "arm": "shuf0",
+   "kind": "episode",
+   "noop_start": 3,
+   "seed": 101,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "c0114909ae",
+   "frames": 151,
+   "secs": 3.1193647384643555
+  },
+  {
+   "arm": "shuf0",
+   "kind": "episode",
+   "noop_start": 11,
+   "seed": 102,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "1f9c3b799d",
+   "frames": 151,
+   "secs": 3.118591547012329
+  },
+  {
+   "arm": "shuf0",
+   "kind": "episode",
+   "noop_start": 25,
+   "seed": 103,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "2056a693bd",
+   "frames": 151,
+   "secs": 2.724997043609619
+  },
+  {
+   "arm": "shuf0",
+   "kind": "episode",
+   "noop_start": 33,
+   "seed": 104,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "c45ce97830",
+   "frames": 151,
+   "secs": 2.5934581756591797
+  },
+  {
+   "arm": "shuf0",
+   "kind": "episode",
+   "noop_start": 41,
+   "seed": 105,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "3395d286a5",
+   "frames": 151,
+   "secs": 2.6644041538238525
+  },
+  {
+   "arm": "shuf0",
+   "kind": "silence",
+   "a_frac": 0.0
+  }
+ ],
+ "shuf1": [
+  {
+   "arm": "shuf1",
+   "kind": "episode",
+   "noop_start": 3,
+   "seed": 101,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "c0114909ae",
+   "frames": 151,
+   "secs": 3.3628978729248047
+  },
+  {
+   "arm": "shuf1",
+   "kind": "episode",
+   "noop_start": 11,
+   "seed": 102,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "1f9c3b799d",
+   "frames": 151,
+   "secs": 2.8612923622131348
+  },
+  {
+   "arm": "shuf1",
+   "kind": "episode",
+   "noop_start": 25,
+   "seed": 103,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "2056a693bd",
+   "frames": 151,
+   "secs": 2.943566083908081
+  },
+  {
+   "arm": "shuf1",
+   "kind": "episode",
+   "noop_start": 33,
+   "seed": 104,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "c45ce97830",
+   "frames": 151,
+   "secs": 2.8914263248443604
+  },
+  {
+   "arm": "shuf1",
+   "kind": "episode",
+   "noop_start": 41,
+   "seed": 105,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "3395d286a5",
+   "frames": 151,
+   "secs": 2.520578145980835
+  },
+  {
+   "arm": "shuf1",
+   "kind": "episode",
+   "noop_start": 3,
+   "seed": 101,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "c0114909ae",
+   "frames": 151,
+   "secs": 2.945408582687378
+  },
+  {
+   "arm": "shuf1",
+   "kind": "episode",
+   "noop_start": 11,
+   "seed": 102,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "1f9c3b799d",
+   "frames": 151,
+   "secs": 3.029611110687256
+  },
+  {
+   "arm": "shuf1",
+   "kind": "episode",
+   "noop_start": 25,
+   "seed": 103,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "2056a693bd",
+   "frames": 151,
+   "secs": 2.9389142990112305
+  },
+  {
+   "arm": "shuf1",
+   "kind": "episode",
+   "noop_start": 33,
+   "seed": 104,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "c45ce97830",
+   "frames": 151,
+   "secs": 2.6325621604919434
+  },
+  {
+   "arm": "shuf1",
+   "kind": "episode",
+   "noop_start": 41,
+   "seed": 105,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "3395d286a5",
+   "frames": 151,
+   "secs": 2.5692481994628906
+  },
+  {
+   "arm": "shuf1",
+   "kind": "silence",
+   "a_frac": 0.0
+  }
+ ],
+ "shuf2": [
+  {
+   "arm": "shuf2",
+   "kind": "episode",
+   "noop_start": 3,
+   "seed": 101,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "c0114909ae",
+   "frames": 151,
+   "secs": 3.0042381286621094
+  },
+  {
+   "arm": "shuf2",
+   "kind": "episode",
+   "noop_start": 11,
+   "seed": 102,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "1f9c3b799d",
+   "frames": 151,
+   "secs": 3.2068731784820557
+  },
+  {
+   "arm": "shuf2",
+   "kind": "episode",
+   "noop_start": 25,
+   "seed": 103,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "2056a693bd",
+   "frames": 151,
+   "secs": 3.0770084857940674
+  },
+  {
+   "arm": "shuf2",
+   "kind": "episode",
+   "noop_start": 33,
+   "seed": 104,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "c45ce97830",
+   "frames": 151,
+   "secs": 2.616100788116455
+  },
+  {
+   "arm": "shuf2",
+   "kind": "episode",
+   "noop_start": 41,
+   "seed": 105,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "3395d286a5",
+   "frames": 151,
+   "secs": 2.8794455528259277
+  },
+  {
+   "arm": "shuf2",
+   "kind": "episode",
+   "noop_start": 3,
+   "seed": 101,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "c0114909ae",
+   "frames": 151,
+   "secs": 3.0029447078704834
+  },
+  {
+   "arm": "shuf2",
+   "kind": "episode",
+   "noop_start": 11,
+   "seed": 102,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "1f9c3b799d",
+   "frames": 151,
+   "secs": 3.285513401031494
+  },
+  {
+   "arm": "shuf2",
+   "kind": "episode",
+   "noop_start": 25,
+   "seed": 103,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "2056a693bd",
+   "frames": 151,
+   "secs": 2.7002909183502197
+  },
+  {
+   "arm": "shuf2",
+   "kind": "episode",
+   "noop_start": 33,
+   "seed": 104,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "c45ce97830",
+   "frames": 151,
+   "secs": 3.0769412517547607
+  },
+  {
+   "arm": "shuf2",
+   "kind": "episode",
+   "noop_start": 41,
+   "seed": 105,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "3395d286a5",
+   "frames": 151,
+   "secs": 2.5326554775238037
+  },
+  {
+   "arm": "shuf2",
+   "kind": "silence",
+   "a_frac": 0.0
+  }
+ ],
+ "shuf3": [
+  {
+   "arm": "shuf3",
+   "kind": "episode",
+   "noop_start": 3,
+   "seed": 101,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "c0114909ae",
+   "frames": 151,
+   "secs": 2.7599937915802
+  },
+  {
+   "arm": "shuf3",
+   "kind": "episode",
+   "noop_start": 11,
+   "seed": 102,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "1f9c3b799d",
+   "frames": 151,
+   "secs": 2.7339236736297607
+  },
+  {
+   "arm": "shuf3",
+   "kind": "episode",
+   "noop_start": 25,
+   "seed": 103,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "2056a693bd",
+   "frames": 151,
+   "secs": 2.6582343578338623
+  },
+  {
+   "arm": "shuf3",
+   "kind": "episode",
+   "noop_start": 33,
+   "seed": 104,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "c45ce97830",
+   "frames": 151,
+   "secs": 3.0691709518432617
+  },
+  {
+   "arm": "shuf3",
+   "kind": "episode",
+   "noop_start": 41,
+   "seed": 105,
+   "sigma": 0.0,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "3395d286a5",
+   "frames": 151,
+   "secs": 2.496281385421753
+  },
+  {
+   "arm": "shuf3",
+   "kind": "episode",
+   "noop_start": 3,
+   "seed": 101,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "c0114909ae",
+   "frames": 151,
+   "secs": 3.375786781311035
+  },
+  {
+   "arm": "shuf3",
+   "kind": "episode",
+   "noop_start": 11,
+   "seed": 102,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "1f9c3b799d",
+   "frames": 151,
+   "secs": 2.8759894371032715
+  },
+  {
+   "arm": "shuf3",
+   "kind": "episode",
+   "noop_start": 25,
+   "seed": 103,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "2056a693bd",
+   "frames": 151,
+   "secs": 2.7632477283477783
+  },
+  {
+   "arm": "shuf3",
+   "kind": "episode",
+   "noop_start": 33,
+   "seed": 104,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "c45ce97830",
+   "frames": 151,
+   "secs": 2.4493627548217773
+  },
+  {
+   "arm": "shuf3",
+   "kind": "episode",
+   "noop_start": 41,
+   "seed": 105,
+   "sigma": 0.05,
+   "max_x": 40,
+   "flag": false,
+   "end": "stuck",
+   "x_end": 0,
+   "cause": "stuck (open ground)",
+   "blind": 0,
+   "left_presses": 1,
+   "a_frac": 0.0,
+   "onsets": [],
+   "traj": "3395d286a5",
+   "frames": 151,
+   "secs": 2.330501079559326
+  },
+  {
+   "arm": "shuf3",
+   "kind": "silence",
+   "a_frac": 0.0
+  }
+ ],
+ "shuf4": [
+  {
+   "arm": "shuf4",
+   "kind": "episode",
+   "noop_start": 3,
+   "seed": 101,
+   "sigma": 0.0,
+   "max_x": 3161,
+   "flag": true,
+   "end": "flag",
+   "x_end": 3161,
+   "cause": "flag",
+   "blind": 21,
+   "left_presses": 0,
+   "a_frac": 0.9705730511099638,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     96
+    ],
+    [
+     5.986264011958134,
+     "goomba",
+     153.0,
+     182
+    ],
+    [
+     15.706626603956439,
+     "goomba",
+     58.0,
+     245
+    ],
+    [
+     45.66730835583508,
+     "goomba",
+     19.0,
+     272
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     332
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     370
+    ],
+    [
+     5.559053136965712,
+     "goomba",
+     164.77863939236784,
+     466
+    ],
+    [
+     68.87797861760724,
+     "face",
+     35.0,
+     563
+    ],
+    [
+     13.594122415917699,
+     "goomba",
+     67.11929677819934,
+     631
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     722
+    ],
+    [
+     14.889803098414287,
+     "goomba",
+     61.220911460055866,
+     727
+    ],
+    [
+     165.7499673021964,
+     "goomba",
+     0.0,
+     821
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     905
+    ],
+    [
+     11.826628665918358,
+     "pit",
+     92.0,
+     1002
+    ],
+    [
+     26.66973275276735,
+     "pit",
+     39.0,
+     1054
+    ],
+    [
+     5.7770895110036555,
+     "goomba",
+     158.54967675779096,
+     1140
+    ],
+    [
+     18.924644416051233,
+     "goomba",
+     48.0,
+     1226
+    ],
+    [
+     10.720091421129483,
+     "pit",
+     101.0,
+     1264
+    ],
+    [
+     49.39870535499553,
+     "pit",
+     16.0,
+     1350
+    ],
+    [
+     8.882482378865625,
+     "goomba",
+     103.0,
+     1436
+    ],
+    [
+     17.23080933900548,
+     "goomba",
+     52.80151512977634,
+     1495
+    ],
+    [
+     9.868328681120133,
+     "koopa",
+     139.0,
+     1557
+    ],
+    [
+     19.11199585288127,
+     "koopa",
+     71.28113354878694,
+     1616
+    ],
+    [
+     7.627093549833478,
+     "goomba",
+     120.01666550941998,
+     1702
+    ],
+    [
+     18.924644416051233,
+     "goomba",
+     48.0,
+     1788
+    ],
+    [
+     10.880664062011013,
+     "goomba",
+     84.0,
+     1878
+    ],
+    [
+     20.609692937532067,
+     "goomba",
+     44.0,
+     1907
+    ],
+    [
+     35.48934325011387,
+     "goomba",
+     25.0,
+     1992
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2055
+    ],
+    [
+     115.989233583833,
+     "face",
+     5.0,
+     2129
+    ],
+    [
+     72.05474677020722,
+     "face",
+     11.0,
+     2171
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2251
+    ],
+    [
+     151.92751306414706,
+     "face",
+     2.0,
+     2354
+    ],
+    [
+     67.38013505195957,
+     "face",
+     12.0,
+     2394
+    ],
+    [
+     21.841801287565335,
+     "pit",
+     64.0,
+     2474
+    ],
+    [
+     93.6952205319892,
+     "face",
+     15.0,
+     2583
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2668
+    ],
+    [
+     15.44365160026195,
+     "goomba",
+     59.0,
+     2707
+    ],
+    [
+     106.26020470831196,
+     "goomba",
+     6.0,
+     2745
+    ],
+    [
+     69.64897831391359,
+     "face",
+     23.0,
+     2831
+    ],
+    [
+     63.21500449249781,
+     "face",
+     13.0,
+     2905
+    ],
+    [
+     59.48976259388444,
+     "face",
+     14.0,
+     2968
+    ],
+    [
+     12.85749549765971,
+     "face",
+     71.0,
+     3087
+    ]
+   ],
+   "traj": "8df0274793",
+   "frames": 1937,
+   "secs": 34.65634799003601
+  },
+  {
+   "arm": "shuf4",
+   "kind": "episode",
+   "noop_start": 11,
+   "seed": 102,
+   "sigma": 0.0,
+   "max_x": 3161,
+   "flag": true,
+   "end": "flag",
+   "x_end": 3161,
+   "cause": "flag",
+   "blind": 21,
+   "left_presses": 0,
+   "a_frac": 0.9665809768637532,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     96
+    ],
+    [
+     5.986264011958134,
+     "goomba",
+     153.0,
+     182
+    ],
+    [
+     15.706626603956439,
+     "goomba",
+     58.0,
+     245
+    ],
+    [
+     45.66730835583508,
+     "goomba",
+     19.0,
+     272
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     332
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     370
+    ],
+    [
+     5.559053136965712,
+     "goomba",
+     164.77863939236784,
+     466
+    ],
+    [
+     68.87797861760724,
+     "face",
+     35.0,
+     563
+    ],
+    [
+     13.594122415917699,
+     "goomba",
+     67.11929677819934,
+     631
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     722
+    ],
+    [
+     14.889803098414287,
+     "goomba",
+     61.220911460055866,
+     727
+    ],
+    [
+     165.7499673021964,
+     "goomba",
+     0.0,
+     821
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     905
+    ],
+    [
+     11.826628665918358,
+     "pit",
+     92.0,
+     1002
+    ],
+    [
+     26.66973275276735,
+     "pit",
+     39.0,
+     1054
+    ],
+    [
+     5.7770895110036555,
+     "goomba",
+     158.54967675779096,
+     1140
+    ],
+    [
+     18.924644416051233,
+     "goomba",
+     48.0,
+     1226
+    ],
+    [
+     10.720091421129483,
+     "pit",
+     101.0,
+     1264
+    ],
+    [
+     49.39870535499553,
+     "pit",
+     16.0,
+     1350
+    ],
+    [
+     8.882482378865625,
+     "goomba",
+     103.0,
+     1436
+    ],
+    [
+     17.23080933900548,
+     "goomba",
+     52.80151512977634,
+     1495
+    ],
+    [
+     9.868328681120133,
+     "koopa",
+     139.0,
+     1557
+    ],
+    [
+     19.11199585288127,
+     "koopa",
+     71.28113354878694,
+     1616
+    ],
+    [
+     7.627093549833478,
+     "goomba",
+     120.01666550941998,
+     1702
+    ],
+    [
+     18.924644416051233,
+     "goomba",
+     48.0,
+     1788
+    ],
+    [
+     10.880664062011013,
+     "goomba",
+     84.0,
+     1878
+    ],
+    [
+     20.609692937532067,
+     "goomba",
+     44.0,
+     1907
+    ],
+    [
+     35.48934325011387,
+     "goomba",
+     25.0,
+     1992
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2055
+    ],
+    [
+     115.989233583833,
+     "face",
+     5.0,
+     2129
+    ],
+    [
+     72.05474677020722,
+     "face",
+     11.0,
+     2171
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2251
+    ],
+    [
+     151.92751306414706,
+     "face",
+     2.0,
+     2354
+    ],
+    [
+     67.38013505195957,
+     "face",
+     12.0,
+     2394
+    ],
+    [
+     21.841801287565335,
+     "pit",
+     64.0,
+     2474
+    ],
+    [
+     93.6952205319892,
+     "face",
+     15.0,
+     2583
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2668
+    ],
+    [
+     15.44365160026195,
+     "goomba",
+     59.0,
+     2707
+    ],
+    [
+     106.26020470831196,
+     "goomba",
+     6.0,
+     2745
+    ],
+    [
+     69.64897831391359,
+     "face",
+     23.0,
+     2831
+    ],
+    [
+     63.21500449249781,
+     "face",
+     13.0,
+     2905
+    ],
+    [
+     59.48976259388444,
+     "face",
+     14.0,
+     2968
+    ],
+    [
+     12.85749549765971,
+     "face",
+     71.0,
+     3087
+    ]
+   ],
+   "traj": "bedd7fc834",
+   "frames": 1945,
+   "secs": 21.0369770526886
+  },
+  {
+   "arm": "shuf4",
+   "kind": "episode",
+   "noop_start": 25,
+   "seed": 103,
+   "sigma": 0.0,
+   "max_x": 3161,
+   "flag": true,
+   "end": "flag",
+   "x_end": 3161,
+   "cause": "flag",
+   "blind": 21,
+   "left_presses": 0,
+   "a_frac": 0.9596733027054619,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     96
+    ],
+    [
+     5.986264011958134,
+     "goomba",
+     153.0,
+     182
+    ],
+    [
+     15.706626603956439,
+     "goomba",
+     58.0,
+     245
+    ],
+    [
+     45.66730835583508,
+     "goomba",
+     19.0,
+     272
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     332
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     370
+    ],
+    [
+     5.559053136965712,
+     "goomba",
+     164.77863939236784,
+     466
+    ],
+    [
+     68.87797861760724,
+     "face",
+     35.0,
+     563
+    ],
+    [
+     13.594122415917699,
+     "goomba",
+     67.11929677819934,
+     631
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     722
+    ],
+    [
+     14.889803098414287,
+     "goomba",
+     61.220911460055866,
+     727
+    ],
+    [
+     165.7499673021964,
+     "goomba",
+     0.0,
+     821
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     905
+    ],
+    [
+     11.826628665918358,
+     "pit",
+     92.0,
+     1002
+    ],
+    [
+     26.66973275276735,
+     "pit",
+     39.0,
+     1054
+    ],
+    [
+     5.7770895110036555,
+     "goomba",
+     158.54967675779096,
+     1140
+    ],
+    [
+     18.924644416051233,
+     "goomba",
+     48.0,
+     1226
+    ],
+    [
+     10.720091421129483,
+     "pit",
+     101.0,
+     1264
+    ],
+    [
+     49.39870535499553,
+     "pit",
+     16.0,
+     1350
+    ],
+    [
+     8.882482378865625,
+     "goomba",
+     103.0,
+     1436
+    ],
+    [
+     17.23080933900548,
+     "goomba",
+     52.80151512977634,
+     1495
+    ],
+    [
+     9.868328681120133,
+     "koopa",
+     139.0,
+     1557
+    ],
+    [
+     19.11199585288127,
+     "koopa",
+     71.28113354878694,
+     1616
+    ],
+    [
+     7.627093549833478,
+     "goomba",
+     120.01666550941998,
+     1702
+    ],
+    [
+     18.924644416051233,
+     "goomba",
+     48.0,
+     1788
+    ],
+    [
+     10.880664062011013,
+     "goomba",
+     84.0,
+     1878
+    ],
+    [
+     20.609692937532067,
+     "goomba",
+     44.0,
+     1907
+    ],
+    [
+     35.48934325011387,
+     "goomba",
+     25.0,
+     1992
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2055
+    ],
+    [
+     115.989233583833,
+     "face",
+     5.0,
+     2129
+    ],
+    [
+     72.05474677020722,
+     "face",
+     11.0,
+     2171
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2251
+    ],
+    [
+     151.92751306414706,
+     "face",
+     2.0,
+     2354
+    ],
+    [
+     67.38013505195957,
+     "face",
+     12.0,
+     2394
+    ],
+    [
+     21.841801287565335,
+     "pit",
+     64.0,
+     2474
+    ],
+    [
+     93.6952205319892,
+     "face",
+     15.0,
+     2583
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2668
+    ],
+    [
+     15.44365160026195,
+     "goomba",
+     59.0,
+     2707
+    ],
+    [
+     106.26020470831196,
+     "goomba",
+     6.0,
+     2745
+    ],
+    [
+     69.64897831391359,
+     "face",
+     23.0,
+     2831
+    ],
+    [
+     63.21500449249781,
+     "face",
+     13.0,
+     2905
+    ],
+    [
+     59.48976259388444,
+     "face",
+     14.0,
+     2968
+    ],
+    [
+     12.85749549765971,
+     "face",
+     71.0,
+     3087
+    ]
+   ],
+   "traj": "98bd861de3",
+   "frames": 1959,
+   "secs": 20.292853116989136
+  },
+  {
+   "arm": "shuf4",
+   "kind": "episode",
+   "noop_start": 33,
+   "seed": 104,
+   "sigma": 0.0,
+   "max_x": 3161,
+   "flag": true,
+   "end": "flag",
+   "x_end": 3161,
+   "cause": "flag",
+   "blind": 21,
+   "left_presses": 0,
+   "a_frac": 0.9557702084392475,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     96
+    ],
+    [
+     5.986264011958134,
+     "goomba",
+     153.0,
+     182
+    ],
+    [
+     15.706626603956439,
+     "goomba",
+     58.0,
+     245
+    ],
+    [
+     45.66730835583508,
+     "goomba",
+     19.0,
+     272
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     332
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     370
+    ],
+    [
+     5.559053136965712,
+     "goomba",
+     164.77863939236784,
+     466
+    ],
+    [
+     68.87797861760724,
+     "face",
+     35.0,
+     563
+    ],
+    [
+     13.594122415917699,
+     "goomba",
+     67.11929677819934,
+     631
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     722
+    ],
+    [
+     14.889803098414287,
+     "goomba",
+     61.220911460055866,
+     727
+    ],
+    [
+     165.7499673021964,
+     "goomba",
+     0.0,
+     821
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     905
+    ],
+    [
+     11.826628665918358,
+     "pit",
+     92.0,
+     1002
+    ],
+    [
+     26.66973275276735,
+     "pit",
+     39.0,
+     1054
+    ],
+    [
+     5.7770895110036555,
+     "goomba",
+     158.54967675779096,
+     1140
+    ],
+    [
+     18.924644416051233,
+     "goomba",
+     48.0,
+     1226
+    ],
+    [
+     10.720091421129483,
+     "pit",
+     101.0,
+     1264
+    ],
+    [
+     49.39870535499553,
+     "pit",
+     16.0,
+     1350
+    ],
+    [
+     8.882482378865625,
+     "goomba",
+     103.0,
+     1436
+    ],
+    [
+     17.23080933900548,
+     "goomba",
+     52.80151512977634,
+     1495
+    ],
+    [
+     9.868328681120133,
+     "koopa",
+     139.0,
+     1557
+    ],
+    [
+     19.11199585288127,
+     "koopa",
+     71.28113354878694,
+     1616
+    ],
+    [
+     7.627093549833478,
+     "goomba",
+     120.01666550941998,
+     1702
+    ],
+    [
+     18.924644416051233,
+     "goomba",
+     48.0,
+     1788
+    ],
+    [
+     10.880664062011013,
+     "goomba",
+     84.0,
+     1878
+    ],
+    [
+     20.609692937532067,
+     "goomba",
+     44.0,
+     1907
+    ],
+    [
+     35.48934325011387,
+     "goomba",
+     25.0,
+     1992
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2055
+    ],
+    [
+     115.989233583833,
+     "face",
+     5.0,
+     2129
+    ],
+    [
+     72.05474677020722,
+     "face",
+     11.0,
+     2171
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2251
+    ],
+    [
+     151.92751306414706,
+     "face",
+     2.0,
+     2354
+    ],
+    [
+     67.38013505195957,
+     "face",
+     12.0,
+     2394
+    ],
+    [
+     21.841801287565335,
+     "pit",
+     64.0,
+     2474
+    ],
+    [
+     93.6952205319892,
+     "face",
+     15.0,
+     2583
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2668
+    ],
+    [
+     15.44365160026195,
+     "goomba",
+     59.0,
+     2707
+    ],
+    [
+     106.26020470831196,
+     "goomba",
+     6.0,
+     2745
+    ],
+    [
+     69.64897831391359,
+     "face",
+     23.0,
+     2831
+    ],
+    [
+     63.21500449249781,
+     "face",
+     13.0,
+     2905
+    ],
+    [
+     59.48976259388444,
+     "face",
+     14.0,
+     2968
+    ],
+    [
+     12.85749549765971,
+     "face",
+     71.0,
+     3087
+    ]
+   ],
+   "traj": "b96a66bd4e",
+   "frames": 1967,
+   "secs": 20.6506245136261
+  },
+  {
+   "arm": "shuf4",
+   "kind": "episode",
+   "noop_start": 41,
+   "seed": 105,
+   "sigma": 0.0,
+   "max_x": 298,
+   "flag": false,
+   "end": "died",
+   "x_end": 298,
+   "cause": "enemy dx=5",
+   "blind": 3,
+   "left_presses": 0,
+   "a_frac": 0.7871287128712872,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     96
+    ],
+    [
+     5.986264011958134,
+     "goomba",
+     153.0,
+     182
+    ]
+   ],
+   "traj": "7c74f50806",
+   "frames": 202,
+   "secs": 3.3815836906433105
+  },
+  {
+   "arm": "shuf4",
+   "kind": "episode",
+   "noop_start": 3,
+   "seed": 101,
+   "sigma": 0.05,
+   "max_x": 3161,
+   "flag": true,
+   "end": "flag",
+   "x_end": 3161,
+   "cause": "flag",
+   "blind": 21,
+   "left_presses": 0,
+   "a_frac": 0.9705730511099638,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     96
+    ],
+    [
+     5.986264011958134,
+     "goomba",
+     153.0,
+     182
+    ],
+    [
+     15.706626603956439,
+     "goomba",
+     58.0,
+     245
+    ],
+    [
+     45.66730835583508,
+     "goomba",
+     19.0,
+     272
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     332
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     370
+    ],
+    [
+     5.559053136965712,
+     "goomba",
+     164.77863939236784,
+     466
+    ],
+    [
+     68.87797861760724,
+     "face",
+     35.0,
+     563
+    ],
+    [
+     13.594122415917699,
+     "goomba",
+     67.11929677819934,
+     631
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     722
+    ],
+    [
+     14.889803098414287,
+     "goomba",
+     61.220911460055866,
+     727
+    ],
+    [
+     165.7499673021964,
+     "goomba",
+     0.0,
+     821
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     905
+    ],
+    [
+     11.826628665918358,
+     "pit",
+     92.0,
+     1002
+    ],
+    [
+     26.66973275276735,
+     "pit",
+     39.0,
+     1054
+    ],
+    [
+     5.7770895110036555,
+     "goomba",
+     158.54967675779096,
+     1140
+    ],
+    [
+     18.924644416051233,
+     "goomba",
+     48.0,
+     1226
+    ],
+    [
+     10.720091421129483,
+     "pit",
+     101.0,
+     1264
+    ],
+    [
+     49.39870535499553,
+     "pit",
+     16.0,
+     1350
+    ],
+    [
+     8.882482378865625,
+     "goomba",
+     103.0,
+     1436
+    ],
+    [
+     17.23080933900548,
+     "goomba",
+     52.80151512977634,
+     1495
+    ],
+    [
+     9.868328681120133,
+     "koopa",
+     139.0,
+     1557
+    ],
+    [
+     19.11199585288127,
+     "koopa",
+     71.28113354878694,
+     1616
+    ],
+    [
+     7.627093549833478,
+     "goomba",
+     120.01666550941998,
+     1702
+    ],
+    [
+     18.924644416051233,
+     "goomba",
+     48.0,
+     1788
+    ],
+    [
+     10.880664062011013,
+     "goomba",
+     84.0,
+     1878
+    ],
+    [
+     20.609692937532067,
+     "goomba",
+     44.0,
+     1907
+    ],
+    [
+     35.48934325011387,
+     "goomba",
+     25.0,
+     1992
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2055
+    ],
+    [
+     115.989233583833,
+     "face",
+     5.0,
+     2129
+    ],
+    [
+     72.05474677020722,
+     "face",
+     11.0,
+     2171
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2251
+    ],
+    [
+     151.92751306414706,
+     "face",
+     2.0,
+     2354
+    ],
+    [
+     67.38013505195957,
+     "face",
+     12.0,
+     2394
+    ],
+    [
+     21.841801287565335,
+     "pit",
+     64.0,
+     2474
+    ],
+    [
+     93.6952205319892,
+     "face",
+     15.0,
+     2583
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2668
+    ],
+    [
+     15.44365160026195,
+     "goomba",
+     59.0,
+     2707
+    ],
+    [
+     106.26020470831196,
+     "goomba",
+     6.0,
+     2745
+    ],
+    [
+     69.64897831391359,
+     "face",
+     23.0,
+     2831
+    ],
+    [
+     63.21500449249781,
+     "face",
+     13.0,
+     2905
+    ],
+    [
+     59.48976259388444,
+     "face",
+     14.0,
+     2968
+    ],
+    [
+     12.85749549765971,
+     "face",
+     71.0,
+     3087
+    ]
+   ],
+   "traj": "8df0274793",
+   "frames": 1937,
+   "secs": 33.13669800758362
+  },
+  {
+   "arm": "shuf4",
+   "kind": "episode",
+   "noop_start": 11,
+   "seed": 102,
+   "sigma": 0.05,
+   "max_x": 3161,
+   "flag": true,
+   "end": "flag",
+   "x_end": 3161,
+   "cause": "flag",
+   "blind": 21,
+   "left_presses": 0,
+   "a_frac": 0.9665809768637532,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     96
+    ],
+    [
+     5.986264011958134,
+     "goomba",
+     153.0,
+     182
+    ],
+    [
+     15.706626603956439,
+     "goomba",
+     58.0,
+     245
+    ],
+    [
+     45.66730835583508,
+     "goomba",
+     19.0,
+     272
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     332
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     370
+    ],
+    [
+     5.559053136965712,
+     "goomba",
+     164.77863939236784,
+     466
+    ],
+    [
+     68.87797861760724,
+     "face",
+     35.0,
+     563
+    ],
+    [
+     13.594122415917699,
+     "goomba",
+     67.11929677819934,
+     631
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     722
+    ],
+    [
+     14.889803098414287,
+     "goomba",
+     61.220911460055866,
+     727
+    ],
+    [
+     165.7499673021964,
+     "goomba",
+     0.0,
+     821
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     905
+    ],
+    [
+     11.826628665918358,
+     "pit",
+     92.0,
+     1002
+    ],
+    [
+     26.66973275276735,
+     "pit",
+     39.0,
+     1054
+    ],
+    [
+     5.7770895110036555,
+     "goomba",
+     158.54967675779096,
+     1140
+    ],
+    [
+     18.924644416051233,
+     "goomba",
+     48.0,
+     1226
+    ],
+    [
+     10.720091421129483,
+     "pit",
+     101.0,
+     1264
+    ],
+    [
+     49.39870535499553,
+     "pit",
+     16.0,
+     1350
+    ],
+    [
+     8.882482378865625,
+     "goomba",
+     103.0,
+     1436
+    ],
+    [
+     17.23080933900548,
+     "goomba",
+     52.80151512977634,
+     1495
+    ],
+    [
+     9.868328681120133,
+     "koopa",
+     139.0,
+     1557
+    ],
+    [
+     19.11199585288127,
+     "koopa",
+     71.28113354878694,
+     1616
+    ],
+    [
+     7.627093549833478,
+     "goomba",
+     120.01666550941998,
+     1702
+    ],
+    [
+     18.924644416051233,
+     "goomba",
+     48.0,
+     1788
+    ],
+    [
+     10.880664062011013,
+     "goomba",
+     84.0,
+     1878
+    ],
+    [
+     20.609692937532067,
+     "goomba",
+     44.0,
+     1907
+    ],
+    [
+     35.48934325011387,
+     "goomba",
+     25.0,
+     1992
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2055
+    ],
+    [
+     115.989233583833,
+     "face",
+     5.0,
+     2129
+    ],
+    [
+     72.05474677020722,
+     "face",
+     11.0,
+     2171
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2251
+    ],
+    [
+     151.92751306414706,
+     "face",
+     2.0,
+     2354
+    ],
+    [
+     67.38013505195957,
+     "face",
+     12.0,
+     2394
+    ],
+    [
+     21.841801287565335,
+     "pit",
+     64.0,
+     2474
+    ],
+    [
+     93.6952205319892,
+     "face",
+     15.0,
+     2583
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2668
+    ],
+    [
+     15.44365160026195,
+     "goomba",
+     59.0,
+     2707
+    ],
+    [
+     106.26020470831196,
+     "goomba",
+     6.0,
+     2745
+    ],
+    [
+     69.64897831391359,
+     "face",
+     23.0,
+     2831
+    ],
+    [
+     63.21500449249781,
+     "face",
+     13.0,
+     2905
+    ],
+    [
+     59.48976259388444,
+     "face",
+     14.0,
+     2968
+    ],
+    [
+     12.85749549765971,
+     "face",
+     71.0,
+     3087
+    ]
+   ],
+   "traj": "bedd7fc834",
+   "frames": 1945,
+   "secs": 20.17042350769043
+  },
+  {
+   "arm": "shuf4",
+   "kind": "episode",
+   "noop_start": 25,
+   "seed": 103,
+   "sigma": 0.05,
+   "max_x": 3161,
+   "flag": true,
+   "end": "flag",
+   "x_end": 3161,
+   "cause": "flag",
+   "blind": 21,
+   "left_presses": 0,
+   "a_frac": 0.9596733027054619,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     96
+    ],
+    [
+     5.986264011958134,
+     "goomba",
+     153.0,
+     182
+    ],
+    [
+     15.706626603956439,
+     "goomba",
+     58.0,
+     245
+    ],
+    [
+     45.66730835583508,
+     "goomba",
+     19.0,
+     272
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     332
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     370
+    ],
+    [
+     5.559053136965712,
+     "goomba",
+     164.77863939236784,
+     466
+    ],
+    [
+     68.87797861760724,
+     "face",
+     35.0,
+     563
+    ],
+    [
+     13.594122415917699,
+     "goomba",
+     67.11929677819934,
+     631
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     722
+    ],
+    [
+     14.889803098414287,
+     "goomba",
+     61.220911460055866,
+     727
+    ],
+    [
+     165.7499673021964,
+     "goomba",
+     0.0,
+     821
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     905
+    ],
+    [
+     11.826628665918358,
+     "pit",
+     92.0,
+     1002
+    ],
+    [
+     26.66973275276735,
+     "pit",
+     39.0,
+     1054
+    ],
+    [
+     5.7770895110036555,
+     "goomba",
+     158.54967675779096,
+     1140
+    ],
+    [
+     18.924644416051233,
+     "goomba",
+     48.0,
+     1226
+    ],
+    [
+     10.720091421129483,
+     "pit",
+     101.0,
+     1264
+    ],
+    [
+     49.39870535499553,
+     "pit",
+     16.0,
+     1350
+    ],
+    [
+     8.882482378865625,
+     "goomba",
+     103.0,
+     1436
+    ],
+    [
+     17.23080933900548,
+     "goomba",
+     52.80151512977634,
+     1495
+    ],
+    [
+     9.868328681120133,
+     "koopa",
+     139.0,
+     1557
+    ],
+    [
+     19.11199585288127,
+     "koopa",
+     71.28113354878694,
+     1616
+    ],
+    [
+     7.627093549833478,
+     "goomba",
+     120.01666550941998,
+     1702
+    ],
+    [
+     18.924644416051233,
+     "goomba",
+     48.0,
+     1788
+    ],
+    [
+     10.880664062011013,
+     "goomba",
+     84.0,
+     1878
+    ],
+    [
+     20.609692937532067,
+     "goomba",
+     44.0,
+     1907
+    ],
+    [
+     35.48934325011387,
+     "goomba",
+     25.0,
+     1992
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2055
+    ],
+    [
+     115.989233583833,
+     "face",
+     5.0,
+     2129
+    ],
+    [
+     72.05474677020722,
+     "face",
+     11.0,
+     2171
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2251
+    ],
+    [
+     151.92751306414706,
+     "face",
+     2.0,
+     2354
+    ],
+    [
+     67.38013505195957,
+     "face",
+     12.0,
+     2394
+    ],
+    [
+     21.841801287565335,
+     "pit",
+     64.0,
+     2474
+    ],
+    [
+     93.6952205319892,
+     "face",
+     15.0,
+     2583
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2668
+    ],
+    [
+     15.44365160026195,
+     "goomba",
+     59.0,
+     2707
+    ],
+    [
+     106.26020470831196,
+     "goomba",
+     6.0,
+     2745
+    ],
+    [
+     69.64897831391359,
+     "face",
+     23.0,
+     2831
+    ],
+    [
+     63.21500449249781,
+     "face",
+     13.0,
+     2905
+    ],
+    [
+     59.48976259388444,
+     "face",
+     14.0,
+     2968
+    ],
+    [
+     12.85749549765971,
+     "face",
+     71.0,
+     3087
+    ]
+   ],
+   "traj": "98bd861de3",
+   "frames": 1959,
+   "secs": 20.711740493774414
+  },
+  {
+   "arm": "shuf4",
+   "kind": "episode",
+   "noop_start": 33,
+   "seed": 104,
+   "sigma": 0.05,
+   "max_x": 3161,
+   "flag": true,
+   "end": "flag",
+   "x_end": 3161,
+   "cause": "flag",
+   "blind": 21,
+   "left_presses": 0,
+   "a_frac": 0.9557702084392475,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     96
+    ],
+    [
+     5.986264011958134,
+     "goomba",
+     153.0,
+     182
+    ],
+    [
+     15.706626603956439,
+     "goomba",
+     58.0,
+     245
+    ],
+    [
+     45.66730835583508,
+     "goomba",
+     19.0,
+     272
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     332
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     370
+    ],
+    [
+     5.559053136965712,
+     "goomba",
+     164.77863939236784,
+     466
+    ],
+    [
+     68.87797861760724,
+     "face",
+     35.0,
+     563
+    ],
+    [
+     13.594122415917699,
+     "goomba",
+     67.11929677819934,
+     631
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     722
+    ],
+    [
+     14.889803098414287,
+     "goomba",
+     61.220911460055866,
+     727
+    ],
+    [
+     165.7499673021964,
+     "goomba",
+     0.0,
+     821
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     905
+    ],
+    [
+     11.826628665918358,
+     "pit",
+     92.0,
+     1002
+    ],
+    [
+     26.66973275276735,
+     "pit",
+     39.0,
+     1054
+    ],
+    [
+     5.7770895110036555,
+     "goomba",
+     158.54967675779096,
+     1140
+    ],
+    [
+     18.924644416051233,
+     "goomba",
+     48.0,
+     1226
+    ],
+    [
+     10.720091421129483,
+     "pit",
+     101.0,
+     1264
+    ],
+    [
+     49.39870535499553,
+     "pit",
+     16.0,
+     1350
+    ],
+    [
+     8.882482378865625,
+     "goomba",
+     103.0,
+     1436
+    ],
+    [
+     17.23080933900548,
+     "goomba",
+     52.80151512977634,
+     1495
+    ],
+    [
+     9.868328681120133,
+     "koopa",
+     139.0,
+     1557
+    ],
+    [
+     19.11199585288127,
+     "koopa",
+     71.28113354878694,
+     1616
+    ],
+    [
+     7.627093549833478,
+     "goomba",
+     120.01666550941998,
+     1702
+    ],
+    [
+     18.924644416051233,
+     "goomba",
+     48.0,
+     1788
+    ],
+    [
+     10.880664062011013,
+     "goomba",
+     84.0,
+     1878
+    ],
+    [
+     20.609692937532067,
+     "goomba",
+     44.0,
+     1907
+    ],
+    [
+     35.48934325011387,
+     "goomba",
+     25.0,
+     1992
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2055
+    ],
+    [
+     115.989233583833,
+     "face",
+     5.0,
+     2129
+    ],
+    [
+     72.05474677020722,
+     "face",
+     11.0,
+     2171
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2251
+    ],
+    [
+     151.92751306414706,
+     "face",
+     2.0,
+     2354
+    ],
+    [
+     67.38013505195957,
+     "face",
+     12.0,
+     2394
+    ],
+    [
+     21.841801287565335,
+     "pit",
+     64.0,
+     2474
+    ],
+    [
+     93.6952205319892,
+     "face",
+     15.0,
+     2583
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     2668
+    ],
+    [
+     15.44365160026195,
+     "goomba",
+     59.0,
+     2707
+    ],
+    [
+     106.26020470831196,
+     "goomba",
+     6.0,
+     2745
+    ],
+    [
+     69.64897831391359,
+     "face",
+     23.0,
+     2831
+    ],
+    [
+     63.21500449249781,
+     "face",
+     13.0,
+     2905
+    ],
+    [
+     59.48976259388444,
+     "face",
+     14.0,
+     2968
+    ],
+    [
+     12.85749549765971,
+     "face",
+     71.0,
+     3087
+    ]
+   ],
+   "traj": "b96a66bd4e",
+   "frames": 1967,
+   "secs": 34.21845817565918
+  },
+  {
+   "arm": "shuf4",
+   "kind": "episode",
+   "noop_start": 41,
+   "seed": 105,
+   "sigma": 0.05,
+   "max_x": 298,
+   "flag": false,
+   "end": "died",
+   "x_end": 298,
+   "cause": "enemy dx=5",
+   "blind": 3,
+   "left_presses": 0,
+   "a_frac": 0.7871287128712872,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     96
+    ],
+    [
+     5.986264011958134,
+     "goomba",
+     153.0,
+     182
+    ]
+   ],
+   "traj": "7c74f50806",
+   "frames": 202,
+   "secs": 2.2367870807647705
+  },
+  {
+   "arm": "shuf4",
+   "kind": "silence",
+   "a_frac": 0.9616666666666667
+  }
+ ],
+ "theta_rule": [
+  {
+   "arm": "theta_rule",
+   "kind": "episode",
+   "noop_start": 3,
+   "seed": 101,
+   "sigma": 0.0,
+   "max_x": 1126,
+   "flag": false,
+   "end": "died",
+   "x_end": 1126,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.22925457102672292,
+   "onsets": [
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     280
+    ],
+    [
+     43.60281897270362,
+     "face",
+     40.0,
+     398
+    ],
+    [
+     43.60281897270362,
+     "face",
+     60.0,
+     538
+    ],
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     688
+    ],
+    [
+     47.341076969440905,
+     "face",
+     73.0,
+     828
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     43.937080228471174,
+     "pit",
+     17.0,
+     1077
+    ]
+   ],
+   "traj": "2c515e4726",
+   "frames": 711,
+   "secs": 4.125762701034546
+  },
+  {
+   "arm": "theta_rule",
+   "kind": "episode",
+   "noop_start": 11,
+   "seed": 102,
+   "sigma": 0.0,
+   "max_x": 1126,
+   "flag": false,
+   "end": "died",
+   "x_end": 1126,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.2267037552155772,
+   "onsets": [
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     280
+    ],
+    [
+     43.60281897270362,
+     "face",
+     40.0,
+     398
+    ],
+    [
+     43.60281897270362,
+     "face",
+     60.0,
+     538
+    ],
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     688
+    ],
+    [
+     47.341076969440905,
+     "face",
+     73.0,
+     828
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     43.937080228471174,
+     "pit",
+     17.0,
+     1077
+    ]
+   ],
+   "traj": "badd0b6dce",
+   "frames": 719,
+   "secs": 7.142836332321167
+  },
+  {
+   "arm": "theta_rule",
+   "kind": "episode",
+   "noop_start": 25,
+   "seed": 103,
+   "sigma": 0.0,
+   "max_x": 1126,
+   "flag": false,
+   "end": "died",
+   "x_end": 1126,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.22237380627557982,
+   "onsets": [
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     280
+    ],
+    [
+     43.60281897270362,
+     "face",
+     40.0,
+     398
+    ],
+    [
+     43.60281897270362,
+     "face",
+     60.0,
+     538
+    ],
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     688
+    ],
+    [
+     47.341076969440905,
+     "face",
+     73.0,
+     828
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     43.937080228471174,
+     "pit",
+     17.0,
+     1077
+    ]
+   ],
+   "traj": "549cab6695",
+   "frames": 733,
+   "secs": 6.586548566818237
+  },
+  {
+   "arm": "theta_rule",
+   "kind": "episode",
+   "noop_start": 33,
+   "seed": 104,
+   "sigma": 0.0,
+   "max_x": 1126,
+   "flag": false,
+   "end": "died",
+   "x_end": 1126,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.21997300944669365,
+   "onsets": [
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     280
+    ],
+    [
+     43.60281897270362,
+     "face",
+     40.0,
+     398
+    ],
+    [
+     43.60281897270362,
+     "face",
+     60.0,
+     538
+    ],
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     688
+    ],
+    [
+     47.341076969440905,
+     "face",
+     73.0,
+     828
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     43.937080228471174,
+     "pit",
+     17.0,
+     1077
+    ]
+   ],
+   "traj": "f25f9040b3",
+   "frames": 741,
+   "secs": 6.194409608840942
+  },
+  {
+   "arm": "theta_rule",
+   "kind": "episode",
+   "noop_start": 41,
+   "seed": 105,
+   "sigma": 0.0,
+   "max_x": 1126,
+   "flag": false,
+   "end": "died",
+   "x_end": 1126,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.21762349799732977,
+   "onsets": [
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     280
+    ],
+    [
+     43.60281897270362,
+     "face",
+     40.0,
+     398
+    ],
+    [
+     43.60281897270362,
+     "face",
+     60.0,
+     538
+    ],
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     688
+    ],
+    [
+     47.341076969440905,
+     "face",
+     73.0,
+     828
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     43.937080228471174,
+     "pit",
+     17.0,
+     1077
+    ]
+   ],
+   "traj": "a67151a9c7",
+   "frames": 749,
+   "secs": 5.744821071624756
+  },
+  {
+   "arm": "theta_rule",
+   "kind": "episode",
+   "noop_start": 3,
+   "seed": 101,
+   "sigma": 0.05,
+   "max_x": 1422,
+   "flag": false,
+   "end": "died",
+   "x_end": 1422,
+   "cause": "pit",
+   "blind": 3,
+   "left_presses": 0,
+   "a_frac": 0.19677790563866512,
+   "onsets": [
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     280
+    ],
+    [
+     45.66730835583508,
+     "face",
+     38.0,
+     400
+    ],
+    [
+     46.39718102729637,
+     "face",
+     56.0,
+     541
+    ],
+    [
+     47.924977949156364,
+     "goomba",
+     18.0,
+     690
+    ],
+    [
+     47.341076969440905,
+     "face",
+     73.0,
+     828
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     50.61970935770945,
+     "pit",
+     11.0,
+     1082
+    ],
+    [
+     58.91249467652,
+     "pit",
+     0.0,
+     1130
+    ],
+    [
+     45.86924857850394,
+     "pit",
+     19.0,
+     1347
+    ]
+   ],
+   "traj": "19fc53f100",
+   "frames": 869,
+   "secs": 7.803304672241211
+  },
+  {
+   "arm": "theta_rule",
+   "kind": "episode",
+   "noop_start": 11,
+   "seed": 102,
+   "sigma": 0.05,
+   "max_x": 1126,
+   "flag": false,
+   "end": "died",
+   "x_end": 1126,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.19696969696969696,
+   "onsets": [
+    [
+     50.40224729095014,
+     "goomba",
+     17.0,
+     282
+    ],
+    [
+     43.60281897270362,
+     "face",
+     40.0,
+     398
+    ],
+    [
+     44.958868794206225,
+     "face",
+     58.0,
+     539
+    ],
+    [
+     100.38885781546962,
+     "face",
+     20.0,
+     578
+    ],
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     688
+    ],
+    [
+     47.924977949156364,
+     "face",
+     72.0,
+     830
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     46.08527995520277,
+     "pit",
+     15.0,
+     1079
+    ]
+   ],
+   "traj": "444d66c42c",
+   "frames": 726,
+   "secs": 5.820810079574585
+  },
+  {
+   "arm": "theta_rule",
+   "kind": "episode",
+   "noop_start": 25,
+   "seed": 103,
+   "sigma": 0.05,
+   "max_x": 1125,
+   "flag": false,
+   "end": "died",
+   "x_end": 1125,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.1937669376693767,
+   "onsets": [
+    [
+     50.40224729095014,
+     "goomba",
+     17.0,
+     282
+    ],
+    [
+     45.66730835583508,
+     "face",
+     38.0,
+     399
+    ],
+    [
+     41.11209043916693,
+     "face",
+     64.0,
+     534
+    ],
+    [
+     87.66172134418517,
+     "face",
+     25.0,
+     573
+    ],
+    [
+     50.40224729095014,
+     "goomba",
+     17.0,
+     690
+    ],
+    [
+     46.77044211442751,
+     "face",
+     74.0,
+     828
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     43.937080228471174,
+     "pit",
+     17.0,
+     1077
+    ]
+   ],
+   "traj": "dd4a24eaf0",
+   "frames": 738,
+   "secs": 6.177335262298584
+  },
+  {
+   "arm": "theta_rule",
+   "kind": "episode",
+   "noop_start": 33,
+   "seed": 104,
+   "sigma": 0.05,
+   "max_x": 1125,
+   "flag": false,
+   "end": "died",
+   "x_end": 1125,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.21515561569688768,
+   "onsets": [
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     280
+    ],
+    [
+     43.60281897270362,
+     "face",
+     40.0,
+     398
+    ],
+    [
+     46.39718102729637,
+     "face",
+     56.0,
+     541
+    ],
+    [
+     47.924977949156364,
+     "goomba",
+     18.0,
+     690
+    ],
+    [
+     47.341076969440905,
+     "face",
+     73.0,
+     828
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     43.937080228471174,
+     "pit",
+     17.0,
+     1077
+    ]
+   ],
+   "traj": "491d22e204",
+   "frames": 739,
+   "secs": 5.735378742218018
+  },
+  {
+   "arm": "theta_rule",
+   "kind": "episode",
+   "noop_start": 41,
+   "seed": 105,
+   "sigma": 0.05,
+   "max_x": 1125,
+   "flag": false,
+   "end": "died",
+   "x_end": 1125,
+   "cause": "pit",
+   "blind": 2,
+   "left_presses": 0,
+   "a_frac": 0.21352785145888595,
+   "onsets": [
+    [
+     50.40224729095014,
+     "goomba",
+     17.0,
+     282
+    ],
+    [
+     45.66730835583508,
+     "face",
+     38.0,
+     399
+    ],
+    [
+     44.958868794206225,
+     "face",
+     58.0,
+     539
+    ],
+    [
+     43.60281897270362,
+     "goomba",
+     20.0,
+     688
+    ],
+    [
+     46.77044211442751,
+     "face",
+     74.0,
+     828
+    ],
+    [
+     172.8473312500053,
+     "face",
+     2.0,
+     898
+    ],
+    [
+     43.937080228471174,
+     "pit",
+     17.0,
+     1077
+    ]
+   ],
+   "traj": "ecfdc088d0",
+   "frames": 754,
+   "secs": 5.9925336837768555
+  },
+  {
+   "arm": "theta_rule",
+   "kind": "silence",
+   "a_frac": 0.0
+  }
+ ],
+ "blind_timer": [
+  {
+   "arm": "blind_timer",
+   "kind": "episode",
+   "noop_start": 3,
+   "seed": 101,
+   "sigma": 0.0,
+   "max_x": 298,
+   "flag": false,
+   "end": "died",
+   "x_end": 298,
+   "cause": "enemy dx=5",
+   "blind": 4,
+   "left_presses": 0,
+   "a_frac": 0.7378048780487805,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     158
+    ]
+   ],
+   "traj": "fab14c9636",
+   "frames": 164,
+   "secs": 1.281846523284912
+  },
+  {
+   "arm": "blind_timer",
+   "kind": "episode",
+   "noop_start": 11,
+   "seed": 102,
+   "sigma": 0.0,
+   "max_x": 298,
+   "flag": false,
+   "end": "died",
+   "x_end": 298,
+   "cause": "enemy dx=5",
+   "blind": 4,
+   "left_presses": 0,
+   "a_frac": 0.7034883720930233,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     158
+    ]
+   ],
+   "traj": "6926957e33",
+   "frames": 172,
+   "secs": 1.2513394355773926
+  },
+  {
+   "arm": "blind_timer",
+   "kind": "episode",
+   "noop_start": 25,
+   "seed": 103,
+   "sigma": 0.0,
+   "max_x": 298,
+   "flag": false,
+   "end": "died",
+   "x_end": 298,
+   "cause": "enemy dx=5",
+   "blind": 4,
+   "left_presses": 0,
+   "a_frac": 0.6505376344086021,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     158
+    ]
+   ],
+   "traj": "23b3af5eb8",
+   "frames": 186,
+   "secs": 1.7292790412902832
+  },
+  {
+   "arm": "blind_timer",
+   "kind": "episode",
+   "noop_start": 33,
+   "seed": 104,
+   "sigma": 0.0,
+   "max_x": 298,
+   "flag": false,
+   "end": "died",
+   "x_end": 298,
+   "cause": "enemy dx=5",
+   "blind": 4,
+   "left_presses": 0,
+   "a_frac": 0.6237113402061856,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     158
+    ]
+   ],
+   "traj": "8beb8765e0",
+   "frames": 194,
+   "secs": 1.4382123947143555
+  },
+  {
+   "arm": "blind_timer",
+   "kind": "episode",
+   "noop_start": 41,
+   "seed": 105,
+   "sigma": 0.0,
+   "max_x": 298,
+   "flag": false,
+   "end": "died",
+   "x_end": 298,
+   "cause": "enemy dx=5",
+   "blind": 4,
+   "left_presses": 0,
+   "a_frac": 0.599009900990099,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     158
+    ]
+   ],
+   "traj": "e3e2209703",
+   "frames": 202,
+   "secs": 1.4545209407806396
+  },
+  {
+   "arm": "blind_timer",
+   "kind": "episode",
+   "noop_start": 3,
+   "seed": 101,
+   "sigma": 0.05,
+   "max_x": 298,
+   "flag": false,
+   "end": "died",
+   "x_end": 298,
+   "cause": "enemy dx=5",
+   "blind": 4,
+   "left_presses": 0,
+   "a_frac": 0.7378048780487805,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     158
+    ]
+   ],
+   "traj": "fab14c9636",
+   "frames": 164,
+   "secs": 1.2741661071777344
+  },
+  {
+   "arm": "blind_timer",
+   "kind": "episode",
+   "noop_start": 11,
+   "seed": 102,
+   "sigma": 0.05,
+   "max_x": 298,
+   "flag": false,
+   "end": "died",
+   "x_end": 298,
+   "cause": "enemy dx=5",
+   "blind": 4,
+   "left_presses": 0,
+   "a_frac": 0.7034883720930233,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     158
+    ]
+   ],
+   "traj": "6926957e33",
+   "frames": 172,
+   "secs": 1.6689605712890625
+  },
+  {
+   "arm": "blind_timer",
+   "kind": "episode",
+   "noop_start": 25,
+   "seed": 103,
+   "sigma": 0.05,
+   "max_x": 298,
+   "flag": false,
+   "end": "died",
+   "x_end": 298,
+   "cause": "enemy dx=5",
+   "blind": 4,
+   "left_presses": 0,
+   "a_frac": 0.6505376344086021,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     158
+    ]
+   ],
+   "traj": "23b3af5eb8",
+   "frames": 186,
+   "secs": 1.4424707889556885
+  },
+  {
+   "arm": "blind_timer",
+   "kind": "episode",
+   "noop_start": 33,
+   "seed": 104,
+   "sigma": 0.05,
+   "max_x": 298,
+   "flag": false,
+   "end": "died",
+   "x_end": 298,
+   "cause": "enemy dx=5",
+   "blind": 4,
+   "left_presses": 0,
+   "a_frac": 0.6237113402061856,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     158
+    ]
+   ],
+   "traj": "8beb8765e0",
+   "frames": 194,
+   "secs": 1.4114348888397217
+  },
+  {
+   "arm": "blind_timer",
+   "kind": "episode",
+   "noop_start": 41,
+   "seed": 105,
+   "sigma": 0.05,
+   "max_x": 298,
+   "flag": false,
+   "end": "died",
+   "x_end": 298,
+   "cause": "enemy dx=5",
+   "blind": 4,
+   "left_presses": 0,
+   "a_frac": 0.599009900990099,
+   "onsets": [
+    [
+     0.0,
+     "none",
+     null,
+     40
+    ],
+    [
+     0.0,
+     "none",
+     null,
+     158
+    ]
+   ],
+   "traj": "e3e2209703",
+   "frames": 202,
+   "secs": 1.557269811630249
+  },
+  {
+   "arm": "blind_timer",
+   "kind": "silence",
+   "a_frac": 0.75
+  }
+ ]
+}

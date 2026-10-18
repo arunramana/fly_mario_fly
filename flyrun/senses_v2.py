@@ -1,7 +1,7 @@
 """Senses v2 (Part S1): ONE threat feeds the loom detectors, the nearest one AHEAD by surface-to-surface gap, re-chosen every frame.
 
 Candidates: live enemies (Goomba / Koopa / shell), the nearest wall/pipe/step face that rises above Mario's FEET, and each empty
-floor tile ahead (a 16 px pit threat). True 2-D distance d = sqrt(gap_x^2 + gap_y^2) between Mario's box and the object's box;
+pit (S3: the hole itself, its true angular size from Mario's eye). True 2-D distance d = sqrt(gap_x^2 + gap_y^2) between Mario's box and the object's box;
 theta = 2 atan(h / 2d) with the object's height h. dtheta is tracked per object identity: when the chosen object changes,
 dtheta is 0 at that frame. Threats behind Mario are ignored; floating blocks do not loom (only level.SOLID_WALL columns do).
 Nothing here is read from pixels. The v1 class (senses.Senses) is untouched and stays the default."""
@@ -11,7 +11,7 @@ import numpy as np
 
 from . import env as E
 from . import level
-from .knobs import ENEMY_FEET_OFFSET, ENEMY_TYPES, MARIO_BOX, MAX_JUMP_HEIGHT, PIT_GAIN_V2, SIZE_TABLE
+from .knobs import ENEMY_FEET_OFFSET, ENEMY_TYPES, MARIO_BOX, PIT_GAIN_V2, SIZE_TABLE
 from .senses import Loom, theta_of
 
 ADDR_MARIO_Y = 0x00CE      # verified: = Mario's FEET y in tile-buffer coordinates (ground 176 = top of row 11, ledge 112 = top of row 7)
@@ -21,7 +21,7 @@ LIVE_STATES = {"goomba": (0, 1), "koopa": (0,), "shell": (2, 3)}   # RAM state b
 
 @dataclass
 class Threat:
-    kind: str          # goomba / koopa / shell / face / pitwall (virtual, B9) / pit (tile under him)
+    kind: str          # goomba / koopa / shell / face / pit (the hole)
     ident: tuple       # ("enemy", slot) / ("face", column x) / ("pit", column x)
     x: int             # left edge, world px
     top: int           # top edge y (tile-buffer coordinates)
@@ -37,6 +37,20 @@ def gap(mx, feet, x, top, w, h):
     gx = max(0.0, x - (mx + mw))
     gy = max(0.0, top - feet, (feet - mh) - (top + h))   # object entirely below Mario's feet / entirely above his head
     return float(np.hypot(gx, gy))
+
+
+def hole_theta(mx, feet, px, pw):
+    """TRUE angular size (rad) of a pit's hole as seen from Mario's EYE. The hole is the rectangle x in [px, px+pw],
+    y in [floor, floor + 1 tile] (y down). The eye is defined ONCE as the top-front corner of MARIO_BOX: (mx + w, feet - h).
+    theta = the angle the rectangle's projection covers from the eye = the arc left after removing the largest empty gap
+    between the four corner directions. Eye inside the rectangle -> pi."""
+    ex, ey = mx + MARIO_BOX[0], feet - MARIO_BOX[1]
+    y0, y1 = level.ROW_GROUND * level.TILE, level.ROW_GROUND * level.TILE + level.TILE
+    if px <= ex <= px + pw and y0 <= ey <= y1:
+        return float(np.pi)
+    a = sorted(np.arctan2(cy - ey, cx - ex) for cx in (px, px + pw) for cy in (y0, y1))
+    gaps = [a[i + 1] - a[i] for i in range(3)] + [2 * np.pi - (a[3] - a[0])]
+    return float(2 * np.pi - max(gaps))
 
 
 def over(mx, x0, x1):
@@ -89,22 +103,14 @@ def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pi
                 break                                           # the nearest rising face ahead; later ones are behind it
     if pit_sense:
         for px, pw in pits:
-            far = px + pw
-            if mx >= far:                                       # footprint over solid floor past the far edge: the pit is over
+            if mx >= px + pw:                                   # his body is past the far edge: the pit is over
                 continue
-            # S2c (B9): ONE virtual face at the near edge, MAX_JUMP_HEIGHT above the floor. His feet cannot get above its top
-            # (strict), so under the face rule it keeps its full height all the way over the gap.
-            top = level.ROW_GROUND * level.TILE - MAX_JUMP_HEIGHT
-            if not (feet < top and over(mx, px, px + level.TILE)):
-                cands.append(Threat("pitwall", ("pitwall", px), px, top, level.TILE, MAX_JUMP_HEIGHT))
-            for wx in range(px, far, level.TILE):               # B9 pit-below: an empty tile under his footprint is a threat at d 0
-                if over(mx, wx, wx + level.TILE):
-                    cands.append(Threat("pit", ("pit", wx), wx, level.ROW_GROUND * level.TILE, level.TILE, level.TILE))
-    ahead = [t for t in cands if t.x >= mx or t.kind in ("pit", "pitwall") or over(mx, t.x, t.x + t.w)]
+            # S3 0b: the pit is the HOLE: missing floor tiles near edge -> far edge, one tile deep, at floor level
+            cands.append(Threat("pit", ("pit", px), px, level.ROW_GROUND * level.TILE, pw, level.TILE))
+    ahead = [t for t in cands if t.x >= mx or t.kind == "pit" or over(mx, t.x, t.x + t.w)]
     for t in ahead:
-        # a pit tile that overlaps his footprint is directly under him: surface gap 0 (B9), whatever his height above it
-        t.d = 0.0 if t.kind == "pit" else gap(mx, feet, t.x, t.top, t.w, t.h)
-        t.theta = (PIT_GAIN_V2 if t.kind in ("pit", "pitwall") else 1.0) * theta_of(t.d, t.h)
+        t.d = gap(mx, feet, t.x, t.top, t.w, t.h)
+        t.theta = PIT_GAIN_V2 * hole_theta(mx, feet, t.x, t.w) if t.kind == "pit" else theta_of(t.d, t.h)
     return min(ahead, key=lambda t: t.d) if ahead else None
 
 
@@ -120,7 +126,7 @@ class SensesV2:
         enemies = [(s, int(ram[E.ADDR_ENEMY_TYPE + s]), int(ram[ADDR_ENEMY_STATE + s]),
                     int(ram[E.ADDR_ENEMY_PAGE + s]) * 256 + int(ram[E.ADDR_ENEMY_X + s]), int(ram[ADDR_ENEMY_Y + s]))
                    for s in range(E.N_ENEMY_SLOTS) if int(ram[E.ADDR_ENEMY_ACTIVE + s])]
-        walls, pits = level.scan_visible(ram)
+        walls, pits = level.scan_visible(ram, rim=True)
         return mx, feet, enemies, walls, pits
 
     def look(self, ram, enemy_input=True):

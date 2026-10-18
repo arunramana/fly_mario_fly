@@ -7,10 +7,13 @@ import numpy as np
 import pytest
 
 from flyrun import part7, senses_v2 as S
-from flyrun.knobs import MAX_JUMP_HEIGHT, Knobs
+from flyrun.knobs import Knobs
 
 FEET = 176          # Mario on the ground (RAM 0x00CE)
 GOOMBA, KOOPA = 0x06, 0x00
+
+
+TRIGGER_DEG = 43.6          # the real fly's measured trigger angle (S3: runs/S3_robustness.md)
 
 
 def goomba(ex, feet_y=FEET, slot=0, typ=GOOMBA, state=0):
@@ -55,17 +58,49 @@ def test_step_face_is_16_relative_to_where_he_stands():
     assert t.kind == "face" and t.h == 16 and t.ident == ("face", 16)
 
 
-def test_pit_is_one_virtual_wall_and_the_tile_under_him():
+def test_pit_is_the_hole_with_its_true_angular_size():
     pit = [(96, 32)]
-    t = pick(pits=pit, mx=40)                          # S2c (B9): ONE virtual wall at the near edge, not a threat per tile
-    assert t.kind == "pitwall" and t.ident == ("pitwall", 96) and t.h == MAX_JUMP_HEIGHT and t.d == 96 - 52
-    assert t.top == 176 - MAX_JUMP_HEIGHT
-    t2 = pick(pits=pit, mx=100)                        # a tile under his footprint is a threat at d 0
-    assert t2.d == 0.0 and t2.kind in ("pit", "pitwall")
-    t3 = pick(pits=pit, mx=116)                        # tile 96 fully behind his left edge; 112 under him
-    assert t3.d == 0.0
-    assert pick(pits=pit, mx=128) is None              # footprint over solid floor past the far edge: over
+    t = pick(pits=pit, mx=40)                          # S3 0b: ONE threat, the hole: near edge -> far edge, one tile deep at floor level
+    assert t.kind == "pit" and t.ident == ("pit", 96) and (t.x, t.top, t.w, t.h) == (96, 176, 32, 16)
+    assert t.d == 96 - 52
+    assert t.theta == pytest.approx(S.hole_theta(40, FEET, 96, 32))
+    assert pick(pits=pit, mx=100).kind == "pit"        # under him
+    assert pick(pits=pit, mx=127).kind == "pit"        # body not yet past the far edge
+    assert pick(pits=pit, mx=128) is None              # body past the far edge: over
     assert pick(pits=[], mx=40) is None                # floor all the way ahead: no pit threat
+
+
+def test_hole_theta_is_the_angle_the_rectangle_covers_from_the_eye():
+    # eye = (mx + 12, feet - 16) = (52, 160); hole x 96..128, y 176..192. Corner directions: near-top, near-bottom, far-top, far-bottom
+    ex, ey = 52, FEET - 16
+    ang = [np.arctan2(cy - ey, cx - ex) for cx in (96, 128) for cy in (176, 192)]
+    assert S.hole_theta(40, FEET, 96, 32) == pytest.approx(max(ang) - min(ang))
+    assert S.hole_theta(40, FEET, 96, 32) < S.hole_theta(60, FEET, 96, 32)   # nearer = larger
+
+
+def test_on_foot_hole_theta_crosses_the_trigger_angle_within_24px_of_the_edge():
+    """Report: the distance from his front edge to the near edge where theta first reaches the real fly's trigger angle (43.6 deg)."""
+    trig = np.radians(TRIGGER_DEG)
+    dist = next(g for g in range(60, -1, -1) if S.hole_theta(100, FEET, 100 + 12 + g, 32) >= trig)
+    print("trigger crossing at", dist, "px")
+    assert dist <= 24
+    assert dist == 17
+
+
+@pytest.mark.xfail(strict=True, reason="S3 geometry: with the eye at the top-front corner, airborne over a 32 px hole theta is ~23 deg < the 43.6 deg trigger "
+                                       "(the hole is far below and behind-below the eye). Reported in runs/S3_robustness.md; the rule is not changed.")
+def test_airborne_over_the_gap_theta_stays_above_the_trigger_until_past_the_far_edge():
+    trig = np.radians(TRIGGER_DEG)
+    for mx in range(84, 128):
+        t = pick(pits=[(96, 32)], mx=mx, feet=FEET - 60, ground=FEET)
+        assert t.kind == "pit" and t.theta >= trig, mx
+
+
+def test_airborne_over_the_gap_the_pit_is_the_chosen_threat_until_past_the_far_edge():
+    pit = [(96, 32)]
+    for mx in range(84, 128):
+        assert pick([goomba(mx + 150)], pits=pit, mx=mx, feet=FEET - 60, ground=FEET).kind == "pit", mx
+    assert pick([goomba(128 + 150)], pits=pit, mx=128, feet=FEET - 60, ground=FEET).kind == "goomba"
 
 
 def test_nearest_threat_only_no_sum():
@@ -121,7 +156,7 @@ def test_v2_episode_runs_and_logs_the_chosen_threat():
     from flyrun.run import run_episode
     s, df = run_episode(replace(Knobs(), SENSES_VERSION="v2", SENSOR_NOISE=0.0), load_brain(), max_frames=200)
     assert {"threat_kind", "threat_id", "box"} <= set(df.columns)
-    assert set(df.threat_kind.dropna()) <= {"goomba", "koopa", "shell", "face", "pit", "pitwall", "none"}
+    assert set(df.threat_kind.dropna()) <= {"goomba", "koopa", "shell", "face", "pit", "none"}
 
 
 # ---------------------------------------------------------------- S2b: face rule (B6/B8) and pit-below rule (B9)
@@ -148,17 +183,6 @@ def test_step_face_stays_16_until_feet_clear_the_next_step():
     assert pick(walls=walls, mx=8, feet=144, ground=160) is None     # over it too
 
 
-def test_airborne_over_a_32px_gap_the_pit_under_him_is_the_threat_every_frame():
-    pit = [(96, 32)]
-    for mx in range(84, 128):                          # from the take-off to just before his left edge passes the far edge
-        t = pick([goomba(mx + 150)], pits=pit, mx=mx, feet=140, ground=FEET)
-        assert t.kind in ("pit", "pitwall"), mx        # never a far Goomba mid-gap
-        if mx > 96:
-            assert t.d == 0.0
-    t = pick([goomba(128 + 150)], pits=pit, mx=128, feet=140, ground=FEET)
-    assert t.kind == "goomba"                          # past the far edge: the pit threat is over
-
-
 def test_senses_tracks_the_take_off_ground():
     se = S.SensesV2(Knobs(), masks(), 6)
     se.read_ram = lambda ram: (40, ram["feet"], [], [(64, 32)], [])
@@ -183,17 +207,24 @@ def test_two_column_pipe_is_one_face_over_means_over_either_column():
     assert t.ident == ("face", 64) and t.w == 32 and t.h == 48
 
 
-def test_pit_wall_height_stays_max_jump_height_during_the_rise():
-    pit = [(96, 32)]
-    for feet in range(FEET, FEET - MAX_JUMP_HEIGHT - 1, -1):          # the whole rise, up to the apex
-        t = pick(pits=pit, mx=60, feet=feet, ground=FEET)
-        assert t.kind == "pitwall" and t.h == MAX_JUMP_HEIGHT, feet
-    for mx in range(60, 128):                                          # moving over the gap at the apex: never a step
-        t = pick(pits=pit, mx=mx, feet=FEET - MAX_JUMP_HEIGHT, ground=FEET)
-        assert t.kind in ("pit", "pitwall") and (t.kind == "pit" or t.h == MAX_JUMP_HEIGHT), mx
+# ---------------------------------------------------------------- S3 0a: rim tiles
+def _ram_with_pipe(rim, x=912):
+    from flyrun import level
+    ram = np.zeros(0x800, dtype=np.uint8)
+    page, col = x // 256, (x % 256) // 16
+    for c, (top, body) in enumerate(((rim[0], 20), (rim[1], 21))):
+        base = level.BUF + level.PAGE_BYTES * (page % 2) + col + c
+        ram[base + 16 * 7] = top
+        for r in (8, 9, 10):
+            ram[base + 16 * r] = body
+        ram[base + 16 * 11] = ram[base + 16 * 12] = 84
+    ram[0x071A], ram[0x071C] = x // 256, 0
+    return ram
 
 
-def test_pit_threat_ends_when_the_footprint_is_past_the_far_edge():
-    pit = [(96, 32)]
-    assert pick([goomba(128 + 150)], pits=pit, mx=127, feet=140, ground=FEET).kind in ("pit", "pitwall")
-    assert pick([goomba(128 + 150)], pits=pit, mx=128, feet=140, ground=FEET).kind == "goomba"
+def test_rim_tiles_16_17_make_pipe_4_read_64px_in_v2_only():
+    from flyrun import level
+    ram = _ram_with_pipe((16, 17))
+    assert level.scan_visible(ram, rim=True)[0] == [(912, 64), (928, 64)]
+    assert level.scan_visible(ram)[0] == [(912, 48), (928, 48)]              # v1 reads are unchanged
+    assert level.scan_visible(_ram_with_pipe((18, 19)), rim=True)[0] == [(912, 64), (928, 64)]   # pipes 1-3 unchanged

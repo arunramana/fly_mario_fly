@@ -81,6 +81,8 @@ def run_episode(knobs, W, noop_start=0, max_frames=3000, stuck_frames=150, recor
             near_d, counting = (min(ahead) if ahead else None), True
             I, lm = senses.look(ram, enemy_input) if v2 else senses.look(mx, goombas, enemy_input, face, pit)
             if controller is not None:
+                if hasattr(controller, "airborne"):      # S3 controls with a landing reset read the same airborne flag as motor v2
+                    controller.airborne = int(ram[0x001D]) != 0
                 action = controller.act(lm)
                 read = dict(ttmn=0.0, dnp09=0.0, steer=0.0)
             else:
