@@ -272,3 +272,42 @@ def test_rim_tiles_16_17_make_pipe_4_read_64px_in_v2_only():
     assert level.scan_visible(ram, rim=True)[0] == [(912, 64), (928, 64)]
     assert level.scan_visible(ram)[0] == [(912, 48), (928, 48)]              # v1 reads are unchanged
     assert level.scan_visible(_ram_with_pipe((18, 19)), rim=True)[0] == [(912, 64), (928, 64)]   # pipes 1-3 unchanged
+
+
+# ---------------------------------------------------------------- S3e: a cleared enemy hands over to the next threat
+def test_goomba_pair_mid_jump_the_chosen_threat_becomes_g2_once_g1_is_cleared():
+    g1, g2 = goomba(100, slot=0), goomba(124, slot=1)          # 24 px apart (left edges); tops at y 160
+    assert pick([g1, g2], mx=80, feet=176).ident == ("enemy", 0)                 # on the ground: G1
+    assert pick([g1, g2], mx=90, feet=165, ground=176).ident == ("enemy", 0)     # rising, feet still below G1's top: G1
+    assert pick([g1, g2], mx=96, feet=140, ground=176).ident == ("enemy", 1)     # feet above its top AND over it: G2
+    assert pick([g1, g2], mx=86, feet=140, ground=176).ident == ("enemy", 0)     # feet above but not over it yet: still G1
+    assert pick([g1], mx=96, feet=140, ground=176) is None                       # a single Goomba cleared: nothing ahead
+
+
+def test_single_goomba_unchanged_and_cleared_set_resets_on_landing():
+    se = S.SensesV2(Knobs(), masks(), 6)
+    st = {}
+    se.read_ram = lambda ram: (st["mx"], ram["feet"], st["en"], [], [])
+    def look(mx, feet, air, en):
+        st["mx"], st["en"] = mx, en
+        lm = se.look({0x001D: air, "feet": feet})[1]
+        return lm.extra["threat_id"]
+    pair = [goomba(100, slot=0), goomba(124, slot=1)]
+    assert look(80, 176, 0, pair) == "enemy:0"
+    assert look(96, 140, 1, pair) == "enemy:1"                 # G1 cleared
+    assert look(98, 170, 1, pair) == "enemy:1"                 # falling below its top while still over it: stays cleared (no flicker back)
+    assert look(100, 176, 0, pair) == "enemy:0"                # landing: the set is emptied
+    assert look(80, 176, 0, [goomba(100)]) == "enemy:0"        # a single Goomba: as before
+
+
+def test_dtheta_is_zero_at_the_g1_to_g2_switch():
+    se = S.SensesV2(Knobs(), masks(), 6)
+    st = {}
+    se.read_ram = lambda ram: (st["mx"], ram["feet"], st["en"], [], [])
+    pair = [goomba(100, slot=0), goomba(124, slot=1)]
+    for mx, feet, air in ((80, 176, 0), (90, 165, 1), (94, 162, 1)):
+        st["mx"], st["en"] = mx, pair
+        se.look({0x001D: air, "feet": feet})
+    st["mx"], st["en"] = 96, pair
+    lm = se.look({0x001D: 1, "feet": 140})[1]
+    assert lm.extra["threat_id"] == "enemy:1" and lm.dtheta == 0.0

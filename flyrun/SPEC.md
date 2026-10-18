@@ -9,3 +9,7 @@ INVENTED (orange) shape. Replaces the 68 px wall and the S3 true-angle hole.
 
 Note: S3b scaled tower in the middle → wide pits jumped too early (full jump ≈ 84 px fixed). Moved to far edge (S3c).
 Note: S3c: pit 3 (between staircases), tower anchored to the floor sat below his feet, nothing loomed, he walked off. (S3d: anchored to the highest rim.)
+
+## Threat choice (S3e)
+Enemy cleared = his feet are at or above the enemy's top AND his body is over it (same test as pipe faces / towers). A cleared enemy drops out of the candidates for the rest of this jump (until landing), so the next threat ahead (e.g. the second Goomba of a pair) is chosen and drawn. Landing on a cleared enemy is still allowed (stomp = safe).
+Note: S3d: with a Goomba pair, Goomba 1 stayed chosen until he was past it; Goomba 2 was invisible mid-jump (Arun, 2026-10-18).

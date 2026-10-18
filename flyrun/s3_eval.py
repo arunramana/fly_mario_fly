@@ -17,7 +17,7 @@ from .knobs import Knobs
 ROOT = Path(__file__).resolve().parent
 KN = replace(Knobs(), SENSES_VERSION="v2", MOTOR_VERSION="v2")
 ARMS = ["real"] + [f"shuf{i}" for i in range(5)] + ["theta_rule", "blind_timer"]
-TAG_SAVE = None       # python -m flyrun.s3_eval S3d  -> real + theta_rule only, traces saved as runs/S3d_holdout_<noop>_<sigma>.csv (theta rule: S3d_holdout_theta_rule_...)
+TAG_SAVE = None       # python -m flyrun.s3_eval S3e  -> real + theta_rule only, traces saved as runs/S3e_holdout_<noop>_<sigma>.csv (theta rule: S3e_holdout_theta_rule_...)
 _B = {}
 
 
@@ -45,7 +45,7 @@ def _ep(job):
     s, df = run_episode(k, brain, noop_start=ep["noop_start"], episode_seed=ep["seed"], stuck_frames=150, controller=ctrl)
     if tag:
         from .smoke_s3 import save_trace
-        pre = "S3d_holdout" if arm == "real" else f"S3d_holdout_{arm}"
+        pre = "S3e_holdout" if arm == "real" else f"S3e_holdout_{arm}"
         save_trace(df, ROOT / "runs" / f"{pre}_{ep['noop_start']}_{ep['sigma']}.csv")
     on = df[(df.a == 1) & (df.a.shift(1, fill_value=0) == 0) & (df.air == 0)]
     onsets = [(float(np.degrees(r.theta)), str(r.threat_kind), None if r.stim_d is None or r.stim_d != r.stim_d else float(r.stim_d), int(r.x))

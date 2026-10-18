@@ -1,0 +1,26 @@
+frame,x_takeoff,threat,takeoff_d,theta_deg,frames_held,release_reason,landing_frame,x_landing,outcome
+150,280,goomba enemy:0,20.0,43.60281897270362,10,loom_faded,181.0,312,"no contact (not stomped, survived)"
+234,398,face face:448,40.0,43.60281897270362,24,loom_faded,272.0,464,landed on/past the face
+314,538,face face:608,60.0,43.60281897270362,36,loom_faded,351.0,603,landed on/past the face
+400,688,goomba enemy:0,20.0,43.60281897270362,23,loom_faded,428.0,737,"no contact (not stomped, survived)"
+481,830,face face:912,72.0,47.924977949156364,41,still down at landing,521.0,899,short of the face
+536,898,face face:912,2.0,172.8473312500053,27,still down at landing,562.0,901,landed on/past the face
+673,1086,pit pit:1104,40.0,43.60281897270362,25,loom_faded,718.0,1165,survived the pit threat
+826,1354,pit pit:1376,60.0,43.60281897270362,37,loom_faded,873.0,1436,survived the pit threat
+907,1495,goomba enemy:0,20.0,43.60281897270362,10,loom_faded,943.0,1558,landed on enemy (stomped)
+987,1635,koopa enemy:2,29.0,44.958868794206225,14,loom_faded,1022.0,1697,"no contact (not stomped, survived)"
+1062,1767,goomba enemy:0,20.0,43.60281897270362,10,loom_faded,1114.0,1831,landed on enemy (stomped)
+1170,1929,goomba enemy:0,19.0,45.66730835583508,10,loom_faded,1201.0,1983,"no contact (not stomped, survived)"
+1208,1996,goomba enemy:1,18.0,47.924977949156364,9,loom_faded,1238.0,2048,"no contact (not stomped, survived)"
+1276,2115,face face:2144,19.0,45.66730835583508,38,still down at landing,1313.0,2178,landed on/past the face
+1315,2178,face face:2192,2.0,151.92751306414706,12,loom_faded,1343.0,2201,landed on/past the face
+1364,2226,face face:2240,2.0,172.8473312500053,27,still down at landing,1390.0,2229,landed on/past the face
+1459,2339,face face:2368,19.0,45.66730835583508,38,still down at landing,1496.0,2402,landed on/past the face
+1498,2402,face face:2416,2.0,151.92751306414706,12,loom_faded,1526.0,2424,landed on/past the face
+1530,2430,pit pit:2448,39.0,44.612410109815286,24,loom_faded,1580.0,2518,survived the pit threat
+1603,2558,face face:2608,40.0,43.60281897270362,23,loom_faded,1640.0,2623,landed on/past the face
+1705,2737,goomba enemy:0,18.0,47.924977949156364,9,loom_faded,1735.0,2789,"no contact (not stomped, survived)"
+1749,2814,face face:2864,40.0,43.60281897270362,24,loom_faded,1787.0,2880,landed on/past the face
+1801,2905,face face:2928,13.0,63.21500449249781,35,still down at landing,1835.0,2964,landed on/past the face
+1837,2968,face face:2992,14.0,59.48976259388444,19,loom_faded,1870.0,3025,landed on/past the face
+1934,3137,face face:3168,20.0,43.60281897270362,12,loom_faded,,3161,flag

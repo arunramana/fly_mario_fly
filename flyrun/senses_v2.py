@@ -58,6 +58,11 @@ def merge_columns(walls):
     return out
 
 
+def is_cleared(mx, feet, t):
+    """S3e: an enemy is cleared when his feet are at or above its top AND his body is over it (the pipe-face / tower test)."""
+    return feet <= t.top and over(mx, t.x, t.x + t.w)
+
+
 def enemy_boxes(enemies):
     """enemies: [(slot, type_byte, state, ex, ey)] -> list of Threat (live, known types only)."""
     out = []
@@ -80,14 +85,15 @@ def rim_top(walls, x):
     return level.ROW_GROUND * level.TILE
 
 
-def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pit_sense=True, ground=None, released=frozenset()):
+def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pit_sense=True, ground=None, released=frozenset(), cleared=frozenset()):
     """-> the chosen Threat (with .d and .theta) or None. walls: [(x, H)] from level.scan_visible, pits: [(x, w)].
     ground = the y of the ground Mario took off from (his current ground while grounded); default = feet (S1 behaviour on the ground).
-    released = idents of pit towers already released in this jump: their tower stays 0 until the landing (S3c, no re-appearance)."""
+    released = idents of pit towers already released in this jump: their tower stays 0 until the landing (S3c, no re-appearance).
+    cleared = idents of enemies already cleared in this jump (S3e): dropped from the candidates until the landing, so the next threat is chosen."""
     ground = feet if ground is None else ground
     cands = []
     if enemy_input:
-        cands += enemy_boxes(enemies)
+        cands += [t for t in enemy_boxes(enemies) if t.ident not in cleared and not is_cleared(mx, feet, t)]
     if pipe_sense:
         for x0, x1, H in merge_columns(walls):
             top = level.ROW_GROUND * level.TILE - H            # y of the top of that face
@@ -129,6 +135,7 @@ class SensesV2:
         self.prev_id, self.prev_theta, self.prev_d = None, 0.0, None
         self.ground = None       # y of the ground he last stood on (the take-off ground while airborne)
         self.released = set()    # pit towers released in the current jump (cleared on landing)
+        self.cleared = set()     # enemies cleared in the current jump (S3e; emptied on landing)
 
     def read_ram(self, ram):
         mx = E.mario_x(ram)
@@ -146,7 +153,10 @@ class SensesV2:
             self.ground = feet
         if int(ram[0x001D]) == 0:
             self.released.clear()
-        t = choose(mx, feet, enemies, walls, pits, enemy_input, self.k.PIPE_SENSE, self.k.PIT_SENSE, ground=self.ground, released=frozenset(self.released))
+            self.cleared.clear()
+        else:
+            self.cleared |= {t.ident for t in enemy_boxes(enemies) if is_cleared(mx, feet, t)}
+        t = choose(mx, feet, enemies, walls, pits, enemy_input, self.k.PIPE_SENSE, self.k.PIT_SENSE, ground=self.ground, released=frozenset(self.released), cleared=frozenset(self.cleared))
         if t is not None and t.kind == "pit" and t.h == 0 and int(ram[0x001D]) != 0:
             self.released.add(t.ident)
         return self.from_threat(t)

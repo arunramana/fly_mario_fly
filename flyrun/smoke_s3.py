@@ -1,5 +1,5 @@
 """Part S3: the default-knob smoke run with the S3 senses (rim tiles + pit hole), noop 0, sigma 0, unassisted.
-python -m flyrun.smoke_s3   -> runs/S3d_smoke_log.csv, runs/S3d_jumps.csv, runs/S3d_full_run.csv, pit take-off table, clips/S3d_full_run.mp4 (1x)"""
+python -m flyrun.smoke_s3   -> runs/S3e_smoke_log.csv, runs/S3e_jumps.csv, runs/S3e_full_run.csv, pit take-off table, clips/S3e_full_run.mp4 (1x)"""
 import numpy as np
 
 from . import level
@@ -31,28 +31,31 @@ def save_trace(df, path):
 
 
 def main():
-    s, df = run("S3d")
+    s, df = run("S3e")
     import pandas as pd
-    jt = pd.read_csv(ROOT / "runs" / "S3d_jumps.csv")
+    jt = pd.read_csv(ROOT / "runs" / "S3e_jumps.csv")
     for r in pit_table(df, jt):
         print(r)
-    save_trace(df, ROOT / "runs" / "S3d_full_run.csv")
-    write_clip([(df, list(range(len(df))), "")], ROOT / "clips" / "S3d_full_run.mp4", "S3d: tower on the highest rim", fps=60, speed="1x")
+    save_trace(df, ROOT / "runs" / "S3e_full_run.csv")
+    write_clip([(df, list(range(len(df))), "")], ROOT / "clips" / "S3e_full_run.mp4", "S3e: cleared enemy hands over", fps=60, speed="1x")
 
 
 
-def death_clip():
-    """The most common HOLDOUT death (pit 1, x ~1128) on HOLDOUT episode 1 (noop 3, seed 101, sigma 0), 0.5x."""
+def pair_clip():
+    """The Goomba pair near x 1769-1810 on HOLDOUT noop 11, sigma 0 (died there in S3d), 0.5x, <= 10 s."""
     from dataclasses import replace
     from . import episodes4
     from .brain import load_brain
     from .diagnose7b import capture
     from .smoke_s2 import KN, extra
-    e = episodes4.HOLDOUT[0]
+    e = episodes4.HOLDOUT[1]
+    assert (e["noop_start"], e["sigma"]) == (11, 0.0)
     s, df = capture(replace(KN, SENSOR_NOISE=e["sigma"]), dict(noop_start=e["noop_start"], seed=e["seed"]), load_brain(), record=True, extra=extra)
-    print("death clip episode", e, {k: s[k] for k in ("max_x", "end_reason", "cause")})
-    write_clip([(df, window(df, 1040, 1128, pre=20, post=0), "")], ROOT / "clips" / "S3b_death.mp4", "S3: HOLDOUT death at pit 1")
+    print("pair clip episode", e, {k: s[k] for k in ("max_x", "end_reason", "cause")})
+    idx = window(df, 1745, 1830, pre=20, post=10)[:290]
+    write_clip([(df, idx, "")], ROOT / "clips" / "S3e_pair.mp4", "S3e: Goomba pair (HOLDOUT noop 11, sigma 0)")
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    pair_clip() if sys.argv[1:] == ["pair"] else main()
