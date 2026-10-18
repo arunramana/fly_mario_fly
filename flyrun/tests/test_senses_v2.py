@@ -60,10 +60,11 @@ def test_step_face_is_16_relative_to_where_he_stands():
 
 def test_pit_is_a_base_plus_a_tower():
     pit = [(96, 32)]
-    t = pick(pits=pit, mx=40)                          # S3b (B9): tower 16 px wide over the midpoint (x 104..120), height = W
-    assert t.kind == "pit" and t.ident == ("pit", 96) and (t.x, t.top, t.w, t.h) == (104, 176 - 32, 16, 32)
+    t = pick(pits=pit, mx=40)                          # S3c (B9): tower 16 px wide on the FAR edge (x 128..144), height = W
+    assert t.kind == "pit" and t.ident == ("pit", 96) and (t.x, t.top, t.w, t.h) == (128, 176 - 32, 16, 32)
     assert t.base == (96, 176, 32, 16)
-    assert t.d == 104 - 52 and t.theta == pytest.approx(S.theta_of(52, 32))      # the pipe-face height rule on the tower
+    assert t.d == 128 - 52 and t.theta == pytest.approx(S.theta_of(76, 32))      # the pipe-face height rule on the tower
+    assert t.dsel == 96 - 52                           # it competes with other threats by the gap to the base
     assert pick(pits=pit, mx=100).kind == "pit"        # under him
     assert pick(pits=pit, mx=127).kind == "pit"        # body not yet past the far edge
     assert pick(pits=pit, mx=128) is None              # body past the far edge: over
@@ -81,29 +82,44 @@ def _onset_distance(W):
     return next(g for g in range(200, -1, -1) if pick(pits=[(100 + 12 + g, W)], mx=100).theta >= trig)
 
 
-def test_on_foot_trigger_fires_within_12px_of_three_quarters_W_on_every_1_1_pit():
+def test_on_foot_trigger_fires_within_12px_of_quarter_W_plus_8_on_every_1_1_pit():
     import csv
     rows = [(int(r["x"]), int(r["size"])) for r in csv.DictReader(open(Path(__file__).resolve().parent.parent / "runs" / "001_level_map.csv")) if r["kind"] == "pit"]
     assert [w for _, w in rows] == [32, 48, 32]
     for px, W in rows:
         g = _onset_distance(W)
-        print("pit", px, "W", W, "trigger at", g, "px before the near edge; 0.75 W =", 0.75 * W)
-        assert abs(g - 0.75 * W) <= 12, (px, W, g)
-        assert g == {32: 32, 48: 44}[W]
+        print("pit", px, "W", W, "trigger at", g, "px before the near edge; 0.25 W + 8 =", 0.25 * W + 8)
+        assert abs(g - (0.25 * W + 8)) <= 12, (px, W, g)
+        assert g == {32: 8, 48: 12}[W]
 
 
 def test_airborne_the_tower_is_the_chosen_threat_until_the_release_rule_fires():
-    pit = [(96, 32)]                                   # tower x 104..120, top 144
+    pit = [(96, 32)]                                   # base x 96..128, tower x 128..144, top 144
     for feet in range(FEET, 144, -1):                  # rising, feet below the tower top: full height from the take-off ground
-        t = pick([goomba(100 + 150)], pits=pit, mx=60, feet=feet, ground=FEET)
+        t = pick([goomba(60 + 150)], pits=pit, mx=60, feet=feet, ground=FEET)
         assert t.kind == "pit" and t.h == 32, feet
-    t = pick(pits=pit, mx=95, feet=144, ground=FEET)   # feet level with the top, not over the tower yet (mx + 12 = 107 > 104: over)
-    assert t.kind == "pit" and t.h == 0 and t.theta == 0.0
-    t = pick(pits=pit, mx=80, feet=130, ground=FEET)   # feet above the top but not over it: still the full tower
+    t = pick(pits=pit, mx=100, feet=130, ground=FEET)  # feet above the top but not over the tower (mx + 12 = 112 < 128): still the full tower
     assert t.kind == "pit" and t.h == 32
-    t = pick([goomba(128 + 150)], pits=pit, mx=110, feet=100, ground=FEET)   # over it, released: the pit is still THE threat (base) with theta 0
+    t = pick(pits=pit, mx=117, feet=144, ground=FEET)  # feet level with the top AND over it (mx + 12 = 129 > 128): released
+    assert t.kind == "pit" and t.h == 0 and t.theta == 0.0
+    t = pick([goomba(127 + 150)], pits=pit, mx=117, feet=100, ground=FEET)   # released: the pit (base) is still THE threat, theta 0
     assert t.kind == "pit" and t.theta == 0.0
     assert pick([goomba(128 + 150)], pits=pit, mx=128, feet=100, ground=FEET).kind == "goomba"   # past the far edge
+
+
+def test_released_tower_does_not_reappear_until_landing():
+    se = S.SensesV2(Knobs(), masks(), 6)
+    st = {}
+    se.read_ram = lambda ram: (st["mx"], ram["feet"], [], [], [(96, 32)])
+    def look(mx, feet, air):
+        st["mx"] = mx
+        return se.look({0x001D: air, "feet": feet})[1].extra["box"][3]
+    assert look(60, 176, 0) == 32                       # on the ground: full tower
+    assert look(100, 150, 1) == 32                      # rising, not over it
+    assert look(117, 144, 1) == 0                       # feet at the top AND over it: released
+    assert look(118, 150, 1) == 0                       # falling below the top while still over it: stays released (S3b flickered to 32 here)
+    assert look(119, 170, 1) == 0
+    assert look(120, 176, 0) == 32                      # landing reset: a new tower for the next jump
 
 
 def test_nearest_threat_only_no_sum():

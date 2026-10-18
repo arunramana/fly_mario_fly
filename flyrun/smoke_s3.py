@@ -1,5 +1,5 @@
 """Part S3: the default-knob smoke run with the S3 senses (rim tiles + pit hole), noop 0, sigma 0, unassisted.
-python -m flyrun.smoke_s3   -> runs/S3_smoke_log.csv, runs/S3_jumps.csv, pit take-off table, clips/S3b_run.mp4 (1x)"""
+python -m flyrun.smoke_s3   -> runs/S3_smoke_log.csv, runs/S3_jumps.csv, pit take-off table, clips/S3c_full_run.mp4 (1x)"""
 import numpy as np
 
 from . import level
@@ -16,13 +16,28 @@ def pit_table(df, jt):
     return rows
 
 
+def save_trace(df, path):
+    """Per-frame trace: frame, x, feet y, airborne, chosen threat (type, box [x top w h], pit base box), theta (deg), TTMn, A, Right, Left."""
+    box = lambda b: "" if not isinstance(b, tuple) else " ".join(str(int(v)) for v in b)
+    out = df[["frame", "x", "y", "air"]].copy()
+    out["threat"] = df.threat_kind
+    out["box_x_top_w_h"] = df.box.map(box)
+    out["pit_base_x_top_w_h"] = df.base.map(box)
+    out["theta_deg"] = np.degrees(df.theta).round(2)
+    out["ttmn"] = df.ttmn.round(4)
+    out["a"], out["right"], out["left"] = df.a, df.right, df.left
+    out = out.rename(columns={"y": "feet_y", "air": "airborne"})
+    out.to_csv(path, index=False, lineterminator="\n")
+
+
 def main():
-    s, df = run("S3b")
+    s, df = run("S3c")
     import pandas as pd
-    jt = pd.read_csv(ROOT / "runs" / "S3b_jumps.csv")
+    jt = pd.read_csv(ROOT / "runs" / "S3c_jumps.csv")
     for r in pit_table(df, jt):
         print(r)
-    write_clip([(df, list(range(len(df))), "")], ROOT / "clips" / "S3b_run.mp4", "S3b: pit base + tower", fps=60, speed="1x")
+    save_trace(df, ROOT / "runs" / "S3c_full_run.csv")
+    write_clip([(df, list(range(len(df))), "")], ROOT / "clips" / "S3c_full_run.mp4", "S3c: far-edge tower", fps=60, speed="1x")
 
 
 

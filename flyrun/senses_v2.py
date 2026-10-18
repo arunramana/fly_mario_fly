@@ -1,7 +1,7 @@
 """Senses v2 (Part S1): ONE threat feeds the loom detectors, the nearest one AHEAD by surface-to-surface gap, re-chosen every frame.
 
 Candidates: live enemies (Goomba / Koopa / shell), the nearest wall/pipe/step face that rises above Mario's FEET, and each empty
-pit (S3b: a base over the hole + a tower, flyrun/SPEC.md B9). True 2-D distance d = sqrt(gap_x^2 + gap_y^2) between Mario's box and the object's box;
+pit (S3c: a base over the hole + a tower on its far edge, flyrun/SPEC.md B9). True 2-D distance d = sqrt(gap_x^2 + gap_y^2) between Mario's box and the object's box;
 theta = 2 atan(h / 2d) with the object's height h. dtheta is tracked per object identity: when the chosen object changes,
 dtheta is 0 at that frame. Threats behind Mario are ignored; floating blocks do not loom (only level.SOLID_WALL columns do).
 Nothing here is read from pixels. The v1 class (senses.Senses) is untouched and stays the default."""
@@ -71,9 +71,10 @@ def enemy_boxes(enemies):
     return out
 
 
-def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pit_sense=True, ground=None):
+def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pit_sense=True, ground=None, released=frozenset()):
     """-> the chosen Threat (with .d and .theta) or None. walls: [(x, H)] from level.scan_visible, pits: [(x, w)].
-    ground = the y of the ground Mario took off from (his current ground while grounded); default = feet (S1 behaviour on the ground)."""
+    ground = the y of the ground Mario took off from (his current ground while grounded); default = feet (S1 behaviour on the ground).
+    released = idents of pit towers already released in this jump: their tower stays 0 until the landing (S3c, no re-appearance)."""
     ground = feet if ground is None else ground
     cands = []
     if enemy_input:
@@ -93,12 +94,12 @@ def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pi
         for px, pw in pits:
             if mx >= px + pw:                                   # his body is past the far edge: the pit is over (flyrun/SPEC.md B9)
                 continue
-            # S3b (B9): BASE = the hole (marks "the pit is still the threat"), TOWER = a 16 px column over the hole's midpoint,
-            # height min(W, MAX_JUMP_HEIGHT) above the floor, treated exactly like a pipe face.
+            # S3c (B9): BASE = the hole (marks "the pit is still the threat"), TOWER = 16 px wide standing on the FAR edge (its near face =
+            # the far edge of the hole), height min(W, MAX_JUMP_HEIGHT), treated like a pipe face; once released mid-air it stays 0 until landing.
             floor = level.ROW_GROUND * level.TILE
             top = floor - min(pw, MAX_JUMP_HEIGHT)
-            tx = px + pw // 2 - level.TILE // 2
-            h = 0 if (feet <= top and over(mx, tx, tx + level.TILE)) else ground - top
+            tx = px + pw
+            h = 0 if (("pit", px) in released or (feet <= top and over(mx, tx, tx + level.TILE))) else ground - top
             t = Threat("pit", ("pit", px), tx, top, level.TILE, max(h, 0))
             t.base = (px, floor, pw, level.TILE)
             cands.append(t)
@@ -115,6 +116,7 @@ class SensesV2:
         self.k, self.m, self.K, self.rng = knobs, masks, K, rng
         self.prev_id, self.prev_theta, self.prev_d = None, 0.0, None
         self.ground = None       # y of the ground he last stood on (the take-off ground while airborne)
+        self.released = set()    # pit towers released in the current jump (cleared on landing)
 
     def read_ram(self, ram):
         mx = E.mario_x(ram)
@@ -130,7 +132,11 @@ class SensesV2:
         mx, feet, enemies, walls, pits = self.read_ram(ram)
         if int(ram[0x001D]) == 0 or self.ground is None:
             self.ground = feet
-        t = choose(mx, feet, enemies, walls, pits, enemy_input, self.k.PIPE_SENSE, self.k.PIT_SENSE, ground=self.ground)
+        if int(ram[0x001D]) == 0:
+            self.released.clear()
+        t = choose(mx, feet, enemies, walls, pits, enemy_input, self.k.PIPE_SENSE, self.k.PIT_SENSE, ground=self.ground, released=frozenset(self.released))
+        if t is not None and t.kind == "pit" and t.h == 0 and int(ram[0x001D]) != 0:
+            self.released.add(t.ident)
         return self.from_threat(t)
 
     def from_threat(self, t):
