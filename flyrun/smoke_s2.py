@@ -2,7 +2,8 @@
 Writes runs/<tag>_smoke_log.csv (per frame), runs/<tag>_jumps.csv (per jump), prints the jump table and the end of the run,
 renders a clip (0.5x, with TTMn / A / airborne overlay and the S1 threat box).
 python -m flyrun.smoke_s2          -> S2 (first three obstacles)
-python -m flyrun.smoke_s2 S2b      -> S2b: from the start, plus an ASSISTED run (scripted driver to x 1000, then the fly) for pit 1"""
+python -m flyrun.smoke_s2 S2b      -> S2b: from the start, plus an ASSISTED run (scripted driver to x 1000, then the fly) for pit 1
+python -m flyrun.smoke_s2 S2c      -> S2c: same runs with the S2c senses (above-and-over faces, pit virtual wall); clip clips/S2c.mp4"""
 import sys
 from dataclasses import replace
 from pathlib import Path
@@ -53,7 +54,7 @@ def jumps(df, s):
             elif thr.threat_kind in ("goomba", "koopa"):
                 outcome = "died soon after" if died_soon else "no contact (not stomped, survived)"
             else:
-                outcome = "died soon after" if died_soon else "survived the pit tile"
+                outcome = "died soon after" if died_soon else "survived the pit threat"
             rows.append(dict(frame=t0, x_takeoff=int(thr.x), threat=f"{thr.threat_kind} {thr.threat_id}", takeoff_d=thr.stim_d, theta_deg=np.degrees(thr.theta),
                              frames_held=int(seg.a.sum()), release_reason=reason, landing_frame=land, x_landing=xl, outcome=outcome))
             k = end + 1
@@ -97,7 +98,7 @@ def write_clip(parts, path, title):
             if isinstance(r.box, tuple):
                 bx, top, bw, bh = r.box
                 sx, y0 = bx - r.extra[0], top + 32
-                col = {"goomba": (0, 0, 255), "koopa": (0, 165, 255), "shell": (0, 165, 255), "face": (255, 200, 0), "pit": (255, 0, 255)}.get(r.threat_kind, (255, 255, 255))
+                col = {"goomba": (0, 0, 255), "koopa": (0, 165, 255), "shell": (0, 165, 255), "face": (255, 200, 0), "pit": (255, 0, 255), "pitwall": (255, 0, 255)}.get(r.threat_kind, (255, 255, 255))
                 cv2.rectangle(img, (int(sx * S), int(y0 * S)), (int((sx + bw) * S), int((y0 + bh) * S)), col, 2)
             pan = np.full((h * S, 260, 3), 24, np.uint8)
 
@@ -125,7 +126,11 @@ def write_clip(parts, path, title):
 
 
 def main():
-    if len(sys.argv) > 1 and sys.argv[1] == "S2b":
+    if len(sys.argv) > 1 and sys.argv[1] == "S2c":
+        s, df = run("S2c")                                       # unassisted: he reaches and crosses pit 1 on his own, no assisted run needed
+        write_clip([(df, window(df, 840, 960), "unassisted: pipe 4"), (df, window(df, 1008, 1175, pre=10, post=0), "unassisted: pit 1")],
+                   ROOT / "clips" / "S2c.mp4", "S2c: above-and-over + pit wall")
+    elif len(sys.argv) > 1 and sys.argv[1] == "S2b":
         s, df = run("S2b")
         s2, df2 = run("S2b_pit_assisted", takeover_x=1000)
         fly2 = df2.index[df2.driver == "fly"]

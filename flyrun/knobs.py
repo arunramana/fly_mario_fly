@@ -62,6 +62,7 @@ SIZE_TABLE = {"goomba": (16, 16), "koopa": (16, 24), "shell": (16, 16)}   # INVE
 ENEMY_TYPES = {0x06: "goomba", 0x00: "koopa"}                              # INVENTED (fixed): any other type byte is ignored
 MARIO_BOX = (12, 16)       # INVENTED (fixed): Mario's (w, h) in px (small Mario; x = sprite left edge); deaths happened at gap 0 = dx 12
 ENEMY_FEET_OFFSET = 8      # INVENTED (fixed): an enemy's RAM y (0x00CF+slot) is its feet y + 8 (measured: ground 184 vs surface 176)
+MAX_JUMP_HEIGHT = 68       # INVENTED (fixed), measured (Part S2c, flyrun/measure_jump.py): apex above take-off of a full walking jump, px
 PIT_GAIN_V2 = 1.0          # INVENTED (fixed): each empty floor tile is a 16 px threat at gain 1 (the evolved PIT_GAIN knob is ignored in v2)
 
 # Every non-connectome piece, with how it got its value. clips/numbers.md "Invented pieces" is generated from this.
@@ -96,7 +97,8 @@ INVENTED = {
     "SENSES_VERSION": ("fixed", "v1 = old senses (all Part 1-7 results); v2 = Part S1 senses"),
     "SIZE_TABLE / ENEMY_TYPES": ("fixed", "v2 object sizes (Goomba 16x16, Koopa 16x24, shell 16x16) and the RAM type bytes (0x06, 0x00)"),
     "MARIO_BOX / ENEMY_FEET_OFFSET": ("fixed", "v2 geometry: Mario 12x16, enemy feet = RAM y - 8 (measured on 1-1)"),
-    "PIT_GAIN_V2": ("fixed", "v2 pit tiles: 16 px threats at gain 1"),
+    "PIT_GAIN_V2": ("fixed", "v2 pit threats (virtual wall, tile under him) at gain 1"),
+    "MAX_JUMP_HEIGHT": ("fixed", "v2: apex height of a full walking jump (68 px, measured); height of a pit's virtual wall (S2c)"),
     "tile IDs / rows (level.py)": ("fixed", "SOLID_WALL {18..21, 97}, ground rows 11-12, empty 0: hand-identified on 1-1 "
                                             "(run 001 notes); meaning unverified on other levels"),
     "W_steer construction": ("fixed", "cast choice, top-40 LC10a->DNa intermediates, predicted-NT signs, "

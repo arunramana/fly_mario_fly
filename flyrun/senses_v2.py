@@ -11,7 +11,7 @@ import numpy as np
 
 from . import env as E
 from . import level
-from .knobs import ENEMY_FEET_OFFSET, ENEMY_TYPES, MARIO_BOX, PIT_GAIN_V2, SIZE_TABLE
+from .knobs import ENEMY_FEET_OFFSET, ENEMY_TYPES, MARIO_BOX, MAX_JUMP_HEIGHT, PIT_GAIN_V2, SIZE_TABLE
 from .senses import Loom, theta_of
 
 ADDR_MARIO_Y = 0x00CE      # verified: = Mario's FEET y in tile-buffer coordinates (ground 176 = top of row 11, ledge 112 = top of row 7)
@@ -21,7 +21,7 @@ LIVE_STATES = {"goomba": (0, 1), "koopa": (0,), "shell": (2, 3)}   # RAM state b
 
 @dataclass
 class Threat:
-    kind: str          # goomba / koopa / shell / face / pit
+    kind: str          # goomba / koopa / shell / face / pitwall (virtual, B9) / pit (tile under him)
     ident: tuple       # ("enemy", slot) / ("face", column x) / ("pit", column x)
     x: int             # left edge, world px
     top: int           # top edge y (tile-buffer coordinates)
@@ -37,6 +37,22 @@ def gap(mx, feet, x, top, w, h):
     gx = max(0.0, x - (mx + mw))
     gy = max(0.0, top - feet, (feet - mh) - (top + h))   # object entirely below Mario's feet / entirely above his head
     return float(np.hypot(gx, gy))
+
+
+def over(mx, x0, x1):
+    """His body (MARIO_BOX wide, left edge mx) horizontally overlaps the columns [x0, x1)."""
+    return mx < x1 and mx + MARIO_BOX[0] > x0
+
+
+def merge_columns(walls):
+    """[(x, H)] per column -> [(x0, x1, H)]: neighbouring columns of equal height are ONE face (a pipe is 2 columns wide)."""
+    out = []
+    for wx, H in walls:
+        if out and out[-1][1] == wx and out[-1][2] == H:
+            out[-1] = (out[-1][0], wx + level.TILE, H)
+        else:
+            out.append((wx, wx + level.TILE, H))
+    return out
 
 
 def enemy_boxes(enemies):
@@ -61,25 +77,34 @@ def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pi
     if enemy_input:
         cands += enemy_boxes(enemies)
     if pipe_sense:
-        for wx, H in walls:
-            top = level.ROW_GROUND * level.TILE - H            # y of the top of that column
-            # S2b (B6/B8): the face's FULL height from the ground he took off from, constant while he rises, and 0 once his
-            # feet are above its top (a step, not a slope)
-            h = ground - top if feet > top else 0
-            if wx >= mx and h > 0:
-                cands.append(Threat("face", ("face", wx), wx, top, level.TILE, h))
-                break                                           # the nearest rising column ahead; later ones are behind it
+        for x0, x1, H in merge_columns(walls):
+            top = level.ROW_GROUND * level.TILE - H            # y of the top of that face
+            if x1 <= mx:
+                continue                                        # fully behind his left edge
+            # S2c (B6): the face keeps its full height from the take-off ground until his feet are above its top AND his body
+            # is over its columns; only then it is 0 (a step)
+            h = 0 if (feet <= top and over(mx, x0, x1)) else ground - top
+            if h > 0:
+                cands.append(Threat("face", ("face", x0), x0, top, x1 - x0, h))
+                break                                           # the nearest rising face ahead; later ones are behind it
     if pit_sense:
         for px, pw in pits:
-            for wx in range(px, px + pw, level.TILE):
-                if wx + level.TILE > mx:                         # S2b (B9): ahead OR under his footprint; fully behind him = past it
+            far = px + pw
+            if mx >= far:                                       # footprint over solid floor past the far edge: the pit is over
+                continue
+            # S2c (B9): ONE virtual face at the near edge, MAX_JUMP_HEIGHT above the floor. His feet cannot get above its top
+            # (strict), so under the face rule it keeps its full height all the way over the gap.
+            top = level.ROW_GROUND * level.TILE - MAX_JUMP_HEIGHT
+            if not (feet < top and over(mx, px, px + level.TILE)):
+                cands.append(Threat("pitwall", ("pitwall", px), px, top, level.TILE, MAX_JUMP_HEIGHT))
+            for wx in range(px, far, level.TILE):               # B9 pit-below: an empty tile under his footprint is a threat at d 0
+                if over(mx, wx, wx + level.TILE):
                     cands.append(Threat("pit", ("pit", wx), wx, level.ROW_GROUND * level.TILE, level.TILE, level.TILE))
-    ahead = [t for t in cands if t.x >= mx or t.kind == "pit"]
+    ahead = [t for t in cands if t.x >= mx or t.kind in ("pit", "pitwall") or over(mx, t.x, t.x + t.w)]
     for t in ahead:
         # a pit tile that overlaps his footprint is directly under him: surface gap 0 (B9), whatever his height above it
-        under = t.kind == "pit" and t.x < mx + MARIO_BOX[0]
-        t.d = 0.0 if under else gap(mx, feet, t.x, t.top, t.w, t.h)
-        t.theta = (PIT_GAIN_V2 if t.kind == "pit" else 1.0) * theta_of(t.d, t.h)
+        t.d = 0.0 if t.kind == "pit" else gap(mx, feet, t.x, t.top, t.w, t.h)
+        t.theta = (PIT_GAIN_V2 if t.kind in ("pit", "pitwall") else 1.0) * theta_of(t.d, t.h)
     return min(ahead, key=lambda t: t.d) if ahead else None
 
 

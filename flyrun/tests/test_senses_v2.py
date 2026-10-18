@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from flyrun import part7, senses_v2 as S
-from flyrun.knobs import Knobs
+from flyrun.knobs import MAX_JUMP_HEIGHT, Knobs
 
 FEET = 176          # Mario on the ground (RAM 0x00CE)
 GOOMBA, KOOPA = 0x06, 0x00
@@ -45,8 +45,8 @@ def test_face_height_is_above_feet():
     pipe = [(64, 32)]                                  # pipe column, top at y 144
     on_ground = pick(walls=pipe)
     assert on_ground.kind == "face" and on_ground.h == 32 and on_ground.theta > 0
-    feet_above_top = pick(walls=pipe, feet=136)        # feet 8 px above the pipe top
-    assert feet_above_top is None                      # face height floored at 0 -> no threat -> theta 0
+    feet_above_top = pick(walls=pipe, mx=56, feet=136, ground=FEET)   # feet 8 px above the pipe top AND over it (S2c)
+    assert feet_above_top is None                      # face height 0 -> no threat -> theta 0
 
 
 def test_step_face_is_16_relative_to_where_he_stands():
@@ -55,14 +55,16 @@ def test_step_face_is_16_relative_to_where_he_stands():
     assert t.kind == "face" and t.h == 16 and t.ident == ("face", 16)
 
 
-def test_pit_tiles_are_individual_threats():
+def test_pit_is_one_virtual_wall_and_the_tile_under_him():
     pit = [(96, 32)]
-    t = pick(pits=pit, mx=40)
-    assert t.kind == "pit" and t.ident == ("pit", 96) and t.h == 16 and t.d == 96 - 52
-    t2 = pick(pits=pit, mx=100)                        # S2b (B9): the tile under his footprint is still the threat, d 0
-    assert t2.ident == ("pit", 96) and t2.d == 0.0
-    t3 = pick(pits=pit, mx=116)                        # tile 96 is fully behind his left edge now; 112 is under him
-    assert t3.ident == ("pit", 112)
+    t = pick(pits=pit, mx=40)                          # S2c (B9): ONE virtual wall at the near edge, not a threat per tile
+    assert t.kind == "pitwall" and t.ident == ("pitwall", 96) and t.h == MAX_JUMP_HEIGHT and t.d == 96 - 52
+    assert t.top == 176 - MAX_JUMP_HEIGHT
+    t2 = pick(pits=pit, mx=100)                        # a tile under his footprint is a threat at d 0
+    assert t2.d == 0.0 and t2.kind in ("pit", "pitwall")
+    t3 = pick(pits=pit, mx=116)                        # tile 96 fully behind his left edge; 112 under him
+    assert t3.d == 0.0
+    assert pick(pits=pit, mx=128) is None              # footprint over solid floor past the far edge: over
     assert pick(pits=[], mx=40) is None                # floor all the way ahead: no pit threat
 
 
@@ -119,7 +121,7 @@ def test_v2_episode_runs_and_logs_the_chosen_threat():
     from flyrun.run import run_episode
     s, df = run_episode(replace(Knobs(), SENSES_VERSION="v2", SENSOR_NOISE=0.0), load_brain(), max_frames=200)
     assert {"threat_kind", "threat_id", "box"} <= set(df.columns)
-    assert set(df.threat_kind.dropna()) <= {"goomba", "koopa", "shell", "face", "pit", "none"}
+    assert set(df.threat_kind.dropna()) <= {"goomba", "koopa", "shell", "face", "pit", "pitwall", "none"}
 
 
 # ---------------------------------------------------------------- S2b: face rule (B6/B8) and pit-below rule (B9)
@@ -130,8 +132,11 @@ def test_face_height_constant_while_rising_until_feet_clear_the_top(H):
     for feet in range(FEET, top, -1):                  # every frame of the rise, feet below the top
         t = pick(walls=pipe, mx=40, feet=feet, ground=FEET)
         assert t.kind == "face" and t.h == H, feet
-    assert pick(walls=pipe, mx=40, feet=top, ground=FEET) is None        # feet level with / above the top: a step, face height 0
-    assert pick(walls=pipe, mx=40, feet=top - 12, ground=FEET) is None
+    # S2c: feet level with / above the top but NOT yet over the face -> still the full height
+    assert pick(walls=pipe, mx=40, feet=top, ground=FEET).h == H
+    assert pick(walls=pipe, mx=40, feet=top - 12, ground=FEET).h == H
+    assert pick(walls=pipe, mx=56, feet=top, ground=FEET) is None        # over it as well: a step, face height 0
+    assert pick(walls=pipe, mx=56, feet=top - 12, ground=FEET) is None
 
 
 def test_step_face_stays_16_until_feet_clear_the_next_step():
@@ -139,16 +144,17 @@ def test_step_face_stays_16_until_feet_clear_the_next_step():
     assert pick(walls=walls, mx=4, feet=160, ground=160).h == 16
     for feet in range(160, 144, -1):
         assert pick(walls=walls, mx=4, feet=feet, ground=160).h == 16
-    assert pick(walls=walls, mx=4, feet=144, ground=160) is None
+    assert pick(walls=walls, mx=4, feet=144, ground=160).h == 16     # S2c: feet at the top but not over step 2 yet
+    assert pick(walls=walls, mx=8, feet=144, ground=160) is None     # over it too
 
 
 def test_airborne_over_a_32px_gap_the_pit_under_him_is_the_threat_every_frame():
     pit = [(96, 32)]
     for mx in range(84, 128):                          # from the take-off to just before his left edge passes the far edge
         t = pick([goomba(mx + 150)], pits=pit, mx=mx, feet=140, ground=FEET)
-        assert t.kind == "pit", mx                     # never a far Goomba mid-gap
-        if mx > 84:
-            assert t.d == 0.0 or t.x >= mx
+        assert t.kind in ("pit", "pitwall"), mx        # never a far Goomba mid-gap
+        if mx > 96:
+            assert t.d == 0.0
     t = pick([goomba(128 + 150)], pits=pit, mx=128, feet=140, ground=FEET)
     assert t.kind == "goomba"                          # past the far edge: the pit threat is over
 
@@ -156,6 +162,38 @@ def test_airborne_over_a_32px_gap_the_pit_under_him_is_the_threat_every_frame():
 def test_senses_tracks_the_take_off_ground():
     se = S.SensesV2(Knobs(), masks(), 6)
     se.read_ram = lambda ram: (40, ram["feet"], [], [(64, 32)], [])
-    for feet, air, want in [(176, 0, 32), (160, 1, 32), (146, 1, 32), (140, 1, None)]:
+    for feet, air, want in [(176, 0, 32), (160, 1, 32), (146, 1, 32), (140, 1, 32)]:     # S2c: not over the pipe yet
         I, lm = se.look({0x001D: air, "feet": feet})
         assert (lm.extra["box"][3] if lm.extra["box"] else None) == want, (feet, air)
+
+
+# ---------------------------------------------------------------- S2c: face "above AND over", pit virtual wall (B6 / B9)
+def test_pipe_48_above_but_not_over_keeps_full_height_over_it_is_zero():
+    pipe = [(64, 48)]                                   # top at y 128
+    assert pick(walls=pipe, mx=40, feet=120, ground=FEET).h == 48     # feet above the top, body not over: still 48
+    assert pick(walls=pipe, mx=50, feet=120, ground=FEET).h == 48     # mx + 12 = 62 < 64: still not over
+    assert pick(walls=pipe, mx=53, feet=120, ground=FEET) is None     # body overlaps column 64: over -> 0
+    assert pick(walls=pipe, mx=60, feet=120, ground=FEET) is None
+
+
+def test_two_column_pipe_is_one_face_over_means_over_either_column():
+    pipe = [(64, 48), (80, 48)]
+    assert pick(walls=pipe, mx=70, feet=120, ground=FEET) is None     # over the pipe (columns 64-96)
+    t = pick(walls=pipe, mx=40, feet=120, ground=FEET)
+    assert t.ident == ("face", 64) and t.w == 32 and t.h == 48
+
+
+def test_pit_wall_height_stays_max_jump_height_during_the_rise():
+    pit = [(96, 32)]
+    for feet in range(FEET, FEET - MAX_JUMP_HEIGHT - 1, -1):          # the whole rise, up to the apex
+        t = pick(pits=pit, mx=60, feet=feet, ground=FEET)
+        assert t.kind == "pitwall" and t.h == MAX_JUMP_HEIGHT, feet
+    for mx in range(60, 128):                                          # moving over the gap at the apex: never a step
+        t = pick(pits=pit, mx=mx, feet=FEET - MAX_JUMP_HEIGHT, ground=FEET)
+        assert t.kind in ("pit", "pitwall") and (t.kind == "pit" or t.h == MAX_JUMP_HEIGHT), mx
+
+
+def test_pit_threat_ends_when_the_footprint_is_past_the_far_edge():
+    pit = [(96, 32)]
+    assert pick([goomba(128 + 150)], pits=pit, mx=127, feet=140, ground=FEET).kind in ("pit", "pitwall")
+    assert pick([goomba(128 + 150)], pits=pit, mx=128, feet=140, ground=FEET).kind == "goomba"
