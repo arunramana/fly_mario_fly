@@ -93,6 +93,31 @@ def test_on_foot_trigger_fires_within_12px_of_quarter_W_plus_8_on_every_1_1_pit(
         assert g == {32: 8, 48: 12}[W]
 
 
+PIT3_WALLS = [(2400, 48), (2416, 64), (2432, 64), (2480, 64), (2496, 48), (2512, 32), (2528, 16)]   # 1-1: the staircase, pit 3 (2448, W 32), the staircase
+
+
+def test_pit_3_from_the_top_step_trigger_fires_within_12px_of_quarter_W_plus_8():
+    """S3d: he stands on the 64 px step (feet 112); the tower is anchored to the highest rim (112), not the floor."""
+    trig = np.radians(TRIGGER_DEG)
+    t = pick(walls=PIT3_WALLS, pits=[(2448, 32)], mx=2420, feet=112, ground=112)
+    assert t.kind == "pit" and (t.top, t.h) == (112 - 32, 32)
+    mx = next(m for m in range(2300, 2437) if pick(walls=PIT3_WALLS, pits=[(2448, 32)], mx=m, feet=112, ground=112).theta >= trig)
+    g = 2448 - (mx + 12)
+    print("pit 3 trigger at", g, "px before the near edge; 0.25 W + 8 =", 0.25 * 32 + 8)
+    assert abs(g - (0.25 * 32 + 8)) <= 12 and g == 8
+
+
+def test_tower_is_anchored_to_the_highest_rim():
+    pit = [(96, 32)]                                   # near rim = floor (176); far rim column x 128 is 32 px high -> y 144
+    walls = [(128, 32)]
+    t = pick(walls=walls, pits=pit, mx=40, ground=FEET)
+    assert t.rims[:2] == (176, 144) and t.top == 144 - 32 and t.h == FEET - (144 - 32)   # measured from the far rim (the higher one)
+    walls = [(80, 48)]                                 # now the NEAR rim (column 80) is the higher one: y 128
+    t = pick(walls=walls, pits=pit, mx=40, ground=FEET, pipe_sense=False)     # (the rim column's own face would win otherwise)
+    assert t.rims[:2] == (128, 176) and t.top == 128 - 32
+    assert pick(pits=pit, mx=40).top == 176 - 32       # no raised rim: the floor, as in S3c (pits 1 and 2 unchanged)
+
+
 def test_airborne_the_tower_is_the_chosen_threat_until_the_release_rule_fires():
     pit = [(96, 32)]                                   # base x 96..128, tower x 128..144, top 144
     for feet in range(FEET, 144, -1):                  # rising, feet below the tower top: full height from the take-off ground

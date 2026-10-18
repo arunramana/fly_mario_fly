@@ -1,7 +1,7 @@
 """Senses v2 (Part S1): ONE threat feeds the loom detectors, the nearest one AHEAD by surface-to-surface gap, re-chosen every frame.
 
 Candidates: live enemies (Goomba / Koopa / shell), the nearest wall/pipe/step face that rises above Mario's FEET, and each empty
-pit (S3c: a base over the hole + a tower on its far edge, flyrun/SPEC.md B9). True 2-D distance d = sqrt(gap_x^2 + gap_y^2) between Mario's box and the object's box;
+pit (S3c: a base over the hole + a tower on its far edge anchored to its highest rim, flyrun/SPEC.md B9). True 2-D distance d = sqrt(gap_x^2 + gap_y^2) between Mario's box and the object's box;
 theta = 2 atan(h / 2d) with the object's height h. dtheta is tracked per object identity: when the chosen object changes,
 dtheta is 0 at that frame. Threats behind Mario are ignored; floating blocks do not loom (only level.SOLID_WALL columns do).
 Nothing here is read from pixels. The v1 class (senses.Senses) is untouched and stays the default."""
@@ -29,6 +29,7 @@ class Threat:
     h: int             # the height that sets theta
     d: float = 0.0     # surface-to-surface 2-D gap (px)
     theta: float = 0.0
+    rims: tuple = None   # pits only: (near rim y, far rim y, near rim column x, far rim column x)
     base: tuple = None   # pits only: the base box (x, top, w, h); the Threat's own box is then the tower
     dsel: float = 0.0    # distance used to pick between threats
 
@@ -71,6 +72,14 @@ def enemy_boxes(enemies):
     return out
 
 
+def rim_top(walls, x):
+    """y of the top of the solid column at world x (tile-aligned): the wall column's top if there is one, else the floor."""
+    for wx, H in walls:
+        if wx == x:
+            return level.ROW_GROUND * level.TILE - H
+    return level.ROW_GROUND * level.TILE
+
+
 def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pit_sense=True, ground=None, released=frozenset()):
     """-> the chosen Threat (with .d and .theta) or None. walls: [(x, H)] from level.scan_visible, pits: [(x, w)].
     ground = the y of the ground Mario took off from (his current ground while grounded); default = feet (S1 behaviour on the ground).
@@ -94,14 +103,17 @@ def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pi
         for px, pw in pits:
             if mx >= px + pw:                                   # his body is past the far edge: the pit is over (flyrun/SPEC.md B9)
                 continue
-            # S3c (B9): BASE = the hole (marks "the pit is still the threat"), TOWER = 16 px wide standing on the FAR edge (its near face =
-            # the far edge of the hole), height min(W, MAX_JUMP_HEIGHT), treated like a pipe face; once released mid-air it stays 0 until landing.
+            # S3d (B9): BASE = the hole (marks "the pit is still the threat"), TOWER = 16 px wide standing on the FAR edge, treated like a pipe
+            # face; once released mid-air it stays 0 until landing. Its base is the HIGHEST rim of the pit (the top of the solid column at the
+            # near edge / the far edge: floor, stair step, ...), its top = that - min(W, MAX_JUMP_HEIGHT). Never anchored to the floor.
             floor = level.ROW_GROUND * level.TILE
-            top = floor - min(pw, MAX_JUMP_HEIGHT)
+            near_y, far_y = rim_top(walls, px - level.TILE), rim_top(walls, px + pw)
+            top = min(near_y, far_y) - min(pw, MAX_JUMP_HEIGHT)
             tx = px + pw
             h = 0 if (("pit", px) in released or (feet <= top and over(mx, tx, tx + level.TILE))) else ground - top
             t = Threat("pit", ("pit", px), tx, top, level.TILE, max(h, 0))
             t.base = (px, floor, pw, level.TILE)
+            t.rims = (near_y, far_y, px - level.TILE, px + pw)     # overlay: the two rim heights and their columns
             cands.append(t)
     ahead = [t for t in cands if t.x >= mx or t.kind == "pit" or over(mx, t.x, t.x + t.w)]
     for t in ahead:
@@ -161,5 +173,5 @@ class SensesV2:
         I[self.m["LC10a_R"]] = self.k.HOME_R
         lm = Loom(th, dth, tau, src, d, th * th_factor)
         lm.extra = dict(threat_kind=src, threat_id="" if ident is None else f"{ident[0]}:{ident[1]}",
-                        box=None if t is None else (t.x, t.top, t.w, t.h), base=None if t is None else t.base)
+                        box=None if t is None else (t.x, t.top, t.w, t.h), base=None if t is None else t.base, rims=None if t is None else t.rims)
         return I, lm

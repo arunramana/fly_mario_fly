@@ -104,6 +104,10 @@ def write_clip(parts, path, title, fps=30, speed="0.5x"):
                 bx, top, bw, bh = r.base
                 sx, y0 = bx - r.extra[0], top + 32
                 cv2.rectangle(img, (int(sx * S), int(y0 * S)), (int((sx + bw) * S), int((y0 + bh) * S)), (0, 140, 255), 2)
+            if isinstance(getattr(r, "rims", None), tuple):      # S3d: both rim heights of the pit (cyan lines over the rim columns)
+                for ry, rx in ((r.rims[0], r.rims[2]), (r.rims[1], r.rims[3])):
+                    sx = rx - r.extra[0]
+                    cv2.line(img, (int(sx * S), int((ry + 32) * S)), (int((sx + 16) * S), int((ry + 32) * S)), (255, 255, 0), 3)
             pan = np.full((h * S, 260, 3), 24, np.uint8)
 
             def put(t, y, c=(255, 255, 255), sc=0.5):

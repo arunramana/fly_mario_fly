@@ -17,6 +17,7 @@ from .knobs import Knobs
 ROOT = Path(__file__).resolve().parent
 KN = replace(Knobs(), SENSES_VERSION="v2", MOTOR_VERSION="v2")
 ARMS = ["real"] + [f"shuf{i}" for i in range(5)] + ["theta_rule", "blind_timer"]
+TAG_SAVE = None       # python -m flyrun.s3_eval S3d  -> real + theta_rule only, traces saved as runs/S3d_holdout_<noop>_<sigma>.csv (theta rule: S3d_holdout_theta_rule_...)
 _B = {}
 
 
@@ -32,7 +33,7 @@ def _brain(arm):
 def _ep(job):
     from .run import run_episode
     from . import s3_controls as C
-    arm, ep, trig = job
+    arm, ep, trig, tag = job
     t0 = time.time()
     brain = _brain("real" if arm in ("theta_rule", "blind_timer") else arm)
     ctrl = {"theta_rule": lambda: C.theta_rule(trig), "blind_timer": lambda: C.BlindTimer}.get(arm, lambda: None)()
@@ -42,6 +43,10 @@ def _ep(job):
         return dict(arm=arm, kind="silence", a_frac=float(df.a.mean()))
     k = replace(KN, SENSOR_NOISE=ep["sigma"], MOTOR_VERSION="v2")
     s, df = run_episode(k, brain, noop_start=ep["noop_start"], episode_seed=ep["seed"], stuck_frames=150, controller=ctrl)
+    if tag:
+        from .smoke_s3 import save_trace
+        pre = "S3d_holdout" if arm == "real" else f"S3d_holdout_{arm}"
+        save_trace(df, ROOT / "runs" / f"{pre}_{ep['noop_start']}_{ep['sigma']}.csv")
     on = df[(df.a == 1) & (df.a.shift(1, fill_value=0) == 0) & (df.air == 0)]
     onsets = [(float(np.degrees(r.theta)), str(r.threat_kind), None if r.stim_d is None or r.stim_d != r.stim_d else float(r.stim_d), int(r.x))
               for r in on.itertuples()]
@@ -58,19 +63,24 @@ def measure_trigger(rows):
 
 
 def main():
+    global ARMS, TAG_SAVE
+    import sys
+    TAG_SAVE = None
+    if len(sys.argv) > 1:
+        TAG_SAVE, ARMS = sys.argv[1], ["real", "theta_rule"]
     eps = [dict(noop_start=e["noop_start"], seed=e["seed"], sigma=e["sigma"]) for e in episodes4.HOLDOUT]
     out = {}
     with mp.get_context("spawn").Pool(6) as pool:
-        real = pool.map(_ep, [("real", e, None) for e in eps] + [("real", "silence", None)])
+        real = pool.map(_ep, [("real", e, None, TAG_SAVE) for e in eps] + [("real", "silence", None, None)])
         trig, n, lo, hi = measure_trigger([r for r in real if r["kind"] == "episode"])
         print("trigger angle", trig, n, lo, hi, flush=True)
         out["trigger"] = dict(median_deg=trig, n_onsets=n, min_deg=lo, max_deg=hi)
         out["real"] = real
         rest = [a for a in ARMS if a != "real"]
-        res = pool.map(_ep, [(a, e, trig) for a in rest for e in eps + ["silence"]])
+        res = pool.map(_ep, [(a, e, trig, TAG_SAVE if e != "silence" else None) for a in rest for e in eps + ["silence"]])
         for a in rest:
             out[a] = [r for r in res if r["arm"] == a]
-    (ROOT / "runs" / "S3_holdout.json").write_text(json.dumps(out, indent=1))
+    (ROOT / "runs" / f"{TAG_SAVE or 'S3'}_holdout.json").write_text(json.dumps(out, indent=1))
     for a in ARMS:
         ep = [r for r in out[a] if r["kind"] == "episode"]
         print(a, "flags", sum(r["flag"] for r in ep), "max_x", [r["max_x"] for r in ep], "traj", len({r["traj"] for r in ep}),

@@ -1,5 +1,5 @@
 """Part S3: the default-knob smoke run with the S3 senses (rim tiles + pit hole), noop 0, sigma 0, unassisted.
-python -m flyrun.smoke_s3   -> runs/S3_smoke_log.csv, runs/S3_jumps.csv, pit take-off table, clips/S3c_full_run.mp4 (1x)"""
+python -m flyrun.smoke_s3   -> runs/S3d_smoke_log.csv, runs/S3d_jumps.csv, runs/S3d_full_run.csv, pit take-off table, clips/S3d_full_run.mp4 (1x)"""
 import numpy as np
 
 from . import level
@@ -9,7 +9,7 @@ from .smoke_s2 import ROOT, run, window, write_clip
 def pit_table(df, jt):
     """For each pit: how many fly jumps took off within 100 px before it up to its far edge, and the take-off distance (front edge -> near edge)."""
     rows = []
-    for px, pw in ((1104, 32), (1376, 48)):
+    for px, pw in ((1104, 32), (1376, 48), (2448, 32)):
         js = jt[(jt.x_takeoff + 12 <= px + pw) & (jt.x_takeoff >= px - 100)]
         rows.append(dict(pit=px, width=pw, jumps=len(js), takeoff_dist=[int(px - (x + 12)) for x in js.x_takeoff],
                          landing_x=[int(x) for x in js.x_landing]))
@@ -31,13 +31,13 @@ def save_trace(df, path):
 
 
 def main():
-    s, df = run("S3c")
+    s, df = run("S3d")
     import pandas as pd
-    jt = pd.read_csv(ROOT / "runs" / "S3c_jumps.csv")
+    jt = pd.read_csv(ROOT / "runs" / "S3d_jumps.csv")
     for r in pit_table(df, jt):
         print(r)
-    save_trace(df, ROOT / "runs" / "S3c_full_run.csv")
-    write_clip([(df, list(range(len(df))), "")], ROOT / "clips" / "S3c_full_run.mp4", "S3c: far-edge tower", fps=60, speed="1x")
+    save_trace(df, ROOT / "runs" / "S3d_full_run.csv")
+    write_clip([(df, list(range(len(df))), "")], ROOT / "clips" / "S3d_full_run.mp4", "S3d: tower on the highest rim", fps=60, speed="1x")
 
 
 

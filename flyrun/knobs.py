@@ -100,7 +100,7 @@ INVENTED = {
     "PIT_GAIN_V2": ("fixed", "v2 pit tower theta at gain 1"),
     "MAX_JUMP_HEIGHT": ("fixed", "apex height of a full walking jump (68 px, measured, S2c); caps the S3b pit tower (min(W, 68))"),
     "RIM_TILES": ("fixed", "tile ids 16/17 = the rim of 1-1 pipe 4, counted as wall by senses v2 (S3 0a); pipes 1-3 use 18/19"),
-    "pit base + tower (senses_v2.choose)": ("fixed", "S3c / SPEC.md B9: base = the hole, tower = 16 px wide on its far edge, height min(W, MAX_JUMP_HEIGHT); an invented shape"),
+    "pit base + tower (senses_v2.choose)": ("fixed", "S3c / SPEC.md B9: base = the hole, tower = 16 px wide on its far edge, top = highest rim - min(W, MAX_JUMP_HEIGHT); an invented shape"),
     "tile IDs / rows (level.py)": ("fixed", "SOLID_WALL {18..21, 97}, ground rows 11-12, empty 0: hand-identified on 1-1 "
                                             "(run 001 notes); meaning unverified on other levels"),
     "W_steer construction": ("fixed", "cast choice, top-40 LC10a->DNa intermediates, predicted-NT signs, "
