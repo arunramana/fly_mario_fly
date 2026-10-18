@@ -31,6 +31,8 @@ class Knobs:
     PIT_SENSE: bool = True       # INVENTED (fixed): feed pits to the loom detectors (a pit has no face; nb 15)
     PIT_GAIN: float = 1.0        # INVENTED (evolved): scale on the pit's theta (nb 15 used 1.0)
 
+    SENSES_VERSION: str = "v1"   # INVENTED (fixed): v1 = senses of Parts 1-7 (unchanged); v2 = Part S1 (flyrun/senses_v2.py)
+
     # --- motor (nb 09/14/19/20) ---
     TTMN_THRESH: float = 0.10    # INVENTED (evolved): mean TTMn activity that triggers A (nb 09 cleared value)
     A_HOLD: int = 12             # INVENTED (evolved): frames A stays down once triggered (nb 09/14)
@@ -49,6 +51,16 @@ SPAM_FIXED_HOLD = 18       # INVENTED (fixed): spam_fixed baseline A hold (the P
 SPAM_FIXED_COOLDOWN = 3    # INVENTED (fixed): spam_fixed baseline cooldown
 RANDOM_A_P = 0.05          # INVENTED (fixed): right_randA baseline, per-frame P(A)
 SCRIPT_HOLD = 28           # INVENTED (fixed): scripted driver's A frames per jump (assisted/diagnostic only)
+
+# --- Senses v2 (Part S1). Only read when Knobs.SENSES_VERSION == "v2". ---
+# Object sizes (w, h) in px. Height sets theta = 2 atan(h / 2d); width is stored for later clearance use.
+# Enemy ids are the RAM type byte (0x0016+slot), identified empirically on 1-1 (runs/S1_senses_v2.md): 0x06 Goomba, 0x00 green Koopa.
+# A Koopa in RAM state 2/3 is treated as a shell (16 x 16): NOT verified (the scripted run never stomps the 1-1 Koopa).
+SIZE_TABLE = {"goomba": (16, 16), "koopa": (16, 24), "shell": (16, 16)}   # INVENTED (fixed)
+ENEMY_TYPES = {0x06: "goomba", 0x00: "koopa"}                              # INVENTED (fixed): any other type byte is ignored
+MARIO_BOX = (12, 16)       # INVENTED (fixed): Mario's (w, h) in px (small Mario; x = sprite left edge); deaths happened at gap 0 = dx 12
+ENEMY_FEET_OFFSET = 8      # INVENTED (fixed): an enemy's RAM y (0x00CF+slot) is its feet y + 8 (measured: ground 184 vs surface 176)
+PIT_GAIN_V2 = 1.0          # INVENTED (fixed): each empty floor tile is a 16 px threat at gain 1 (the evolved PIT_GAIN knob is ignored in v2)
 
 # Every non-connectome piece, with how it got its value. clips/numbers.md "Invented pieces" is generated from this.
 #   "evolved" = searched by CMA-ES on TRAIN episodes; "fixed" = set by hand and never searched.
@@ -77,6 +89,10 @@ INVENTED = {
     "SPAM_FIXED_HOLD/COOLDOWN": ("fixed", "spam_fixed baseline cadence 18/3"),
     "RANDOM_A_P": ("fixed", "right_randA baseline P(A)"),
     "SCRIPT_HOLD": ("fixed", "scripted driver jump length (assisted tests only, never in fitness)"),
+    "SENSES_VERSION": ("fixed", "v1 = old senses (all Part 1-7 results); v2 = Part S1 senses"),
+    "SIZE_TABLE / ENEMY_TYPES": ("fixed", "v2 object sizes (Goomba 16x16, Koopa 16x24, shell 16x16) and the RAM type bytes (0x06, 0x00)"),
+    "MARIO_BOX / ENEMY_FEET_OFFSET": ("fixed", "v2 geometry: Mario 12x16, enemy feet = RAM y - 8 (measured on 1-1)"),
+    "PIT_GAIN_V2": ("fixed", "v2 pit tiles: 16 px threats at gain 1"),
     "tile IDs / rows (level.py)": ("fixed", "SOLID_WALL {18..21, 97}, ground rows 11-12, empty 0: hand-identified on 1-1 "
                                             "(run 001 notes); meaning unverified on other levels"),
     "W_steer construction": ("fixed", "cast choice, top-40 LC10a->DNa intermediates, predicted-NT signs, "

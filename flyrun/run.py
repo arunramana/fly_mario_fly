@@ -13,6 +13,7 @@ from . import motor
 from .brain import Brain, load_brain, step
 from .knobs import BLIND_PX, Knobs   # BLIND_PX: INVENTED (fixed), see knobs.py
 from .senses import Senses
+from .senses_v2 import SensesV2
 
 _ENV = None  # one emulator per process; reset() is deterministic
 
@@ -37,7 +38,8 @@ def run_episode(knobs, W, noop_start=0, max_frames=3000, stuck_frames=150, recor
     frames = [np.asarray(state).copy()] if record else None
     # episode_seed=None: no sensor noise (and baselines needing randomness get seed 0)
     rng = np.random.default_rng(episode_seed) if episode_seed is not None else None
-    senses = Senses(knobs, brain.masks, brain.K, rng)
+    v2 = knobs.SENSES_VERSION == "v2"
+    senses = (SensesV2 if v2 else Senses)(knobs, brain.masks, brain.K, rng)
     if controller is not None:
         controller = controller(knobs, rng if rng is not None else np.random.default_rng(0))   # no-brain baseline policy
     h = np.zeros(brain.K)
@@ -75,7 +77,7 @@ def run_episode(knobs, W, noop_start=0, max_frames=3000, stuck_frames=150, recor
             if pit is not None and pit.x - mx > 0:
                 ahead.append(pit.x - mx)
             near_d, counting = (min(ahead) if ahead else None), True
-            I, lm = senses.look(mx, goombas, enemy_input, face, pit)
+            I, lm = senses.look(ram, enemy_input) if v2 else senses.look(mx, goombas, enemy_input, face, pit)
             if controller is not None:
                 action = controller.act(lm)
                 read = dict(ttmn=0.0, dnp09=0.0, steer=0.0)
@@ -84,6 +86,8 @@ def run_episode(knobs, W, noop_start=0, max_frames=3000, stuck_frames=150, recor
                     h = step(h, brain.W, knobs.G, I, knobs.ALPHA, knobs.CLIP)
                 action, read = motor.decide(h, brain.masks, knobs, muscle)
             loom = dict(theta=lm.theta, dtheta=lm.dtheta, tau=lm.tau, stim_src=lm.src, stim_d=lm.dist)
+            if v2:
+                loom.update(lm.extra)
 
         if record_h:
             Hs.append(h.astype(np.float32))
