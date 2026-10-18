@@ -1,0 +1,30 @@
+{
+ "summary": {
+  "max_x": 1220,
+  "score": 300,
+  "flag_get": false,
+  "frames": 760,
+  "end_reason": "died",
+  "x_at_end": 1220,
+  "cause": "enemy dx=9",
+  "blind_presses": 5,
+  "n_onsets": 11,
+  "a_frac": 0.36578947368421055,
+  "left_frames": 0,
+  "left_presses": 0
+ },
+ "toggles": {
+  "looming_enemy": true,
+  "looming_pipe": true,
+  "looming_pit": true,
+  "home": true,
+  "hum": true,
+  "smell": true
+ },
+ "arm": "C",
+ "episode": {
+  "noop_start": 0,
+  "seed": 0,
+  "sigma": 0.0
+ }
+}

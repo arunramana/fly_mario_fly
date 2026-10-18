@@ -16,17 +16,19 @@ def pick_frames(base):
     from .panels import Log
     lg = Log(base)
     d, gf = lg.df, lg.gf
-    walk = int(d.index[(d.threat == "none") & (d.hum_level == 0) & (d.x > 300) & (d.airborne == 0)][0])
-    onset = d.index[(d.a == 1) & (d.a.shift(1, fill_value=0) == 0) & (d.airborne == 0)]
-    fire = np.flatnonzero((gf[1:] >= 0.25) & (gf[:-1] < 0.25)) + 1
-
-    def at_takeoff(kind):
-        """The first grounded A press on this threat kind, moved to the GF crossing just before it (the frame the Giant Fiber fires)."""
-        k = int(next(k for k in onset if d.threat[k] == kind))
-        near = [int(f) for f in fire if k - 12 <= f <= k + 2]
-        return near[-1] if near else k
-    goomba, pit = at_takeoff("goomba"), at_takeoff("pit")
+    calm = lambda k: not any(0 <= k - f <= 45 for f in lg.fire)       # no ring / JUMP flash left over from an earlier jump
+    walk = int(next(k for k in d.index[(d.threat == "none") & (d.hum_level == 0) & (d.x > 300) & (d.airborne == 0)] if calm(k)))
+    goomba = next(f for f in lg.fire if d.threat[f] == "goomba")      # the frame the Giant Fiber fires / the jump starts, on this kind of threat
+    pit = next(f for f in lg.fire if d.threat[f] == "pit")
     return dict(R1_1_walking=walk, R1_2_goomba_jump=goomba, R1_3_pit_tower_jump=pit, R1_4_flag=len(d) - 1)
+
+
+def pick_frames_c(base):
+    """Arm C: the first frame after the mushroom block (x 336) is hit where the hum (the next block) and the smell (the mushroom) are both on."""
+    from .panels import Log
+    d = Log(base).df
+    k = int(d.index[(d.blocks_hit >= 1) & (d.hum_level > 0) & ((d.smell_L > 0) | (d.smell_R > 0))][0]) + 14
+    return dict(R1_5_armC_hum_smell=k)
 
 
 def main():
@@ -36,7 +38,7 @@ def main():
     elif a[0] == "stills":
         from .video import stills
         base = ROOT / "runs" / f"R1_{a[1]}"
-        fr = pick_frames(base)
+        fr = pick_frames(base) if a[1] == "armA" else pick_frames_c(base)
         print(fr)
         stills(base, fr, ROOT / "clips" / "R1_stills", label=f"arm {a[1][-1]}   noop 0   sigma 0")
     elif a[0] == "video":
