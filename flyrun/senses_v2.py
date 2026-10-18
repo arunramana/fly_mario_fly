@@ -78,6 +78,15 @@ def hum_block(mx, feet, blocks):
     return best
 
 
+def mushroom(ram):
+    """M2: the live power-up (object slot 5, type byte 0x2E) -> (left x, top y in tile-buffer coordinates) of its 16 x 16 box, or None."""
+    sl = E.N_ENEMY_SLOTS
+    if not int(ram[E.ADDR_ENEMY_ACTIVE + sl]) or int(ram[E.ADDR_ENEMY_TYPE + sl]) != E.POWERUP_ID:
+        return None
+    x = int(ram[E.ADDR_ENEMY_PAGE + sl]) * 256 + int(ram[E.ADDR_ENEMY_X + sl])
+    return x, int(ram[ADDR_ENEMY_Y + sl]) - ENEMY_FEET_OFFSET - 16
+
+
 def enemy_boxes(enemies):
     """enemies: [(slot, type_byte, state, ex, ey)] -> list of Threat (live, known types only)."""
     out = []
@@ -181,6 +190,25 @@ class SensesV2:
             level_in = self.k.HUM_GAIN * theta_of(hb[2], level.TILE) if hb else 0.0
             I[self.m["JO"]] = level_in
             lm.extra.update(hum_block=None if hb is None else (hb[0], hb[1], hb[2]), hum_level=level_in, jo_input=level_in)
+        if self.k.SMELL_SENSE:
+            assert "ORN_L" in self.m, "SMELL_SENSE needs the ORN brain (W_steer_jo_orn.npy)"
+            mush = mushroom(ram)
+            lvl_l = lvl_r = 0.0
+            box = None
+            if mush is not None:
+                mxm, ytop = mush
+                d = float(np.hypot(mx + MARIO_BOX[0] - (mxm + 8), (feet - MARIO_BOX[1]) - (ytop + 8)))
+                lvl = self.k.SMELL_GAIN * theta_of(d, 16)
+                sig = self.k.SENSOR_NOISE if self.rng is not None else 0.0
+                if sig > 0:
+                    lvl *= 1.0 + sig * self.rng.standard_normal()
+                if mxm + 8 < mx + MARIO_BOX[0] / 2:              # left of Mario's centre -> the left antenna
+                    lvl_l = lvl
+                else:
+                    lvl_r = lvl
+                box = (mxm, ytop, 16, 16)
+            I[self.m["ORN_L"]], I[self.m["ORN_R"]] = lvl_l, lvl_r
+            lm.extra.update(smell_box=box, smell_L=lvl_l, smell_R=lvl_r)
         return I, lm
 
     def from_threat(self, t):

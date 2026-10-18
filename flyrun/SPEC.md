@@ -20,3 +20,10 @@ Implementation notes (Q1): the eye point is the top-front corner of MARIO_BOX, (
 
 
 Scenes test one sense at a time: other senses are switched off with their toggles. Combining senses (and balancing their gains) comes later, by evolution. Q1 note: block 336 missed because pipe 1's looming added to the hum at the Giant Fiber → early jump.
+
+M Smell. The live mushroom (power-up slot) smells sweet. It is drawn as a GREEN box over the mushroom.
+- Which antenna: the left-antenna attractive ORNs (DM1, VA2, DM4, left) if it is left of Mario's centre; the right-antenna ones if it is right.
+- Strength: SMELL_GAIN × θ_mush (theta_of, 2-D distance from the eye to the mushroom centre, size 16 px).
+- Route: real wiring ORN → PN → … → LAL030 → DNa (O0) → steering.
+INVENTED (orange): the smell cue and SMELL_GAIN. Toggle: SMELL_SENSE.
+Note (Q2): with no smell, the mushroom was eaten only because he was stuck at pipe 1; mushroom-ahead is eaten by walking, so it isn't a smell test.

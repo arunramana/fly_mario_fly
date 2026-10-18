@@ -1,0 +1,594 @@
+{
+ "drive_home": [
+  {
+   "antenna": "L",
+   "level": 0,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.04985959882377729,
+   "DNa_L": 0.0277376158150493,
+   "DNa_R": 0.07759721463882659,
+   "DNp09": 0.21298575367390205
+  },
+  {
+   "antenna": "L",
+   "level": 1,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.051744738216236395,
+   "DNa_L": 0.02826936886740409,
+   "DNa_R": 0.08001410708364048,
+   "DNp09": 0.2130138861163508
+  },
+  {
+   "antenna": "L",
+   "level": 2,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.04875746065071869,
+   "DNa_L": 0.03357415469079872,
+   "DNa_R": 0.08233161534151741,
+   "DNp09": 0.21304455398638528
+  },
+  {
+   "antenna": "L",
+   "level": 5,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.04224046873495335,
+   "DNa_L": 0.04944542790643147,
+   "DNa_R": 0.09168589664138482,
+   "DNp09": 0.21313665486113517
+  },
+  {
+   "antenna": "L",
+   "level": 10,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.03143484062658841,
+   "DNa_L": 0.07589448628543688,
+   "DNa_R": 0.10732932691202529,
+   "DNp09": 0.21329015956753972
+  },
+  {
+   "antenna": "L",
+   "level": 20,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.009853662986083367,
+   "DNa_L": 0.12873392801419303,
+   "DNa_R": 0.1385875910002764,
+   "DNp09": 0.21359716870414522
+  },
+  {
+   "antenna": "L",
+   "level": 30,
+   "HOME_R": 0.5,
+   "steer_RminusL": -0.009158154663342966,
+   "DNa_L": 0.17805808863390826,
+   "DNa_R": 0.1688999339705653,
+   "DNp09": 0.21389304993745953
+  },
+  {
+   "antenna": "L",
+   "level": 40,
+   "HOME_R": 0.5,
+   "steer_RminusL": -0.009125755442763922,
+   "DNa_L": 0.18597976597675905,
+   "DNa_R": 0.17685401053399513,
+   "DNp09": 0.21395699441494614
+  },
+  {
+   "antenna": "L",
+   "level": 45,
+   "HOME_R": 0.5,
+   "steer_RminusL": -0.009567738746748683,
+   "DNa_L": 0.1865695381435934,
+   "DNa_R": 0.1770017993968447,
+   "DNp09": 0.2139650248237525
+  },
+  {
+   "antenna": "L",
+   "level": 49,
+   "HOME_R": 0.5,
+   "steer_RminusL": -0.009930178265221357,
+   "DNa_L": 0.18702752960895602,
+   "DNa_R": 0.17709735134373467,
+   "DNp09": 0.21397133107184044
+  },
+  {
+   "antenna": "L",
+   "level": 50,
+   "HOME_R": 0.5,
+   "steer_RminusL": -0.010020788144839532,
+   "DNa_L": 0.18714202747529673,
+   "DNa_R": 0.1771212393304572,
+   "DNp09": 0.2139729076338625
+  },
+  {
+   "antenna": "L",
+   "level": 55,
+   "HOME_R": 0.5,
+   "steer_RminusL": -0.010020788144839532,
+   "DNa_L": 0.18714202747529673,
+   "DNa_R": 0.1771212393304572,
+   "DNp09": 0.2139729076338625
+  },
+  {
+   "antenna": "L",
+   "level": 60,
+   "HOME_R": 0.5,
+   "steer_RminusL": -0.010020788144839532,
+   "DNa_L": 0.18714202747529673,
+   "DNa_R": 0.1771212393304572,
+   "DNp09": 0.2139729076338625
+  },
+  {
+   "antenna": "R",
+   "level": 0,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.04985959882377729,
+   "DNa_L": 0.0277376158150493,
+   "DNa_R": 0.07759721463882659,
+   "DNp09": 0.21298575367390205
+  },
+  {
+   "antenna": "R",
+   "level": 1,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.055202068322255965,
+   "DNa_L": 0.027770057847378585,
+   "DNa_R": 0.08297212616963455,
+   "DNp09": 0.2130053282035828
+  },
+  {
+   "antenna": "R",
+   "level": 2,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.060289672754950785,
+   "DNa_L": 0.029755342014495603,
+   "DNa_R": 0.09004501476944639,
+   "DNp09": 0.2130260333032486
+  },
+  {
+   "antenna": "R",
+   "level": 5,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.07141139862673201,
+   "DNa_L": 0.03975605064896292,
+   "DNa_R": 0.11116744927569494,
+   "DNp09": 0.21309037124619015
+  },
+  {
+   "antenna": "R",
+   "level": 10,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.08992020485851471,
+   "DNa_L": 0.05624205932734516,
+   "DNa_R": 0.14616226418585987,
+   "DNp09": 0.21319758659210483
+  },
+  {
+   "antenna": "R",
+   "level": 20,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.12693781732208012,
+   "DNa_L": 0.0892140766841096,
+   "DNa_R": 0.21615189400618973,
+   "DNp09": 0.2134120172839341
+  },
+  {
+   "antenna": "R",
+   "level": 30,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.15494203305604626,
+   "DNa_L": 0.11621841719054181,
+   "DNa_R": 0.2711604502465881,
+   "DNp09": 0.2135858859045603
+  },
+  {
+   "antenna": "R",
+   "level": 40,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.1543939024800347,
+   "DNa_L": 0.12044732194043152,
+   "DNa_R": 0.2748412244204662,
+   "DNp09": 0.21360439671776113
+  },
+  {
+   "antenna": "R",
+   "level": 45,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.15436131799684136,
+   "DNa_L": 0.12056035404300317,
+   "DNa_R": 0.2749216720398445,
+   "DNp09": 0.213604844317913
+  },
+  {
+   "antenna": "R",
+   "level": 49,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.154362471780904,
+   "DNa_L": 0.12056475422154733,
+   "DNa_R": 0.27492722600245134,
+   "DNp09": 0.21360488138129302
+  },
+  {
+   "antenna": "R",
+   "level": 50,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.15436331598179565,
+   "DNa_L": 0.1205647513387087,
+   "DNa_R": 0.27492806732050434,
+   "DNp09": 0.21360488508248823
+  },
+  {
+   "antenna": "R",
+   "level": 55,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.15436331598179565,
+   "DNa_L": 0.1205647513387087,
+   "DNa_R": 0.27492806732050434,
+   "DNp09": 0.21360488508248823
+  },
+  {
+   "antenna": "R",
+   "level": 60,
+   "HOME_R": 0.5,
+   "steer_RminusL": 0.15436331598179565,
+   "DNa_L": 0.1205647513387087,
+   "DNa_R": 0.27492806732050434,
+   "DNp09": 0.21360488508248823
+  }
+ ],
+ "gain_calc": {
+  "level": 49.77057533338666,
+  "d": 68.46897107449476,
+  "theta": 0.2326277199740658,
+  "gain": 213.94946113444806
+ },
+ "real": {
+  "hand": {
+   "mario_x": 560,
+   "mario_feet": 176,
+   "mushroom": {
+    "slot": 5,
+    "type": 46,
+    "state": 192,
+    "x": 496,
+    "y": 184,
+    "xspd": 16,
+    "yspd": 1
+   }
+  },
+  "frames": 85,
+  "left_frames": 32,
+  "left_presses": 2,
+  "x_min": 562,
+  "x_end": 569,
+  "turned_back": true,
+  "first_left_frame": 1,
+  "mario_x_at_turn": 564,
+  "mushroom_x_at_turn": 498,
+  "gap_at_turn": 66,
+  "left_runs": [
+   [
+    1,
+    3
+   ],
+   [
+    36,
+    29
+   ]
+  ],
+  "sustained_turn_frame": 36,
+  "gap_at_sustained_turn": 61,
+  "mario_x_at_sustained_turn": 594,
+  "eaten": true,
+  "eaten_frame": 64,
+  "mario_x_at_eaten": 569,
+  "powerup_max": 1,
+  "mushroom_x_end": null,
+  "left_presses_total": 32
+ },
+ "smell_off": {
+  "frames": 109,
+  "left_frames": 0,
+  "left_presses": 0,
+  "x_min": 562,
+  "x_end": 594,
+  "turned_back": false,
+  "left_runs": [],
+  "sustained_turn_frame": null,
+  "eaten": true,
+  "eaten_frame": 88,
+  "mario_x_at_eaten": 594,
+  "powerup_max": 1,
+  "mushroom_x_end": null
+ },
+ "shuf0": {
+  "frames": 73,
+  "left_frames": 73,
+  "left_presses": 1,
+  "x_min": 556,
+  "x_end": 556,
+  "turned_back": true,
+  "first_left_frame": 0,
+  "mario_x_at_turn": 562,
+  "mushroom_x_at_turn": 497,
+  "gap_at_turn": 65,
+  "left_runs": [
+   [
+    0,
+    73
+   ]
+  ],
+  "sustained_turn_frame": 0,
+  "gap_at_sustained_turn": 65,
+  "mario_x_at_sustained_turn": 562,
+  "eaten": true,
+  "eaten_frame": 52,
+  "mario_x_at_eaten": 556,
+  "powerup_max": 1,
+  "mushroom_x_end": null
+ },
+ "shuf1": {
+  "frames": 157,
+  "left_frames": 0,
+  "left_presses": 0,
+  "x_min": 562,
+  "x_end": 777,
+  "turned_back": false,
+  "left_runs": [],
+  "sustained_turn_frame": null,
+  "eaten": false,
+  "eaten_frame": 136,
+  "mario_x_at_eaten": 742,
+  "powerup_max": 0,
+  "mushroom_x_end": null
+ },
+ "shuf2": {
+  "frames": 157,
+  "left_frames": 0,
+  "left_presses": 0,
+  "x_min": 562,
+  "x_end": 777,
+  "turned_back": false,
+  "left_runs": [],
+  "sustained_turn_frame": null,
+  "eaten": false,
+  "eaten_frame": 136,
+  "mario_x_at_eaten": 742,
+  "powerup_max": 0,
+  "mushroom_x_end": null
+ },
+ "shuf3": {
+  "frames": 157,
+  "left_frames": 0,
+  "left_presses": 0,
+  "x_min": 562,
+  "x_end": 777,
+  "turned_back": false,
+  "left_runs": [],
+  "sustained_turn_frame": null,
+  "eaten": false,
+  "eaten_frame": 136,
+  "mario_x_at_eaten": 742,
+  "powerup_max": 0,
+  "mushroom_x_end": null
+ },
+ "shuf4": {
+  "frames": 157,
+  "left_frames": 0,
+  "left_presses": 0,
+  "x_min": 562,
+  "x_end": 777,
+  "turned_back": false,
+  "left_runs": [],
+  "sustained_turn_frame": null,
+  "eaten": false,
+  "eaten_frame": 136,
+  "mario_x_at_eaten": 742,
+  "powerup_max": 0,
+  "mushroom_x_end": null
+ },
+ "nomush_real": {
+  "left_frames": 0,
+  "left_presses": 0,
+  "x_end": 594,
+  "a_frames": 0
+ },
+ "nomush_shuf0": {
+  "left_frames": 200,
+  "left_presses": 1,
+  "x_end": 478,
+  "a_frames": 0
+ },
+ "nomush_shuf1": {
+  "left_frames": 0,
+  "left_presses": 0,
+  "x_end": 585,
+  "a_frames": 0
+ },
+ "nomush_shuf2": {
+  "left_frames": 0,
+  "left_presses": 0,
+  "x_end": 852,
+  "a_frames": 196
+ },
+ "nomush_shuf3": {
+  "left_frames": 0,
+  "left_presses": 0,
+  "x_end": 594,
+  "a_frames": 0
+ },
+ "nomush_shuf4": {
+  "left_frames": 0,
+  "left_presses": 0,
+  "x_end": 594,
+  "a_frames": 0
+ },
+ "noise": [
+  {
+   "seed": 1,
+   "frames": 89,
+   "left_frames": 32,
+   "left_presses": 3,
+   "x_min": 562,
+   "x_end": 574,
+   "turned_back": true,
+   "first_left_frame": 1,
+   "mario_x_at_turn": 564,
+   "mushroom_x_at_turn": 498,
+   "gap_at_turn": 66,
+   "left_runs": [
+    [
+     1,
+     4
+    ],
+    [
+     38,
+     2
+    ],
+    [
+     43,
+     26
+    ]
+   ],
+   "sustained_turn_frame": 43,
+   "gap_at_sustained_turn": 54,
+   "mario_x_at_sustained_turn": 594,
+   "eaten": true,
+   "eaten_frame": 68,
+   "mario_x_at_eaten": 574,
+   "powerup_max": 1,
+   "mushroom_x_end": null
+  },
+  {
+   "seed": 2,
+   "frames": 87,
+   "left_frames": 30,
+   "left_presses": 2,
+   "x_min": 562,
+   "x_end": 572,
+   "turned_back": true,
+   "first_left_frame": 1,
+   "mario_x_at_turn": 564,
+   "mushroom_x_at_turn": 498,
+   "gap_at_turn": 66,
+   "left_runs": [
+    [
+     1,
+     3
+    ],
+    [
+     40,
+     27
+    ]
+   ],
+   "sustained_turn_frame": 40,
+   "gap_at_sustained_turn": 57,
+   "mario_x_at_sustained_turn": 594,
+   "eaten": true,
+   "eaten_frame": 66,
+   "mario_x_at_eaten": 572,
+   "powerup_max": 1,
+   "mushroom_x_end": null
+  },
+  {
+   "seed": 3,
+   "frames": 87,
+   "left_frames": 30,
+   "left_presses": 3,
+   "x_min": 562,
+   "x_end": 573,
+   "turned_back": true,
+   "first_left_frame": 1,
+   "mario_x_at_turn": 564,
+   "mushroom_x_at_turn": 498,
+   "gap_at_turn": 66,
+   "left_runs": [
+    [
+     1,
+     3
+    ],
+    [
+     37,
+     1
+    ],
+    [
+     41,
+     26
+    ]
+   ],
+   "sustained_turn_frame": 41,
+   "gap_at_sustained_turn": 56,
+   "mario_x_at_sustained_turn": 594,
+   "eaten": true,
+   "eaten_frame": 66,
+   "mario_x_at_eaten": 573,
+   "powerup_max": 1,
+   "mushroom_x_end": null
+  },
+  {
+   "seed": 4,
+   "frames": 87,
+   "left_frames": 33,
+   "left_presses": 3,
+   "x_min": 562,
+   "x_end": 573,
+   "turned_back": true,
+   "first_left_frame": 1,
+   "mario_x_at_turn": 564,
+   "mushroom_x_at_turn": 498,
+   "gap_at_turn": 66,
+   "left_runs": [
+    [
+     1,
+     3
+    ],
+    [
+     35,
+     4
+    ],
+    [
+     41,
+     26
+    ]
+   ],
+   "sustained_turn_frame": 41,
+   "gap_at_sustained_turn": 55,
+   "mario_x_at_sustained_turn": 593,
+   "eaten": true,
+   "eaten_frame": 66,
+   "mario_x_at_eaten": 573,
+   "powerup_max": 1,
+   "mushroom_x_end": null
+  },
+  {
+   "seed": 5,
+   "frames": 87,
+   "left_frames": 32,
+   "left_presses": 2,
+   "x_min": 562,
+   "x_end": 569,
+   "turned_back": true,
+   "first_left_frame": 1,
+   "mario_x_at_turn": 564,
+   "mushroom_x_at_turn": 498,
+   "gap_at_turn": 66,
+   "left_runs": [
+    [
+     1,
+     3
+    ],
+    [
+     38,
+     29
+    ]
+   ],
+   "sustained_turn_frame": 38,
+   "gap_at_sustained_turn": 59,
+   "mario_x_at_sustained_turn": 594,
+   "eaten": true,
+   "eaten_frame": 66,
+   "mario_x_at_eaten": 569,
+   "powerup_max": 1,
+   "mushroom_x_end": null
+  }
+ ]
+}

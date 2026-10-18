@@ -47,8 +47,8 @@ def window336():
     return pd.DataFrame(rows).drop_duplicates("takeoff_x")
 
 
-def run_arm(wfile, hum, record=False):
-    os.environ["FLYRUN_WFILE"], os.environ["FLYRUN_BODIES"] = wfile, "steer_jo_bodies.parquet"
+def run_arm(wfile, hum, record=False, bodies="steer_jo_bodies.parquet"):
+    os.environ["FLYRUN_WFILE"], os.environ["FLYRUN_BODIES"] = wfile, bodies
     from . import run as R
     from .brain import load_brain
     brain = load_brain()

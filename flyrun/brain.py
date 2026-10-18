@@ -51,6 +51,9 @@ def load_brain(cache=CACHE):
     jo = np.char.startswith(types.astype(str), "JO")
     if jo.any():                      # Part Q1: Johnston's organ neurons, present only in the extended brain (W_steer_jo.npy)
         masks["JO"] = jo
+    orn = np.char.startswith(types.astype(str), "ORN")
+    if orn.any():                     # Part M2: attractive olfactory receptor neurons, present only in the ORN brain (W_steer_jo_orn.npy)
+        masks["ORN_L"], masks["ORN_R"] = orn & (sides == "L"), orn & (sides == "R")
     return Brain(W=W, bodies=bodies, masks=masks)
 
 

@@ -33,6 +33,8 @@ class Knobs:
 
     HUM_SENSE: bool = False      # INVENTED (fixed), Part Q1: unused reachable '?' blocks hum into the 20 JO neurons (needs the JO brain, v2 senses)
     HUM_GAIN: float = 14.5342    # INVENTED (fixed), Part Q1: hum loudness = HUM_GAIN x theta_block (rad) into each JO neuron. FROZEN: chosen once so the press falls in the middle of the hit window (runs/Q1.md)
+    SMELL_SENSE: bool = False    # INVENTED (fixed), Part M2: the live mushroom smells sweet into the attractive ORNs of the antenna on its side (needs the ORN brain, v2 senses)
+    SMELL_GAIN: float = 213.9495 # INVENTED (fixed), Part M2: smell level = SMELL_GAIN x theta_mushroom (rad) into each attractive ORN of that antenna. FROZEN: = 49.7706 (the level where steer crosses -0.01 with HOME_R on) / 0.23263 rad (theta of the mushroom 64 px behind), runs/M2.md
     SENSES_VERSION: str = "v1"   # INVENTED (fixed): v1 = senses of Parts 1-7 (unchanged); v2 = Part S1 (flyrun/senses_v2.py)
 
     # --- motor (nb 09/14/19/20) ---
@@ -98,6 +100,8 @@ INVENTED = {
     "MOTOR_VERSION": ("fixed", "v1 = forced A_HOLD + COOLDOWN; v2 = the fly holds A while TTMn stays above threshold (Part S2)"),
     "HUM_SENSE": ("fixed", "Q1: the hum cue (invented): the nearest unused reachable ? block hums into the 20 direct JO -> GF neurons (real wiring); off by default"),
     "HUM_GAIN": ("fixed", "Q1: hum loudness = HUM_GAIN x the block's angular size (rad); 14.5342, chosen once from the hit window and frozen (runs/Q1.md)"),
+    "SMELL_SENSE": ("fixed", "M2: the smell cue (invented): the live mushroom drives the attractive ORNs (DM1, VA2, DM4) of the antenna on its side; off by default"),
+    "SMELL_GAIN": ("fixed", "M2: smell level = SMELL_GAIN x the mushroom's angular size (rad); chosen once so the steering crosses -0.01 at 64 px, then frozen (runs/M2.md)"),
     "HUM_REACH": ("fixed", "Q1: a ? block hums only if its underside is <= 64 px above the ground under it"),
     "QBLOCK_TILES (level.py)": ("fixed", "tile ids 192 / 193 = unused ? block (hand-identified, O0)"),
     "RELEASE_THRESH": ("fixed", "v2: TTMn level below which A is released (default = TTMN_THRESH)"),
