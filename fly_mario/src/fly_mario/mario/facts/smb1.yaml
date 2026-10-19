@@ -1,0 +1,72 @@
+# Super Mario Bros (NES) facts shared by every level. Source: the old flyrun code
+# (flyrun/env.py, level.py, knobs.py, senses_v2.py), each value measured or read off RAM there.
+# Per-level files in levels/ extend this one: lists are appended, maps are merged.
+
+ram:                       # CPU RAM addresses (hex)
+  mario_page: 0x006D       # Mario's x = page * 256 + mario_x
+  mario_x: 0x0086
+  mario_feet_y: 0x00CE     # feet y in tile-buffer coordinates (ground = 176, top of row 11)
+  player_state: 0x001D     # 0 = on the ground (1 jumping, 2 falling, 3 climbing)
+  facing: 0x0033           # 1 = right, 2 = left
+  power: 0x0756            # 0 small, 1 big, 2 fire
+  screen_page: 0x071A      # world x of the screen's left edge = page * 256 + x
+  screen_x: 0x071C
+  enemy_active: 0x000F     # + slot
+  enemy_type: 0x0016
+  enemy_state: 0x001E
+  enemy_page: 0x006E
+  enemy_x: 0x0087
+  enemy_y: 0x00CF          # = the enemy's feet y + enemy_feet_offset
+  tile_buffer: 0x0500      # 0x0500 + page_bytes * (page % 2) + 16 * row + col
+
+grid:
+  tile: 16                 # px per metatile
+  page_bytes: 208          # 13 rows x 16 cols per buffer page
+  ground_row: 11           # first ground row (rows 11 and 12 are ground)
+  stand_row: 10            # the row directly above the ground, where a wall's base sits
+  screen_w: 256            # visible width in px
+  enemy_slots: 5           # slots 0-4 hold enemies; the power-up lives in slot 5
+  powerup_slot: 5
+  enemy_feet_offset: 8
+
+mario:
+  box_small: [12, 16]      # w, h
+  box_big: [12, 24]        # big / fire (power >= 1); same feet reference as small
+  power_names: [small, big, fire]
+  jump_apex: 68            # px a full walking jump rises above take-off (measured, flyrun S2c)
+
+tiles:                     # metatile ids
+  empty: 0
+  ground: 84
+  pipe: [16, 17, 18, 19, 20, 21]   # 16/17 = the rim of 1-1 pipe 4; 18-21 = top-left/right, body-left/right
+  step: [97]                       # hard (staircase) block
+  brick: [81]
+  qblock: [192, 193]               # unused ? block (192 coin, 193 mushroom)
+  used_block: [196, 35]            # 196 used, 35 = the bump animation
+  ceiling_extra: [81, 84, 87, 88, 192, 193, 35, 196]   # also stop a rising head (for headroom senses)
+
+objects:                   # per-object facts; type bytes are the RAM object ids
+  goomba:
+    types: [0x06]
+    size: [16, 16]
+    live_states: [0, 1]    # 4 / 0x22 = stomped / defeated
+  koopa:
+    types: [0x00]
+    size: [16, 24]
+    live_states: [0]
+    shell_states: [2, 3]   # in a shell: 16 x 16 (unverified on the emulator)
+    shell_size: [16, 16]
+  piranha:
+    types: [0x0D]
+    size: [16, 24]         # the part above its pipe's rim is all that exists
+    live_states: [0]
+  mushroom:
+    types: [0x2E]
+    size: [16, 16]
+
+walker:                    # the scripted start_at_x walker (a scene tool, not the fly)
+  jump_hold: 28            # frames A stays down per jump
+  wall_trigger: 28         # px to a wall that starts a jump
+  pit_trigger: 22          # px to a pit that starts a jump
+  enemy_trigger: 30
+  max_frames: 20000
