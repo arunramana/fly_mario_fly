@@ -84,6 +84,7 @@ The best honest result is Part 4b's evolved fly: mean max_x **2487** on the 10 h
 - `SCRIPT_HOLD` (fixed): scripted driver jump length (assisted tests only, never in fitness)
 - `tile IDs / rows (level.py)` (fixed): SOLID_WALL {18..21, 97}, ground rows 11-12, empty 0: hand-identified on 1-1 (run 001 notes); meaning unverified on other levels
 - `W_steer construction` (fixed): cast choice, top-40 LC10a->DNa intermediates, predicted-NT signs, row-normalisation (tutorials/20_steering.ipynb)
+| L2b: 1-2 facts + aversive wiring | 2026-10-18 | facts only, no gain / rule change: 1-2 tile ids (bricks 82, 90, 92-94, exit pipe 28-33) tested on the emulator and gated on `FLYRUN_LEVEL=1-2`; piranha plant (0x0D, 16 x 24, clipped at its rim) and 0x03 = red Koopa added; `level.headroom()`; aversive ORN (V / DA2 / DL5) -> DNa scratch builds (`runs/L2b.md`) | 1-1 button-identical (flag, 1947 frames); 1-2 arm A noop 0 sigma 0 identical (died x 890, 572 frames) | 1-1: 1 (smoke); 1-2: 0 | 1-2: same Koopa under the x 864-896 block (headroom `(160, 0)` there, `(0, 68)` on open 1-1 ground). Diagnostic scans: with bricks decoded the x 1920 pit tower now anchors to the 3-high wall, and he stops at x 2674 jumping at the 176 px exit wall instead of walking into the pipe. **Aversive CO2 (ORN_V) on the RIGHT antenna turns him TOWARD it: steer +0.042 -> +0.401 (never < -0.01); DA2 / DL5 do nothing** | none (baseline identical; `clips/L2_armA_full.mp4` still shows the death) |
 
 ## Rules from now on
 - Every part adds one row to this table.

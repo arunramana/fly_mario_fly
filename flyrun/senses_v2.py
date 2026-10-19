@@ -11,13 +11,13 @@ import numpy as np
 
 from . import env as E
 from . import level
-from .knobs import ENEMY_FEET_OFFSET, ENEMY_TYPES, MARIO_BOX, MARIO_BOX_BIG, HUM_REACH, MAX_JUMP_HEIGHT, PIT_GAIN_V2, SIZE_TABLE
+from .knobs import ENEMY_FEET_OFFSET, enemy_types, MARIO_BOX, MARIO_BOX_BIG, HUM_REACH, MAX_JUMP_HEIGHT, PIT_GAIN_V2, SIZE_TABLE
 from .senses import Loom, theta_of
 
 ADDR_POWERUP = 0x0756      # 0 small, 1 big, 2 fire (O0)
 ADDR_MARIO_Y = 0x00CE      # verified: = Mario's FEET y in tile-buffer coordinates (ground 176 = top of row 11, ledge 112 = top of row 7)
 ADDR_ENEMY_Y, ADDR_ENEMY_STATE = 0x00CF, 0x001E
-LIVE_STATES = {"goomba": (0, 1), "koopa": (0,), "shell": (2, 3)}   # RAM state bytes; 4 / 0x22 = stomped / defeated -> ignored
+LIVE_STATES = {"goomba": (0, 1), "koopa": (0,), "shell": (2, 3), "piranha": (0,)}   # RAM state bytes; 4 / 0x22 = stomped / defeated -> ignored
 
 
 @dataclass
@@ -93,17 +93,32 @@ def mushroom(ram):
     return x, int(ram[ADDR_ENEMY_Y + sl]) - ENEMY_FEET_OFFSET - 16
 
 
-def enemy_boxes(enemies):
-    """enemies: [(slot, type_byte, state, ex, ey)] -> list of Threat (live, known types only)."""
+def enemy_boxes(enemies, walls=None):
+    """enemies: [(slot, type_byte, state, ex, ey)] -> list of Threat (live, known types only). walls: [(x, H)] from level.scan_visible, used only to clip a piranha plant at its pipe's rim."""
     out = []
+    types = enemy_types()
     for slot, typ, state, ex, ey in enemies:
-        kind = ENEMY_TYPES.get(typ)
+        kind = types.get(typ)
         if kind == "koopa" and state in LIVE_STATES["shell"]:
             kind = "shell"
         if kind is None or state not in LIVE_STATES[kind]:
             continue
         w, h = SIZE_TABLE[kind]
-        out.append(Threat(kind, ("enemy", slot), ex, (ey - ENEMY_FEET_OFFSET) - h, w, h))
+        feet = ey - ENEMY_FEET_OFFSET
+        if kind == "piranha":
+            # L2b: the plant lives inside its pipe and is drawn behind it: only the part above the rim exists (measured: fully out = its feet at the rim, runs/L2b_enemies.json).
+            # The game activates the plant ~90 px before its pipe scrolls in, so a plant whose pipe is not in the visible tile buffer yet is not seen at all.
+            cols = dict(walls or [])
+            pipe = [cols.get((ex // level.TILE) * level.TILE), cols.get(((ex + w - 1) // level.TILE) * level.TILE)]
+            if None in pipe:
+                continue
+            rim = level.ROW_GROUND * level.TILE - max(pipe)
+            h = max(0, min(feet, rim) - (feet - h))
+            if h == 0:
+                continue
+            out.append(Threat(kind, ("enemy", slot), ex, feet - SIZE_TABLE[kind][1], w, h))
+            continue
+        out.append(Threat(kind, ("enemy", slot), ex, feet - h, w, h))
     return out
 
 
@@ -123,7 +138,7 @@ def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pi
     ground = feet if ground is None else ground
     cands = []
     if enemy_input:
-        cands += [t for t in enemy_boxes(enemies) if t.ident not in cleared and not is_cleared(mx, feet, t, box)]
+        cands += [t for t in enemy_boxes(enemies, walls) if t.ident not in cleared and not is_cleared(mx, feet, t, box)]
     if pipe_sense:
         for x0, x1, H in merge_columns(walls):
             top = level.ROW_GROUND * level.TILE - H            # y of the top of that face
@@ -186,7 +201,7 @@ class SensesV2:
             self.released.clear()
             self.cleared.clear()
         else:
-            self.cleared |= {t.ident for t in enemy_boxes(enemies) if is_cleared(mx, feet, t, box)}
+            self.cleared |= {t.ident for t in enemy_boxes(enemies, walls) if is_cleared(mx, feet, t, box)}
         t = choose(mx, feet, enemies, walls, pits, enemy_input, self.k.PIPE_SENSE, self.k.PIT_SENSE, ground=self.ground, released=frozenset(self.released), cleared=frozenset(self.cleared), box=box)
         if t is not None and t.kind == "pit" and t.h == 0 and int(ram[0x001D]) != 0:
             self.released.add(t.ident)

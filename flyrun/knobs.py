@@ -63,8 +63,18 @@ SCRIPT_HOLD = 28           # INVENTED (fixed): scripted driver's A frames per ju
 # Object sizes (w, h) in px. Height sets theta = 2 atan(h / 2d); width is stored for later clearance use.
 # Enemy ids are the RAM type byte (0x0016+slot), identified empirically on 1-1 (runs/S1_senses_v2.md): 0x06 Goomba, 0x00 green Koopa.
 # A Koopa in RAM state 2/3 is treated as a shell (16 x 16): NOT verified (the scripted run never stomps the 1-1 Koopa).
-SIZE_TABLE = {"goomba": (16, 16), "koopa": (16, 24), "shell": (16, 16)}   # INVENTED (fixed)
+SIZE_TABLE = {"goomba": (16, 16), "koopa": (16, 24), "shell": (16, 16), "piranha": (16, 24)}   # INVENTED (fixed); "piranha" (L2b): drawn silhouette of the plant 16 x 22-24 (runs/L2b_enemies.json), its bottom edge = RAM y - 8 like the others
 ENEMY_TYPES = {0x06: "goomba", 0x00: "koopa"}                              # INVENTED (fixed): any other type byte is ignored
+# L2b: 1-2 also has 0x03 = the RED Koopa Troopa (same 16 x 24 silhouette and walking states as the green one; red-shell states 2 / 3 NOT verified) and 0x0D = the piranha plant
+# (states 0 = live, 0x22 = defeated). 1-1 contains neither, so its table is unchanged. The 1-2 lifts (0x26 / 0x27 / 0x34) and the flag object (0x31) are NOT enemies and stay unknown.
+ENEMY_TYPES_BY_LEVEL = {"1-1": ENEMY_TYPES, "1-2": {**ENEMY_TYPES, 0x03: "koopa", 0x0D: "piranha"}}   # INVENTED (fixed)
+
+
+def enemy_types():
+    """The enemy type bytes this level's senses read (FLYRUN_LEVEL, default 1-1: exactly ENEMY_TYPES)."""
+    import os
+    return ENEMY_TYPES_BY_LEVEL.get(os.environ.get("FLYRUN_LEVEL", "1-1"), ENEMY_TYPES)
+
 MARIO_BOX = (12, 16)       # INVENTED (fixed): Mario's (w, h) in px (small Mario; x = sprite left edge); deaths happened at gap 0 = dx 12
 MARIO_BOX_BIG = (12, 24)   # INVENTED (fixed), C1: Mario's (w, h) when big / fire (power-up byte 0x0756 >= 1); 24 px tall measured in O0 (player collision box 184..208 standing); same feet reference as small (0xCE = 176)
 ENEMY_FEET_OFFSET = 8      # INVENTED (fixed): an enemy's RAM y (0x00CF+slot) is its feet y + 8 (measured: ground 184 vs surface 176)
@@ -110,6 +120,8 @@ INVENTED = {
     "RELEASE_THRESH": ("fixed", "v2: TTMn level below which A is released (default = TTMN_THRESH)"),
     "SENSES_VERSION": ("fixed", "v1 = old senses (all Part 1-7 results); v2 = Part S1 senses"),
     "SIZE_TABLE / ENEMY_TYPES": ("fixed", "v2 object sizes (Goomba 16x16, Koopa 16x24, shell 16x16) and the RAM type bytes (0x06, 0x00)"),
+    "ENEMY_TYPES_BY_LEVEL / piranha size": ("fixed", "L2b: 1-2 only: 0x03 red Koopa (as the green one) and 0x0D piranha plant 16 x 24, clipped at its pipe's rim; measured on the emulator (runs/L2b_enemies.json)"),
+    "EXTRA_WALL / EXTRA_SOLID / CEILING_EXTRA (level.py)": ("fixed", "L2b: per-level solid tile ids (1-2: bricks 82 / 90 / 92-94, sideways pipe 28-33), emulator-tested (runs/L2b_tiles*.json); 1-1 unchanged"),
     "MARIO_BOX_BIG": ("fixed", "C1: Mario 12x24 when big (0x0756 >= 1), measured in O0; used for the eye point and the head-side gap"),
     "MARIO_BOX / ENEMY_FEET_OFFSET": ("fixed", "v2 geometry: Mario 12x16, enemy feet = RAM y - 8 (measured on 1-1)"),
     "PIT_GAIN_V2": ("fixed", "v2 pit tower theta at gain 1"),
