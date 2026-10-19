@@ -219,13 +219,13 @@ def parse_box(s):
     return tuple(int(v) for v in s.split())
 
 
-def game_panel(frame, log, k):
+def game_panel(frame, log, k, scale=4):
     """NES x4 = 1024 x 960 with only the overlay: red loom boxes (pit base thin), green hum line, green smell box, and the home dot at the right edge inside the frame at eye height."""
-    img = cv2.resize(np.ascontiguousarray(frame), None, fx=4, fy=4, interpolation=cv2.INTER_NEAREST).copy()
+    img = cv2.resize(np.ascontiguousarray(frame), None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST).copy()
     r = log.df.iloc[k]
     sl = float(log.sl_pre[k])
-    sx = lambda wx: int(round((wx - sl) * 4))
-    sy = lambda ty: int(round((ty + 32) * 4))
+    sx = lambda wx: int(round((wx - sl) * scale))
+    sy = lambda ty: int(round((ty + 32) * scale))
     box = parse_box(r.box_x_top_w_h)
     if box and r.threat != "none":
         bx, top, bw, bh = box
@@ -243,7 +243,7 @@ def game_panel(frame, log, k):
     if log.toggles["home"]:
         eye = log.feet_pre[k] - (24 if log.pow_pre[k] >= 1 else 16)
         ov = img.copy()
-        cv2.circle(ov, (GAME_W - 22, sy(eye)), 11, WHITE, -1, cv2.LINE_AA)
+        cv2.circle(ov, (img.shape[1] - 22, sy(eye)), 11, WHITE, -1, cv2.LINE_AA)
         a = min(1.0, log.kn.HOME_R)
         img = cv2.addWeighted(ov, a, img, 1 - a, 0)
     return img
