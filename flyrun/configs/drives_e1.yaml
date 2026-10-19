@@ -1,0 +1,29 @@
+# The drives config (E1): which drives are ON and which entities they attach to. The genome is BUILT from this file (flyrun/e1_genome.py):
+# each ON drive contributes its gain gene; the motor thresholds are always in; an OFF drive's gain is not in the genome (evolution tunes a drive, it never switches one off).
+drives:
+  looming:
+    enabled: true
+    attaches: [goomba, koopa, pipe_face, pit_tower]      # theta of the nearest of these feeds LC4 / LPLC2 (no gain gene: the input is the angle)
+    gain: null
+    toggles: {enemy_input: true, PIPE_SENSE: true, PIT_SENSE: true}
+  home:
+    enabled: true
+    attaches: []                                          # a constant drive into LC10a-R (the direction of travel)
+    gain: HOME_R
+    toggles: {HOME_SENSE: true}
+  hum:
+    enabled: true
+    attaches: [reachable_question_block]                  # the nearest unused reachable ? block hums into the 20 JO neurons
+    gain: HUM_GAIN
+    toggles: {HUM_SENSE: true}
+  smell:
+    enabled: true
+    attaches: [mushroom]                                  # the live mushroom smells sweet into the attractive ORNs of its side
+    gain: SMELL_GAIN
+    toggles: {SMELL_SENSE: true}
+motor:                                                    # always in the genome
+  genes: [TTMN_THRESH, RELEASE_THRESH, STEER_THRESH]
+  release_starts_at_press: true                           # RELEASE_THRESH starts equal to TTMN_THRESH
+bounds:
+  gain_log_factor: [0.25, 4.0]                            # gains: log scale, 1/4x .. 4x of the start value, raised to the measured floor
+  threshold_fraction: 0.5                                 # motor thresholds: +-50% of the start value

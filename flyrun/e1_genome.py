@@ -29,7 +29,7 @@ class Gene:
         return float((np.log(v) - np.log(self.lo)) / (np.log(self.hi) - np.log(self.lo))) if self.log else float((v - self.lo) / (self.hi - self.lo))
 
 
-def load_config(path=ROOT / "configs" / "drives.yaml"):
+def load_config(path=ROOT / "configs" / "drives_e1.yaml"):
     return yaml.safe_load(open(path, encoding="utf-8"))
 
 
