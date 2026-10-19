@@ -32,3 +32,4 @@ tool/assets/derived/
 
 # Throwaway audit scripts/results (docs/AUDIT_biological_validity.md)
 audit/
+.claude/worktrees/
