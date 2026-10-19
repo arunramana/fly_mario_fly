@@ -242,6 +242,12 @@ def dashed_rect(img, p0, p1, color, th, dash=14, gap=10):
             cv2.line(img, q0, q1, color, th, cv2.LINE_AA)
 
 
+def behind_tick(img, x, y, color, label="behind"):
+    """RE2: a small left-pointing triangle + 'behind' beside a box whose object is behind Mario (x, y = the anchor, in image px)."""
+    cv2.fillPoly(img, [np.array([[x, y], [x + 16, y - 9], [x + 16, y + 9]], np.int32)], color, cv2.LINE_AA)
+    cv2.putText(img, label, (x + 22, y + 7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2, cv2.LINE_AA)
+
+
 def game_panel(frame, log, k, scale=4):
     """NES x4 = 1024 x 960 with only the overlay: red loom boxes (pit base thin), green hum line, green smell box, and the home dot at the right edge inside the frame at eye height."""
     img = cv2.resize(np.ascontiguousarray(frame), None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST).copy()
@@ -258,6 +264,8 @@ def game_panel(frame, log, k, scale=4):
             dashed_rect(img, (sx(bx), sy(top)), (sx(bx + bw), sy(top + bh)), RED, 4)
         else:
             cv2.rectangle(img, (sx(bx), sy(top)), (sx(bx + bw), sy(top + bh)), RED, 4, cv2.LINE_AA)
+        if r.get("threat_rear", 0) == 1:                              # RE2: the loom threat is an enemy BEHIND him
+            behind_tick(img, sx(bx + bw) + 14, sy(top) - 16, RED)
     sbox = parse_box(r.get("sour_box_x_top_w_h", ""))
     if sbox:                                                          # the enemy that smells sour: a DOTTED yellow box 4 px outside its red loom box (the loom line is 4 px thick), opacity ~ the sour level
         bx, top, bw, bh = sbox
@@ -267,6 +275,8 @@ def game_panel(frame, log, k, scale=4):
         m = 8                                                          # 4 px loom half-thickness + 4 px gap
         dotted_rect(ov, (sx(bx) - m, sy(top) - m), (sx(bx + bw) + m, sy(top + bh) + m), YELLOW, 3)
         img = cv2.addWeighted(ov, alpha, img, 1 - alpha, 0)
+        if r.get("sour_rear", 0) == 1:                                # RE2: the sour source is an enemy BEHIND him
+            behind_tick(img, sx(bx + bw) + 14, sy(top + bh) + 26, YELLOW)
     base = parse_box(r.pit_base_x_top_w_h)
     if base:
         bx, top, bw, bh = base

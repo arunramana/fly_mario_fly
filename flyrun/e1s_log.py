@@ -51,6 +51,9 @@ def log_run(values, name, wfile=None, ep=None, takeover=None, prefix="E1s", brai
     out["sour_level"] = df.sour_level.astype(float).round(4) if "sour_level" in df else 0.0
     out["sour_theta_deg"] = np.degrees(df.sour_theta.astype(float)).round(2) if "sour_theta" in df else 0.0
     out["sour_box_x_top_w_h"] = df.sour_box.map(lambda b: "" if not isinstance(b, tuple) else " ".join(str(int(v)) for v in b))
+    for c in ("threat_rear", "sour_rear"):      # RE2: only present when REAR_EYE / REAR_SOUR are on (the 'behind' tick of the overlay)
+        if c in df:
+            out[c] = df[c].fillna(0).astype(int)
     out["flag"] = int(s["flag_get"])
     base = ROOT / "runs" / f"{prefix}_{name}"
     out.to_csv(f"{base}.csv", index=False, lineterminator="\n")

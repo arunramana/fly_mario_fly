@@ -40,6 +40,9 @@ class Knobs:
     SOUR_GAIN: float = 0.0       # INVENTED (fixed), Part AV1: sour level = SOUR_GAIN x theta_enemy (rad) into each DC4 ORN. FROZEN at step 2 of AV1 (runs/AV1.md)
     MDN_THRESH: float = 0.10     # INVENTED (fixed), Part AV1: mean MDN activity above which the fly backs up (press Left, release Right). = the TTMn threshold of the start genome, about half of GF at the looming trigger (runs/L2c.md)
     HEADROOM_LOOM: bool = False  # INVENTED (fixed), Part AV1: an enemy's loom input is multiplied by min(1, rise_available / rise_needed) (level.headroom over the span from Mario to the enemy). Off = every earlier result
+    REAR_EYE: bool = False       # INVENTED (fixed), Part RE2: the threat choice also considers live enemies BEHIND him that are closing (looming from behind); off = every earlier result
+    REAR_SOUR: bool = False      # INVENTED (fixed), Part RE2: the sour source is the nearest sour enemy on EITHER side (off = ahead only, every earlier result)
+    REAR_SOUR_MODE: str = "honest"  # INVENTED (fixed), Part RE2: "honest" = a rear sour enemy feeds DC4 -> MDN like one ahead; "gated" (invented, orange) = while the nearest sour source is behind, the back-up output is blocked
     PIT_TOWER_POS: float = 1.0   # INVENTED (evolved, E2): where the pit tower stands along the pit: 0 = the near edge ... 1 = the far edge (S3c / B9 rule = 1)
     PIT_TOWER_H: float = 1.0     # INVENTED (evolved, E2): the pit tower height as a multiple of min(W, MAX_JUMP_HEIGHT) (rule = 1)
     HUM_REACH_PX: float = 64.0   # INVENTED (evolved, E2): a ? block hums only if its underside is <= this many px above the ground under it (Q1 rule = 64; the module constant HUM_REACH is the default)
@@ -138,6 +141,9 @@ INVENTED = {
     "SOUR_GAIN": ("fixed", "AV1: sour level = SOUR_GAIN x the enemy's angular size (rad); set once so MDN crosses 0.10 at theta 50 deg, then frozen (runs/AV1.md)"),
     "MDN_THRESH": ("fixed", "AV1: the 4th output 'back up': MDN mean above this presses Left and releases Right (A unaffected); 0.10"),
     "HEADROOM_LOOM": ("fixed", "AV1: the headroom factor rule (invented): an enemy's loom input x min(1, rise_available / (enemy height + 2 px)), rise_available = level.headroom over Mario -> enemy; off by default"),
+    "REAR_EYE": ("fixed", "RE2: toggle: the loom threat choice also takes the nearest live enemy BEHIND him that is closing (gap shrinking); a receding one is a contracting object and does not loom. Faces and pits stay ahead-only. Off by default"),
+    "REAR_SOUR": ("fixed", "RE2: toggle: the nearest sour enemy on either side feeds the DC4 ORNs. Off by default"),
+    "REAR_SOUR_MODE": ("fixed", "RE2: honest = a rear sour enemy acts like one ahead; gated (invented) = back-up output blocked while the nearest sour source is behind"),
     "MARIO_BOX_BIG": ("fixed", "C1: Mario 12x24 when big (0x0756 >= 1), measured in O0; used for the eye point and the head-side gap"),
     "MARIO_BOX / ENEMY_FEET_OFFSET": ("fixed", "v2 geometry: Mario 12x16, enemy feet = RAM y - 8 (measured on 1-1)"),
     "PIT_GAIN_V2": ("fixed", "v2 pit tower theta at gain 1"),
@@ -153,4 +159,5 @@ INVENTED = {
 
 def toggle_set(k, enemy_input=True):
     """The drives switched on in a run (every M2b+ run log records this): looming (enemy / pipe / pit), home, hum, smell."""
-    return dict(looming_enemy=bool(enemy_input), looming_pipe=bool(k.PIPE_SENSE), looming_pit=bool(k.PIT_SENSE), home=bool(k.HOME_SENSE), hum=bool(k.HUM_SENSE), smell=bool(k.SMELL_SENSE), **(dict(sour=True) if k.SOUR_SENSE else {}), **(dict(headroom_loom=True) if k.HEADROOM_LOOM else {}))
+    return dict(looming_enemy=bool(enemy_input), looming_pipe=bool(k.PIPE_SENSE), looming_pit=bool(k.PIT_SENSE), home=bool(k.HOME_SENSE), hum=bool(k.HUM_SENSE), smell=bool(k.SMELL_SENSE), **(dict(sour=True) if k.SOUR_SENSE else {}), **(dict(headroom_loom=True) if k.HEADROOM_LOOM else {}),
+                **(dict(rear_eye=True) if k.REAR_EYE else {}), **(dict(rear_sour=k.REAR_SOUR_MODE) if k.REAR_SOUR else {}))

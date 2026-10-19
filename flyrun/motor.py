@@ -59,7 +59,7 @@ class Muscle2:
         return False
 
 
-def decide(h, masks, knobs, m, airborne=False):
+def decide(h, masks, knobs, m, airborne=False, block_backup=False):
     """-> (action index, readouts dict). `m` is a Muscle, updated in place.
 
     A hold + cooldown as in nb 14: TTMn >= thresh starts A for A_HOLD frames, then COOLDOWN
@@ -85,7 +85,7 @@ def decide(h, masks, knobs, m, airborne=False):
     if "MDN" in masks and knobs.SOUR_SENSE:
         # AV1, the 4th output 'back up': the moonwalker descending neurons above MDN_THRESH press Left and release Right (A is the jump circuit's, unaffected)
         mdn = float(h[masks["MDN"]].mean())
-        if mdn > knobs.MDN_THRESH:
+        if mdn > knobs.MDN_THRESH and not block_backup:     # RE2 "gated": block_backup while the nearest sour source is behind (invented)
             go_left, go_right = True, False
     if go_left:
         action = E.LEFT_A if a else E.LEFT

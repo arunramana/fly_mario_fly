@@ -89,7 +89,8 @@ def run_episode(knobs, W, noop_start=0, max_frames=3000, stuck_frames=150, recor
                 for _ in range(knobs.SUBSTEPS):
                     h = step(h, brain.W, knobs.G, I, knobs.ALPHA, knobs.CLIP)
                 if knobs.MOTOR_VERSION == "v2":
-                    action, read = motor.decide(h, brain.masks, knobs, muscle, airborne=int(ram[0x001D]) != 0)
+                    gate = knobs.REAR_SOUR and knobs.REAR_SOUR_MODE == "gated" and bool(lm.extra.get("sour_rear", False))
+                    action, read = motor.decide(h, brain.masks, knobs, muscle, airborne=int(ram[0x001D]) != 0, block_backup=gate)
                 else:
                     action, read = motor.decide(h, brain.masks, knobs, muscle)
             loom = dict(theta=lm.theta, dtheta=lm.dtheta, tau=lm.tau, stim_src=lm.src, stim_d=lm.dist)

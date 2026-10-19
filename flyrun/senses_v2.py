@@ -33,6 +33,7 @@ class Threat:
     rims: tuple = None   # pits only: (near rim y, far rim y, near rim column x, far rim column x)
     base: tuple = None   # pits only: the base box (x, top, w, h); the Threat's own box is then the tower
     dsel: float = 0.0    # distance used to pick between threats
+    rear: bool = False   # RE2: an enemy BEHIND him (fully behind his left edge)
 
 
 def mario_box(ram):
@@ -40,10 +41,10 @@ def mario_box(ram):
     return MARIO_BOX_BIG if int(ram[ADDR_POWERUP]) >= 1 else MARIO_BOX
 
 
-def gap(mx, feet, x, top, w, h, box=MARIO_BOX):
-    """2-D gap between Mario's box and an object's box (0 on an axis where they overlap)."""
+def gap(mx, feet, x, top, w, h, box=MARIO_BOX, rear=False):
+    """2-D gap between Mario's box and an object's box (0 on an axis where they overlap). rear=True (RE2): the object is behind him, the x gap is measured from his left edge."""
     mw, mh = box
-    gx = max(0.0, x - (mx + mw))
+    gx = max(0.0, mx - (x + w)) if rear else max(0.0, x - (mx + mw))
     gy = max(0.0, top - feet, (feet - mh) - (top + h))   # object entirely below Mario's feet / entirely above his head
     return float(np.hypot(gx, gy))
 
@@ -126,15 +127,23 @@ SOUR_KINDS = ("goomba", "koopa", "piranha")      # AV1: what smells sour (live G
 HEADROOM_CLEARANCE = 2                            # INVENTED (fixed), AV1: px of clearance above the enemy's top that a jump must reach (rise_needed = enemy height + this)
 
 
-def sour_enemy(mx, feet, enemies, walls, cleared=frozenset(), box=MARIO_BOX):
-    """AV1: the nearest live sour enemy (by the same 2-D gap as the loom), with .d and .theta, or None. Like the loom candidates: not behind his left edge, not cleared in this jump."""
+def is_behind(mx, t):
+    """RE2: the object is fully behind his left edge."""
+    return t.x + t.w <= mx
+
+
+def sour_enemy(mx, feet, enemies, walls, cleared=frozenset(), box=MARIO_BOX, rear=False):
+    """AV1: the nearest live sour enemy (by the same 2-D gap as the loom), with .d and .theta, or None. Like the loom candidates: not behind his left edge, not cleared in this jump.
+    RE2: rear=True also takes enemies behind his left edge (the nearest on EITHER side); .rear marks which side the source is on."""
     best = None
     for t in enemy_boxes(enemies, walls):
         if t.kind not in SOUR_KINDS or t.ident in cleared or is_cleared(mx, feet, t, box):
             continue
         if not (t.x >= mx or over(mx, t.x, t.x + t.w, box)):
-            continue
-        t.d = gap(mx, feet, t.x, t.top, t.w, t.h, box)
+            if not (rear and is_behind(mx, t)):
+                continue
+            t.rear = True
+        t.d = gap(mx, feet, t.x, t.top, t.w, t.h, box, rear=t.rear)
         if best is None or t.d < best.d:
             best = t
     if best is not None:
@@ -142,11 +151,11 @@ def sour_enemy(mx, feet, enemies, walls, cleared=frozenset(), box=MARIO_BOX):
     return best
 
 
-def headroom_factor(ram, mx, feet, t, box=MARIO_BOX):
+def headroom_factor(ram, mx, feet, t, box=MARIO_BOX):    # RE2: a rear enemy's span runs from its left edge to his right edge
     """AV1: min(1, rise_available / rise_needed) for an enemy -> (factor, rise_available, rise_needed). rise_available = level.headroom over the span from Mario's left edge to the enemy's right edge
     (min of MAX_JUMP_HEIGHT and ceiling - head); rise_needed = the enemy's height + HEADROOM_CLEARANCE."""
-    x1 = max(t.x + t.w, mx + box[0])
-    _, rise = level.headroom(ram, mx, x1, feet, box_h=box[1])
+    x0, x1 = (t.x, mx + box[0]) if t.rear else (mx, max(t.x + t.w, mx + box[0]))
+    _, rise = level.headroom(ram, x0, x1, feet, box_h=box[1])
     need = t.h + HEADROOM_CLEARANCE
     return min(1.0, rise / need), rise, need
 
@@ -159,11 +168,12 @@ def rim_top(walls, x):
     return level.ROW_GROUND * level.TILE
 
 
-def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pit_sense=True, ground=None, released=frozenset(), cleared=frozenset(), box=MARIO_BOX, pit_pos=1.0, pit_h=1.0):
+def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pit_sense=True, ground=None, released=frozenset(), cleared=frozenset(), box=MARIO_BOX, pit_pos=1.0, pit_h=1.0, rear_closing=None):
     """-> the chosen Threat (with .d and .theta) or None. walls: [(x, H)] from level.scan_visible, pits: [(x, w)].
     ground = the y of the ground Mario took off from (his current ground while grounded); default = feet (S1 behaviour on the ground).
     released = idents of pit towers already released in this jump: their tower stays 0 until the landing (S3c, no re-appearance).
-    cleared = idents of enemies already cleared in this jump (S3e): dropped from the candidates until the landing, so the next threat is chosen."""
+    cleared = idents of enemies already cleared in this jump (S3e): dropped from the candidates until the landing, so the next threat is chosen.
+    rear_closing (RE2, REAR_EYE on): idents of enemies BEHIND him whose gap is shrinking; they compete with the threats ahead by the same 2-D gap. Faces and pits stay ahead-only."""
     ground = feet if ground is None else ground
     cands = []
     if enemy_input:
@@ -201,6 +211,13 @@ def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pi
         t.d = gap(mx, feet, t.x, t.top, t.w, t.h, box)
         t.dsel = gap(mx, feet, *t.base, box) if t.base else t.d    # a pit competes with other threats by its nearest part (the base)
         t.theta = PIT_GAIN_V2 * theta_of(t.d, t.h) if t.kind == "pit" and t.h > 0 else (0.0 if t.kind == "pit" else theta_of(t.d, t.h))
+    if rear_closing:
+        for t in cands:
+            if t.ident in rear_closing and is_behind(mx, t):
+                t.rear = True
+                t.d = t.dsel = gap(mx, feet, t.x, t.top, t.w, t.h, box, rear=True)
+                t.theta = theta_of(t.d, t.h)
+                ahead.append(t)
     return min(ahead, key=lambda t: t.dsel) if ahead else None
 
 
@@ -211,6 +228,7 @@ class SensesV2:
         self.ground = None       # y of the ground he last stood on (the take-off ground while airborne)
         self.released = set()    # pit towers released in the current jump (cleared on landing)
         self.cleared = set()     # enemies cleared in the current jump (S3e; emptied on landing)
+        self.rear_gap = {}       # RE2: gap to each enemy behind him on the previous frame (to tell closing from receding)
 
     def read_ram(self, ram):
         mx = E.mario_x(ram)
@@ -232,7 +250,13 @@ class SensesV2:
             self.cleared.clear()
         else:
             self.cleared |= {t.ident for t in enemy_boxes(enemies, walls) if is_cleared(mx, feet, t, box)}
-        t = choose(mx, feet, enemies, walls, pits, enemy_input, self.k.PIPE_SENSE, self.k.PIT_SENSE, ground=self.ground, released=frozenset(self.released), cleared=frozenset(self.cleared), box=box, pit_pos=self.k.PIT_TOWER_POS, pit_h=self.k.PIT_TOWER_H)
+        closing = None
+        if self.k.REAR_EYE:
+            # RE2: a looming detector answers an EXPANDING object: an enemy behind him counts only while its gap is shrinking (a receding one contracts and does not loom)
+            now = {t_.ident: gap(mx, feet, t_.x, t_.top, t_.w, t_.h, box, rear=True) for t_ in enemy_boxes(enemies, walls) if is_behind(mx, t_)}
+            closing = frozenset(i for i, d_ in now.items() if i in self.rear_gap and d_ < self.rear_gap[i])
+            self.rear_gap = now
+        t = choose(mx, feet, enemies, walls, pits, enemy_input, self.k.PIPE_SENSE, self.k.PIT_SENSE, ground=self.ground, released=frozenset(self.released), cleared=frozenset(self.cleared), box=box, pit_pos=self.k.PIT_TOWER_POS, pit_h=self.k.PIT_TOWER_H, rear_closing=closing)
         if t is not None and t.kind == "pit" and t.h == 0 and int(ram[0x001D]) != 0:
             self.released.add(t.ident)
         hf, rise, need, th_raw = 1.0, None, None, None
@@ -244,7 +268,7 @@ class SensesV2:
             lm.extra.update(headroom_factor=hf, headroom_rise=rise, headroom_need=need, theta_unscaled=th_raw if th_raw is not None else lm.theta)
         if self.k.SOUR_SENSE:
             assert "DC4_L" in self.m, "SOUR_SENSE needs the sour brain (W_steer_jo_orn_sour.npy)"
-            se = sour_enemy(mx, feet, enemies, walls, frozenset(self.cleared), box)
+            se = sour_enemy(mx, feet, enemies, walls, frozenset(self.cleared), box, rear=self.k.REAR_SOUR)
             lvl = 0.0
             if se is not None:
                 lvl = self.k.SOUR_GAIN * se.theta
@@ -253,6 +277,8 @@ class SensesV2:
                     lvl *= 1.0 + sig * self.rng.standard_normal()
             I[self.m["DC4_L"]] = I[self.m["DC4_R"]] = lvl
             lm.extra.update(sour_box=None if se is None else (se.x, se.top, se.w, se.h), sour_theta=0.0 if se is None else se.theta, sour_level=lvl)
+            if self.k.REAR_SOUR:
+                lm.extra["sour_rear"] = bool(se is not None and se.rear)
         if self.k.HUM_SENSE:
             assert "JO" in self.m, "HUM_SENSE needs the JO brain (W_steer_jo.npy)"
             hb = hum_block(mx, feet, level.scan_blocks(ram), box, reach=self.k.HUM_REACH_PX, eye_dy=self.k.EYE_DY)
@@ -303,4 +329,6 @@ class SensesV2:
         lm = Loom(th, dth, tau, src, d, th * th_factor)
         lm.extra = dict(threat_kind=src, threat_id="" if ident is None else f"{ident[0]}:{ident[1]}",
                         box=None if t is None else (t.x, t.top, t.w, t.h), base=None if t is None else t.base, rims=None if t is None else t.rims)
+        if self.k.REAR_EYE:
+            lm.extra["threat_rear"] = bool(t is not None and t.rear)
         return I, lm
