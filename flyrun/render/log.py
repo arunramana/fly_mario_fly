@@ -28,14 +28,15 @@ def soma_all():
     return d.bodyId.to_numpy(), xyz
 
 
-def run_log(arm, name=None, ep=EP0, max_frames=3000, prefix="R1"):
+def run_log(arm, name=None, ep=EP0, max_frames=3000, prefix="R1", overrides=None, brain=None, enemy_input=True):
     """-> prefix path. Writes runs/R1_<name>.npz (h float16 (frames, neurons), actions), runs/R1_<name>.csv."""
     from ..run import run_episode
     from dataclasses import replace
     k = replace(C.KN, SENSOR_NOISE=ep["sigma"], **C.ARMS[arm])
+    k = replace(k, **(overrides or {}))                  # E1: an evolved genome's knob values
     pr = C.Probe()
-    s, df = run_episode(k, C._brain(), noop_start=ep["noop_start"], episode_seed=ep["seed"], stuck_frames=150, probe=pr, max_frames=max_frames, record_h=True)
-    df.attrs["hits"], df.attrs["toggles"] = pr.hits, C.toggle_set(k, True)
+    s, df = run_episode(k, brain or C._brain(), noop_start=ep["noop_start"], episode_seed=ep["seed"], stuck_frames=150, probe=pr, max_frames=max_frames, record_h=True, enemy_input=enemy_input)
+    df.attrs["hits"], df.attrs["toggles"] = pr.hits, C.toggle_set(k, enemy_input)
     name = name or f"arm{arm}"
     out = C.trace_cols(df)
     out["theta"] = df.theta.round(5)
@@ -50,6 +51,6 @@ def run_log(arm, name=None, ep=EP0, max_frames=3000, prefix="R1"):
     base = ROOT / "runs" / f"{prefix}_{name}"
     out.to_csv(f"{base}.csv", index=False, lineterminator="\n")
     np.savez_compressed(f"{base}.npz", h=df.attrs["H"].astype(np.float16))
-    json.dump(dict(summary={k_: v for k_, v in s.items()}, toggles=df.attrs["toggles"], arm=arm, episode=ep), open(f"{base}.json", "w"), indent=1, default=float)
+    json.dump(dict(summary={k_: v for k_, v in s.items()}, toggles=df.attrs["toggles"], arm=arm, episode=ep, knob_overrides=overrides or {}), open(f"{base}.json", "w"), indent=1, default=float)
     print(name, {k_: s[k_] for k_ in ("max_x", "end_reason", "cause", "frames", "score")})
     return base

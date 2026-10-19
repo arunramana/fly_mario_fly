@@ -47,7 +47,7 @@ class Log:
         import json
         self.meta = json.load(open(base + ".json"))
         self.arm = self.meta["arm"]
-        self.kn = knobs or replace(C.KN, **C.ARMS[self.arm])
+        self.kn = knobs or replace(C.KN, **C.ARMS[self.arm], **self.meta.get("knob_overrides", {}))
         br = C._brain()
         self.brain = br
         self.n = br.K

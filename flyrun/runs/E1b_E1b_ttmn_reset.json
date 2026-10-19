@@ -1,0 +1,39 @@
+{
+ "summary": {
+  "max_x": 1789,
+  "score": 1300,
+  "flag_get": false,
+  "frames": 1328,
+  "end_reason": "died",
+  "x_at_end": 1789,
+  "cause": "enemy dx=7",
+  "blind_presses": 7,
+  "n_onsets": 16,
+  "a_frac": 0.30948795180722893,
+  "left_frames": 62,
+  "left_presses": 2,
+  "LEFT_PRESS_WARNING": "2 Left presses (62 frames)"
+ },
+ "toggles": {
+  "looming_enemy": true,
+  "looming_pipe": true,
+  "looming_pit": true,
+  "home": true,
+  "hum": true,
+  "smell": true
+ },
+ "arm": "C",
+ "episode": {
+  "noop_start": 0,
+  "seed": 0,
+  "sigma": 0.0
+ },
+ "knob_overrides": {
+  "HOME_R": 0.4535550907557065,
+  "HUM_GAIN": 13.691265942196605,
+  "SMELL_GAIN": 439.4239481690509,
+  "TTMN_THRESH": 0.1,
+  "RELEASE_THRESH": 0.09777340956409064,
+  "STEER_THRESH": 0.010133025549271832
+ }
+}
