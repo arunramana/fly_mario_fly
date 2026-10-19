@@ -1,0 +1,10 @@
+# A fly with every action on and nothing attached: it sees, hears and smells nothing, so it does nothing.
+# Start here and attach senses to objects.
+name: blank
+attachments: {}
+loom_shapes: {}
+whole_fly: []
+actions: [walk, steer, jump, back_up]
+knobs: {}
+provenance:
+  source: all knobs at their KnobSpec defaults

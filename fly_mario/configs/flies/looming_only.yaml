@@ -1,0 +1,15 @@
+# Escape only: the fly sees what is coming (creatures, walls, pits) and nothing else. The 636-neuron base brain.
+# Home keeps it walking right. Thresholds and the home pull are the E1s champion's.
+name: looming_only
+attachments:
+  looming: [goomba, koopa, piranha, pipe, step, pit]
+loom_shapes: {}
+whole_fly: [home]
+actions: [walk, steer, jump]
+knobs:
+  home.drive: 0.464958346232342
+  jump.ttmn_thresh: 0.09921020175454692
+  jump.release_thresh: 0.08315196467272445
+  steer.thresh: 0.009466596862568196
+provenance:
+  source: the E1s champion's motor and home values, with every sense but looming switched off

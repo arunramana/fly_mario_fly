@@ -1,0 +1,16 @@
+"""The runner: joins Mario to the fly, one frame at a time. Everything outside this package (evolve, api, render)
+goes through here and never names a particular object or sense.
+
+    from fly_mario.runner import load_fly, Run, Scene
+    run = Run(load_fly("champion_e1s"), Scene("1-1", noop=3, sigma=0.05, seed=101))
+    result = run.play()
+"""
+from fly_mario.contracts import FlyConfig, RunRequest, RunResult, SavedMoment, Scene
+from fly_mario.runner.config import (active_actions, active_senses, brain_spec, dump_fly, fly_from_dict, fly_to_dict,
+                                     knob_specs, load_fly, resolve_knobs, validate)
+from fly_mario.runner.record import new_run_id, save_run
+from fly_mario.runner.session import FrameRecord, Options, Run, get_brain, resolve_buttons
+
+__all__ = ["FlyConfig", "RunRequest", "RunResult", "SavedMoment", "Scene", "Run", "Options", "FrameRecord",
+           "load_fly", "dump_fly", "fly_from_dict", "fly_to_dict", "validate", "resolve_knobs", "knob_specs",
+           "active_senses", "active_actions", "brain_spec", "get_brain", "resolve_buttons", "new_run_id", "save_run"]
