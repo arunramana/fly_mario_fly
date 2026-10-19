@@ -20,6 +20,7 @@ LEFT_W, COL_W, COL_X = 896, 640, 128                # the left panel and its con
 GAME_X, GAME_Y, GAME_W, GAME_H = 896, 60, 1024, 960
 BG = (6, 6, 8)
 TEAL, ORANGE, DIM, TXT = (40, 200, 190), (255, 150, 40), (130, 130, 124), (205, 204, 196)
+YELLOW = (250, 215, 60)                                  # sour
 WHITE, RED, GREEN = (240, 240, 240), (255, 72, 72), (64, 224, 96)     # the game overlay colours (loom boxes, hum line / smell box)
 FONT, FONT_B = "C:/Windows/Fonts/DejaVuSans.ttf", "C:/Windows/Fonts/DejaVuSans-Bold.ttf"
 _F = {}
@@ -41,7 +42,7 @@ OTHER = (110, 118, 130)                               # the other relays of the 
 
 # ------------------------------------------------------------------------------------------------ the run's log
 class Log:
-    def __init__(self, base, knobs=None):
+    def __init__(self, base, knobs=None, brain=None):
         base = str(base)
         self.df = pd.read_csv(base + ".csv")
         self.h = np.load(base + ".npz")["h"].astype(np.float32)
@@ -49,7 +50,7 @@ class Log:
         self.meta = json.load(open(base + ".json"))
         self.arm = self.meta["arm"]
         self.kn = knobs or replace(C.KN, **C.ARMS[self.arm], **self.meta.get("knob_overrides", {}))
-        br = C._brain()
+        br = brain or C._brain()
         self.brain = br
         self.n = br.K
         d = self.df
@@ -226,6 +227,10 @@ def parse_box(s):
     return tuple(int(v) for v in s.split())
 
 
+def dotted_rect(img, p0, p1, color, th):
+    dashed_rect(img, p0, p1, color, th, dash=4, gap=6)
+
+
 def dashed_rect(img, p0, p1, color, th, dash=14, gap=10):
     (x0, y0), (x1, y1) = p0, p1
     for (a, b) in (((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)), ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0))):
@@ -254,9 +259,14 @@ def game_panel(frame, log, k, scale=4):
         else:
             cv2.rectangle(img, (sx(bx), sy(top)), (sx(bx + bw), sy(top + bh)), RED, 4, cv2.LINE_AA)
     sbox = parse_box(r.get("sour_box_x_top_w_h", ""))
-    if sbox:                                                          # AV1: the enemy that smells sour: a thin yellow outline (3 px outside the loom box)
+    if sbox:                                                          # the enemy that smells sour: a DOTTED yellow box 4 px outside its red loom box (the loom line is 4 px thick), opacity ~ the sour level
         bx, top, bw, bh = sbox
-        cv2.rectangle(img, (sx(bx) - 12, sy(top) - 12), (sx(bx + bw) + 12, sy(top + bh) + 12), (250, 215, 60), 2, cv2.LINE_AA)
+        lvl = r.get("sour_level", 0.0)
+        alpha = float(np.clip((0.0 if pd.isna(lvl) else lvl) / 12.0, 0.25, 1.0))
+        ov = img.copy()
+        m = 8                                                          # 4 px loom half-thickness + 4 px gap
+        dotted_rect(ov, (sx(bx) - m, sy(top) - m), (sx(bx + bw) + m, sy(top + bh) + m), YELLOW, 3)
+        img = cv2.addWeighted(ov, alpha, img, 1 - alpha, 0)
     base = parse_box(r.pit_base_x_top_w_h)
     if base:
         bx, top, bw, bh = base
@@ -314,7 +324,7 @@ def title_card(log, path):
         y = 326 + j * 46
         dr.ellipse([1240, y + 8, 1260, y + 28], fill=c)
         dr.text((1280, y), f"{name}  {role}", font=font(26), fill=TXT)
-    dr.text((1240, 800), "game overlay: red box = looming, green line / box = hum / smell,", font=font(24), fill=DIM)
-    dr.text((1240, 836), "white dot = home (what the fly's senses read from RAM)", font=font(24), fill=DIM)
+    dr.text((1240, 800), "game overlay: red = danger (looming), green = pleasant (hum, smell),", font=font(24), fill=DIM)
+    dr.text((1240, 836), "yellow = sour (dotted box), white = home (dot): read from RAM", font=font(24), fill=DIM)
     img.save(path)
     return path
