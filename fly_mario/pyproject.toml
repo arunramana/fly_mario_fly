@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61,<70"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fly_mario"
+version = "0.0.1"
+description = "Attach MaleCNS fly senses to Super Mario objects; watch, rewind, retry."
+requires-python = ">=3.12"
+# Same pins as the old repo: nes-py breaks under numpy 2.
+dependencies = ["numpy>=1.26,<1.27", "pyyaml"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
