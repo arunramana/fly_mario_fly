@@ -171,7 +171,7 @@ class BrainPanel:
         x = COL_X
         y = 574
         dr.text((x, y), "LIVE BRAIN", font=font(22, True), fill=(255, 255, 255))
-        right = f"arm {lg.arm} · frame {k}"
+        right = f"{lg.tag} · frame {k}" if getattr(lg, "tag", None) else f"arm {lg.arm} · frame {k}"
         dr.text((x + COL_W, y + 4), right, font=font(16), fill=DIM, anchor="ra")
         dr.text((x, y + 34), f"{lg.n} neurons at their real somas  ·  MaleCNS v1.0", font=font(16), fill=TXT)
         # the active drives: names lit when on
