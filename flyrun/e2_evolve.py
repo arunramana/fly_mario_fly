@@ -142,6 +142,9 @@ def holdout_episodes(values, wfile, eps=None):
         ep = dict(noop_start=e["noop_start"], seed=e["seed"], sigma=e["sigma"])
         pr = C.Probe()
         s, df = run_episode(replace(k0, SENSOR_NOISE=ep["sigma"]), brain(wfile), noop_start=ep["noop_start"], episode_seed=ep["seed"], stuck_frames=150, probe=pr, enemy_input=enemy_input)
+        for col, default in (("threat_kind", "none"), ("theta", 0.0), ("stim_d", np.nan), ("dtheta", 0.0), ("ttmn", 0.0), ("steer", 0.0), ("dnp09", 0.0)):
+            if col not in df:                                # an episode that ends inside the noop start (killed before the fly acted) has no sense columns
+                df[col] = default
         df.attrs["hits"], df.attrs["toggles"] = pr.hits, C.toggle_set(k0, enemy_input)
         r = C.analyse(s, df, ep)
         hum = df["hum_level"].fillna(0).to_numpy() if "hum_level" in df else np.zeros(len(df))
@@ -170,6 +173,26 @@ def main_holdout(tag, wfile):
 
 
 HARD = [dict(noop_start=n, seed=701 + i, sigma=0.1) for i, n in enumerate((79, 97, 113, 127, 137, 151, 157, 167, 173, 179, 181, 197, 199, 211, 223, 227, 229, 233, 239, 241))]
+
+
+HARD2 = [dict(noop_start=n, seed=801 + i, sigma=0.1) for i, n in enumerate((55, 59, 81, 91, 93, 95, 99, 111, 115, 119, 121, 123, 129, 133, 135, 141, 143, 145, 146, 147))]   # the amendment: timings below the 150-frame stuck rule
+
+
+def main_test2(tag):
+    """The amendment's extra set, ONCE, both genomes: 20 new timings < 150 at sigma 0.1. -> runs/E2_test2.json"""
+    out = ROOT / "runs" / f"{tag}_test2.json"
+    if out.exists():
+        sys.exit("already run (once only)")
+    e2 = json.load(open(ROOT / "runs" / f"{tag}_progress.json"))["best"]["values"]
+    e1s = json.load(open(ROOT / "runs" / "E1s_progress.json"))["best"]["values"]
+    jobs = [(who, vals, ep) for who, vals in (("E2", e2), ("E1s", e1s)) for ep in HARD2]
+    with mp.get_context("spawn").Pool(NPROC) as pool:
+        res = pool.map(test_job, jobs, chunksize=1)
+    result = {who: [r for w, ep, r in res if w == who] for who in ("E2", "E1s")}
+    json.dump(dict(set=HARD2, result=result), open(out, "w"), indent=1, default=float)
+    for who in ("E2", "E1s"):
+        R = result[who]
+        print(who, "hard2 flags", sum(r["flag"] for r in R), "/", len(R), "mean max_x", round(float(np.mean([r["max_x"] for r in R]))), "score", round(float(np.mean([r["score"] for r in R]))), "backups", sum(r["backup_presses"] for r in R))
 
 
 def test_job(job):
@@ -229,4 +252,4 @@ if __name__ == "__main__":
     cmd = sys.argv[1]
     tag = sys.argv[2] if len(sys.argv) > 2 else "E2"
     wfile = sys.argv[3] if len(sys.argv) > 3 else REAL
-    {"time": lambda: main_time(), "run": lambda: main_run(tag, wfile), "holdout": lambda: main_holdout(tag, wfile), "test": lambda: main_test(tag), "plot": lambda: main_plot(tag)}[cmd]()
+    {"time": lambda: main_time(), "run": lambda: main_run(tag, wfile), "holdout": lambda: main_holdout(tag, wfile), "test": lambda: main_test(tag), "test2": lambda: main_test2(tag), "plot": lambda: main_plot(tag)}[cmd]()

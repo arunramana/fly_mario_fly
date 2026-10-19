@@ -1,0 +1,54 @@
+{
+ "summary": {
+  "max_x": 1513,
+  "score": 400,
+  "flag_get": false,
+  "frames": 1137,
+  "end_reason": "stuck",
+  "x_at_end": 1401,
+  "cause": "stuck (open ground)",
+  "blind_presses": 5,
+  "n_onsets": 18,
+  "a_frac": 0.31574318381706246,
+  "left_frames": 149,
+  "left_presses": 10,
+  "LEFT_PRESS_WARNING": "10 Left presses (149 frames)"
+ },
+ "toggles": {
+  "looming_enemy": true,
+  "looming_pipe": true,
+  "looming_pit": true,
+  "home": true,
+  "hum": true,
+  "smell": true,
+  "sour": true,
+  "headroom_loom": true
+ },
+ "arm": "C",
+ "episode": {
+  "noop_start": 0,
+  "seed": 0,
+  "sigma": 0.0
+ },
+ "knob_overrides": {
+  "HOME_R": 1.2372335666900547,
+  "HUM_GAIN": 25.312098347626172,
+  "SMELL_GAIN": 268.34857270219146,
+  "SOUR_GAIN": 6.463790815889604,
+  "TTMN_THRESH": 0.1015077632452344,
+  "RELEASE_THRESH": 0.08692524971656408,
+  "STEER_THRESH": 0.005125416019681946,
+  "MDN_THRESH": 0.05523775027439851,
+  "G": 0.42605139674669384,
+  "ALPHA": 0.35839948936288735,
+  "CLIP": 55.024667502371614,
+  "DNP09_THRESH": 0.025060942601520628,
+  "PIT_TOWER_POS": 0.18972930574212482,
+  "PIT_TOWER_H": 1.3006497343406795,
+  "HUM_REACH_PX": 56.79883452363504,
+  "EYE_DY": 0.37011651780785526,
+  "SOUR_SENSE": true,
+  "HEADROOM_LOOM": true
+ },
+ "level": "1-1"
+}
