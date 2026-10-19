@@ -1,0 +1,27 @@
+# ONE table of neuron groups. A group is a set of MaleCNS neurons picked by cell type (and side); a brain
+# builds a boolean mask per group from the types and sides of the neurons it holds.
+#   types / type_prefix / exclude_types : which MaleCNS cell types belong to it
+#   side : L / R (the body's side: instance suffix, else root side, else soma side), omitted = both
+#   role : what the group does, in plain words
+#   colour : one colour per group, used by every renderer
+# Merged from the old copies in flyrun/brain.py, render/panels.py, make_clips.py and e1s_clips.py;
+# the disagreements between them are listed in the S2 report.
+other_colour: "#6e7682"        # relays of the 636-neuron circuit that belong to no group below
+groups:
+  LC4_L:   {types: [LC4],   side: L, role: "looming detector, left eye (drives the Giant Fiber)",  colour: "#3987e5"}
+  LC4_R:   {types: [LC4],   side: R, role: "looming detector, right eye (drives the Giant Fiber)", colour: "#3987e5"}
+  LPLC2_L: {types: [LPLC2], side: L, role: "looming detector, left eye (drives the Giant Fiber)",  colour: "#199e70"}
+  LPLC2_R: {types: [LPLC2], side: R, role: "looming detector, right eye (drives the Giant Fiber)", colour: "#199e70"}
+  DNp01:   {types: [DNp01], role: "Giant Fiber: commits the escape jump", colour: "#d95926"}
+  TTMn:    {types: [TTMn],  role: "jump muscle motor neuron (tergotrochanteral)", colour: "#e66767"}
+  DNp09:   {types: [DNp09], role: "forward walking", colour: "#63c8e2"}
+  LC10a_L: {types: [LC10a], side: L, role: "visual tracking of a target, left eye", colour: "#ebebeb"}
+  LC10a_R: {types: [LC10a], side: R, role: "visual tracking of a target, right eye", colour: "#ebebeb"}
+  DNa_L:   {types: [DNa01, DNa02], side: L, role: "steering, left", colour: "#a879e0"}
+  DNa_R:   {types: [DNa01, DNa02], side: R, role: "steering, right", colour: "#deb23c"}
+  JO:      {type_prefix: JO, role: "Johnston's organ: hearing and wind", colour: "#f08cc8"}
+  ORN_L:   {type_prefix: ORN, exclude_types: [ORN_DC4], side: L, role: "attractive smell receptors, left antenna", colour: "#c8c85a"}
+  ORN_R:   {type_prefix: ORN, exclude_types: [ORN_DC4], side: R, role: "attractive smell receptors, right antenna", colour: "#c8c85a"}
+  DC4_L:   {types: [ORN_DC4], side: L, role: "acid (sour) smell receptors, left antenna", colour: "#fad73c"}
+  DC4_R:   {types: [ORN_DC4], side: R, role: "acid (sour) smell receptors, right antenna", colour: "#fad73c"}
+  MDN:     {types: [MDN], role: "moonwalker: walk backwards", colour: "#ff8040"}
