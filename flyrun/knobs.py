@@ -36,6 +36,10 @@ class Knobs:
     HUM_GAIN: float = 14.5342    # INVENTED (fixed), Part Q1: hum loudness = HUM_GAIN x theta_block (rad) into each JO neuron. FROZEN: chosen once so the press falls in the middle of the hit window (runs/Q1.md)
     SMELL_SENSE: bool = False    # INVENTED (fixed), Part M2: the live mushroom smells sweet into the attractive ORNs of the antenna on its side (needs the ORN brain, v2 senses)
     SMELL_GAIN: float = 213.9495 # INVENTED (fixed), Part M2: smell level = SMELL_GAIN x theta_mushroom (rad) into each attractive ORN of that antenna. FROZEN: = 49.7706 (the level where steer crosses -0.01 with HOME_R on) / 0.23263 rad (theta of the mushroom 64 px behind), runs/M2.md
+    SOUR_SENSE: bool = False     # INVENTED (fixed), Part AV1: every live enemy smells sour: the nearest one drives the DC4 (acid) ORNs of both antennae (needs the sour brain, v2 senses). Off = every earlier result
+    SOUR_GAIN: float = 0.0       # INVENTED (fixed), Part AV1: sour level = SOUR_GAIN x theta_enemy (rad) into each DC4 ORN. FROZEN at step 2 of AV1 (runs/AV1.md)
+    MDN_THRESH: float = 0.10     # INVENTED (fixed), Part AV1: mean MDN activity above which the fly backs up (press Left, release Right). = the TTMn threshold of the start genome, about half of GF at the looming trigger (runs/L2c.md)
+    HEADROOM_LOOM: bool = False  # INVENTED (fixed), Part AV1: an enemy's loom input is multiplied by min(1, rise_available / rise_needed) (level.headroom over the span from Mario to the enemy). Off = every earlier result
     SENSES_VERSION: str = "v1"   # INVENTED (fixed): v1 = senses of Parts 1-7 (unchanged); v2 = Part S1 (flyrun/senses_v2.py)
 
     # --- motor (nb 09/14/19/20) ---
@@ -63,8 +67,18 @@ SCRIPT_HOLD = 28           # INVENTED (fixed): scripted driver's A frames per ju
 # Object sizes (w, h) in px. Height sets theta = 2 atan(h / 2d); width is stored for later clearance use.
 # Enemy ids are the RAM type byte (0x0016+slot), identified empirically on 1-1 (runs/S1_senses_v2.md): 0x06 Goomba, 0x00 green Koopa.
 # A Koopa in RAM state 2/3 is treated as a shell (16 x 16): NOT verified (the scripted run never stomps the 1-1 Koopa).
-SIZE_TABLE = {"goomba": (16, 16), "koopa": (16, 24), "shell": (16, 16)}   # INVENTED (fixed)
+SIZE_TABLE = {"goomba": (16, 16), "koopa": (16, 24), "shell": (16, 16), "piranha": (16, 24)}   # INVENTED (fixed); "piranha" (L2b): drawn silhouette of the plant 16 x 22-24 (runs/L2b_enemies.json), its bottom edge = RAM y - 8 like the others
 ENEMY_TYPES = {0x06: "goomba", 0x00: "koopa"}                              # INVENTED (fixed): any other type byte is ignored
+# L2b: 1-2 also has 0x03 = the RED Koopa Troopa (same 16 x 24 silhouette and walking states as the green one; red-shell states 2 / 3 NOT verified) and 0x0D = the piranha plant
+# (states 0 = live, 0x22 = defeated). 1-1 contains neither, so its table is unchanged. The 1-2 lifts (0x26 / 0x27 / 0x34) and the flag object (0x31) are NOT enemies and stay unknown.
+ENEMY_TYPES_BY_LEVEL = {"1-1": ENEMY_TYPES, "1-2": {**ENEMY_TYPES, 0x03: "koopa", 0x0D: "piranha"}}   # INVENTED (fixed)
+
+
+def enemy_types():
+    """The enemy type bytes this level's senses read (FLYRUN_LEVEL, default 1-1: exactly ENEMY_TYPES)."""
+    import os
+    return ENEMY_TYPES_BY_LEVEL.get(os.environ.get("FLYRUN_LEVEL", "1-1"), ENEMY_TYPES)
+
 MARIO_BOX = (12, 16)       # INVENTED (fixed): Mario's (w, h) in px (small Mario; x = sprite left edge); deaths happened at gap 0 = dx 12
 MARIO_BOX_BIG = (12, 24)   # INVENTED (fixed), C1: Mario's (w, h) when big / fire (power-up byte 0x0756 >= 1); 24 px tall measured in O0 (player collision box 184..208 standing); same feet reference as small (0xCE = 176)
 ENEMY_FEET_OFFSET = 8      # INVENTED (fixed): an enemy's RAM y (0x00CF+slot) is its feet y + 8 (measured: ground 184 vs surface 176)
@@ -110,6 +124,12 @@ INVENTED = {
     "RELEASE_THRESH": ("fixed", "v2: TTMn level below which A is released (default = TTMN_THRESH)"),
     "SENSES_VERSION": ("fixed", "v1 = old senses (all Part 1-7 results); v2 = Part S1 senses"),
     "SIZE_TABLE / ENEMY_TYPES": ("fixed", "v2 object sizes (Goomba 16x16, Koopa 16x24, shell 16x16) and the RAM type bytes (0x06, 0x00)"),
+    "ENEMY_TYPES_BY_LEVEL / piranha size": ("fixed", "L2b: 1-2 only: 0x03 red Koopa (as the green one) and 0x0D piranha plant 16 x 24, clipped at its pipe's rim; measured on the emulator (runs/L2b_enemies.json)"),
+    "EXTRA_WALL / EXTRA_SOLID / CEILING_EXTRA (level.py)": ("fixed", "L2b: per-level solid tile ids (1-2: bricks 82 / 90 / 92-94, sideways pipe 28-33), emulator-tested (runs/L2b_tiles*.json); 1-1 unchanged"),
+    "SOUR_SENSE": ("fixed", "AV1: the sour cue (invented): the nearest live enemy (Goomba / Koopa / piranha) drives the DC4 ORNs of both antennae; off by default. Real wiring: DC4 -> ... -> MDN (L2c)"),
+    "SOUR_GAIN": ("fixed", "AV1: sour level = SOUR_GAIN x the enemy's angular size (rad); set once so MDN crosses 0.10 at theta 50 deg, then frozen (runs/AV1.md)"),
+    "MDN_THRESH": ("fixed", "AV1: the 4th output 'back up': MDN mean above this presses Left and releases Right (A unaffected); 0.10"),
+    "HEADROOM_LOOM": ("fixed", "AV1: the headroom factor rule (invented): an enemy's loom input x min(1, rise_available / (enemy height + 2 px)), rise_available = level.headroom over Mario -> enemy; off by default"),
     "MARIO_BOX_BIG": ("fixed", "C1: Mario 12x24 when big (0x0756 >= 1), measured in O0; used for the eye point and the head-side gap"),
     "MARIO_BOX / ENEMY_FEET_OFFSET": ("fixed", "v2 geometry: Mario 12x16, enemy feet = RAM y - 8 (measured on 1-1)"),
     "PIT_GAIN_V2": ("fixed", "v2 pit tower theta at gain 1"),
@@ -125,4 +145,4 @@ INVENTED = {
 
 def toggle_set(k, enemy_input=True):
     """The drives switched on in a run (every M2b+ run log records this): looming (enemy / pipe / pit), home, hum, smell."""
-    return dict(looming_enemy=bool(enemy_input), looming_pipe=bool(k.PIPE_SENSE), looming_pit=bool(k.PIT_SENSE), home=bool(k.HOME_SENSE), hum=bool(k.HUM_SENSE), smell=bool(k.SMELL_SENSE))
+    return dict(looming_enemy=bool(enemy_input), looming_pipe=bool(k.PIPE_SENSE), looming_pit=bool(k.PIT_SENSE), home=bool(k.HOME_SENSE), hum=bool(k.HUM_SENSE), smell=bool(k.SMELL_SENSE), **(dict(sour=True) if k.SOUR_SENSE else {}), **(dict(headroom_loom=True) if k.HEADROOM_LOOM else {}))

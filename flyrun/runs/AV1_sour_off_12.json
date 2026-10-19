@@ -1,0 +1,139 @@
+{
+ "noop_start": 0,
+ "seed": 0,
+ "sigma": 0.0,
+ "flag": false,
+ "max_x": 235,
+ "end": "died",
+ "x_end": 235,
+ "cause": "enemy dx=10",
+ "frames": 246,
+ "traj": "336ce5bb67",
+ "score": 700,
+ "blocks_hit": [
+  160,
+  176,
+  192,
+  224
+ ],
+ "blocks_hit_detail": [
+  {
+   "block_x": 160,
+   "row": 7,
+   "frame": 79,
+   "mario_x": 156
+  },
+  {
+   "block_x": 176,
+   "row": 7,
+   "frame": 101,
+   "mario_x": 183
+  },
+  {
+   "block_x": 192,
+   "row": 7,
+   "frame": 210,
+   "mario_x": 189
+  },
+  {
+   "block_x": 224,
+   "row": 7,
+   "frame": 232,
+   "mario_x": 225
+  }
+ ],
+ "n_blocks": 4,
+ "coins": 3,
+ "mushroom_out": true,
+ "mushroom_eaten": false,
+ "eaten_frame": null,
+ "big_at_end": false,
+ "shrinks": 0,
+ "overlap_onsets": [
+  {
+   "frame": 70,
+   "x": 140,
+   "kind": "goomba",
+   "theta_deg": 16.853938042961346,
+   "d": 54.0,
+   "hum_level": 5.874663007259234
+  },
+  {
+   "frame": 92,
+   "x": 177,
+   "kind": "goomba",
+   "theta_deg": 138.88790956083307,
+   "d": 3.0,
+   "hum_level": 6.658360254558317
+  },
+  {
+   "frame": 130,
+   "x": 158,
+   "kind": "goomba",
+   "theta_deg": 38.35801605162144,
+   "d": 23.0,
+   "hum_level": 5.092334202512541
+  },
+  {
+   "frame": 201,
+   "x": 173,
+   "kind": "goomba",
+   "theta_deg": 15.978653532793794,
+   "d": 57.0,
+   "hum_level": 5.950036704775521
+  },
+  {
+   "frame": 223,
+   "x": 212,
+   "kind": "goomba",
+   "theta_deg": 28.940588200131774,
+   "d": 31.0,
+   "hum_level": 6.5976717373094855
+  }
+ ],
+ "n_onsets": 5,
+ "left_frames": 71,
+ "left_presses": 2,
+ "left_frames_mush_in_view": 71,
+ "left_presses_mush_in_view": 2,
+ "left_frames_mush_not_in_view": 0,
+ "left_presses_mush_not_in_view": 0,
+ "a_onsets_no_stimulus": 0,
+ "a_frames_no_stimulus": 0,
+ "frames_mush_in_view": 167,
+ "onsets": [
+  [
+   16.853938042961346,
+   "goomba",
+   54.0,
+   140
+  ],
+  [
+   138.88790956083307,
+   "goomba",
+   3.0,
+   177
+  ],
+  [
+   38.35801605162144,
+   "goomba",
+   23.0,
+   158
+  ],
+  [
+   15.978653532793794,
+   "goomba",
+   57.0,
+   173
+  ],
+  [
+   28.940588200131774,
+   "goomba",
+   31.0,
+   212
+  ]
+ ],
+ "backup_frames": 71,
+ "backup_presses": 2,
+ "tag": "sour_off"
+}

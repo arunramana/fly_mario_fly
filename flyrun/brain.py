@@ -51,9 +51,12 @@ def load_brain(cache=CACHE):
     jo = np.char.startswith(types.astype(str), "JO")
     if jo.any():                      # Part Q1: Johnston's organ neurons, present only in the extended brain (W_steer_jo.npy)
         masks["JO"] = jo
-    orn = np.char.startswith(types.astype(str), "ORN")
-    if orn.any():                     # Part M2: attractive olfactory receptor neurons, present only in the ORN brain (W_steer_jo_orn.npy)
+    orn = np.char.startswith(types.astype(str), "ORN") & (types != "ORN_DC4")
+    if orn.any():                     # Part M2: attractive olfactory receptor neurons, present only in the ORN brain (W_steer_jo_orn.npy); AV1: the sour DC4 ORNs are not among them
         masks["ORN_L"], masks["ORN_R"] = orn & (sides == "L"), orn & (sides == "R")
+    if (types == "ORN_DC4").any():    # Part AV1: the sour brain (W_steer_jo_orn_sour.npy): DC4 (acid) ORNs per antenna and the 4 moonwalker descending neurons
+        masks["DC4_L"], masks["DC4_R"] = (types == "ORN_DC4") & (sides == "L"), (types == "ORN_DC4") & (sides == "R")
+        masks["MDN"] = types == "MDN"
     return Brain(W=W, bodies=bodies, masks=masks)
 
 

@@ -36,3 +36,16 @@ Colour language: red = danger (looming), green = pleasant (hum, smell), white = 
 Big Mario (C1a): Mario's box is read from the power-up byte 0x0756 (0 small 12 x 16; 1 big / 2 fire 12 x 24; feet reference 0xCE unchanged). It sets the eye point (hum, smell) and the head-side gap of every threat. The cleared-enemy test and the face / tower "feet above top" tests are feet- and width-based and do not depend on his height.
 
 Regression rule: when the brain changes (more neurons, new row-normalisation), "regression" = the same flags and the same causes of death on the same episodes, NOT frame-identical traces. Extra neurons perturb TTMn by <= ~0.002 (GF-row renormalisation) and, at sigma 0.05, change the noise draw order, so a release can move by one frame. (Accepted at C1: the 881-neuron arm A is the new baseline: 9/10 flags, the same pit-1 death as S3e.) A change of the SENSES code with the brain fixed is still held to frame-identical.
+
+AV Sour smell + back up.
+- Every live enemy (Goomba, green/red Koopa, piranha) smells sour. Only the nearest enemy is smelled.
+- Sour level = SOUR_GAIN × θ_enemy (same theta_of geometry), fed equally into the left and right DC4 (acid) ORNs.
+- Real wiring: DC4 → … → MDN (moonwalker).
+- 4th output 'back up': MDN mean > MDN_THRESH (0.10) → press Left and release Right (A unaffected).
+- Headroom looming: an enemy's loom input is multiplied by min(1, rise_available / rise_needed), where:
+  - rise_available = level.headroom over the span from Mario to the enemy (min of 68 and ceiling − head);
+  - rise_needed = the enemy's height + 2 px clearance.
+  - Faces and pit towers are unchanged for now.
+- INVENTED (orange): the sour cue, SOUR_GAIN, MDN_THRESH, the headroom factor rule. Real (teal): DC4 → MDN.
+- Toggles: SOUR_SENSE, HEADROOM_LOOM.
+Implementation notes (AV1): (1) "Nearest" = the smallest 2-D gap (the loom's), among enemies not behind his left edge and not cleared in this jump; a shell does not smell sour. (2) The headroom is measured from the take-off ground (like the faces and towers), because in the air his head is already up and the factor would flicker to 0 under any block. (3) The sour brain = the 881 brain + the 26 DC4 -> MDN k/N neurons, built READ-ONLY: edges from the new neurons onto the old ones are dropped, so every old row is exactly as before (flyrun/av1_brain.py; with them the old smell steering broke). (4) SOUR_GAIN = 8.0587: the steady drive at which MDN = 0.10 is 7.0326, divided by theta(50 deg) = 0.8727 rad (runs/AV1_sour_gain.json); frozen.
