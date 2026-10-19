@@ -1,0 +1,39 @@
+{
+ "summary": {
+  "max_x": 636,
+  "score": 200,
+  "flag_get": false,
+  "frames": 522,
+  "end_reason": "stuck",
+  "x_at_end": 524,
+  "cause": "stuck (open ground)",
+  "blind_presses": 8,
+  "n_onsets": 11,
+  "a_frac": 0.7873563218390804,
+  "left_frames": 188,
+  "left_presses": 4,
+  "LEFT_PRESS_WARNING": "4 Left presses (188 frames)"
+ },
+ "toggles": {
+  "looming_enemy": true,
+  "looming_pipe": true,
+  "looming_pit": true,
+  "home": true,
+  "hum": true,
+  "smell": true
+ },
+ "arm": "C",
+ "episode": {
+  "noop_start": 0,
+  "seed": 0,
+  "sigma": 0.0
+ },
+ "knob_overrides": {
+  "HOME_R": 0.6875479638545048,
+  "HUM_GAIN": 23.032229792934967,
+  "SMELL_GAIN": 368.0913495573621,
+  "TTMN_THRESH": 0.08564421493802228,
+  "RELEASE_THRESH": 0.081416483852197,
+  "STEER_THRESH": 0.01312922647046887
+ }
+}
