@@ -45,10 +45,11 @@ class SideBySide:
         prog = json.load(open(RUNS / "E1_progress.json"))
         start = json.load(open(RUNS / "E1_start.json"))["start"]
         self.sides = []
-        for label, base, sub in (("START genome (arm C)", str(RUNS / "R1_armC"), f"fitness {start['fitness']:.3f} · flags on training {start['flags']}/12"),
-                                 ("EVOLVED (E1 best, generation 6)", str(RUNS / "E1_E1_gen06_best"), f"fitness {prog['best']['fitness']:.3f} · flags on training 12/12")):
+        thrs = (0.10, float(prog["best"]["values"]["TTMN_THRESH"]))
+        for (label, base, sub), thr in zip((("START genome (arm C)", str(RUNS / "R1_armC"), f"fitness {start['fitness']:.3f} · flags on training {start['flags']}/12"),
+                                 ("EVOLVED (E1 best, generation 6)", str(RUNS / "E1_E1_gen06_best"), f"fitness {prog['best']['fitness']:.3f} · flags on training 12/12")), thrs):
             lg, frames = window_frames(base, n=n)
-            self.sides.append(dict(label=label, sub=sub, lg=lg, frames=frames))
+            self.sides.append(dict(label=label, sub=sub, lg=lg, frames=frames, thr=thr))
         self.members = {}
         bp = BrainPanel.__new__(BrainPanel)                      # only the group membership is needed (no positions): rebuild it the same way
         for s in self.sides:
@@ -104,6 +105,12 @@ class SideBySide:
                 a = float(np.clip(v / self.gmax[name], 0, 1))
                 if a > 0:
                     dr.rectangle([bx, y + 26, bx + int(150 * a), y + 36], fill=c)
+                if name == "TTMn":                                   # the jump threshold of this genome: a tick on the bar and a label
+                    tx = bx + int(150 * min(1.0, side["thr"] / self.gmax[name]))
+                    dr.line([(tx, y + 20), (tx, y + 42)], fill=(255, 210, 74), width=3)
+                    ts = f"{side['thr']:.4f}".rstrip("0")
+                    ts = ts + "0" * (4 - len(ts)) if len(ts) < 4 else ts
+                    dr.text((bx + 150, y + 41), f"jumps at {ts}", font=font(16), fill=(255, 210, 74), anchor="ra")
             dr.text((x0 + 96, y), f"{vals[0]:.2f}", font=font(18), fill=(150, 150, 145))
             dr.text((x0 + 96 + 186, y), f"{vals[1]:.2f}", font=font(18), fill=(205, 204, 196))
             y += 62
@@ -154,6 +161,7 @@ def strip_frame(progress, start_fit, f, total=240):
     dr.text((X0 + 90, Y0 + 40), "best of the generation", font=font(24), fill=(235, 235, 235), anchor="lm")
     dr.line([(X0 + 36, Y0 + 78), (X0 + 76, Y0 + 78)], fill=(235, 235, 235), width=5)
     dr.text((X0 + 90, Y0 + 78), "population mean", font=font(24), fill=(235, 235, 235), anchor="lm")
+    dr.text((W // 2, 1010), "the best fly was found almost immediately; the rest of the population catches up", font=font(30), fill=(205, 204, 196), anchor="mm")
     if f >= total:
         dr.text((xs(n - 1) - 10, ys(rows[-1]["best"]) - 30), f"best {max(r['best'] for r in rows):.3f}", font=font(28, True), fill=(255, 90, 74), anchor="rm")
     return np.asarray(img)
