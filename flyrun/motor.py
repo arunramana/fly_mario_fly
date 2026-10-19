@@ -81,6 +81,12 @@ def decide(h, masks, knobs, m, airborne=False):
     walk = dnp09 >= knobs.DNP09_THRESH
     go_left = steer < -knobs.STEER_THRESH
     go_right = (walk or steer > knobs.STEER_THRESH) and not go_left
+    mdn = None
+    if "MDN" in masks and knobs.SOUR_SENSE:
+        # AV1, the 4th output 'back up': the moonwalker descending neurons above MDN_THRESH press Left and release Right (A is the jump circuit's, unaffected)
+        mdn = float(h[masks["MDN"]].mean())
+        if mdn > knobs.MDN_THRESH:
+            go_left, go_right = True, False
     if go_left:
         action = E.LEFT_A if a else E.LEFT
     elif go_right:
@@ -88,6 +94,8 @@ def decide(h, masks, knobs, m, airborne=False):
     else:
         action = E.NOOP   # a held A with no direction is dropped: our list has no bare A
     out = dict(ttmn=ttmn, dnp09=dnp09, steer=steer)
+    if mdn is not None:
+        out["mdn"] = mdn
     if knobs.MOTOR_VERSION == "v2":
         out["why"] = m.why
     return action, out

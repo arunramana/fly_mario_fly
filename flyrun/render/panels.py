@@ -35,6 +35,7 @@ def font(sz, bold=False):
 GROUPS = [("LC4", "looming", (57, 135, 229), ("looming",)), ("LPLC2", "looming", (25, 158, 112), ("looming",)), ("DNp01", "Giant Fiber", (217, 89, 38), ("looming", "hum")),
           ("TTMn", "jump muscle", (230, 103, 103), ("looming", "hum")), ("DNa L", "steering", (168, 121, 224), ("home", "smell")), ("DNa R", "steering", (222, 178, 60), ("home", "smell")),
           ("DNp09", "forward walking", (99, 200, 226), ("home",)), ("LC10a", "home", (235, 235, 235), ("home",)), ("JO", "hum (hearing)", (240, 140, 200), ("hum",)), ("ORN", "smell", (200, 200, 90), ("smell",))]
+AV1_GROUPS = [("DC4 sour", "acid smell", (250, 215, 60), ("sour",)), ("MDN back up", "moonwalker", (255, 128, 64), ("sour",))]      # AV1: only in the sour brain (the 907-neuron one)
 OTHER = (110, 118, 130)                               # the other relays of the 636-neuron steering / looming circuit: neutral, glowing with their own rate, no index row
 
 
@@ -72,7 +73,7 @@ class Log:
 
     def drive_on(self, name):
         tg = self.toggles
-        return {"looming": tg["looming_enemy"] or tg["looming_pipe"] or tg["looming_pit"], "home": tg["home"], "hum": tg["hum"], "smell": tg["smell"]}[name]
+        return {"looming": tg["looming_enemy"] or tg["looming_pipe"] or tg["looming_pit"], "home": tg["home"], "hum": tg["hum"], "smell": tg["smell"], "sour": tg.get("sour", False)}[name]
 
     def __len__(self):
         return len(self.df)
@@ -136,15 +137,20 @@ class BrainPanel:
             "LC4": t == "LC4", "LPLC2": t == "LPLC2", "DNp01": t == "DNp01", "TTMn": t == "TTMn",
             "DNa L": np.isin(t, ["DNa01", "DNa02"]) & (side == "L"), "DNa R": np.isin(t, ["DNa01", "DNa02"]) & (side == "R"),
             "DNp09": t == "DNp09", "LC10a": t == "LC10a", "JO": np.char.startswith(t.astype("U"), "JO"),
-            "ORN": np.char.startswith(t.astype("U"), "ORN") | (idx >= 656)}
+            "ORN": (np.char.startswith(t.astype("U"), "ORN") & (t != "ORN_DC4")) | ((idx >= 656) & ~((idx >= 881) & (log.n > 881)))}
+        self.groups = list(GROUPS)
+        if log.n > 881 and (t == "MDN").any():                 # AV1: the sour branch (13 DC4 ORNs, their 9 relays, 4 MDN) = neurons 881 ..
+            self.members["DC4 sour"] = (idx >= 881) & (t != "MDN")
+            self.members["MDN back up"] = t == "MDN"
+            self.groups += AV1_GROUPS
         col = np.tile(np.array(OTHER, np.float32), (log.n, 1))
-        for name, _, c, _ in GROUPS:
+        for name, _, c, _ in self.groups:
             col[self.members[name]] = c
         self.col = col
         self.rad = np.where(np.isin(t, ["DNp01", "TTMn", "DNp09", "DNa01", "DNa02"]), 1.8, 1.0)
         hs = log.hs
         self.nmax = np.maximum(hs.max(0), 0.02)                      # per-neuron run maximum: brightness = rate / its own maximum (the old tool normalised each group the same way)
-        self.vmembers = dict(self.members, ORN=np.char.startswith(t.astype("U"), "ORN"))      # the index value / bar of the ORN row counts the receptor neurons only (not the smell-path relays that share the colour)
+        self.vmembers = dict(self.members, ORN=np.char.startswith(t.astype("U"), "ORN") & (t != "ORN_DC4"), **({"DC4 sour": t == "ORN_DC4"} if "DC4 sour" in self.members else {}))      # the index value / bar of the ORN row counts the receptor neurons only (not the smell-path relays that share the colour)
         self.gmax = {g: max(float(hs[:, m].mean(1).max()), 1e-9) for g, m in self.vmembers.items()}
         self.static = self._text_static()
 
@@ -178,7 +184,7 @@ class BrainPanel:
         cx = x
         dr.text((cx, y + 58), "drives:", font=font(16), fill=DIM)
         cx += 66
-        for nm in ("looming", "home", "hum", "smell"):
+        for nm in ("looming", "home", "hum", "smell") + (("sour",) if "sour" in lg.toggles else ()):
             on = lg.drive_on(nm)
             dr.text((cx, y + 58), nm, font=font(16, on), fill=(255, 255, 255) if on else (80, 80, 76))
             cx += int(dr.textlength(nm, font=font(16, on))) + 22
@@ -192,8 +198,9 @@ class BrainPanel:
         dr.text((x, y + 106), "brightness = activity", font=font(16), fill=DIM)
         dr.text((x, y + 128), "JO/ORN at their brain terminals (cell bodies in the antenna)", font=font(16), fill=DIM)
         # the INDEX: dot, name, role, activity bar, value; rows of drives that are off are dimmed
-        yy = 768
-        for name, role, c, drives in GROUPS:
+        wide = len(self.groups) > len(GROUPS)                  # AV1: two more rows: tighter pitch, the role column moves right
+        yy, pitch, rx = (746, 26, 172) if wide else (768, 30, 108)
+        for name, role, c, drives in self.groups:
             on = any(lg.drive_on(dv) for dv in drives)
             f = 1.0 if on else 0.28
             cc = tuple(int(v * f) for v in c)
@@ -203,12 +210,12 @@ class BrainPanel:
             a = float(np.clip(val / self.gmax[name], 0, 1))
             dr.ellipse([x, yy + 5, x + 12, yy + 17], fill=cc)
             dr.text((x + 24, yy), name, font=font(18, True), fill=tc)
-            dr.text((x + 108, yy), role, font=font(18), fill=tc)
+            dr.text((x + rx, yy), role, font=font(18), fill=tc)
             dr.rectangle([x + 330, yy + 5, x + 450, yy + 17], outline=(52, 52, 50))
             if a > 0:
                 dr.rectangle([x + 330, yy + 5, x + 330 + int(120 * a), yy + 17], fill=cc)
             dr.text((x + COL_W, yy), f"{val:7.3f}", font=font(18), fill=tc, anchor="ra")
-            yy += 30
+            yy += pitch
         return np.asarray(pil)
 
 
@@ -219,6 +226,17 @@ def parse_box(s):
     return tuple(int(v) for v in s.split())
 
 
+def dashed_rect(img, p0, p1, color, th, dash=14, gap=10):
+    (x0, y0), (x1, y1) = p0, p1
+    for (a, b) in (((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)), ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0))):
+        L = max(abs(b[0] - a[0]), abs(b[1] - a[1]))
+        for t0 in range(0, L, dash + gap):
+            t1 = min(t0 + dash, L)
+            q0 = (int(a[0] + (b[0] - a[0]) * t0 / L), int(a[1] + (b[1] - a[1]) * t0 / L))
+            q1 = (int(a[0] + (b[0] - a[0]) * t1 / L), int(a[1] + (b[1] - a[1]) * t1 / L))
+            cv2.line(img, q0, q1, color, th, cv2.LINE_AA)
+
+
 def game_panel(frame, log, k):
     """NES x4 = 1024 x 960 with only the overlay: red loom boxes (pit base thin), green hum line, green smell box, and the home dot at the right edge inside the frame at eye height."""
     img = cv2.resize(np.ascontiguousarray(frame), None, fx=4, fy=4, interpolation=cv2.INTER_NEAREST).copy()
@@ -227,9 +245,18 @@ def game_panel(frame, log, k):
     sx = lambda wx: int(round((wx - sl) * 4))
     sy = lambda ty: int(round((ty + 32) * 4))
     box = parse_box(r.box_x_top_w_h)
+    hf = r.get("headroom_factor", 1.0)
+    suppressed = (not pd.isna(hf)) and hf < 1.0                      # AV1: the loom of this enemy is scaled down by the headroom factor: its box is DASHED red
     if box and r.threat != "none":
         bx, top, bw, bh = box
-        cv2.rectangle(img, (sx(bx), sy(top)), (sx(bx + bw), sy(top + bh)), RED, 4, cv2.LINE_AA)
+        if suppressed:
+            dashed_rect(img, (sx(bx), sy(top)), (sx(bx + bw), sy(top + bh)), RED, 4)
+        else:
+            cv2.rectangle(img, (sx(bx), sy(top)), (sx(bx + bw), sy(top + bh)), RED, 4, cv2.LINE_AA)
+    sbox = parse_box(r.get("sour_box_x_top_w_h", ""))
+    if sbox:                                                          # AV1: the enemy that smells sour: a thin yellow outline (3 px outside the loom box)
+        bx, top, bw, bh = sbox
+        cv2.rectangle(img, (sx(bx) - 12, sy(top) - 12), (sx(bx + bw) + 12, sy(top + bh) + 12), (250, 215, 60), 2, cv2.LINE_AA)
     base = parse_box(r.pit_base_x_top_w_h)
     if base:
         bx, top, bw, bh = base

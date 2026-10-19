@@ -120,6 +120,7 @@ def run_episode(knobs, W, noop_start=0, max_frames=3000, stuck_frames=150, recor
             right=int(action in (E.RIGHT, E.RIGHT_A)),
             left=int(action in (E.LEFT, E.LEFT_A)),
             **(dict(y=int(ram[0x00CE]), a_why=read.get("why", "")) if knobs.MOTOR_VERSION == "v2" else {}),
+            **(dict(mdn=read.get("mdn", 0.0), backup=int(read.get("mdn", 0.0) > knobs.MDN_THRESH)) if knobs.SOUR_SENSE else {}),
             **(probe(ram) if probe is not None else {}),     # C1: extra per-frame columns read from RAM (never fed back)
         ))
         if x > max_x:

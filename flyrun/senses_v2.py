@@ -122,6 +122,35 @@ def enemy_boxes(enemies, walls=None):
     return out
 
 
+SOUR_KINDS = ("goomba", "koopa", "piranha")      # AV1: what smells sour (live Goomba, green / red Koopa, piranha); a shell does not
+HEADROOM_CLEARANCE = 2                            # INVENTED (fixed), AV1: px of clearance above the enemy's top that a jump must reach (rise_needed = enemy height + this)
+
+
+def sour_enemy(mx, feet, enemies, walls, cleared=frozenset(), box=MARIO_BOX):
+    """AV1: the nearest live sour enemy (by the same 2-D gap as the loom), with .d and .theta, or None. Like the loom candidates: not behind his left edge, not cleared in this jump."""
+    best = None
+    for t in enemy_boxes(enemies, walls):
+        if t.kind not in SOUR_KINDS or t.ident in cleared or is_cleared(mx, feet, t, box):
+            continue
+        if not (t.x >= mx or over(mx, t.x, t.x + t.w, box)):
+            continue
+        t.d = gap(mx, feet, t.x, t.top, t.w, t.h, box)
+        if best is None or t.d < best.d:
+            best = t
+    if best is not None:
+        best.theta = theta_of(best.d, best.h)
+    return best
+
+
+def headroom_factor(ram, mx, feet, t, box=MARIO_BOX):
+    """AV1: min(1, rise_available / rise_needed) for an enemy -> (factor, rise_available, rise_needed). rise_available = level.headroom over the span from Mario's left edge to the enemy's right edge
+    (min of MAX_JUMP_HEIGHT and ceiling - head); rise_needed = the enemy's height + HEADROOM_CLEARANCE."""
+    x1 = max(t.x + t.w, mx + box[0])
+    _, rise = level.headroom(ram, mx, x1, feet, box_h=box[1])
+    need = t.h + HEADROOM_CLEARANCE
+    return min(1.0, rise / need), rise, need
+
+
 def rim_top(walls, x):
     """y of the top of the solid column at world x (tile-aligned): the wall column's top if there is one, else the floor."""
     for wx, H in walls:
@@ -205,7 +234,24 @@ class SensesV2:
         t = choose(mx, feet, enemies, walls, pits, enemy_input, self.k.PIPE_SENSE, self.k.PIT_SENSE, ground=self.ground, released=frozenset(self.released), cleared=frozenset(self.cleared), box=box)
         if t is not None and t.kind == "pit" and t.h == 0 and int(ram[0x001D]) != 0:
             self.released.add(t.ident)
+        hf, rise, need, th_raw = 1.0, None, None, None
+        if self.k.HEADROOM_LOOM and t is not None and t.kind in ("goomba", "koopa", "shell", "piranha"):
+            hf, rise, need = headroom_factor(ram, mx, self.ground, t, box)      # from the take-off ground, like the faces and towers: in the air his head is already up and the factor would flicker
+            th_raw, t.theta = t.theta, t.theta * hf
         I, lm = self.from_threat(t)
+        if self.k.HEADROOM_LOOM:
+            lm.extra.update(headroom_factor=hf, headroom_rise=rise, headroom_need=need, theta_unscaled=th_raw if th_raw is not None else lm.theta)
+        if self.k.SOUR_SENSE:
+            assert "DC4_L" in self.m, "SOUR_SENSE needs the sour brain (W_steer_jo_orn_sour.npy)"
+            se = sour_enemy(mx, feet, enemies, walls, frozenset(self.cleared), box)
+            lvl = 0.0
+            if se is not None:
+                lvl = self.k.SOUR_GAIN * se.theta
+                sig = self.k.SENSOR_NOISE if self.rng is not None else 0.0
+                if sig > 0:
+                    lvl *= 1.0 + sig * self.rng.standard_normal()
+            I[self.m["DC4_L"]] = I[self.m["DC4_R"]] = lvl
+            lm.extra.update(sour_box=None if se is None else (se.x, se.top, se.w, se.h), sour_theta=0.0 if se is None else se.theta, sour_level=lvl)
         if self.k.HUM_SENSE:
             assert "JO" in self.m, "HUM_SENSE needs the JO brain (W_steer_jo.npy)"
             hb = hum_block(mx, feet, level.scan_blocks(ram), box)
