@@ -7,7 +7,7 @@ class Pipe:
     label = "Pipe"
     note = "Raw column stack of pipe tiles; neighbouring equal-height columns are one pipe."
     kind = "terrain"
-    default_loom_shape = "box"
+    default_loom_shape = "solid_block"
 
     def find(self, ram, facts):
         return [R.instance("pipe", x0, R.face_box(x0, x1, H, facts), ram, facts)

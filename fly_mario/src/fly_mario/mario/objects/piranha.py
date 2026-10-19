@@ -7,7 +7,7 @@ class Piranha:
     label = "Piranha plant"
     note = "Rises out of a pipe; clipped at the pipe rim."
     kind = "enemy"
-    default_loom_shape = "box"
+    default_loom_shape = "own_box"
 
     def find(self, ram, facts):
         return enemies.find_enemies(ram, facts, self.name)

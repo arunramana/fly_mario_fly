@@ -6,6 +6,7 @@ nes-py directly, so any button combination works (no fixed action list).
 from __future__ import annotations
 
 import pickle
+import uuid
 from dataclasses import dataclass
 from typing import Any, Iterable
 
@@ -72,6 +73,8 @@ class MarioEnv:
         self.rom = "v0"
         self.noop = 0
         self.done = False
+        self._slot = None         # in-memory fast path: the newest save_state() of this session (see save_state)
+        self._slot_dirty = False  # nes-py's one backup slot holds a saved moment, not the level start
 
     # -- live RAM -------------------------------------------------------------
     @property
@@ -102,12 +105,16 @@ class MarioEnv:
     def reset(self, level: str = "1-1", rom: str = "v0", noop: int = 0) -> Step:
         """Start `level` from the beginning, then idle `noop` frames."""
         key = (level, rom)
+        if self._slot_dirty:      # reset() restores nes-py's backup slot, which now holds a saved moment: rebuild the env
+            self._key = None
+        self._slot = None
         if key != self._key:
             gym_id = env_id(level, rom)           # validate before touching the old env
             if self._gym is not None:
                 self._gym.close()
             self._gym = gym_super_mario_bros.make(gym_id)
             self._key = key
+            self._slot_dirty = False
         self.level, self.rom, self.noop = level, rom, int(noop)
         self._gym.reset(seed=0) if level == "random" else self._gym.reset()   # random stages: a fixed stage per seed
         self.done = False
@@ -120,32 +127,52 @@ class MarioEnv:
     def step(self, buttons: Iterable[str] = ()) -> Step:
         return self._step_byte(button_byte(buttons))
 
-    def _step_byte(self, b: int) -> Step:
+    def _step_byte(self, b: int, snapshot: bool = True):
         _, _, done, info = self._gym.unwrapped.step(b)
         self.done = bool(done)
         self._ops.append(("s", b))
-        return self._snapshot(info)
+        return self._snapshot(info) if snapshot else None
 
     def _snapshot(self, info: dict) -> Step:
         return Step(self.ram.copy(), np.array(self._gym.unwrapped.screen, copy=True), self.done, dict(info))
 
     # -- save states ----------------------------------------------------------
-    # nes-py keeps one in-process snapshot slot and cannot export it, so a save state is the recipe:
-    # (level, rom, every button byte and RAM poke since reset). Loading replays it on the same
-    # deterministic emulator and gives back the identical RAM. The cost is one replay.
+    # The saved format is the recipe: (level, rom, every button byte and RAM poke since reset). Loading replays it
+    # on the same deterministic emulator and gives back the identical RAM, at the emulator's ~1.3 ms per frame.
+    # Fast path: nes-py has ONE in-process backup slot, so save_state() also puts the moment there (with the screen
+    # and gym's two python counters) and tags the blob with a token. load_state() of the NEWEST blob of this session
+    # restores in about a millisecond; an older blob, or one from another process, replays. That slot is also what
+    # reset() restores, so the first reset after a save rebuilds the emulator env (cheap, once).
+    _PY_STATE = ("_time_last", "_x_position_last")
+
     def save_state(self) -> bytes:
-        return pickle.dumps({"level": self.level, "rom": self.rom, "ops": list(self._ops)})
+        token = uuid.uuid4().hex
+        if self.level != "random":                    # random stages: the core env changes on reset, replay only
+            core = self._core()
+            core._backup()
+            self._slot_dirty = True
+            self._slot = dict(token=token, done=self.done, screen=np.array(self._gym.unwrapped.screen, copy=True),
+                              py={k: getattr(core, k) for k in self._PY_STATE})
+        return pickle.dumps({"level": self.level, "rom": self.rom, "ops": list(self._ops), "token": token})
 
     def load_state(self, blob: bytes) -> Step:
         s = pickle.loads(blob)
+        slot = self._slot
+        if slot is not None and slot["token"] == s.get("token") and (self.level, self.rom) == (s["level"], s["rom"]):
+            core = self._core()
+            core._restore()
+            for k, v in slot["py"].items():
+                setattr(core, k, v)
+            self.done = slot["done"]
+            self._ops = list(s["ops"])
+            return Step(self.ram.copy(), slot["screen"].copy(), self.done, {})
         self.reset(s["level"], s["rom"], 0)
-        out = self._snapshot({})
         for op in s["ops"]:
             if op[0] == "p":
                 self.poke(op[1], op[2])
             else:
-                out = self._step_byte(op[1])
-        return out
+                self._step_byte(op[1], snapshot=False)      # no frame copies while replaying
+        return self._snapshot({})
 
     def close(self) -> None:
         if self._gym is not None:

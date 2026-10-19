@@ -8,7 +8,7 @@ class Pit:
     label = "Pit"
     note = "The hole itself. A pit running off the right edge of the screen has a lower-bound width (state['open'])."
     kind = "terrain"
-    default_loom_shape = "pit_tower"
+    default_loom_shape = "far_edge_tower"
 
     def find(self, ram, facts):
         g = facts["grid"]

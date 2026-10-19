@@ -8,7 +8,7 @@ class UsedBlock:
     label = "Used block"
     note = "Empty block after a hit; the bump animation is its own tile id (state['tile'])."
     kind = "terrain"
-    default_loom_shape = "box"
+    default_loom_shape = "solid_block"
 
     def find(self, ram, facts):
         t = facts["grid"]["tile"]

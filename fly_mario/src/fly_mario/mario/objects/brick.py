@@ -8,7 +8,7 @@ class Brick:
     label = "Brick"
     note = "One 16 x 16 box per brick tile above the ground; also the ceiling that stops a jump."
     kind = "terrain"
-    default_loom_shape = "box"
+    default_loom_shape = "solid_block"
 
     def find(self, ram, facts):
         t = facts["grid"]["tile"]

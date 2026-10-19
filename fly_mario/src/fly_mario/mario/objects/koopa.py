@@ -7,7 +7,7 @@ class Koopa:
     label = "Koopa"
     note = "16 x 24 walking; 16 x 16 in its shell (state['shell'])."
     kind = "enemy"
-    default_loom_shape = "box"
+    default_loom_shape = "own_box"
 
     def find(self, ram, facts):
         return enemies.find_enemies(ram, facts, self.name)

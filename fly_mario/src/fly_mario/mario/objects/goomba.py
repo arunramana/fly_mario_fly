@@ -7,7 +7,7 @@ class Goomba:
     label = "Goomba"
     note = "Walks toward Mario; a stomp kills it, a touch kills Mario."
     kind = "enemy"
-    default_loom_shape = "box"
+    default_loom_shape = "own_box"
 
     def find(self, ram, facts):
         return enemies.find_enemies(ram, facts, self.name)

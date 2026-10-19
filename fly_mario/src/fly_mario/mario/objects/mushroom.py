@@ -8,7 +8,7 @@ class Mushroom:
     label = "Mushroom"
     note = "The live power-up in object slot 5."
     kind = "pickup"
-    default_loom_shape = "box"
+    default_loom_shape = "own_box"
 
     def find(self, ram, facts):
         r, g, spec = facts["ram"], facts["grid"], facts["objects"]["mushroom"]

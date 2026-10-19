@@ -8,7 +8,7 @@ class QBlock:
     label = "? block"
     note = "Unused ? block; state['tile'] is the tile id (192 or 193)."
     kind = "terrain"
-    default_loom_shape = "box"
+    default_loom_shape = "solid_block"
 
     def find(self, ram, facts):
         t = facts["grid"]["tile"]
