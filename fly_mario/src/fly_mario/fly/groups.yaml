@@ -4,7 +4,7 @@
 #   side : L / R (the body's side: instance suffix, else root side, else soma side), omitted = both
 #   role : what the group does, in plain words
 #   colour : one colour per group, used by every renderer
-# Merged from the old copies in flyrun/brain.py, render/panels.py, make_clips.py and e1s_clips.py;
+# Merged from the old copies in the four old group tables (brain loader, panel renderer, two clip scripts);
 # the disagreements between them are listed in the S2 report.
 other_colour: "#6e7682"        # relays of the 636-neuron circuit that belong to no group below
 groups:

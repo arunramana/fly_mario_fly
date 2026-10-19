@@ -1,0 +1,29 @@
+# MaleCNS body ids added by the aversion mechanism (26: 13 ORN_DC4, 9 relays, 4 MDN), in row order.
+# Selected by the old simulation-based prune (L2c), not re-derived by rule: the k=3,N=5 set from ORN_DC4 to MDN.
+body_ids:
+  - 10184
+  - 10763
+  - 11288
+  - 11332
+  - 11449
+  - 12348
+  - 14784
+  - 15353
+  - 17430
+  - 95720
+  - 97057
+  - 117725
+  - 135249
+  - 137038
+  - 137465
+  - 148268
+  - 163129
+  - 167320
+  - 168415
+  - 174815
+  - 214896
+  - 230155
+  - 237101
+  - 520393
+  - 521624
+  - 1014647942
