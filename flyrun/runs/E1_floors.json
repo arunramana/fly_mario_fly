@@ -1,0 +1,23 @@
+{
+ "HUM_GAIN": {
+  "start": 14.5342,
+  "floor": 13.605652296978999,
+  "floor_over_start": 0.9361129127835724,
+  "how": "bisection",
+  "search_lo": 0.5
+ },
+ "SMELL_GAIN": {
+  "start": 213.9495,
+  "floor": 6.452273205326139,
+  "floor_over_start": 0.030157926077537638,
+  "how": "bisection",
+  "search_lo": 2.0
+ },
+ "HOME_R": {
+  "start": 0.5,
+  "floor": 0.10030859985260283,
+  "floor_over_start": 0.20061719970520567,
+  "how": "bisection",
+  "search_lo": 0.005
+ }
+}

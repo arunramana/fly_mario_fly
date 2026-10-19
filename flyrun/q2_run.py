@@ -47,7 +47,7 @@ def window336():
     return pd.DataFrame(rows).drop_duplicates("takeoff_x")
 
 
-def run_arm(wfile, hum, record=False, bodies="steer_jo_bodies.parquet"):
+def run_arm(wfile, hum, record=False, bodies="steer_jo_bodies.parquet", gain=None):
     os.environ["FLYRUN_WFILE"], os.environ["FLYRUN_BODIES"] = wfile, bodies
     from . import run as R
     from .brain import load_brain
@@ -84,7 +84,7 @@ def run_arm(wfile, hum, record=False, bodies="steer_jo_bodies.parquet"):
         return out
     env.step = step
     try:
-        s, df = R.run_episode(replace(KN, HUM_SENSE=hum), brain, noop_start=0, max_frames=MAX_FRAMES + 5, stuck_frames=10 ** 6, record=record, enemy_input=False)
+        s, df = R.run_episode(replace(KN, HUM_SENSE=hum, **({"HUM_GAIN": gain} if gain is not None else {})), brain, noop_start=0, max_frames=MAX_FRAMES + 5, stuck_frames=10 ** 6, record=record, enemy_input=False)
     finally:
         del env.step
         del os.environ["FLYRUN_WFILE"], os.environ["FLYRUN_BODIES"]
