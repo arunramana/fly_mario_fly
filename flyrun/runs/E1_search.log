@@ -1,0 +1,107 @@
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+start genome: {'fitness': 0.41183538964462724, 'rejected': False, 'mean_max_x': 1212.25, 'flags': 0, 'violations': 0}
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+C:\Users\arunr\AppData\Local\Programs\Python\Python312\Lib\site-packages\gym\envs\registration.py:505: UserWarning: [33mWARN: The environment SuperMarioBros-1-1-v0 is out of date. You should consider upgrading to version `v3` with the environment ID `SuperMarioBros-1-1-v3`.[0m
+  logger.warn(
+E1_gen00_best {'max_x': 3161, 'end_reason': 'flag', 'cause': 'flag', 'frames': 2257, 'score': 1600}
+gen  0 best 1.1338 mean 0.5754 rejected 0/12 flags(best) 11/12 best-ever 1.1338 stall 0 180s
+E1_gen01_best {'max_x': 3161, 'end_reason': 'flag', 'cause': 'flag', 'frames': 2224, 'score': 1600}
+gen  1 best 1.1600 mean 0.7598 rejected 0/12 flags(best) 12/12 best-ever 1.1600 stall 0 239s
+E1_gen02_best {'max_x': 3161, 'end_reason': 'flag', 'cause': 'flag', 'frames': 1947, 'score': 900}
+gen  2 best 1.0817 mean 0.6946 rejected 0/12 flags(best) 12/12 best-ever 1.1600 stall 1 194s
+E1_gen03_best {'max_x': 3161, 'end_reason': 'flag', 'cause': 'flag', 'frames': 2113, 'score': 2500}
+gen  3 best 1.1093 mean 0.6967 rejected 0/12 flags(best) 10/12 best-ever 1.1600 stall 2 202s
+E1_gen04_best {'max_x': 3161, 'end_reason': 'flag', 'cause': 'flag', 'frames': 2154, 'score': 1900}
+gen  4 best 1.1514 mean 0.9305 rejected 0/12 flags(best) 11/12 best-ever 1.1600 stall 3 156s
+E1_gen05_best {'max_x': 3161, 'end_reason': 'flag', 'cause': 'flag', 'frames': 2247, 'score': 1500}
+gen  5 best 1.1633 mean 0.6757 rejected 1/12 flags(best) 12/12 best-ever 1.1633 stall 0 155s
+E1_gen06_best {'max_x': 3161, 'end_reason': 'flag', 'cause': 'flag', 'frames': 2180, 'score': 2000}
+gen  6 best 1.2258 mean 0.8658 rejected 0/12 flags(best) 12/12 best-ever 1.2258 stall 0 154s
+E1_gen07_best {'max_x': 3161, 'end_reason': 'flag', 'cause': 'flag', 'frames': 2158, 'score': 2400}
+gen  7 best 1.1746 mean 0.9022 rejected 0/12 flags(best) 11/12 best-ever 1.2258 stall 1 171s
+E1_gen08_best {'max_x': 3161, 'end_reason': 'flag', 'cause': 'flag', 'frames': 2113, 'score': 2500}
+gen  8 best 1.1622 mean 0.9341 rejected 0/12 flags(best) 11/12 best-ever 1.2258 stall 2 238s
+E1_gen09_best {'max_x': 3161, 'end_reason': 'flag', 'cause': 'flag', 'frames': 2095, 'score': 2500}
+gen  9 best 1.1266 mean 0.8308 rejected 0/12 flags(best) 10/12 best-ever 1.2258 stall 3 170s
+E1_gen10_best {'max_x': 3161, 'end_reason': 'flag', 'cause': 'flag', 'frames': 2116, 'score': 2700}
+gen 10 best 1.2142 mean 0.8777 rejected 0/12 flags(best) 12/12 best-ever 1.2258 stall 4 161s
+E1_gen11_best {'max_x': 3161, 'end_reason': 'flag', 'cause': 'flag', 'frames': 2074, 'score': 2100}
+gen 11 best 1.1705 mean 1.0641 rejected 0/12 flags(best) 11/12 best-ever 1.2258 stall 5 250s
+E1_gen12_best {'max_x': 3161, 'end_reason': 'flag', 'cause': 'flag', 'frames': 2074, 'score': 2300}
+gen 12 best 1.2250 mean 0.9611 rejected 0/12 flags(best) 12/12 best-ever 1.2258 stall 6 183s
+E1_gen13_best {'max_x': 3161, 'end_reason': 'flag', 'cause': 'flag', 'frames': 2112, 'score': 2500}
+gen 13 best 1.1700 mean 1.0112 rejected 0/12 flags(best) 12/12 best-ever 1.2258 stall 7 177s
+E1_gen14_best {'max_x': 3161, 'end_reason': 'flag', 'cause': 'flag', 'frames': 2169, 'score': 2200}
+gen 14 best 1.1672 mean 1.0713 rejected 0/12 flags(best) 11/12 best-ever 1.2258 stall 8 178s
+stopping early: no improvement for 8 generations

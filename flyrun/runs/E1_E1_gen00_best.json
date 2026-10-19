@@ -1,0 +1,39 @@
+{
+ "summary": {
+  "max_x": 3161,
+  "score": 1600,
+  "flag_get": true,
+  "frames": 2257,
+  "end_reason": "flag",
+  "x_at_end": 3161,
+  "cause": "flag",
+  "blind_presses": 14,
+  "n_onsets": 39,
+  "a_frac": 0.3721754541426673,
+  "left_frames": 57,
+  "left_presses": 2,
+  "LEFT_PRESS_WARNING": "2 Left presses (57 frames)"
+ },
+ "toggles": {
+  "looming_enemy": true,
+  "looming_pipe": true,
+  "looming_pit": true,
+  "home": true,
+  "hum": true,
+  "smell": true
+ },
+ "arm": "C",
+ "episode": {
+  "noop_start": 0,
+  "seed": 0,
+  "sigma": 0.0
+ },
+ "knob_overrides": {
+  "HOME_R": 0.4453108329338971,
+  "HUM_GAIN": 17.231533486926498,
+  "SMELL_GAIN": 340.6920363693318,
+  "TTMN_THRESH": 0.11862250718293126,
+  "RELEASE_THRESH": 0.10571193689980858,
+  "STEER_THRESH": 0.01177035609184187
+ }
+}

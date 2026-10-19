@@ -44,7 +44,7 @@ def main():
             title_card(Log(base), ROOT / "clips" / "R3_title_card.png")
     elif a[0] == "video":
         from .video import video
-        video(ROOT / "runs" / (a[1] if a[1].startswith("L2_") else f"R1_{a[1]}"), a[2], )
+        video(ROOT / "runs" / (a[1] if a[1].startswith(("L2_", "E1_")) else f"R1_{a[1]}"), a[2], )
 
 
 if __name__ == "__main__":
