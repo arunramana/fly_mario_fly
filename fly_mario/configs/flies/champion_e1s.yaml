@@ -1,0 +1,25 @@
+# The E1s champion: the best genome of the old tool's stage-1 evolution WITH sour smell on 1-1
+# (flyrun/runs/E1s.md; HOLDOUT 10/10 flags). Values are the exact ones from flyrun/runs/E1s_progress.json.
+name: champion_e1s
+attachments:
+  looming: [goomba, koopa, piranha, pipe, step, pit]
+  hearing: [qblock]
+  sweet_smell: [mushroom]
+  sour_smell: [goomba, koopa, piranha]
+loom_shapes: {}            # every type keeps its own default shape
+whole_fly: [home, headroom]
+actions: [walk, steer, jump, back_up]
+knobs:
+  home.drive: 0.464958346232342
+  hearing.gain: 15.253281204133692
+  sweet_smell.gain: 401.53277913051306
+  sour_smell.gain: 4.909473620002347
+  jump.ttmn_thresh: 0.09921020175454692
+  jump.release_thresh: 0.08315196467272445
+  steer.thresh: 0.009466596862568196
+  back_up.mdn_thresh: 0.10905187247952916
+provenance:
+  source: flyrun/runs/E1s_progress.json best-ever genome (generation 8, training fitness 1.1707)
+  evolved: [home.drive, hearing.gain, sweet_smell.gain, sour_smell.gain, jump.ttmn_thresh, jump.release_thresh, steer.thresh, back_up.mdn_thresh]
+  fixed: everything else is a KnobSpec default (the old Knobs defaults)
+  eyes: right-eye detectors only (146 of the 311), the old behaviour
