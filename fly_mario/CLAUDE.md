@@ -16,6 +16,7 @@ runner = senses/ actions/ runner/ configs/ | render = render/ | api = api/ | evo
 
 ## Data
 MaleCNS data and brain caches live outside the repo at the path in env var `FLY_MARIO_DATA`. Never committed.
+Parity tests live in tests/parity/; only they may import old repo code (they are deleted at cleanup). Lanes commit on their own branch only; never push or merge; the lead merges.
 
 ## Report format (every step, max 15 lines)
 Files changed; the check and its result; one screenshot/clip if visual.
