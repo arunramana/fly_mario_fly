@@ -1,0 +1,8 @@
+# World 1-2 (underground). Emulator-tested in flyrun L2b (runs/L2b_tiles.json, L2b_enemies.json).
+tiles:
+  step: [82, 90, 92, 93, 94]       # underground bricks that stand on the floor as wall / step faces
+  brick: [82, 90, 92, 93, 94]
+  ceiling_extra: [82, 84, 90, 92, 93, 94, 192, 193, 35, 196, 28, 29, 30, 31, 32, 33]
+objects:
+  koopa:
+    types: [0x03]          # red Koopa Troopa: same silhouette as the green one
