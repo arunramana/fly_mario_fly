@@ -69,14 +69,14 @@ def is_cleared(mx, feet, t, box=MARIO_BOX):
     return feet <= t.top and over(mx, t.x, t.x + t.w, box)
 
 
-def hum_block(mx, feet, blocks, box=MARIO_BOX):
+def hum_block(mx, feet, blocks, box=MARIO_BOX, reach=HUM_REACH, eye_dy=0.0):
     """Q1: the nearest humming block -> (bx, bottom y, d) or None. blocks = [(x, row)] of UNUSED ? blocks. Reachable = the underside is <= 64 px above the ground
     under it (floor 176). Only blocks not fully behind his left edge count. d = distance from his eye (top-front corner of MARIO_BOX) to the block's bottom-centre."""
-    ex, ey = mx + box[0], feet - box[1]
+    ex, ey = mx + box[0], feet - box[1] + eye_dy       # E2: eye_dy lowers the eye point from the top-front corner (0 = the corner, the old behaviour)
     best = None
     for bx, row in blocks:
         bottom = (row + 1) * level.TILE
-        if level.ROW_GROUND * level.TILE - bottom > HUM_REACH or bx + level.TILE <= mx:
+        if level.ROW_GROUND * level.TILE - bottom > reach or bx + level.TILE <= mx:
             continue
         d = float(np.hypot(ex - (bx + level.TILE / 2), ey - bottom))
         if best is None or d < best[2]:
@@ -159,7 +159,7 @@ def rim_top(walls, x):
     return level.ROW_GROUND * level.TILE
 
 
-def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pit_sense=True, ground=None, released=frozenset(), cleared=frozenset(), box=MARIO_BOX):
+def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pit_sense=True, ground=None, released=frozenset(), cleared=frozenset(), box=MARIO_BOX, pit_pos=1.0, pit_h=1.0):
     """-> the chosen Threat (with .d and .theta) or None. walls: [(x, H)] from level.scan_visible, pits: [(x, w)].
     ground = the y of the ground Mario took off from (his current ground while grounded); default = feet (S1 behaviour on the ground).
     released = idents of pit towers already released in this jump: their tower stays 0 until the landing (S3c, no re-appearance).
@@ -188,8 +188,9 @@ def choose(mx, feet, enemies, walls, pits, enemy_input=True, pipe_sense=True, pi
             # near edge / the far edge: floor, stair step, ...), its top = that - min(W, MAX_JUMP_HEIGHT). Never anchored to the floor.
             floor = level.ROW_GROUND * level.TILE
             near_y, far_y = rim_top(walls, px - level.TILE), rim_top(walls, px + pw)
-            top = min(near_y, far_y) - min(pw, MAX_JUMP_HEIGHT)
-            tx = px + pw
+            tower_h = min(pw, MAX_JUMP_HEIGHT) if pit_h == 1.0 else min(pw, MAX_JUMP_HEIGHT) * pit_h        # E2: the tower height as a multiple of W (1 = the old rule)
+            top = min(near_y, far_y) - tower_h
+            tx = px + pw if pit_pos == 1.0 else px + int(round(pit_pos * pw))                             # E2: 0 = the near edge ... 1 = the far edge (the old rule)
             h = 0 if (("pit", px) in released or (feet <= top and over(mx, tx, tx + level.TILE, box))) else ground - top
             t = Threat("pit", ("pit", px), tx, top, level.TILE, max(h, 0))
             t.base = (px, floor, pw, level.TILE)
@@ -231,7 +232,7 @@ class SensesV2:
             self.cleared.clear()
         else:
             self.cleared |= {t.ident for t in enemy_boxes(enemies, walls) if is_cleared(mx, feet, t, box)}
-        t = choose(mx, feet, enemies, walls, pits, enemy_input, self.k.PIPE_SENSE, self.k.PIT_SENSE, ground=self.ground, released=frozenset(self.released), cleared=frozenset(self.cleared), box=box)
+        t = choose(mx, feet, enemies, walls, pits, enemy_input, self.k.PIPE_SENSE, self.k.PIT_SENSE, ground=self.ground, released=frozenset(self.released), cleared=frozenset(self.cleared), box=box, pit_pos=self.k.PIT_TOWER_POS, pit_h=self.k.PIT_TOWER_H)
         if t is not None and t.kind == "pit" and t.h == 0 and int(ram[0x001D]) != 0:
             self.released.add(t.ident)
         hf, rise, need, th_raw = 1.0, None, None, None
@@ -254,7 +255,7 @@ class SensesV2:
             lm.extra.update(sour_box=None if se is None else (se.x, se.top, se.w, se.h), sour_theta=0.0 if se is None else se.theta, sour_level=lvl)
         if self.k.HUM_SENSE:
             assert "JO" in self.m, "HUM_SENSE needs the JO brain (W_steer_jo.npy)"
-            hb = hum_block(mx, feet, level.scan_blocks(ram), box)
+            hb = hum_block(mx, feet, level.scan_blocks(ram), box, reach=self.k.HUM_REACH_PX, eye_dy=self.k.EYE_DY)
             level_in = self.k.HUM_GAIN * theta_of(hb[2], level.TILE) if hb else 0.0
             I[self.m["JO"]] = level_in
             lm.extra.update(hum_block=None if hb is None else (hb[0], hb[1], hb[2]), hum_level=level_in, jo_input=level_in)
@@ -265,7 +266,7 @@ class SensesV2:
             sbox = None
             if mush is not None:
                 mxm, ytop = mush
-                d = float(np.hypot(mx + box[0] - (mxm + 8), (feet - box[1]) - (ytop + 8)))
+                d = float(np.hypot(mx + box[0] - (mxm + 8), (feet - box[1] + self.k.EYE_DY) - (ytop + 8)))
                 lvl = self.k.SMELL_GAIN * theta_of(d, 16)
                 sig = self.k.SENSOR_NOISE if self.rng is not None else 0.0
                 if sig > 0:

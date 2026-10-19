@@ -1,0 +1,17 @@
+# E2: evolution Stage 2 - the choices. The drives and perception are those of configs/drives.yaml (5 drives + headroom on, the 907 sour brain); the genome is the E1s genes PLUS the genes below.
+# Start = the E1s best (runs/E1s_progress.json) for the E1s genes and the current values for the new ones. Facts (RAM measurements, sizes, the 68 px apex, SUBSTEPS) never evolve.
+base: drives.yaml
+start_from: E1s_best
+bounds_e1s_genes:                     # the E1s genes keep their rules and floors (runs/E1s_floors.json): gains log 1/4x..4x of the start raised to the floor, thresholds +-50%
+  gain_log_factor: [0.25, 4.0]
+  threshold_fraction: 0.5
+extra_genes:
+  - {name: G,             kind: frac,   fraction: 0.5, group: brain dynamics}
+  - {name: ALPHA,         kind: frac,   fraction: 0.5, group: brain dynamics}
+  - {name: CLIP,          kind: frac,   fraction: 0.5, group: brain dynamics}
+  - {name: DNP09_THRESH,  kind: frac,   fraction: 0.5, group: motor}
+  - {name: PIT_TOWER_POS, kind: range,  lo: 0.0,  hi: 1.0,  start: 1.0,  group: box geometry (orange)}
+  - {name: PIT_TOWER_H,   kind: range,  lo: 0.5,  hi: 1.5,  start: 1.0,  group: box geometry (orange)}
+  - {name: HUM_REACH_PX,  kind: range,  lo: 48.0, hi: 80.0, start: 64.0, group: box geometry (orange)}
+  - {name: EYE_DY,        kind: range,  lo: 0.0,  hi: 16.0, start: 0.0,  group: box geometry (orange)}
+fixed: [SUBSTEPS]

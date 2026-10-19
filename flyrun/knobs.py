@@ -40,6 +40,10 @@ class Knobs:
     SOUR_GAIN: float = 0.0       # INVENTED (fixed), Part AV1: sour level = SOUR_GAIN x theta_enemy (rad) into each DC4 ORN. FROZEN at step 2 of AV1 (runs/AV1.md)
     MDN_THRESH: float = 0.10     # INVENTED (fixed), Part AV1: mean MDN activity above which the fly backs up (press Left, release Right). = the TTMn threshold of the start genome, about half of GF at the looming trigger (runs/L2c.md)
     HEADROOM_LOOM: bool = False  # INVENTED (fixed), Part AV1: an enemy's loom input is multiplied by min(1, rise_available / rise_needed) (level.headroom over the span from Mario to the enemy). Off = every earlier result
+    PIT_TOWER_POS: float = 1.0   # INVENTED (evolved, E2): where the pit tower stands along the pit: 0 = the near edge ... 1 = the far edge (S3c / B9 rule = 1)
+    PIT_TOWER_H: float = 1.0     # INVENTED (evolved, E2): the pit tower height as a multiple of min(W, MAX_JUMP_HEIGHT) (rule = 1)
+    HUM_REACH_PX: float = 64.0   # INVENTED (evolved, E2): a ? block hums only if its underside is <= this many px above the ground under it (Q1 rule = 64; the module constant HUM_REACH is the default)
+    EYE_DY: float = 0.0          # INVENTED (evolved, E2): px the eye point (hum, smell distance) is LOWERED from the top-front corner of Mario's box (0 = the corner, the S3 rule)
     SENSES_VERSION: str = "v1"   # INVENTED (fixed): v1 = senses of Parts 1-7 (unchanged); v2 = Part S1 (flyrun/senses_v2.py)
 
     # --- motor (nb 09/14/19/20) ---
@@ -119,6 +123,10 @@ INVENTED = {
     "HUM_GAIN": ("fixed", "Q1: hum loudness = HUM_GAIN x the block's angular size (rad); 14.5342, chosen once from the hit window and frozen (runs/Q1.md)"),
     "SMELL_SENSE": ("fixed", "M2: the smell cue (invented): the live mushroom drives the attractive ORNs (DM1, VA2, DM4) of the antenna on its side; off by default"),
     "SMELL_GAIN": ("fixed", "M2: smell level = SMELL_GAIN x the mushroom's angular size (rad); chosen once so the steering crosses -0.01 at 64 px, then frozen (runs/M2.md)"),
+    "PIT_TOWER_POS": ("evolved", "E2: pit tower position along the pit, 0 = near edge .. 1 = far edge (rule = 1)"),
+    "PIT_TOWER_H": ("evolved", "E2: pit tower height as a multiple of min(W, 68) (rule = 1)"),
+    "HUM_REACH_PX": ("evolved", "E2: hum reach in px (rule = 64)"),
+    "EYE_DY": ("evolved", "E2: the eye point lowered from the top-front corner of the box, px (rule = 0)"),
     "HUM_REACH": ("fixed", "Q1: a ? block hums only if its underside is <= 64 px above the ground under it"),
     "QBLOCK_TILES (level.py)": ("fixed", "tile ids 192 / 193 = unused ? block (hand-identified, O0)"),
     "RELEASE_THRESH": ("fixed", "v2: TTMn level below which A is released (default = TTMN_THRESH)"),

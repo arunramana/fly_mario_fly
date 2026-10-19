@@ -8,7 +8,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent
 
 
-def log_run(values, name, wfile=None, ep=None, takeover=None, prefix="E1s", brain=None):
+def log_run(values, name, wfile=None, ep=None, takeover=None, prefix="E1s", brain=None, knobs_fn=None):
     from . import c1_run as C
     from . import e1s_genome as G
     from . import env as E
@@ -27,7 +27,7 @@ def log_run(values, name, wfile=None, ep=None, takeover=None, prefix="E1s", brai
     C.WFILE, C.BODIES = wfile, G.BODIES
     C._BRAIN.clear()
     C._BRAIN["b"] = brain
-    k, enemy_input = G.knobs_for(values)
+    k, enemy_input = (knobs_fn or G.knobs_for)(values)
     import dataclasses
     k = dataclasses.replace(k, SENSOR_NOISE=ep["sigma"])
     from . import av1_run as R
