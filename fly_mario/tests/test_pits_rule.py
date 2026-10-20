@@ -150,11 +150,11 @@ def _tower(box, rims):
     return TOWER.shape(ObjectInstance("pit", 1, box, "ahead", {"loom_rims": rims}), FACTS, {})
 
 
-def test_tower_stands_on_the_far_rim_top_with_the_rise_added():
+def test_tower_stands_on_the_far_rim_top_and_is_as_tall_as_the_gap_or_a_jump():
     flat = _tower(Box(160, 176, 32, 32), (176, 176))
     assert (flat.x, flat.h, flat.y + flat.h) == (192, 32, 176)
-    up = _tower(Box(160, 176, 32, 32), (176, 144))                      # far rim 32 px higher: 32 (gap) + 32 (rise), on 144
-    assert (up.h, up.y + up.h) == (64, 144)
+    up = _tower(Box(160, 176, 32, 32), (176, 144))                      # far rim 32 px higher: still 32 tall, on 144
+    assert (up.h, up.y + up.h) == (32, 144)
     down = _tower(Box(160, 176, 32, 32), (144, 176))                    # far rim lower: no rise, base on the far rim (176)
     assert (down.h, down.y + down.h) == (32, 176)
     wide = _tower(Box(160, 176, 160, 32), (176, 176))

@@ -175,7 +175,7 @@ def test_far_edge_tower_stands_on_the_far_edge_on_the_far_rim():
     assert wide.h == FACTS["mario"]["jump_apex"]                                 # capped at a full jump
     stair = ObjectInstance("pit", 1, Box(160, 176, 32, 32), "ahead", {"loom_rims": (176, 144)})
     tw = SHAPES["far_edge_tower"].shape(stair, FACTS, {})
-    assert (tw.h, tw.y + tw.h) == (32 + 32, 144)                                 # on the far rim; the 32 px rise is added to its height
+    assert (tw.h, tw.y + tw.h) == (32, 144)                                      # on the far rim; no rise added to the height
 
 
 @pytest.mark.parametrize("key", sorted(ALL_KNOBS))
