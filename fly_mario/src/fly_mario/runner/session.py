@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
-from collections import defaultdict
+from collections import defaultdict, deque
 from dataclasses import dataclass, field, replace
 from typing import Optional
 
@@ -27,6 +27,7 @@ from fly_mario.mario import ram as R
 from fly_mario.mario import walker
 from fly_mario.mario.env import MarioEnv, button_byte
 from fly_mario.runner import config as C
+from fly_mario.runner import moments as M
 from fly_mario.senses.kit.memory import SenseMemory
 
 _BRAINS: dict = {}
@@ -43,6 +44,13 @@ def get_brain(spec):
 class Options:
     legacy: bool = False
     record_ram: bool = False
+    moment_every_s: float = 2.0          # auto-saved moment every N seconds of play (0 = off); needs Run(moments=True)
+    moment_before_death_s: float = 3.0   # the "before death" moment is the newest one at least this far before the death
+    keep_auto: int = 20                  # auto moments kept per run (the oldest rotate away; manual and death ones stay)
+
+
+FPS = 60                                 # NES frames per second
+RING_EVERY = 30                          # frames between the in-memory snapshots the "before death" moment is picked from
 
 
 @dataclass
@@ -59,6 +67,7 @@ class FrameRecord:
     mods: dict                  # modifiers raised by the senses this frame
     screen: np.ndarray          # the picture AFTER the frame's action
     done: bool = False
+    moments: list = field(default_factory=list)    # MomentInfo saved during this frame (auto, or the one before a death)
     # What the senses looked at this frame, for the renderer and the API (read from the RAM BEFORE the action).
     found: dict = field(default_factory=dict)      # object type -> [ObjectInstance]: type, id, box (level px), side, state
     scroll_x: int = 0           # level x of the screen's left edge in that RAM; subtract it from level-pixel overlays
@@ -95,10 +104,27 @@ def legacy_buttons(buttons: frozenset) -> frozenset:
 
 
 class Run:
-    def __init__(self, fly: FlyConfig, scene: Scene, options: Options = Options(), env: Optional[MarioEnv] = None,
-                 run_id: str = ""):
+    def __init__(self, fly: FlyConfig, scene: Optional[Scene] = None, options: Options = Options(),
+                 env: Optional[MarioEnv] = None, run_id: str = "", from_moment: Optional[str] = None,
+                 moments: bool = False):
+        """`from_moment`: resume from a saved moment (id) with this fly, which may differ from the moment's own.
+        The scene defaults to the moment's. `moments`: write auto / before-death moments to the store as it plays."""
         C.validate(fly, strict_range=False)
+        self._resume = M.get_moment(from_moment) if from_moment else None
+        if scene is None:
+            if self._resume is None:
+                raise ValueError("a Run needs a scene (or a moment to resume from)")
+            scene = self._resume.scene
+        if self._resume is not None and (scene.level_id, scene.rom) != (self._resume.scene.level_id, self._resume.scene.rom):
+            raise ValueError(f"moment {from_moment} is on {self._resume.scene.level_id}/{self._resume.scene.rom}, "
+                             f"not {scene.level_id}/{scene.rom}")
+        if moments and not run_id:
+            raise ValueError("moments=True needs a run_id: the moments live in the run's folder")
         self.fly, self.scene, self.options, self.run_id = fly, scene, options, run_id
+        self.parent = from_moment
+        self.store_moments = moments
+        self.seen: set = set()                   # object types found at any point of the run
+        self._ring: deque = deque(maxlen=int(options.moment_before_death_s * FPS / RING_EVERY) + 3)
         self.env = env or MarioEnv()
         self.knobs = C.resolve_knobs(fly)
         self.senses = C.active_senses(fly)
@@ -120,6 +146,10 @@ class Run:
     # ---- start ----------------------------------------------------------------------------------------
     def start(self) -> None:
         sc, env = self.scene, self.env
+        if self._resume is not None:
+            self.restore(self._resume)
+            self._remember()
+            return
         env.reset(sc.level_id, sc.rom, 0)
         for mod, p in self.scene_mods:
             mod.on_reset(env, p)
@@ -141,6 +171,7 @@ class Run:
         self.counts = defaultdict(int)
         self._prev_a = self._prev_left = False
         self.started = True
+        self._remember()
 
     def _send(self, buttons):
         self.replay.append(button_byte(buttons))
@@ -187,6 +218,7 @@ class Run:
         if self.options.legacy:
             buttons = legacy_buttons(buttons)
 
+        self.seen |= {n for n, objs in found.items() if objs}
         if self.options.record_ram:
             self.rams.append(np.array(ram, copy=True))
         self._tally(buttons, found, mario)
@@ -198,6 +230,7 @@ class Run:
         self._log(rec, st)
         self._advance(x, st, found, mario)
         rec.done = self.finished
+        rec.moments = self._auto_moments()
         return rec
 
     def _annotated(self, o):
@@ -269,25 +302,71 @@ class Run:
     def result(self) -> RunResult:
         digest = hashlib.sha256(f"{self.scene.level_id}/{self.scene.rom}/".encode() + bytes(self.replay)).hexdigest()   # the trajectory, not the settings
         return RunResult(
-            id=self.run_id, fly=self.fly.name, scene=self.scene, parent_moment=None, outcome=self.outcome,
+            id=self.run_id, fly=self.fly.name, scene=self.scene, parent_moment=self.parent, outcome=self.outcome,
             death=self.death, max_x=float(self.max_x), score=float(getattr(self, "score", 0)),
             blocks=len(self.hit_blocks), mushroom=self.big_seen, counts={"frames": self.frame, **self.counts},
             moments=list(self.moments), hash=digest)
 
     # ---- saved moments --------------------------------------------------------------------------------
-    def snapshot(self, name: str = "", auto: bool = False) -> SavedMoment:
-        """Everything needed to resume this run exactly: emulator, brain, sense and action memory, noise stream."""
+    def _capture(self, name: str = "", auto: bool = False) -> tuple:
+        """(SavedMoment, object types on screen): everything needed to resume this run exactly, as of now."""
         blob = copy.deepcopy({
             "memory": {k: dict(m) for k, m in self.memory.items()}, "astate": self.astate, "frame": self.frame,
             "max_x": self.max_x, "x0": self.x0, "best_frame": self.best_frame, "last_progress": self.last_progress,
             "moved": self.moved, "hit_blocks": self.hit_blocks, "big_seen": self.big_seen, "counts": dict(self.counts),
-            "prev": (self._prev_a, self._prev_left)})
+            "prev": (self._prev_a, self._prev_left), "replay": list(self.replay), "score": getattr(self, "score", 0),
+            "seen": set(self.seen)})
         m = SavedMoment(id=f"{self.run_id}@{self.frame}", run_id=self.run_id, name=name or f"frame {self.frame}",
                         frame=self.frame, x=float(self.max_x), auto=auto, emulator_state=self.env.save_state(),
                         brain_state=self.brain.get_state(self.h), sense_memory=blob,
                         rng_state=copy.deepcopy(self.rng.bit_generator.state), scene=self.scene, fly=self.fly)
+        on_screen = tuple(sorted(n for n, objs in getattr(self, "_last_found", {}).items() if objs))
+        return m, on_screen
+
+    def snapshot(self, name: str = "", auto: bool = False) -> SavedMoment:
+        """A moment of this run, in memory (moments.save_moment() puts one on disk)."""
+        m, _ = self._capture(name, auto)
         self.moments.append(m.id)
         return m
+
+    # ---- the moment store -----------------------------------------------------------------------------
+    def _remember(self) -> None:
+        """Take the first ring snapshot (the start of this run, or the frame it was resumed at)."""
+        if self.store_moments:
+            self._ring.append(self._capture())
+
+    def capture_at(self, frame: Optional[int] = None) -> tuple:
+        """(SavedMoment, on_screen) at `frame` (None = now): now, or one of the recent in-memory snapshots."""
+        if frame is None or frame == self.frame:
+            return self._capture()
+        for cap in self._ring:
+            if cap[0].frame == frame:
+                return cap
+        raise ValueError(f"frame {frame} is not available: the run is at frame {self.frame} and keeps a snapshot every "
+                         f"{RING_EVERY} frames for only the last {self._ring.maxlen}")
+
+    def _auto_moments(self) -> list:
+        """After a frame: the auto moment if one is due, and the one before a death. Returns the MomentInfo saved."""
+        if not self.store_moments:
+            return []
+        o, f, out = self.options, self.frame, []
+        every = int(round(o.moment_every_s * FPS))
+        if not self.finished and f > 0 and (f % RING_EVERY == 0 or (every and f % every == 0)):
+            cap = self._capture()
+            self._ring.append(cap)
+            if every and f % every == 0:
+                info = M.put_moment(cap[0], "auto", f"auto, frame {f}", cap[1])
+                self.moments.append(info.id)
+                M.rotate_auto(self.run_id, o.keep_auto)
+                out.append(info)
+        if self.finished and self.outcome == "died" and self._ring:
+            target = f - int(round(o.moment_before_death_s * FPS))
+            earlier = [c for c in self._ring if c[0].frame <= target]
+            cap = earlier[-1] if earlier else self._ring[0]
+            info = M.put_moment(cap[0], "death", f"{o.moment_before_death_s:g} s before death", cap[1])
+            self.moments.append(info.id)
+            out.append(info)
+        return out
 
     def restore(self, m: SavedMoment) -> None:
         """Resume from a moment of this fly and scene (rows recorded so far are kept)."""
@@ -302,4 +381,7 @@ class Run:
         self.best_frame, self.last_progress, self.moved = b["best_frame"], b["last_progress"], b["moved"]
         self.hit_blocks, self.big_seen, self.counts = b["hit_blocks"], b["big_seen"], defaultdict(int, b["counts"])
         self._prev_a, self._prev_left = b["prev"]
+        self.replay = list(b.get("replay", self.replay))
+        self.score = b.get("score", 0)
+        self.seen = set(b.get("seen", ()))
         self.started, self.finished = True, False
