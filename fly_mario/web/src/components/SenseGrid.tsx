@@ -1,11 +1,11 @@
 import type { CSSProperties } from 'react'
-import type { FlyConfig, ObjectInfo, SenseInfo } from '../api/types'
+import type { Fly, ObjectInfo, SenseInfo } from '../api/models'
 
 interface Props {
   objects: ObjectInfo[] // rows
   senses: SenseInfo[] // all registry senses; per_object ones become columns
-  fly: FlyConfig
-  onChange: (fly: FlyConfig) => void
+  fly: Fly
+  onChange: (fly: Fly) => void
 }
 
 /** Rows = objects, columns = per-object senses; one toggle per cell, coloured by sense. */

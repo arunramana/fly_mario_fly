@@ -1,15 +1,14 @@
-// Fake data behind the Api interface. Every sense/object/action NAME lives only here;
-// components render whatever the registry says.
+// Offline stand-in for the API (VITE_MOCK=1), same shapes as the generated schema. Every sense/object/action
+// NAME lives only here; components render whatever the registry says.
 import type { Api } from './client'
 import type {
-  FlyConfig, FrameEvent, KnobSpec, LevelInfo, MomentDetail, MomentSummary, ObjectInstance,
-  Registry, RunEvent, RunRequest, RunResult, RunStream, Scene,
-} from './types'
+  Fly, FrameEvent, KnobUI, LevelInfo, MomentSummary, Registry, RunEvent, RunRequest, RunResult, RunStream,
+  Scene, Try,
+} from './models'
 
 const knob = (key: string, label: string, lo_label: string, hi_label: string,
-  origin: KnobSpec['origin'] = 'invented', def = 0.5): KnobSpec => ({
-  key, label, lo_label, hi_label, default: def, lo: 0, hi: 1, scale: 'linear',
-  origin, evolvable: true, floor: null,
+  origin: KnobUI['origin'] = 'invented'): KnobUI => ({
+  key, label, lo_label, hi_label, position: 0.5, scale: 'linear', origin, evolvable: true, floor_position: null,
 })
 
 const registry: Registry = {
@@ -18,63 +17,41 @@ const registry: Registry = {
     { name: 'koopa', label: 'Koopa', note: 'Shelled walker.', kind: 'enemy', default_loom_shape: 'body' },
     { name: 'pipe', label: 'Pipe', note: 'Solid green tube.', kind: 'obstacle', default_loom_shape: 'face' },
     { name: 'pit', label: 'Pit', note: 'A gap in the ground.', kind: 'terrain', default_loom_shape: 'edge' },
-    { name: 'coin', label: 'Coin', note: 'Shiny pickup.', kind: 'pickup', default_loom_shape: 'body' },
   ],
   senses: [
     { name: 'looming', label: 'Looming', effect: 'Things that grow fast feel dangerous.', scope: 'per_object',
       colour: '#F83800', line: 'solid', feeds: ['LC4', 'LPLC2'],
-      knobs: [knob('looming.reach', 'Reach', 'Near only', 'Far away', 'fly'), knob('looming.gain', 'Gain', 'Calm', 'Jumpy', 'invented')] },
-    { name: 'sour', label: 'Sour', effect: 'Smells bad: push away.', scope: 'per_object',
-      colour: '#F8D800', line: 'dotted', feeds: ['ORN-sour'],
-      knobs: [knob('sour.range', 'Range', 'Close', 'Wide', 'fly')] },
-    { name: 'sweet', label: 'Sweet', effect: 'Smells good: approach.', scope: 'per_object',
-      colour: '#80D010', line: 'dotted', feeds: ['ORN-sweet'],
-      knobs: [knob('sweet.strength', 'Strength', 'Faint', 'Strong', 'invented')] },
-    { name: 'hum', label: 'Hum', effect: 'Background wing-beat rhythm.', scope: 'whole_fly',
-      colour: '#80D010', line: 'dashed', feeds: ['JO'],
-      knobs: [knob('hum.level', 'Hum', 'Quiet', 'Loud', 'invented')] },
-    { name: 'home', label: 'Home', effect: 'A pull toward the flag.', scope: 'whole_fly',
-      colour: '#FFFFFF', line: 'solid', feeds: ['CX'],
-      knobs: [knob('home.pull', 'Pull', 'Wander', 'Beeline', 'fly')] },
+      knobs: [knob('loom.eyes', 'Eyes used', 'right eye only', 'both eyes', 'fly')] },
+    { name: 'sour_smell', label: 'Sour smell', effect: 'An enemy smells of acid.', scope: 'per_object',
+      colour: '#F8D800', line: 'dotted', feeds: ['ORN'],
+      knobs: [knob('sour_smell.gain', 'Sourness', 'faint', 'strong', 'invented')] },
+    { name: 'home', label: 'Home', effect: 'Keep going right.', scope: 'whole_fly',
+      colour: '#FFFFFF', line: 'solid', feeds: ['LC10a'],
+      knobs: [knob('home.drive', 'Pull to the right', 'weak', 'strong', 'fly')] },
   ],
+  shapes: [],
   actions: [
-    { name: 'jump', label: 'Jump', button: 'A', source_groups: ['GF', 'TTMn'], priority: 2, status: 'ready',
-      knobs: [knob('jump.commit', 'Commit', 'Hesitant', 'Decisive', 'fly')] },
-    { name: 'run', label: 'Run', button: 'B', source_groups: ['DNa'], priority: 1, status: 'soon', knobs: [] },
+    { name: 'jump', label: 'Jump', button: 'A', source_groups: ['GF'], priority: 2, status: 'ready', knobs: [] },
+    { name: 'walk', label: 'Walk', button: 'right', source_groups: ['DNa'], priority: 1, status: 'soon', knobs: [] },
   ],
   scene_modifiers: [
-    { name: 'remove_enemies', label: 'No enemies', description: 'Remove every enemy.', per_object: false },
-    { name: 'keep_only', label: '{object} only', description: 'Keep only one kind of object.', per_object: true },
+    { name: 'whole_level', label: 'Whole level', description: '', params: [], per_object: false },
+    { name: 'no_enemies', label: 'No enemies', description: '', params: [], per_object: false },
+    { name: 'keep_only', label: 'Keep only', description: '', per_object: true,
+      params: [{ key: 'types', label: 'Object types to keep', type: 'object_types', default: [] }] },
   ],
-  presets: ['blank', 'jumpy-goomba', 'cautious'],
+  test_scenes: [],
+  presets: ['blank', 'jumpy'],
 }
 
-const kinds = ['overworld', 'underground', 'water', 'castle']
 const levels: LevelInfo[] = [
-  ...Array.from({ length: 32 }, (_, i) => {
-    const w = Math.floor(i / 4) + 1, s = (i % 4) + 1
-    return {
-      id: `${w}-${s}`, label: `${w}-${s}`, kind: kinds[(s + w) % 4],
-      status: (i === 0 ? 'cleared' : i < 12 ? 'open' : 'locked') as LevelInfo['status'],
-      width: 3168,
-      objects: i % 3 === 0 ? ['goomba', 'pipe', 'pit', 'coin'] : ['goomba', 'koopa', 'pipe', 'pit'],
-    }
-  }),
-  ...[1, 2, 3].map((n): LevelInfo => ({
-    id: `T-${n}`, label: `T-${n}`, kind: 'test', status: 'open', width: 1024, objects: ['goomba', 'pipe'],
-  })),
+  { id: '1-1', label: '1-1', kind: 'overground', status: 'cleared', status_text: 'won 1/1', scanned: true, partial: false, width: 3168, objects: ['goomba', 'pipe', 'pit'] },
+  { id: '1-2', label: '1-2', kind: 'underground', status: 'open', status_text: 'not tried', scanned: false, partial: false, width: null, objects: null },
 ]
 
-const flies: Record<string, FlyConfig> = {
+const flies: Record<string, Fly> = {
   blank: { name: 'blank', attachments: {}, loom_shapes: {}, whole_fly: [], actions: ['jump'], knobs: {}, provenance: {} },
-  'jumpy-goomba': {
-    name: 'jumpy-goomba', attachments: { looming: ['goomba', 'koopa'] }, loom_shapes: {},
-    whole_fly: ['home'], actions: ['jump'], knobs: { 'looming.gain': 0.7 }, provenance: {},
-  },
-  cautious: {
-    name: 'cautious', attachments: { looming: ['goomba', 'pipe'], sour: ['pit'] }, loom_shapes: {},
-    whole_fly: ['home', 'hum'], actions: ['jump'], knobs: { 'looming.gain': 0.35 }, provenance: {},
-  },
+  jumpy: { name: 'jumpy', attachments: { looming: ['goomba'], sour_smell: ['goomba'] }, loom_shapes: {}, whole_fly: ['home'], actions: ['jump'], knobs: {}, provenance: {} },
 }
 
 const baseScene: Scene = {
@@ -82,90 +59,88 @@ const baseScene: Scene = {
   max_frames: 6000, stuck_frames: 300,
 }
 
-const moments: MomentSummary[] = [{
-  id: 'm-demo', run_id: 'r-demo', name: 'Before the first Goomba', frame: 240, x: 420,
-  auto: false, scene: baseScene, fly: flies['jumpy-goomba'],
-}]
-const runs = new Map<string, { req: RunRequest; fromMoment: string | null }>()
-const tries: RunResult[] = []
+const moments: MomentSummary[] = []
+const runs = new Map<string, { req: RunRequest }>()
+const tries: (Try & { moment: string })[] = []
 let counter = 1
 
-const TOTAL = 480
 const DEATH_FRAME = 420
-const delay = <T,>(v: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(v), ms))
+const delay = <T,>(v: T, ms = 100) => new Promise<T>((r) => setTimeout(() => r(v), ms))
 
-function objectsAt(frame: number): ObjectInstance[] {
-  const gx = 260 - frame * 0.6
-  return [
-    { type: 'goomba', id: 1, box: { x: gx, y: 192, w: 16, h: 16 }, side: 'ahead', state: {} },
-    { type: 'pipe', id: 2, box: { x: 330 - frame * 0.1, y: 160, w: 32, h: 48 }, side: 'ahead', state: {} },
-  ]
+function picture(frame: number): string {
+  const c = document.createElement('canvas')
+  c.width = 256; c.height = 240
+  const g = c.getContext('2d')!
+  g.fillStyle = '#5c94fc'; g.fillRect(0, 0, 256, 240)
+  g.fillStyle = '#b84c00'; g.fillRect(0, 208, 256, 32)
+  g.fillStyle = '#a0522d'; g.fillRect(260 - frame * 0.6, 192, 16, 16)
+  g.fillStyle = '#f83800'; g.fillRect(60, 192, 14, 16)
+  return c.toDataURL('image/png').split(',')[1]
 }
 
 function frameEvent(frame: number): FrameEvent {
-  const objs = objectsAt(frame)
-  const g = objs[0].box
-  const mario = { x: 60, y: frame > 300 && frame < 360 ? 150 : 192, w: 14, h: 16 }
-  const near = Math.max(0, 1 - Math.abs(g.x - mario.x) / 200)
+  const gx = 260 - frame * 0.6
+  const near = Math.max(0, 1 - Math.abs(gx - 60) / 200)
   return {
-    type: 'frame', frame, total: TOTAL, mario, objects: objs,
+    type: 'frame', frame, total: 6000, frame_png: picture(frame), x: frame, buttons: [],
+    mario: { x: 60, y: 160, w: 14, h: 16 }, scroll_x: 0, scroll_x_after: 0,
+    objects: [{ type: 'goomba', id: 1, box: { x: gx, y: 160, w: 16, h: 16 }, side: 'ahead' }],
     overlay: [
-      { kind: 'box', geometry: [g.x, g.y, g.w, g.h], colour: '#F83800', line: 'solid' },
-      { kind: 'line', geometry: [mario.x + 7, mario.y + 8, objs[1].box.x, objs[1].box.y + 10], colour: '#F8D800', line: 'dotted' },
-      { kind: 'dot', geometry: [mario.x + 7, mario.y - 6, 3], colour: '#FFFFFF', line: 'solid' },
+      { kind: 'box', geometry: [gx, 160, 16, 16], colour: '#F83800', line: 'solid', anchor: 'level' },
+      { kind: 'dot', geometry: [0, 152, 2.75], colour: '#FFFFFF', line: 'solid', anchor: 'screen_right' },
     ],
-    rates: Object.fromEntries(
-      ['LC4', 'LPLC2', 'GF', 'TTMn', 'ORN-sour', 'JO', 'CX', 'DNa'].map((n, i) =>
-        [n, Math.min(1, Math.max(0, near * (1 - i * 0.08) + 0.08 * Math.sin(frame / (6 + i))))]),
-    ),
+    rates: { LC4: near, LPLC2: near * 0.8, GF: near * near, TTMn: near * near * 0.9 },
   }
 }
 
-function makeResult(runId: string, req: RunRequest, parent: string | null, flag: boolean): RunResult {
+function result(runId: string, req: RunRequest, parent: string | null | undefined, flag: boolean): RunResult {
   return {
-    id: runId, fly: req.fly.name, scene: req.scene, parent_moment: parent,
-    outcome: flag ? 'flag' : 'died',
-    death: flag ? null : { cause: 'Touched a Goomba', frame: DEATH_FRAME, x: 760 },
-    max_x: flag ? 3168 : 760, score: flag ? 4200 : 300, blocks: 2, mushroom: false,
-    counts: { jumps: 7 }, moments: [], hash: 'mock' + runId,
+    id: runId, fly: req.fly.name, scene: req.scene, parent_moment: parent ?? null,
+    outcome: flag ? 'flag' : 'died', death: flag ? null : { cause: 'enemy:goomba', x: 760 },
+    max_x: flag ? 3168 : 760, score: 0, blocks: 0, mushroom: false, counts: {}, moments: [], hash: '',
   }
 }
 
-function runStream(runId: string): RunStream {
-  const info = runs.get(runId)
+const strong = (fly: Fly) => (fly.knobs['sour_smell.gain'] ?? 0.5) > 0.7
+
+function openRun(runId: string): RunStream {
+  const req = runs.get(runId)!.req
+  const flag = strong(req.fly)
   let cb: (e: RunEvent) => void = () => {}
-  let frame = 0, playing = true, speed = 1, timer: ReturnType<typeof setInterval> | undefined, ended = false
-  // better fly (more looming gain) clears the level in the mock; others die at the Goomba
-  const flag = (info?.req.fly.knobs['looming.gain'] ?? 0) >= 0.6
+  let frame = 0, playing = true, speed = 1
+  let timer: ReturnType<typeof setInterval> | undefined
   const emit = () => {
-    if (ended) return
     cb(frameEvent(frame))
-    if (frame === 200 && !runId.startsWith('r-resumed')) {
-      cb({ type: 'moment', moment: { ...moments[0], id: 'auto-' + runId, name: 'Auto checkpoint', frame, auto: true } })
+    if (frame === DEATH_FRAME && !flag) {
+      const m: MomentSummary = {
+        id: `${runId}@${frame - 180}d`, run_id: runId, name: '3 s before death', frame: frame - 180, x: 600,
+        auto: true, kind: 'death', scene: req.scene, fly: req.fly, on_screen: ['goomba'],
+      }
+      moments.push(m)
+      cb({ type: 'moment', moment: m })
+      cb({ type: 'end', result: result(runId, req, req.from_moment, false) })
+      clearInterval(timer)
+      return
     }
-    const last = flag ? TOTAL : DEATH_FRAME
-    if (frame >= last) {
-      ended = true
-      if (info) cb({ type: 'end', result: makeResult(runId, info.req, info.fromMoment, flag) })
-      else cb({ type: 'end', result: makeResult(runId, { fly: flies.blank, scene: baseScene, from_moment: null }, null, false) })
+    if (frame === 600 && flag) {
+      cb({ type: 'end', result: result(runId, req, req.from_moment, true) })
+      clearInterval(timer)
       return
     }
     frame += 1
   }
-  const tick = () => { if (playing) emit() }
-  const restartTimer = () => {
-    if (timer) clearInterval(timer)
-    timer = setInterval(() => { for (let i = 0; i < Math.max(1, Math.round(speed)); i++) tick() }, 1000 / 60 / Math.min(1, speed))
+  const arm = () => {
+    clearInterval(timer)
+    timer = setInterval(() => { if (playing) emit() }, 1000 / 60 / Math.min(4, Math.max(0.25, speed)))
   }
-  restartTimer()
+  arm()
   return {
     onEvent: (c) => { cb = c },
     play: () => { playing = true },
     pause: () => { playing = false },
     step: () => { playing = false; emit() },
-    setSpeed: (m) => { speed = m; restartTimer() },
-    restart: () => { frame = 0; ended = false; playing = true },
-    close: () => { if (timer) clearInterval(timer) },
+    setSpeed: (m) => { speed = m; arm() },
+    close: () => clearInterval(timer),
   }
 }
 
@@ -173,35 +148,30 @@ export const mockApi: Api = {
   getRegistry: () => delay(registry),
   getLevels: () => delay(levels),
   getFly: (name) => delay(structuredClone(flies[name] ?? flies.blank)),
-  saveFly: (fly) => { flies[fly.name] = structuredClone(fly); if (!registry.presets.includes(fly.name)) registry.presets.push(fly.name); return delay(fly) },
+  saveFly: (fly) => {
+    flies[fly.name] = structuredClone(fly)
+    if (!registry.presets.includes(fly.name)) registry.presets.push(fly.name)
+    return delay(fly)
+  },
   startRun: (req) => {
     const id = `r-${counter++}`
-    runs.set(id, { req, fromMoment: null })
+    runs.set(id, { req })
+    if (req.from_moment) tries.push({ moment: req.from_moment, run_id: id, change: 'sour smell stronger', outcome: strong(req.fly) ? 'flag' : 'died', max_x: strong(req.fly) ? 3168 : 760 })
     return delay({ run_id: id })
   },
-  runStream,
-  saveMoment: (runId, frame, name, auto = false) => {
-    const info = runs.get(runId)
+  openRun,
+  getRun: () => delay(null),
+  saveMoment: (runId, name, frame) => {
+    const req = runs.get(runId)?.req
     const m: MomentSummary = {
-      id: `m-${counter++}`, run_id: runId, name, frame, x: frame * 3, auto,
-      scene: info?.req.scene ?? baseScene, fly: info?.req.fly ?? flies.blank,
+      id: `${runId}@${frame ?? 0}`, run_id: runId, name: name || 'Moment', frame: frame ?? 0, x: 0, auto: false,
+      kind: 'manual', scene: req?.scene ?? baseScene, fly: req?.fly ?? flies.blank, on_screen: ['goomba'],
     }
     moments.push(m)
     return delay(m)
   },
-  getMoments: () => delay([...moments]),
-  getMoment: (id): Promise<MomentDetail> => {
-    const m = moments.find((x) => x.id === id) ?? moments[0]
-    const objs = objectsAt(Math.min(m.frame, TOTAL))
-    return delay({ ...m, objects: objs, on_screen: [...new Set(objs.map((o) => o.type))] })
-  },
-  getTries: (momentId) => delay(tries.filter((t) => t.parent_moment === momentId)),
-  resumeFromMoment: (momentId, fly) => {
-    const m = moments.find((x) => x.id === momentId) ?? moments[0]
-    const id = `r-resumed-${counter++}`
-    const req: RunRequest = { fly, scene: { ...m.scene, start: momentId }, from_moment: momentId }
-    runs.set(id, { req, fromMoment: momentId })
-    tries.push(makeResult(id, req, momentId, (fly.knobs['looming.gain'] ?? 0) >= 0.6))
-    return delay({ run_id: id })
-  },
+  getRunMoments: (runId) => delay(moments.filter((m) => m.run_id === runId)),
+  getRuns: () => delay([]),
+  getMoment: (id) => delay(moments.find((m) => m.id === id) ?? moments[0]),
+  getTries: (id) => delay(tries.filter((t) => t.moment === id)),
 }
