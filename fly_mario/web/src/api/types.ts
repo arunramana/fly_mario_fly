@@ -251,6 +251,11 @@ export interface components {
             label: string;
             /** Name */
             name: string;
+            /**
+             * Order
+             * @default 0
+             */
+            order: number;
             /** Priority */
             priority: number;
             /** Source Groups */
@@ -288,6 +293,29 @@ export interface components {
              * @default null
              */
             value: number | null;
+        };
+        /**
+         * DeathDTO
+         * @description How a run ended in death: where, and what did it. `object_type`/`label` name the thing (null for "other").
+         */
+        DeathDTO: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "fall" | "enemy" | "other";
+            /**
+             * Object Label
+             * @default null
+             */
+            object_label: string | null;
+            /**
+             * Object Type
+             * @default null
+             */
+            object_type: string | null;
+            /** X */
+            x: number;
         };
         /** EndEvent */
         EndEvent: {
@@ -671,13 +699,8 @@ export interface components {
             counts: {
                 [key: string]: number;
             };
-            /**
-             * Death
-             * @default null
-             */
-            death: {
-                [key: string]: unknown;
-            } | null;
+            /** @default null */
+            death: components["schemas"]["DeathDTO"] | null;
             /** Fly */
             fly: string;
             /**
@@ -816,6 +839,11 @@ export interface components {
             line: "solid" | "dotted" | "dashed";
             /** Name */
             name: string;
+            /**
+             * Order
+             * @default 0
+             */
+            order: number;
             /**
              * Scope
              * @enum {string}

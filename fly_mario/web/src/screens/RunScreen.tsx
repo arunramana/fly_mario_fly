@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import type { FrameEvent, MomentSummary, RunResult, RunStream } from '../api/models'
@@ -8,7 +7,9 @@ import { errText, useStartRun } from '../hooks'
 import { momentPictures, runRequests, useDraft, type Picture } from '../draft'
 
 const SPEEDS: [number, string][] = [[0.5, '0.5×'], [1, '1×'], [100, 'Fast']]
-const KEEP_PICTURES = 1500 // frames of pictures kept (some MB) so a moment, even an older one, still has its picture
+// Only a recent window of pictures is kept: a moment picture is copied out of it when the moment arrives, and the
+// "3 s before death" moment (180 frames back, on a 30-frame snapshot ring) is always inside it.
+const KEEP_PICTURES = 300
 
 /** Keyed by run id: a restart opens a fresh screen instead of resetting this one. */
 export default function RunScreen() {
@@ -32,7 +33,6 @@ function RunView({ runId }: { runId: string }) {
   const [speed, setSpeed] = useState(1)
   const [showSenses, setShowSenses] = useState(true)
   const [showBrain, setShowBrain] = useState(true)
-  const registry = useQuery({ queryKey: ['registry'], queryFn: api.getRegistry })
   const restart = useStartRun()
 
   useEffect(() => {
@@ -95,8 +95,8 @@ function RunView({ runId }: { runId: string }) {
     restart.mutate(req)
   }
 
-  const label = (name: string) => registry.data?.objects.find((o) => o.name === name)?.label ?? name
-  const cause = (c: string) => (c.startsWith('enemy:') ? label(c.slice(6)) : c === 'pit' ? 'Pit' : '')
+  const death = result?.death
+  const what = death?.object_label ?? death?.object_type ?? ''
   const x = (result?.max_x ?? 0).toFixed(0)
 
   return (
@@ -134,8 +134,8 @@ function RunView({ runId }: { runId: string }) {
         <div className={`banner ${result.outcome === 'flag' ? 'flag' : result.outcome === 'died' ? 'died' : 'info'}`} role="status" data-outcome={result.outcome}>
           <div>
             {result.outcome === 'flag' && <><b>Reached the flag!</b><p>Score {result.score} · got as far as x {x}</p></>}
-            {result.outcome === 'died' && <><b>Died at x {x}{cause(String(result.death?.cause ?? '')) ? ` · ${cause(String(result.death?.cause ?? ''))}` : ''}</b>
-              <p>{String(result.death?.cause ?? '').startsWith('enemy:') ? `Touched a ${cause(String(result.death?.cause))}` : cause(String(result.death?.cause ?? '')) ? 'Fell in a pit' : 'The fly died'} · score {result.score}</p></>}
+            {result.outcome === 'died' && <><b>Died at x {death?.x ?? x}{what ? ` · ${what}` : ''}</b>
+              <p>{death?.kind === 'enemy' ? `Touched a ${what}` : death?.kind === 'fall' ? `Fell in (${what})` : 'The fly died'} · score {result.score}</p></>}
             {result.outcome !== 'flag' && result.outcome !== 'died' && <><b>The run ended ({result.outcome}) at x {x}</b><p>Score {result.score}</p></>}
           </div>
           <div className="row">

@@ -77,7 +77,7 @@ await shot('3a-running')
 await finish('first run')
 const banner = page.locator('.banner[role=status]')
 assert.equal(await banner.getAttribute('data-outcome'), 'died')
-assert.match(await banner.innerText(), /Koopa/, 'the fly dies at the Koopa')
+assert.match(await banner.innerText(), /Died at x \d+ · Koopa/, 'the fly dies at the Koopa')
 await page.locator('[data-testid=death-mark]').waitFor()
 await shot('3b-died')
 

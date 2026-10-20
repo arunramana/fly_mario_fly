@@ -1,6 +1,6 @@
 """Throwaway: draw the object finders' boxes on four frames of 1-1 and save a PNG (not part of the test suite).
 
-    python tests/mario_boxes_screenshot.py            -> tests/_out/mario_boxes.png
+    python tools/mario_boxes_screenshot.py            -> tools/_out/mario_boxes.png
 """
 import sys
 from pathlib import Path

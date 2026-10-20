@@ -114,7 +114,7 @@ class Runs:
         scene = self._saved_scene(rid)
         try:
             d = json.loads((self.dir / rid / "summary.json").read_text(encoding="utf-8"))
-            return S.RunResultDTO(id=d["id"], fly=d["fly"], scene=scene, outcome=d["outcome"], death=d.get("death"),
+            return S.RunResultDTO(id=d["id"], fly=d["fly"], scene=scene, outcome=d["outcome"], death=V.death_to_dto(d.get("death")),
                                   max_x=d["max_x"], score=d["score"], blocks=d["blocks"], mushroom=d["mushroom"],
                                   counts=d.get("counts", {}), hash=d.get("hash", "")) if scene else None
         except (OSError, ValueError, KeyError):
