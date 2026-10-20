@@ -25,3 +25,23 @@ groups:
   DC4_L:   {types: [ORN_DC4], side: L, role: "acid (sour) smell receptors, left antenna", colour: "#fad73c"}
   DC4_R:   {types: [ORN_DC4], side: R, role: "acid (sour) smell receptors, right antenna", colour: "#fad73c"}
   MDN:     {types: [MDN], role: "moonwalker: walk backwards", colour: "#ff8040"}
+
+# How a renderer lays the groups out (display only; nothing in the circuit reads this).
+#   big   : groups drawn with a larger core, the few cells that matter most
+#   index : the rows of the on-screen index: a short label, a short role, and the group(s) whose rate the row shows
+#           (a row with two groups is their neuron-weighted mean, so left and right eyes merge into one row)
+display:
+  big: [DNp01, TTMn, DNp09, DNa_L, DNa_R, MDN]
+  index:
+    - {label: LC4,   role: looming,         groups: [LC4_L, LC4_R]}
+    - {label: LPLC2, role: looming,         groups: [LPLC2_L, LPLC2_R]}
+    - {label: DNp01, role: Giant Fiber,     groups: [DNp01]}
+    - {label: TTMn,  role: jump muscle,     groups: [TTMn]}
+    - {label: DNa L, role: steering,        groups: [DNa_L]}
+    - {label: DNa R, role: steering,        groups: [DNa_R]}
+    - {label: DNp09, role: forward walking, groups: [DNp09]}
+    - {label: LC10a, role: home,            groups: [LC10a_L, LC10a_R]}
+    - {label: JO,    role: hum (hearing),   groups: [JO]}
+    - {label: ORN,   role: smell,           groups: [ORN_L, ORN_R]}
+    - {label: DC4,   role: sour smell,      groups: [DC4_L, DC4_R]}
+    - {label: MDN,   role: walk backwards,  groups: [MDN]}
