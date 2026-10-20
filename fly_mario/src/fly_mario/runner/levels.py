@@ -12,10 +12,13 @@ The status part (tried / won / best x) is read from $FLY_MARIO_DATA/runs/*/summa
 from __future__ import annotations
 
 import json
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import cv2
+import numpy as np
 import yaml
 
 from fly_mario import registry
@@ -187,3 +190,43 @@ def level_catalogue(runs_dir: Path | None = None) -> list:
     """A LevelInfo for each of the 35 envs, in level_ids() order. Returns at once: nothing is scanned here."""
     cache, kinds, status, seen = _read_cache(), config()["kinds"], level_statuses(runs_dir), objects_seen_in_runs(runs_dir)
     return [_info(lv, cache, kinds, status, seen) for lv in level_ids()]
+
+
+# ---- thumbnails ---------------------------------------------------------------------------------------------
+HUD_ROWS = 32                       # the status bar (score, coins, world, time) above the playfield
+MOSAIC = ("1-1", "1-2", "2-2", "1-4")   # the random-stages env picks any stage: its picture is four of them
+_thumb_lock = threading.Lock()      # one emulator at a time for thumbnails (a first request makes several)
+
+
+def thumbnail_path(level_id: str) -> Path:
+    return cn.data_dir() / "thumbs" / f"{level_id}.png"
+
+
+def _first_screen(env: MarioEnv, level_id: str) -> np.ndarray:
+    return env.reset(level_id, "v0", 0).frame[HUD_ROWS:]            # (208, 256, 3): the playfield as the level opens
+
+
+def level_thumbnail(level_id: str) -> bytes:
+    """PNG (256 x 208) of the level's opening screen, status bar cropped. Made once with the emulator, then read from
+    $FLY_MARIO_DATA/thumbs/. The random-stages env has no single opening screen, so it gets a 2 x 2 mosaic of four stages.
+    KeyError for an id that is not in the catalogue."""
+    if level_id not in level_ids():
+        raise KeyError(f"no level {level_id!r}")
+    path = thumbnail_path(level_id)
+    with _thumb_lock:
+        if path.exists():
+            return path.read_bytes()
+        env = MarioEnv()
+        try:
+            if level_id == "random":
+                tiles = [cv2.resize(_first_screen(env, lv), (128, 104), interpolation=cv2.INTER_AREA) for lv in MOSAIC]
+                img = np.vstack([np.hstack(tiles[:2]), np.hstack(tiles[2:])])
+            else:
+                img = _first_screen(env, level_id)
+        finally:
+            env.close()
+        ok, buf = cv2.imencode(".png", cv2.cvtColor(np.ascontiguousarray(img), cv2.COLOR_RGB2BGR))
+        assert ok
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(buf.tobytes())
+        return buf.tobytes()

@@ -74,6 +74,8 @@ def test_contracts_imports_nothing_from_fly_mario():
 @pytest.mark.parametrize("area", ["evolve", "api", "render"])
 def test_outer_lanes_only_runner(area):
     allowed = {"fly_mario.runner", "fly_mario.contracts", "fly_mario.registry"}
+    if area == "api":
+        allowed.add("fly_mario.render")        # the live stream serves render's pictures (UI lane, approved by Arun)
     for f in FILES:
         if _area(f) != area:
             continue

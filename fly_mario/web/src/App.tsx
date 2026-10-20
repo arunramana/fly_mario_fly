@@ -1,20 +1,57 @@
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
-import { useDraft } from './state'
+import { NavLink, Navigate, Route, Routes, useLocation, useMatch } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { api } from './api/client'
+import { runRequests, useDraft } from './draft'
 import SceneScreen from './screens/SceneScreen'
 import FlyScreen from './screens/FlyScreen'
 import RunScreen from './screens/RunScreen'
 import MomentScreen from './screens/MomentScreen'
+import LibraryScreen from './screens/LibraryScreen'
+
+const STEPS = ['/scene', '/fly', '/run', '/library']
+
+/** The sub-title of the header: it says where you are, in the words of the wireframes. */
+function Subtitle() {
+  const { scene, fly } = useDraft()
+  const { pathname } = useLocation()
+  const runId = useMatch('/run/:runId')?.params.runId
+  const registry = useQuery({ queryKey: ['registry'], queryFn: api.getRegistry })
+  const levels = useQuery({ queryKey: ['levels'], queryFn: api.getLevels })
+  const level = levels.data?.find((l) => l.id === scene.level_id)?.label ?? scene.level_id
+  const mods = scene.modifiers
+    .map(([n]) => registry.data?.scene_modifiers.find((m) => m.name === n)?.label ?? n)
+    .filter((l) => l.toLowerCase() !== 'whole level')
+  if (pathname.startsWith('/fly')) return <>Scene: {level}{mods.length ? ` · ${mods.join(', ').toLowerCase()}` : ''}</>
+  if (pathname.startsWith('/run') && runId) {
+    const info = runRequests.get(runId)
+    const lv = info?.req.scene.level_id ?? scene.level_id
+    return <>{levels.data?.find((l) => l.id === lv)?.label ?? lv} · {info?.req.fly.name ?? fly.name}{info ? ` · try ${info.tryNo}` : ''}</>
+  }
+  if (pathname.startsWith('/moment')) return <>{level} · paused at a saved moment</>
+  if (pathname.startsWith('/library')) return <>Saved flies, scenes and runs</>
+  return <>MaleCNS fly brain × Super Mario Bros</>
+}
 
 export default function App() {
   const { lastRunId } = useDraft()
+  const { pathname } = useLocation()
+  const here = STEPS.findIndex((s) => pathname.startsWith(s)) + (pathname.startsWith('/moment') ? 3 : 0)
+  const tab = (to: string, i: number, label: string, off = false) => (
+    <NavLink to={to} className={({ isActive }) => `tab ${isActive || (i === 2 && pathname.startsWith('/moment')) ? 'active' : ''} ${off ? 'off' : ''}`}>
+      {label}{i < here && i < 3 && !off ? ' ✓' : ''}
+    </NavLink>
+  )
   return (
     <>
       <header className="app-header">
-        <h1>FLY MARIO</h1>
+        <span className="logo" aria-hidden />
+        <NavLink to="/scene" className="brand">flyrun</NavLink>
+        <span className="subtitle"><Subtitle /></span>
         <nav>
-          <NavLink to="/scene">1 Scene</NavLink>
-          <NavLink to="/fly">2 Fly</NavLink>
-          {lastRunId && <NavLink to={`/run/${lastRunId}`}>3 Run</NavLink>}
+          {tab('/scene', 0, '1 Scene')}
+          {tab('/fly', 1, '2 Fly')}
+          {tab(lastRunId ? `/run/${lastRunId}` : '/run', 2, '3 Run', !lastRunId)}
+          {tab('/library', 3, '4 Library')}
         </nav>
       </header>
       <div className="bricks" />
@@ -25,6 +62,7 @@ export default function App() {
           <Route path="/fly" element={<FlyScreen />} />
           <Route path="/run/:runId" element={<RunScreen />} />
           <Route path="/moment/:momentId" element={<MomentScreen />} />
+          <Route path="/library" element={<LibraryScreen />} />
         </Routes>
       </main>
     </>

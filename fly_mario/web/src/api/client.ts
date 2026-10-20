@@ -20,6 +20,8 @@ export interface Api {
   getRuns(): Promise<RunSummary[]>
   getMoment(id: string): Promise<MomentSummary>
   getTries(momentId: string): Promise<Try[]>
+  /** The mini brain map of a fly: an object URL of a PNG with the neuron groups it uses lit ('' when unavailable). */
+  getBrainMap(fly: Fly): Promise<string>
 }
 
 const BASE: string = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
@@ -47,6 +49,9 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
 }
 
 const enc = encodeURIComponent
+
+/** The level's opening screen (PNG), made by the server with the emulator the first time it is asked for. */
+export const thumbnailUrl = (levelId: string): string => `${BASE}/levels/${enc(levelId)}/thumbnail.png`
 
 function openRun(runId: string): RunStream {
   const ws = new WebSocket(`${BASE.replace(/^http/, 'ws')}/runs/${enc(runId)}/live`)
@@ -92,6 +97,10 @@ const httpApi: Api = {
   getRuns: () => call('GET', '/runs'),
   getMoment: (id) => call('GET', `/moments/${enc(id)}`),
   getTries: (momentId) => call('GET', `/moments/${enc(momentId)}/tries`),
+  getBrainMap: async (fly) => {
+    const res = await fetch(`${BASE}/brain-map.png`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fly) })
+    return res.ok ? URL.createObjectURL(await res.blob()) : ''
+  },
 }
 
 export const api: Api = import.meta.env.VITE_MOCK === '1' ? mockApi : httpApi

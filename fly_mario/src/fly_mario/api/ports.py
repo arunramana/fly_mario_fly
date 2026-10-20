@@ -8,7 +8,9 @@ from fly_mario.api import schemas as S
 
 
 def level_catalogue(runs_dir=None) -> list:
-    return [V.level_to_dto(lv) for lv in runner.level_catalogue(runs_dir)]
+    """The 32 stages in order, then the whole game, Lost Levels and Random Stages."""
+    rank = {lv: i for i, lv in enumerate(V.LEVEL_ORDER)}
+    return sorted((V.level_to_dto(lv) for lv in runner.level_catalogue(runs_dir)), key=lambda d: rank.get(d.id, len(rank)))
 
 
 def level_info(level_id: str, runs_dir=None) -> S.LevelInfo:

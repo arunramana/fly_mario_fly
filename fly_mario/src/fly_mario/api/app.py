@@ -8,14 +8,16 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import TypeAdapter
 
 from fly_mario import registry
 from fly_mario.runner import dump_fly, load_fly, validate
 from fly_mario.runner.config import FLIES
+from fly_mario.runner.levels import level_thumbnail
 from fly_mario.runner.record import runs_dir
 from fly_mario.api import convert as V
+from fly_mario.api import layers
 from fly_mario.api import ports
 from fly_mario.api import schemas as S
 from fly_mario.api.live import Runs
@@ -72,6 +74,11 @@ def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = N
     def get_level(level_id: str):
         return ports.level_info(level_id, runs.dir)
 
+    @app.get("/levels/{level_id}/thumbnail.png", responses={200: {"content": {"image/png": {}}}})
+    def get_level_thumbnail(level_id: str):
+        """The level's opening screen (256 x 208 PNG); made with the emulator the first time, then cached."""
+        return Response(level_thumbnail(level_id), media_type="image/png", headers={"Cache-Control": "max-age=86400"})
+
     # ---- flies ------------------------------------------------------------------------------------------------
     @app.get("/flies", response_model=list[S.FlySummary])
     def list_flies():
@@ -80,6 +87,11 @@ def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = N
     @app.get("/flies/presets", response_model=list[S.FlyDTO])
     def fly_presets():
         return [V.fly_to_dto(read_fly(n)) for n in fly_names()]
+
+    @app.post("/brain-map.png", responses={200: {"content": {"image/png": {}}}})
+    def brain_map(dto: S.FlyDTO):
+        """The brain and nerve cord with the neuron groups this fly uses lit: the Fly page's mini map."""
+        return Response(layers.brain_map_png(check_fly(dto)), media_type="image/png")
 
     @app.get("/flies/{name}", response_model=S.FlyDTO)
     def get_fly(name: str):
