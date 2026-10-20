@@ -12,7 +12,6 @@ class CustomBox:
         KnobSpec("shape.custom.w", "Width scale", "narrower", "wider", 1.0, 0.25, 4.0, scale="log", origin="invented", evolvable=True),
         KnobSpec("shape.custom.h", "Height scale", "shorter", "taller", 1.0, 0.25, 4.0, scale="log", origin="invented", evolvable=True),
     ]
-    handles = []             # any object type
     family = "free"
 
     def shape(self, obj, facts, knobs):

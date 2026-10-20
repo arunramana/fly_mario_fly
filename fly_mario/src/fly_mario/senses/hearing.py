@@ -24,6 +24,9 @@ class Hearing:
     line = "solid"
     feeds = ["hearing"]
     order = 30
+    raises = []
+    reads = []
+    LEVEL_NORM = 5.0               # a hum of this size fills the "hum" bar
     knobs = [
         KnobSpec("hearing.gain", "Hum loudness", "quiet", "loud", 14.5342, 13.606, 54.765, scale="log",
                  origin="invented", evolvable=True, floor=13.6057),
@@ -55,9 +58,9 @@ class Hearing:
             overlay = [draw.box(b.x, b.y, b.w, b.h, draw.GREEN),
                        draw.line_(ex, ey, b.x + b.w / 2, bottom, draw.GREEN, "dotted")]
         steps = [
-            draw.step("distance", "eye to the block's underside", d, d / 256.0),
+            draw.step("distance", "eye to the block's underside", d, d / facts["grid"]["screen_w"]),
             draw.step("angle", "theta = 2*atan(h / 2d)", theta, theta / np.pi),
-            draw.step("hum", "gain * theta", level, level / 5.0, "JO"),
+            draw.step("hum", "gain * theta", level, level / self.LEVEL_NORM, "JO"),
         ]
         return SenseOutput(inputs={"JO": level}, overlay=overlay, steps=steps)
 

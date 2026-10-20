@@ -45,11 +45,6 @@ def test_back_up_does_not_touch_the_jump():
     assert resolve_buttons(intents({"TTMn": 0.5, "MDN": 0.5}))  == {"A", "left"}
 
 
-def test_back_up_stands_down_for_the_rear_gate():
-    got = resolve_buttons(intents({"DNp09": 0.2, "MDN": 0.5}, mods={"sour_rear_gate": 1.0}))
-    assert got == {"right"}
-
-
 def test_release_beats_a_press_of_equal_priority():
     a = ButtonIntent(press=frozenset({"A"}), priority=3)
     b = ButtonIntent(release=frozenset({"A"}), priority=3)

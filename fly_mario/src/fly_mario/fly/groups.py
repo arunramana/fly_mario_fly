@@ -44,6 +44,24 @@ def load_groups() -> dict:
                      side=g.get("side", "")) for n, g in _table()["groups"].items()}
 
 
+def group_types(group_names) -> tuple:
+    """The cell types named by `types:` of these groups, in groups.yaml order, each once."""
+    want, out = set(group_names), []
+    for n, g in load_groups().items():
+        out += [t for t in g.types if n in want and t not in out]
+    return tuple(out)
+
+
+@lru_cache(maxsize=1)
+def type_counts() -> dict:
+    """{cell type: verified neuron count}; every key is a `types:` entry of some group (ORN_DC4 has no count: the
+    aversion mechanism checks its own 13)."""
+    counts = dict(_table()["type_counts"])
+    stray = set(counts) - set(group_types(load_groups()))
+    assert not stray, f"groups.yaml type_counts names types no group uses: {sorted(stray)}"
+    return counts
+
+
 def other_colour() -> str:
     return _table()["other_colour"]
 

@@ -76,9 +76,12 @@ class Looming:
     line = "solid"
     feeds = ["escape"]
     order = 10
+    raises = []
+    reads = ["rear_eye", "headroom", "headroom_clearance"]
+    DTHETA_NORM = 0.5              # a change of theta this big (rad per frame) fills the "to LC4" bar
     knobs = [
         KnobSpec("loom.eyes", "Eyes used", "right eye only", "both eyes", 0.0, 0.0, 1.0,
-                 origin="invented", evolvable=False),
+                 origin="invented", evolvable=False, kind="switch"),
         KnobSpec("loom.pit_gain", "Pit tower strength", "faint", "strong", 1.0, 0.1, 4.0, scale="log",
                  origin="invented", evolvable=False),
     ]
@@ -191,12 +194,12 @@ class Looming:
             inputs.update(LC4_L=lc4, LPLC2_L=lplc2)
 
         steps = [
-            draw.step("distance", "gap = hypot(gap_x, gap_y)", 0.0 if t is None else t.d, 0.0 if t is None else t.d / 256.0),
-            draw.step("height", "h of the object", 0.0 if t is None else t.h, 0.0 if t is None else t.h / 68.0),
+            draw.step("distance", "gap = hypot(gap_x, gap_y)", 0.0 if t is None else t.d, 0.0 if t is None else t.d / facts["grid"]["screen_w"]),
+            draw.step("height", "h of the object", 0.0 if t is None else t.h, 0.0 if t is None else t.h / facts["mario"]["jump_apex"]),
             draw.step("angle", "theta = 2*atan(h / 2d)", 0.0 if t is None else (raw if raw is not None else t.theta), None, "LPLC2_R"),
             draw.step("headroom", "min(1, rise / (h + clearance))", hf, hf),
             draw.step("to LPLC2", "theta used", th, th / 3.141592653589793, "LPLC2_R"),
-            draw.step("to LC4", "|change of theta|", dth, dth / 0.5, "LC4_R"),
+            draw.step("to LC4", "|change of theta|", dth, dth / self.DTHETA_NORM, "LC4_R"),
         ]
         overlay = []
         if t is not None:

@@ -11,6 +11,7 @@ class Steer:
     label = "Steer"
     button = "left/right"
     source_groups = ["DNa_L", "DNa_R"]
+    reads = []
     priority = 1
     knobs = [
         KnobSpec("steer.thresh", "Steer when |DNa right - left| is above", "twitchy", "only when clear", 0.01, 0.005067, 0.0152,

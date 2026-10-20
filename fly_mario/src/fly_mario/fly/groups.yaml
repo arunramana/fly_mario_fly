@@ -26,6 +26,10 @@ groups:
   DC4_R:   {types: [ORN_DC4], side: R, role: "acid (sour) smell receptors, right antenna", colour: "#fad73c"}
   MDN:     {types: [MDN], role: "moonwalker: walk backwards", colour: "#ff8040"}
 
+# Neurons per cell type in MaleCNS v1.0, verified against the downloaded annotations at load time (a changed file fails
+# loudly). Each type must be one a group above uses (groups.py checks).
+type_counts: {LC4: 126, LPLC2: 185, DNp01: 2, TTMn: 2, DNp09: 2, LC10a: 275, DNa01: 2, DNa02: 2, MDN: 4}
+
 # How a renderer lays the groups out (display only; nothing in the circuit reads this).
 #   big   : groups drawn with a larger core, the few cells that matter most
 #   index : the rows of the on-screen index: a short label, a short role, and the group(s) whose rate the row shows

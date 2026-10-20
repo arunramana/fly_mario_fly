@@ -73,23 +73,16 @@ def test_expected_plugins_exist():
 
 
 def test_protocols():
-    # raises / reads are new contract members the plug-ins have not declared yet (the tidy lane adds them), so the
-    # structural check tolerates their absence for now; test_every_modifier_read_is_raised reads them with getattr.
-    assert all(isinstance(s, Sense) or _lacks_only(s, {"raises", "reads"}, Sense) for s in SENSES.values())
+    assert all(isinstance(s, Sense) for s in SENSES.values())
     assert all(isinstance(s, LoomShape) for s in SHAPES.values())
-    assert all(isinstance(a, Action) or _lacks_only(a, {"reads"}, Action) for a in ACTIONS.values())
-
-
-def _lacks_only(obj, allowed, proto):
-    missing = {n for n in proto.__protocol_attrs__ if not hasattr(obj, n)}
-    return bool(missing) and missing <= allowed
+    assert all(isinstance(a, Action) for a in ACTIONS.values())
 
 
 def test_every_modifier_read_is_raised():
     """A sense or action that reads a modifier needs some sense that raises it, or the read is dead."""
-    raised = {m for s in SENSES.values() for m in getattr(s, "raises", ())}
+    raised = {m for s in SENSES.values() for m in s.raises}
     for c in list(SENSES.values()) + list(ACTIONS.values()):
-        reads = set(getattr(c, "reads", ()))
+        reads = set(c.reads)
         assert reads <= raised, (c.name, reads - raised)
 
 

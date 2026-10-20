@@ -68,7 +68,7 @@ class BrainPanel:
         self.other = self._project(brain.other_xyz)
         self.rows = [(lab, role, [g for g in gs if g in brain.xyz]) for lab, role, gs in brain.index]
         self.rows = [r for r in self.rows if r[2]]
-        self.has_terminals = any(g.startswith(("JO", "ORN", "DC4")) for g in brain.xyz)
+        self.has_terminals = any(g in brain.xyz for g in brain.placed_by_terminal)
 
     def _project(self, xyz) -> np.ndarray:
         xyz = np.asarray(xyz, dtype=np.float64).reshape(-1, 3)

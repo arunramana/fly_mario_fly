@@ -43,6 +43,7 @@ tiles:                     # metatile ids
   brick: [81]
   qblock: [192, 193]               # unused ? block (192 coin, 193 mushroom)
   used_block: [196, 35]            # 196 used, 35 = the bump animation
+  block_hit: 196                   # the used_block id that means a block was hit (35 is only the bump animation)
   ceiling_block: [84, 87, 88]      # solid from below, yet no brick/step/pipe/? block: the ceiling_block object
                                    # (old level.ceiling_tiles = pipe + step + brick + qblock + used_block + these)
 

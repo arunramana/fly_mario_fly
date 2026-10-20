@@ -49,7 +49,8 @@ def brain_data(run: Run, run_dir) -> BrainData:
         all_xyz=bd.all_xyz, xyz={g: d.xyz for g, d in bd.groups.items()}, colours={g: d.rgb for g, d in bd.groups.items()},
         other_xyz=bd.other_xyz, other_colour=tuple(int(bd.other_colour[i:i + 2], 16) for i in (1, 3, 5)),
         index=[(r["label"], r["role"], list(r["groups"])) for r in disp["index"]], rate_max=rmax,
-        counts={g: d.count for g, d in bd.groups.items()}, big=frozenset(disp["big"]), n_neurons=bd.n_neurons)
+        counts={g: d.count for g, d in bd.groups.items()}, big=frozenset(disp["big"]), n_neurons=bd.n_neurons,
+        placed_by_terminal=frozenset(bd.placed_by_terminal))
 
 
 def _overlay(outputs: dict) -> list:

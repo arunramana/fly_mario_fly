@@ -22,6 +22,8 @@ class Headroom:
     line = "dotted"
     feeds = ["escape"]
     order = 0                      # before the looming sense, which reads the switch
+    raises = ["headroom", "headroom_clearance"]
+    reads = []
     knobs = [
         KnobSpec("headroom.clearance", "Clearance wanted over the creature", "none", "generous", 2.0, 0.0, 8.0,
                  origin="invented", evolvable=False),

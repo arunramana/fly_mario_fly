@@ -5,10 +5,8 @@ Invented cue, real wiring. Level = gain * theta (the angle the enemy subtends), 
 sensor noise. Like a loom candidate, the enemy must not be behind Mario's left edge and must not have been got past
 in this jump ("cleared"); a Koopa in its shell does not smell.
 
-REAR (sour.rear = 1): the nearest sour enemy on EITHER side counts. Honest by default: a source behind Mario drives
-DC4 -> MDN like one ahead. sour.rear_gated = 1 is the invented variant: while the nearest source is behind, this sense
-raises the modifier `sour_rear_gate` and the back-up action stands down. That is code deciding for the fly (see
-docs/CONTROL_AUDIT.md); it stays only so the earlier result can be reproduced, and it is off.
+REAR (sour_smell.rear, a switch): when on, the nearest sour enemy on EITHER side counts, and a source behind Mario
+drives DC4 -> MDN like one ahead. Off (the default) only a source ahead smells.
 """
 from __future__ import annotations
 
@@ -32,10 +30,11 @@ class SourSmell:
         KnobSpec("sour_smell.gain", "Sourness", "faint", "strong", 8.0587, 4.3305, 32.235, scale="log",
                  origin="invented", evolvable=True, floor=4.3305),
         KnobSpec("sour_smell.rear", "Smells behind too", "ahead only", "either side", 0.0, 0.0, 1.0,
-                 origin="invented", evolvable=False),
-        KnobSpec("sour_smell.rear_gated", "Back-up stands down for a source behind", "honest", "gated", 0.0, 0.0, 1.0,
-                 origin="invented", evolvable=False),
+                 origin="invented", evolvable=False, kind="switch"),
     ]
+    raises = []
+    reads = []
+    LEVEL_NORM = 5.0               # a drive of this size fills the "sourness" bar
 
     def cue(self, objects, mario, facts, knobs, memory):
         cleared = memory.setdefault("cleared", set())
@@ -58,20 +57,18 @@ class SourSmell:
             if best is None or d < best[0]:
                 best = (d, b, rear)
         level, theta, d = 0.0, 0.0, 0.0
-        overlay, mods = [], {}
+        overlay = []
         if best is not None:
             d, b, rear = best
             theta = theta_of(d, b.h)
             level = knobs["sour_smell.gain"] * theta * memory.noise()
             overlay = [draw.box(b.x - 4, b.y - 4, b.w + 8, b.h + 8, draw.YELLOW, "dotted")]
-            if rear and knobs["sour_smell.rear_gated"] >= 0.5:
-                mods["sour_rear_gate"] = 1.0
         steps = [
-            draw.step("distance", "gap = hypot(gap_x, gap_y)", d, d / 256.0),
+            draw.step("distance", "gap = hypot(gap_x, gap_y)", d, d / facts["grid"]["screen_w"]),
             draw.step("angle", "theta = 2*atan(h / 2d)", theta, theta / np.pi),
-            draw.step("sourness", "gain * theta", level, level / 5.0, "DC4_L"),
+            draw.step("sourness", "gain * theta", level, level / self.LEVEL_NORM, "DC4_L"),
         ]
-        return SenseOutput(inputs={"DC4_L": level, "DC4_R": level}, overlay=overlay, modifiers=mods, steps=steps)
+        return SenseOutput(inputs={"DC4_L": level, "DC4_R": level}, overlay=overlay, steps=steps)
 
 
 PLUGIN = SourSmell()

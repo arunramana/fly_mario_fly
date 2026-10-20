@@ -17,6 +17,8 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.feather as feather
 
+from fly_mario.fly.groups import type_counts
+
 ENV_VAR = "FLY_MARIO_DATA"
 GCS = "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome"
 FILES = {
@@ -28,10 +30,8 @@ FILES = {
 # Dale's law: one sign per presynaptic neuron from its consensus transmitter; unknown = 0 (dropped as a source).
 NT_SIGN = {"acetylcholine": 1.0, "dopamine": 1.0, "gaba": -1.0, "glutamate": -1.0}
 
-# Verified against the downloaded data; a changed file fails loudly at load time.
+# Verified against the downloaded data; a changed file fails loudly at load time (per-type counts: groups.yaml).
 N_BODIES = 211_577
-TYPE_COUNTS = {"LC4": 126, "LPLC2": 185, "DNp01": 2, "TTMn": 2, "DNp09": 2, "LC10a": 275,
-               "DNa01": 2, "DNa02": 2, "MDN": 4}
 MIN_SYN = 5   # a connection to or from an added neuron needs this many synapses (the project's N = 5 rule)
 
 
@@ -120,7 +120,7 @@ class Connectome:
 
     def _check(self) -> None:
         assert len(self.ids) == N_BODIES, f"annotations changed: {len(self.ids)} bodies, expected {N_BODIES}"
-        for t, n in TYPE_COUNTS.items():
+        for t, n in type_counts().items():             # the counts sit in groups.yaml, beside the groups they define
             got = int((self.type == t).sum())
             assert got == n, f"{t}: {got} neurons in the annotations, expected {n}; the data changed underneath us"
 
