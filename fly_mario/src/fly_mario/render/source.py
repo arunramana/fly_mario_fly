@@ -14,9 +14,8 @@ import yaml
 
 from fly_mario.contracts import Scene
 from fly_mario.render import palette as P
-from fly_mario.render import somata
 from fly_mario.render.data import BrainData, FrameData
-from fly_mario.runner import Options, Run, fly_from_dict
+from fly_mario.runner import Options, Run, brain_display, fly_from_dict
 
 SMOOTH = 3          # the glow and the index use a 3-frame mean of the rates
 
@@ -37,39 +36,35 @@ def load_run(run_dir) -> Run:
     return Run(fly_from_dict(cfg["fly"]), Scene(**sc), Options(**cfg.get("options", {})), run_id=run_dir.name)
 
 
+def _display_section(bd) -> dict:
+    """The `display:` section of groups.yaml (index rows, big set). TEMPORARY: BrainDisplay does not carry it yet, so
+    unless the runner adds a `display` field this reads the yaml that ships next to the fly package (data file, no import)."""
+    d = getattr(bd, "display", None)
+    if d:
+        return d
+    import fly_mario
+    f = Path(fly_mario.__file__).parent / "fly" / "groups.yaml"
+    return yaml.safe_load(f.read_text(encoding="utf-8"))["display"]
+
+
 def brain_data(run: Run, run_dir) -> BrainData:
-    """Soma positions, group membership, colours and run maxima for the brain this run uses."""
-    brain = run.brain
-    sid, sxyz = somata.all_somata()
-    ids = brain.body_ids
-    j = np.clip(np.searchsorted(sid, ids), 0, len(sid) - 1)
-    has = sid[j] == ids
-    xyz = np.full((len(ids), 3), np.nan)
-    xyz[has] = sxyz[j[has]]
-    if (~has).any():
-        xyz[~has] = somata.terminal_positions(ids[~has])
-    grouped = np.zeros(len(ids), bool)
-    for m in brain.masks.values():
-        grouped |= m
-    rates_file = Path(run_dir) / "rates.npz"
+    """Soma positions, group membership, colours and run maxima for the brain this run uses (all from brain_display)."""
+    bd = brain_display(run.fly)
+    disp = _display_section(bd)
     rmax = {}
+    rates_file = Path(run_dir) / "rates.npz"
     if rates_file.exists():
         z = np.load(rates_file)
         rmax = {g: float(_smooth(z[g]).max()) for g in z.files}
     return BrainData(
-        all_xyz=sxyz, xyz={g: xyz[m] for g, m in brain.masks.items()},
-        colours={g: P.COLOURS.get(g, P.OTHER) for g in brain.masks},
-        other_xyz=xyz[~grouped], index=P.INDEX, rate_max=rmax, counts=brain.counts(), big=P.BIG,
-        n_neurons=len(ids))
+        all_xyz=bd.all_xyz, xyz={g: d.xyz for g, d in bd.groups.items()}, colours={g: d.rgb for g, d in bd.groups.items()},
+        other_xyz=bd.other_xyz, other_colour=tuple(int(bd.other_colour[i:i + 2], 16) for i in (1, 3, 5)),
+        index=[(r["label"], r["role"], list(r["groups"])) for r in disp["index"]], rate_max=rmax,
+        counts={g: d.count for g, d in bd.groups.items()}, big=frozenset(disp["big"]), n_neurons=bd.n_neurons)
 
 
 def _overlay(outputs: dict) -> list:
     return [it for out in outputs.values() for it in out.overlay]
-
-
-def _scroll(run: Run) -> float:
-    r = run.env.facts["ram"]
-    return float(int(run.env.ram[r["screen_page"]]) * 256 + int(run.env.ram[r["screen_x"]]))
 
 
 def frames(run: Run, upto: int | None = None):
@@ -81,13 +76,13 @@ def frames(run: Run, upto: int | None = None):
     history: dict = {g: [] for g in run.brain.masks}
     prev = None
     while not run.finished:
-        scroll = _scroll(run)
         rec = run.step()
         for g, v in rec.rates.items():
             history[g].append(v)
         rates = {g: float(np.mean(h[-SMOOTH:])) for g, h in history.items()}
-        yield FrameData(game=prev if prev is not None else rec.screen, overlay=_overlay(rec.outputs), rates=rates,
-                        scroll_x=scroll, frame=rec.frame)
+        first = prev is None                         # no earlier picture: use this frame's, with its own scroll
+        yield FrameData(game=rec.screen if first else prev, overlay=_overlay(rec.outputs), rates=rates,
+                        scroll_x=float(rec.scroll_x_after if first else rec.scroll_x), frame=rec.frame)
         prev = rec.screen
         if upto is not None and rec.frame >= upto:
             return

@@ -22,6 +22,7 @@ class BrainData:
     xyz: dict
     colours: dict
     other_xyz: np.ndarray = field(default_factory=lambda: np.zeros((0, 3)))
+    other_colour: tuple = (110, 118, 130)
     index: list = field(default_factory=list)
     rate_max: dict = field(default_factory=dict)
     counts: dict = field(default_factory=dict)

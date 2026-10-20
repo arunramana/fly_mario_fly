@@ -87,7 +87,7 @@ class BrainPanel:
     def glow(self, rates: dict) -> np.ndarray:
         layer = np.zeros((H, LEFT_W, 3), np.float32)
         for x, y in self.other:                                        # relays: faint, constant
-            cv2.circle(layer, (int(x), int(y)), 1, tuple(0.28 * c for c in P.OTHER), -1, cv2.LINE_AA)
+            cv2.circle(layer, (int(x), int(y)), 1, tuple(0.28 * c for c in self.b.other_colour), -1, cv2.LINE_AA)
         for g, pts in self.px.items():
             a = self.level(rates, g) ** 0.7
             bright = 0.28 + 0.72 * a
@@ -171,8 +171,12 @@ def game_panel(game: np.ndarray, overlay: list, scroll_x: float, show_senses: bo
             x0, y0, x1, y1 = g
             _line(img, (sx(x0), sy(y0)), (sx(x1), sy(y1)), col, 3, it.line)
         elif it.kind == "dot":
-            x, y, r = g
-            cv2.circle(img, (int(round(sx(x))), int(round(sy(y)))), max(2, int(round(r * 4))), col, -1, cv2.LINE_AA)
+            # A dot is a direction marker (the pull to keep going right): as in R3 it sits 22 px inside the screen's
+            # right edge at the dot's height, radius 11, half transparent, so it reads as "that way", not as an object.
+            _, y, _ = g
+            ov = img.copy()
+            cv2.circle(ov, (GAME_W - 22, int(round(sy(y)))), 11, col, -1, cv2.LINE_AA)
+            img = cv2.addWeighted(ov, 0.5, img, 0.5, 0)
         elif it.kind == "wedge":                                       # the cone from Mario's eye to the box it measures
             ex, ey, x, y, w, h = g
             near = x if x >= ex else x + w
