@@ -13,7 +13,7 @@ dependencies = ["numpy>=1.26,<1.27", "pyyaml", "pyarrow",
 
 [project.optional-dependencies]
 dev = ["pytest"]
-test = ["pandas"]
+test = ["pandas", "pytest-timeout"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
