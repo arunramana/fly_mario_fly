@@ -6,13 +6,15 @@ import pytest
 from fastapi.testclient import TestClient
 
 from fly_mario.api.app import create_app
+from fly_mario.runner import record
 from fly_mario.runner.config import FLIES
 
 pytestmark = pytest.mark.skipif(not os.environ.get("FLY_MARIO_DATA"), reason="FLY_MARIO_DATA not set")
 
 
 @pytest.fixture
-def client(tmp_path):
+def client(tmp_path, monkeypatch):
+    monkeypatch.setattr(record, "runs_dir", lambda: tmp_path / "runs")      # the moment store follows the runs folder
     shutil.copytree(FLIES, tmp_path / "flies")
     return TestClient(create_app(tmp_path / "flies", tmp_path / "runs"))
 

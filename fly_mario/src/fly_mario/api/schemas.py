@@ -124,10 +124,13 @@ class FlySummary(BaseModel):
 class LevelInfo(BaseModel):
     id: str
     label: str
-    kind: str
-    status: Literal["open", "cleared", "locked"]
-    width: Optional[int] = None           # level length in px; None until the runner can report it
-    objects: list[str] = []               # object types present; empty until the runner can report it
+    kind: str                             # overground | underground | sky | water | castle | mixed
+    status: Literal["open", "cleared", "locked"]    # cleared = some saved run reached the flag; nothing is locked yet
+    status_text: str = "not tried"        # "not tried" | "won 2/5" | "best x 1840"
+    scanned: bool = False                 # False: width and objects are unknown (not yet scanned or seen by any run)
+    partial: bool = False                 # the scan stopped before the flag: width and objects are lower bounds
+    width: Optional[int] = None           # level length in px (how far the scan got if partial); None = unknown
+    objects: Optional[list[str]] = None   # object types present, scan plus every run's objects_seen; None = unknown
 
 
 class RunRequestDTO(BaseModel):
@@ -160,6 +163,7 @@ class RunSummary(BaseModel):
     outcome: Optional[Literal["flag", "died", "stuck", "timeout"]] = None
     max_x: Optional[float] = None
     score: Optional[float] = None
+    parent_moment: Optional[str] = None   # the moment this run was resumed from
 
 
 class RunDetail(RunSummary):
@@ -174,10 +178,29 @@ class MomentSummary(BaseModel):
     name: str
     frame: int
     x: float
-    auto: bool
+    auto: bool                            # not saved by hand (kind auto or death)
+    kind: Literal["manual", "auto", "death"] = "manual"
     scene: SceneDTO
     fly: FlyDTO
     on_screen: list[str] = []             # object types visible at this moment
+
+
+class MomentRename(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+
+
+class MomentSave(BaseModel):
+    """Save a moment of a running run. `frame` None = now; else one of the recent in-memory snapshots."""
+    name: str = ""
+    frame: Optional[int] = None
+
+
+class TryDTO(BaseModel):
+    """One run resumed from a moment. `change` is the fly's difference from the moment's fly, in words only."""
+    run_id: str
+    change: str
+    outcome: str
+    max_x: float
 
 
 class OverlayItem(BaseModel):
@@ -188,6 +211,14 @@ class OverlayItem(BaseModel):
 
 
 # ---- the live stream: server -> client --------------------------------------------------------------------------
+class ObjectOnScreen(BaseModel):
+    """An object the senses looked at this frame. `box` is in level pixels, like `mario`."""
+    type: str
+    id: int
+    box: Box
+    side: Literal["ahead", "behind", "above", "below"]
+
+
 class FrameEvent(BaseModel):
     """One frame. The game picture and the overlay are separate layers; `rates` is the light state (0..1 per
     neuron group)."""
@@ -199,6 +230,10 @@ class FrameEvent(BaseModel):
     x: float
     buttons: list[str]
     overlay: list[OverlayItem]            # what the senses want drawn, in level pixels
+    objects: list[ObjectOnScreen] = []    # every object found this frame (the same data the senses saw)
+    scroll_x: int = 0                     # level x of the screen's left edge for mario/objects/overlay: subtract it
+                                          # to get screen pixels (they are read before the frame's action)
+    scroll_x_after: int = 0               # the same for frame_png itself, which shows the state after the action
     rates: dict[str, float]
 
 

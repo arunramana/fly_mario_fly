@@ -31,9 +31,9 @@ def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = N
     app.add_middleware(CORSMiddleware, allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
                        allow_methods=["*"], allow_headers=["*"])
 
-    @app.exception_handler(NotImplementedError)
-    async def _not_yet(_: Request, e: NotImplementedError):
-        return JSONResponse({"detail": str(e)}, status_code=501)
+    @app.exception_handler(KeyError)
+    async def _unknown(_: Request, e: KeyError):                 # an unknown moment (or level) id from the runner
+        return JSONResponse({"detail": e.args[0] if e.args else "not found"}, status_code=404)
 
     def fly_names() -> list:
         return sorted(p.stem for p in flies.glob("*.yaml")) if flies.exists() else []
@@ -62,18 +62,15 @@ def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = N
     # ---- registry and levels ----------------------------------------------------------------------------------
     @app.get("/registry", response_model=S.RegistryInfo)
     def get_registry():
-        return V.registry_info(ports.level_catalogue(), fly_names())
+        return V.registry_info(ports.level_catalogue(runs.dir), fly_names())
 
     @app.get("/levels", response_model=list[S.LevelInfo])
     def get_levels():
-        return ports.level_catalogue()
+        return ports.level_catalogue(runs.dir)
 
     @app.get("/levels/{level_id}", response_model=S.LevelInfo)
     def get_level(level_id: str):
-        for lv in ports.level_catalogue():
-            if lv["id"] == level_id:
-                return lv
-        raise HTTPException(404, f"no level {level_id!r}")
+        return ports.level_info(level_id, runs.dir)
 
     # ---- flies ------------------------------------------------------------------------------------------------
     @app.get("/flies", response_model=list[S.FlySummary])
@@ -105,15 +102,18 @@ def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = N
     @app.post("/runs", response_model=S.RunSummary, status_code=201)
     def start_run(req: S.RunRequestDTO):
         fly = check_fly(req.fly)
-        if req.scene.level_id not in {lv["id"] for lv in ports.level_catalogue()}:
+        if req.scene.level_id not in {lv.id for lv in ports.level_catalogue(runs.dir)}:
             raise HTTPException(422, f"unknown level {req.scene.level_id!r}")
         known = registry.list_plugins("scenes")
         bad = [n for n, _ in req.scene.modifiers if n not in known]
         if bad:
             raise HTTPException(422, f"unknown scene modifier(s) {bad}")
         if req.from_moment is not None:
-            ports.resume(None, req.from_moment)
-        live = runs.create(fly, V.dto_to_scene(req.scene))
+            moment = ports.get_moment(req.from_moment)             # unknown id -> 404
+            if (moment.scene.level_id, moment.scene.rom) != (req.scene.level_id, req.scene.rom):
+                raise HTTPException(422, f"moment {req.from_moment!r} is on {moment.scene.level_id}, "
+                                         f"not {req.scene.level_id}")
+        live = runs.create(fly, V.dto_to_scene(req.scene), req.from_moment)
         return runs._summary(live)
 
     @app.get("/runs", response_model=list[S.RunSummary])
@@ -129,7 +129,38 @@ def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = N
 
     @app.get("/runs/{run_id}/moments", response_model=list[S.MomentSummary])
     def run_moments(run_id: str):
+        if run_id not in runs.live and not (runs.dir / run_id).exists() and not ports.list_moments(run_id):
+            raise HTTPException(404, f"no run {run_id!r}")
         return ports.list_moments(run_id)
+
+    @app.post("/runs/{run_id}/moments", response_model=S.MomentSummary, status_code=201)
+    async def save_moment(run_id: str, body: S.MomentSave = S.MomentSave()):
+        live = runs.live.get(run_id)
+        if live is None:
+            raise HTTPException(404, f"no run {run_id!r} on this server")
+        try:
+            return await runs.save_moment(live, body.name, body.frame)
+        except LookupError as e:
+            raise HTTPException(409, str(e))
+        except ValueError as e:
+            raise HTTPException(422, str(e))
+
+    # ---- moments ----------------------------------------------------------------------------------------------
+    @app.get("/moments/{moment_id}", response_model=S.MomentSummary)
+    def get_moment(moment_id: str):
+        return ports.get_moment(moment_id)
+
+    @app.patch("/moments/{moment_id}", response_model=S.MomentSummary)
+    def rename_moment(moment_id: str, body: S.MomentRename):
+        return ports.rename_moment(moment_id, body.name)
+
+    @app.delete("/moments/{moment_id}", status_code=204)
+    def delete_moment(moment_id: str):
+        ports.delete_moment(moment_id)
+
+    @app.get("/moments/{moment_id}/tries", response_model=list[S.TryDTO])
+    def moment_tries(moment_id: str):
+        return ports.tries_from(moment_id)
 
     @app.websocket("/runs/{run_id}/live")
     async def live(ws: WebSocket, run_id: str):

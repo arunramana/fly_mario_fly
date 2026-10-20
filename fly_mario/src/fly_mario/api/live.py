@@ -19,7 +19,7 @@ from typing import Optional
 from fastapi import WebSocket, WebSocketDisconnect
 
 from fly_mario.contracts import FlyConfig, Scene
-from fly_mario.runner import Run, new_run_id, save_run
+from fly_mario.runner import Run, new_run_id, save_moment, save_run
 from fly_mario.api import convert as V
 from fly_mario.api import schemas as S
 
@@ -31,9 +31,12 @@ class LiveRun:
     id: str
     fly: FlyConfig
     scene: Scene
+    parent_moment: Optional[str] = None        # resumed from this saved moment
     status: str = "pending"
     result: object = None                      # RunResult once finished
     error: str = ""
+    run: Optional[Run] = None                  # the Run while it is being streamed
+    pool: Optional[ThreadPoolExecutor] = None  # its one worker thread: everything that touches the emulator goes here
 
 
 @dataclass
@@ -49,9 +52,9 @@ class Runs:
         self.dir = Path(runs_dir)
         self.live: dict[str, LiveRun] = {}
 
-    def create(self, fly: FlyConfig, scene: Scene) -> LiveRun:
+    def create(self, fly: FlyConfig, scene: Scene, from_moment: Optional[str] = None) -> LiveRun:
         rid = f"{new_run_id(fly.name, scene.level_id, scene.seed)}_{uuid.uuid4().hex[:6]}"
-        self.live[rid] = LiveRun(rid, fly, scene)
+        self.live[rid] = LiveRun(rid, fly, scene, from_moment)
         return self.live[rid]
 
     # ---- reading ----------------------------------------------------------------------------------------------
@@ -79,14 +82,15 @@ class Runs:
         res = r.result
         return S.RunSummary(id=r.id, fly=r.fly.name, level_id=r.scene.level_id, status=r.status,
                             outcome=res.outcome if res else None, max_x=res.max_x if res else None,
-                            score=res.score if res else None)
+                            score=res.score if res else None, parent_moment=r.parent_moment)
 
     @staticmethod
     def _saved_summary(p: Path) -> Optional[S.RunSummary]:
         try:
             d = json.loads(p.read_text(encoding="utf-8"))
             return S.RunSummary(id=d["id"], fly=d["fly"], level_id=d["level"], status="finished",
-                                outcome=d["outcome"], max_x=d["max_x"], score=d["score"])
+                                outcome=d["outcome"], max_x=d["max_x"], score=d["score"],
+                                parent_moment=d.get("parent_moment"))
         except (OSError, ValueError, KeyError):
             return None
 
@@ -121,10 +125,10 @@ class Runs:
         live.status = "running"
         ctl = Control()
         reader = asyncio.create_task(self._read(ws, ctl))
-        pool = ThreadPoolExecutor(max_workers=1)
+        pool = live.pool = ThreadPoolExecutor(max_workers=1)
         loop = asyncio.get_running_loop()
         try:
-            run = await loop.run_in_executor(pool, self._build, live)
+            run = live.run = await loop.run_in_executor(pool, self._build, live)
             total = live.scene.max_frames
             while not run.finished and not ctl.closed:
                 if ctl.paused and ctl.steps == 0:
@@ -132,8 +136,10 @@ class Runs:
                     continue
                 ctl.steps = max(0, ctl.steps - 1)
                 t0 = time.perf_counter()
-                event = await loop.run_in_executor(pool, lambda: V.frame_event(run.step(), total))
-                await ws.send_json(event.model_dump())
+                rec = await loop.run_in_executor(pool, run.step)
+                await ws.send_json((await loop.run_in_executor(pool, V.frame_event, rec, total)).model_dump())
+                for info in rec.moments:                # auto moments, and "3 s before death" on the last frame
+                    await ws.send_json(S.MomentEvent(moment=V.moment_to_dto(info)).model_dump())
                 if 0 < ctl.speed < 100:
                     await asyncio.sleep(max(0.0, 1.0 / (FPS * ctl.speed) - (time.perf_counter() - t0)))
             if ctl.closed:
@@ -154,11 +160,21 @@ class Runs:
                 pass
         finally:
             reader.cancel()
+            live.run = live.pool = None
             pool.shutdown(wait=False)
+
+    async def save_moment(self, live: LiveRun, name: str, frame: Optional[int]) -> S.MomentSummary:
+        """Save a moment by hand. The emulator belongs to the run's worker thread, so the save is queued behind the
+        frame being played. Raises LookupError if the run is not being played right now, ValueError for a bad frame."""
+        run, pool = live.run, live.pool
+        if run is None or pool is None or not run.started:
+            raise LookupError("the run is not being played right now; moments can only be saved while it runs")
+        info = await asyncio.get_running_loop().run_in_executor(pool, lambda: save_moment(run, frame, name))
+        return V.moment_to_dto(info)
 
     @staticmethod
     def _build(live: LiveRun) -> Run:
-        run = Run(live.fly, live.scene, run_id=live.id)
+        run = Run(live.fly, live.scene, run_id=live.id, from_moment=live.parent_moment, moments=True)
         run.start()
         return run
 

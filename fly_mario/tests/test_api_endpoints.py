@@ -101,8 +101,10 @@ def test_knob_position_roundtrip():
 
 def test_levels(client):
     levels = client.get("/levels").json()
-    assert len(levels) == 32 and levels[0]["id"] == "1-1"
-    assert client.get("/levels/1-1").json()["id"] == "1-1"
+    assert len(levels) == 35 and levels[0]["id"] == "1-1"
+    one = client.get("/levels/1-1").json()
+    assert one["id"] == "1-1" and one["kind"] == "overground" and one["status"] in ("open", "cleared")
+    assert {"scanned", "partial", "width", "objects", "status_text"} <= set(one)
     assert client.get("/levels/9-9").status_code == 404
 
 
@@ -149,8 +151,9 @@ def test_runs_validation_and_listing(client):
     assert client.get("/runs/nope").status_code == 404
     assert client.post("/runs", json={"fly": fly, "scene": {"level_id": "9-9"}}).status_code == 422
     assert client.post("/runs", json={"fly": fly, "scene": {**scene, "modifiers": [["ghost", {}]]}}).status_code == 422
-    assert client.post("/runs", json={"fly": fly, "scene": scene, "from_moment": "x@1"}).status_code == 501
-    assert client.get(f"/runs/{rid}/moments").status_code == 501
+    assert client.post("/runs", json={"fly": fly, "scene": scene, "from_moment": "x@1"}).status_code == 404
+    assert client.get(f"/runs/{rid}/moments").json() == []
+    assert client.get("/runs/nope/moments").status_code == 404
 
 
 def test_openapi_file_is_current():
