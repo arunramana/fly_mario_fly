@@ -36,21 +36,10 @@ def load_run(run_dir) -> Run:
     return Run(fly_from_dict(cfg["fly"]), Scene(**sc), Options(**cfg.get("options", {})), run_id=run_dir.name)
 
 
-def _display_section(bd) -> dict:
-    """The `display:` section of groups.yaml (index rows, big set). TEMPORARY: BrainDisplay does not carry it yet, so
-    unless the runner adds a `display` field this reads the yaml that ships next to the fly package (data file, no import)."""
-    d = getattr(bd, "display", None)
-    if d:
-        return d
-    import fly_mario
-    f = Path(fly_mario.__file__).parent / "fly" / "groups.yaml"
-    return yaml.safe_load(f.read_text(encoding="utf-8"))["display"]
-
-
 def brain_data(run: Run, run_dir) -> BrainData:
     """Soma positions, group membership, colours and run maxima for the brain this run uses (all from brain_display)."""
     bd = brain_display(run.fly)
-    disp = _display_section(bd)
+    disp = bd.display
     rmax = {}
     rates_file = Path(run_dir) / "rates.npz"
     if rates_file.exists():

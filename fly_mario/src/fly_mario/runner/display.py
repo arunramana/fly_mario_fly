@@ -50,6 +50,7 @@ class BrainDisplay:
     other_colour: str                                # their colour, from groups.yaml
     n_neurons: int = 0                               # neurons in the brain
     placed_by_terminal: tuple = field(default_factory=tuple)   # groups drawn at a terminal proxy, not a soma
+    display: dict = field(default_factory=dict)      # groups.yaml's `display:` section (index rows, big set)
 
 
 def all_somata() -> tuple:
@@ -123,4 +124,4 @@ def brain_display(fly: FlyConfig) -> BrainDisplay:
         if (~has[m]).any():
             proxied.append(name)
     return BrainDisplay(all_xyz=sxyz, groups=groups, other_xyz=xyz[~grouped], other_colour=G.other_colour(),
-                        n_neurons=len(ids), placed_by_terminal=tuple(proxied))
+                        n_neurons=len(ids), placed_by_terminal=tuple(proxied), display=G._table().get("display", {}))

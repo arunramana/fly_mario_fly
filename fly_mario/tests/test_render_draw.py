@@ -83,3 +83,10 @@ def test_overlay_moves_with_scroll():
     a = game_panel(_game(), OVERLAY, 0.0)
     b = game_panel(_game(), OVERLAY, 32.0)
     assert not np.array_equal(a, b)
+
+
+def test_anchored_item_sits_at_the_right_edge_whatever_the_scroll():
+    item = OverlayItem("dot", {"anchor": "screen_right", "y": 100.0}, "#ffffff")
+    a, b = game_panel(_game(), [item], 0.0), game_panel(_game(), [item], 500.0)
+    assert np.array_equal(a, b) and not np.array_equal(a, game_panel(_game(), [], 0.0))
+    assert not np.array_equal(a[(100 + 32) * 4, GAME_W - 22], game_panel(_game(), [], 0.0)[(100 + 32) * 4, GAME_W - 22])

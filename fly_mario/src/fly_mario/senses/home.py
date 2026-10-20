@@ -5,7 +5,7 @@ the real wiring turns into forward walking (DNp09) and steering (DNa). Whole-fly
 """
 from __future__ import annotations
 
-from fly_mario.contracts import KnobSpec, SenseOutput
+from fly_mario.contracts import KnobSpec, OverlayItem, SenseOutput
 from fly_mario.senses.kit import draw
 
 
@@ -27,7 +27,7 @@ class Home:
         drive = knobs["home.drive"]
         return SenseOutput(
             inputs={"LC10a_R": drive},
-            overlay=[draw.dot(mario.x + mario.w + 8, mario.y + mario.h / 2, 2, draw.WHITE)],
+            overlay=[OverlayItem("dot", {"anchor": "screen_right", "y": mario.y}, draw.WHITE)],   # a marker on the right edge, at eye height
             steps=[draw.step("home", "constant drive into LC10a_R", drive, drive / 2.0, "LC10a_R")])
 
 

@@ -162,6 +162,13 @@ def game_panel(game: np.ndarray, overlay: list, scroll_x: float, show_senses: bo
     sy = lambda ly: (ly + 32) * 4                                      # level y has the 32 px status bar above it
     for it in overlay:
         col, g = hex_rgb(it.colour), it.geometry
+        if isinstance(g, dict):                                        # an item that declares an anchor, not level pixels
+            if g.get("anchor") == "screen_right":
+                # a direction marker 22 px inside the right edge at the item's height (as in R3), half transparent
+                ov = img.copy()
+                cv2.circle(ov, (GAME_W - 22, int(round(sy(g["y"])))), 11, col, -1, cv2.LINE_AA)
+                img = cv2.addWeighted(ov, 0.5, img, 0.5, 0)
+            continue
         if it.kind == "box":
             x, y, w, h = g
             c = [(sx(x), sy(y)), (sx(x + w), sy(y)), (sx(x + w), sy(y + h)), (sx(x), sy(y + h))]
@@ -171,12 +178,8 @@ def game_panel(game: np.ndarray, overlay: list, scroll_x: float, show_senses: bo
             x0, y0, x1, y1 = g
             _line(img, (sx(x0), sy(y0)), (sx(x1), sy(y1)), col, 3, it.line)
         elif it.kind == "dot":
-            # A dot is a direction marker (the pull to keep going right): as in R3 it sits 22 px inside the screen's
-            # right edge at the dot's height, radius 11, half transparent, so it reads as "that way", not as an object.
-            _, y, _ = g
-            ov = img.copy()
-            cv2.circle(ov, (GAME_W - 22, int(round(sy(y)))), 11, col, -1, cv2.LINE_AA)
-            img = cv2.addWeighted(ov, 0.5, img, 0.5, 0)
+            x, y, r = g
+            cv2.circle(img, (int(round(sx(x))), int(round(sy(y)))), max(2, int(round(r * 4))), col, -1, cv2.LINE_AA)
         elif it.kind == "wedge":                                       # the cone from Mario's eye to the box it measures
             ex, ey, x, y, w, h = g
             near = x if x >= ex else x + w
