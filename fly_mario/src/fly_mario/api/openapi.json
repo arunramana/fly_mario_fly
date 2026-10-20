@@ -265,6 +265,14 @@
           "mario": {
             "$ref": "#/components/schemas/Box"
           },
+          "objects": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ObjectOnScreen"
+            },
+            "title": "Objects",
+            "type": "array"
+          },
           "overlay": {
             "items": {
               "$ref": "#/components/schemas/OverlayItem"
@@ -278,6 +286,16 @@
             },
             "title": "Rates",
             "type": "object"
+          },
+          "scroll_x": {
+            "default": 0,
+            "title": "Scroll X",
+            "type": "integer"
+          },
+          "scroll_x_after": {
+            "default": 0,
+            "title": "Scroll X After",
+            "type": "integer"
           },
           "total": {
             "title": "Total",
@@ -407,12 +425,28 @@
             "type": "string"
           },
           "objects": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Objects",
-            "type": "array"
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objects"
+          },
+          "partial": {
+            "default": false,
+            "title": "Partial",
+            "type": "boolean"
+          },
+          "scanned": {
+            "default": false,
+            "title": "Scanned",
+            "type": "boolean"
           },
           "status": {
             "enum": [
@@ -421,6 +455,11 @@
               "locked"
             ],
             "title": "Status",
+            "type": "string"
+          },
+          "status_text": {
+            "default": "not tried",
+            "title": "Status Text",
             "type": "string"
           },
           "width": {
@@ -462,6 +501,44 @@
         "title": "MomentEvent",
         "type": "object"
       },
+      "MomentRename": {
+        "properties": {
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "MomentRename",
+        "type": "object"
+      },
+      "MomentSave": {
+        "description": "Save a moment of a running run. `frame` None = now; else one of the recent in-memory snapshots.",
+        "properties": {
+          "frame": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frame"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "title": "MomentSave",
+        "type": "object"
+      },
       "MomentSummary": {
         "description": "A saved moment without its emulator/brain bytes.",
         "properties": {
@@ -478,6 +555,16 @@
           },
           "id": {
             "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "default": "manual",
+            "enum": [
+              "manual",
+              "auto",
+              "death"
+            ],
+            "title": "Kind",
             "type": "string"
           },
           "name": {
@@ -554,6 +641,40 @@
           "default_loom_shape"
         ],
         "title": "ObjectInfo",
+        "type": "object"
+      },
+      "ObjectOnScreen": {
+        "description": "An object the senses looked at this frame. `box` is in level pixels, like `mario`.",
+        "properties": {
+          "box": {
+            "$ref": "#/components/schemas/Box"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "side": {
+            "enum": [
+              "ahead",
+              "behind",
+              "above",
+              "below"
+            ],
+            "title": "Side",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "box",
+          "side"
+        ],
+        "title": "ObjectOnScreen",
         "type": "object"
       },
       "OverlayItem": {
@@ -703,6 +824,17 @@
               }
             ],
             "title": "Outcome"
+          },
+          "parent_moment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Moment"
           },
           "result": {
             "anyOf": [
@@ -943,6 +1075,17 @@
               }
             ],
             "title": "Outcome"
+          },
+          "parent_moment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Moment"
           },
           "score": {
             "anyOf": [
@@ -1236,6 +1379,35 @@
         "title": "TestScene",
         "type": "object"
       },
+      "TryDTO": {
+        "description": "One run resumed from a moment. `change` is the fly's difference from the moment's fly, in words only.",
+        "properties": {
+          "change": {
+            "title": "Change",
+            "type": "string"
+          },
+          "max_x": {
+            "title": "Max X",
+            "type": "number"
+          },
+          "outcome": {
+            "title": "Outcome",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "change",
+          "outcome",
+          "max_x"
+        ],
+        "title": "TryDTO",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -1511,6 +1683,165 @@
         "summary": "Get Level"
       }
     },
+    "/moments/{moment_id}": {
+      "delete": {
+        "operationId": "delete_moment_moments__moment_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "moment_id",
+            "required": true,
+            "schema": {
+              "title": "Moment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Moment"
+      },
+      "get": {
+        "operationId": "get_moment_moments__moment_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "moment_id",
+            "required": true,
+            "schema": {
+              "title": "Moment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MomentSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Moment"
+      },
+      "patch": {
+        "operationId": "rename_moment_moments__moment_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "moment_id",
+            "required": true,
+            "schema": {
+              "title": "Moment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MomentRename"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MomentSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rename Moment"
+      }
+    },
+    "/moments/{moment_id}/tries": {
+      "get": {
+        "operationId": "moment_tries_moments__moment_id__tries_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "moment_id",
+            "required": true,
+            "schema": {
+              "title": "Moment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TryDTO"
+                  },
+                  "title": "Response Moment Tries Moments  Moment Id  Tries Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Moment Tries"
+      }
+    },
     "/registry": {
       "get": {
         "operationId": "get_registry_registry_get",
@@ -1667,6 +1998,55 @@
           }
         },
         "summary": "Run Moments"
+      },
+      "post": {
+        "operationId": "save_moment_runs__run_id__moments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MomentSave",
+                "default": {
+                  "name": ""
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MomentSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Moment"
       }
     }
   }
