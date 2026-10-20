@@ -5,7 +5,8 @@ level_catalogue() never touches the emulator: the kind comes from configs/levels
 $FLY_MARIO_DATA/levels.json, and a level nobody has scanned yet shows `scanned=False, objects=None, width=None`
 (unknown). scan_level(id) scans one level (a walk-right-and-jump driver with enemies switched off, capped in frames
 and seconds) and caches it; a scan that stopped before the flag is `partial=True` (width = how far it got, objects =
-what it saw up to there). precompute() scans the levels the yaml lists (1-1, 1-2).
+what it saw up to there). `objects` also includes every type a saved run on that level found (summary.json
+`objects_seen`), so a run that got past the scan's reach adds what it met. precompute() scans the levels the yaml lists (1-1, 1-2).
 The status part (tried / won / best x) is read from $FLY_MARIO_DATA/runs/*/summary.json on every call.
 """
 from __future__ import annotations
@@ -134,9 +135,9 @@ def precompute(levels=None) -> None:
 
 
 def level_objects(level_id: str) -> tuple:
-    """The object types in a level: from the cache, scanning the level the first time it is asked for."""
+    """The object types in a level: the scan (made the first time it is asked for) plus what saved runs saw there."""
     entry = _read_cache().get(level_id) or scan_level(level_id)
-    return tuple(entry["objects"])
+    return tuple(sorted(set(entry["objects"]) | objects_seen_in_runs().get(level_id, set())))
 
 
 # ---- status from saved runs --------------------------------------------------------------------------------
@@ -155,19 +156,34 @@ def level_statuses(runs_dir: Path | None = None) -> dict:
     return {lv: LevelStatus(n, w, b, f"won {w}/{n}" if w else f"best x {b:.0f}") for lv, (n, w, b) in tally.items()}
 
 
-def _info(lv, cache, kinds, status) -> LevelInfo:
-    e, st = cache.get(lv), status.get(lv, LevelStatus())
+def objects_seen_in_runs(runs_dir: Path | None = None) -> dict:
+    """{level id: object types any saved run on that level found} from the summaries (runs saved before R2 have none)."""
+    folder = Path(runs_dir) if runs_dir else record.runs_dir()
+    out: dict = {}
+    for f in sorted(folder.glob("*/summary.json")) if folder.exists() else ():
+        try:
+            s = json.loads(f.read_text(encoding="utf-8"))
+            out.setdefault(s["level"], set()).update(s.get("objects_seen", ()))
+        except (OSError, ValueError, KeyError):
+            continue
+    return out
+
+
+def _info(lv, cache, kinds, status, seen=None) -> LevelInfo:
+    """The scan's objects joined with those any saved run saw (a run that got further than the scan finds more)."""
+    e, st, extra = cache.get(lv), status.get(lv, LevelStatus()), (seen or {}).get(lv, set())
     if e is None:
-        return LevelInfo(lv, kinds[lv], status=st)
-    return LevelInfo(lv, kinds[lv], True, e["width"], e["flag_x"], e["partial"], e["stop"], tuple(e["objects"]), st)
+        return LevelInfo(lv, kinds[lv], objects=tuple(sorted(extra)) if extra else None, status=st)
+    return LevelInfo(lv, kinds[lv], True, e["width"], e["flag_x"], e["partial"], e["stop"],
+                     tuple(sorted(set(e["objects"]) | extra)), st)
 
 
 def level_info(level_id: str, runs_dir: Path | None = None) -> LevelInfo:
     """One level's catalogue entry; never scans (a level not scanned yet has objects=None)."""
-    return _info(level_id, _read_cache(), config()["kinds"], level_statuses(runs_dir))
+    return _info(level_id, _read_cache(), config()["kinds"], level_statuses(runs_dir), objects_seen_in_runs(runs_dir))
 
 
 def level_catalogue(runs_dir: Path | None = None) -> list:
     """A LevelInfo for each of the 35 envs, in level_ids() order. Returns at once: nothing is scanned here."""
-    cache, kinds, status = _read_cache(), config()["kinds"], level_statuses(runs_dir)
-    return [_info(lv, cache, kinds, status) for lv in level_ids()]
+    cache, kinds, status, seen = _read_cache(), config()["kinds"], level_statuses(runs_dir), objects_seen_in_runs(runs_dir)
+    return [_info(lv, cache, kinds, status, seen) for lv in level_ids()]

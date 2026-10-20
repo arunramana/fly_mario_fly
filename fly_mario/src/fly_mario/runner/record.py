@@ -35,6 +35,13 @@ def scene_to_dict(scene) -> dict:
     return d
 
 
+def scene_from_dict(d: dict):
+    from fly_mario.contracts import Scene
+    d = dict(d)
+    d["modifiers"] = tuple((n, dict(p)) for n, p in d.get("modifiers", ()))
+    return Scene(**d)
+
+
 def save_run(run, result, folder: Path | None = None) -> Path:
     folder = Path(folder) if folder else runs_dir() / (result.id or new_run_id(run.fly.name, run.scene.level_id, run.scene.seed))
     folder.mkdir(parents=True, exist_ok=True)
@@ -54,6 +61,7 @@ def save_run(run, result, folder: Path | None = None) -> Path:
     summary = {"id": folder.name, "fly": result.fly, "level": run.scene.level_id, "outcome": result.outcome,
                "death": result.death, "max_x": result.max_x, "score": result.score, "blocks": result.blocks,
                "mushroom": result.mushroom, "counts": result.counts, "hash": result.hash,
-               "noop": run.scene.noop, "sigma": run.scene.sigma, "seed": run.scene.seed}
+               "noop": run.scene.noop, "sigma": run.scene.sigma, "seed": run.scene.seed,
+               "parent_moment": result.parent_moment, "objects_seen": sorted(run.seen)}
     (folder / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     return folder

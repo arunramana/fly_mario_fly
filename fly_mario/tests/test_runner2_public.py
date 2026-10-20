@@ -64,7 +64,8 @@ def test_status_from_saved_runs(tmp_path):
 
 
 def test_catalogue_is_immediate_and_marks_unscanned_levels_unknown(tmp_path, monkeypatch):
-    monkeypatch.setattr(L.cn, "data_dir", lambda: tmp_path)
+    monkeypatch.setattr(L, "cache_path", lambda: tmp_path / "levels.json")
+    monkeypatch.setattr(L.record, "runs_dir", lambda: tmp_path / "runs")
     monkeypatch.setattr(L, "MarioEnv", lambda *a, **k: pytest.fail("the catalogue must not touch the emulator"))
     (tmp_path / "levels.json").write_text(json.dumps({"version": L.CACHE_VERSION, "levels": {
         "1-1": {"width": 3161, "flag_x": 3161, "partial": False, "stop": "flag", "objects": ["goomba", "pit"]},
@@ -81,12 +82,14 @@ def test_catalogue_is_immediate_and_marks_unscanned_levels_unknown(tmp_path, mon
 
 
 def test_catalogue_with_no_cache_file_is_all_unknown(tmp_path, monkeypatch):
-    monkeypatch.setattr(L.cn, "data_dir", lambda: tmp_path)
+    monkeypatch.setattr(L, "cache_path", lambda: tmp_path / "levels.json")
+    monkeypatch.setattr(L.record, "runs_dir", lambda: tmp_path / "runs")
     assert all(not c.scanned and c.objects is None for c in level_catalogue())
 
 
 def test_scan_caches_and_marks_a_capped_scan_partial(tmp_path, monkeypatch):
-    monkeypatch.setattr(L.cn, "data_dir", lambda: tmp_path)
+    monkeypatch.setattr(L, "cache_path", lambda: tmp_path / "levels.json")
+    monkeypatch.setattr(L.record, "runs_dir", lambda: tmp_path / "runs")
     monkeypatch.setattr(L, "config", lambda: {**L.yaml.safe_load(L.CONFIG.read_text(encoding="utf-8")),
                                               "scan": {"every": 2, "max_frames": 60, "max_seconds": 60}})
     e = L.scan_level("1-1")
@@ -106,14 +109,17 @@ def test_kinds_in_the_yaml_match_the_area_type_in_ram():
 
 
 @needs_data
-def test_a_real_scan_of_1_1_reports_what_it_saw_and_why_it_stopped():
+def test_a_real_scan_of_1_1_reports_what_it_saw_and_why_it_stopped(tmp_path, monkeypatch):
+    monkeypatch.setattr(L, "cache_path", lambda: tmp_path / "levels.json")
     one = L.scan_level("1-1")                         # the simple driver dies at the pit near x=2470: a partial result
     assert one["stop"] in ("flag", "died", "cap") and one["partial"] == (one["flag_x"] is None) and one["width"] > 2000
     assert {"goomba", "pipe", "pit", "qblock"} <= set(one["objects"])
 
 
 @needs_data
-def test_precomputed_levels_are_in_the_real_cache():
+def test_precomputed_levels_are_in_the_cache(tmp_path, monkeypatch):
+    monkeypatch.setattr(L, "cache_path", lambda: tmp_path / "levels.json")
+    monkeypatch.setattr(L.record, "runs_dir", lambda: tmp_path / "runs")
     L.precompute()
     cat = {c.id: c for c in level_catalogue()}
     assert cat["1-1"].scanned and cat["1-1"].objects and cat["1-2"].scanned
