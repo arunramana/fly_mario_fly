@@ -1,16 +1,24 @@
 import type { CSSProperties } from 'react'
-import type { Fly, ObjectInfo, SenseInfo } from '../api/models'
+import type { Fly, ObjectInfo, SenseInfo, ShapeInfo } from '../api/models'
+import { bySenseOrder, splitLabel } from './senseUtil'
+
+const shapeWords = (shape?: ShapeInfo) => {
+  if (!shape) return ''
+  const l = shape.label.charAt(0).toLowerCase() + shape.label.slice(1)
+  return `looms as ${/^(its|the|a|an) /.test(l) ? l : `a ${l}`}`
+}
 
 interface Props {
   objects: ObjectInfo[] // rows
   senses: SenseInfo[] // all registry senses; per_object ones become columns
+  shapes: ShapeInfo[]
   fly: Fly
   onChange: (fly: Fly) => void
 }
 
-/** Rows = objects, columns = per-object senses; one toggle per cell, coloured by sense. */
-export default function SenseGrid({ objects, senses, fly, onChange }: Props) {
-  const cols = senses.filter((s) => s.scope === 'per_object')
+/** The sense grid of the Fly page: a row per thing in the level, a column per per-object sense, one switch per cell. */
+export default function SenseGrid({ objects, senses, shapes, fly, onChange }: Props) {
+  const cols = bySenseOrder(senses.filter((s) => s.scope === 'per_object'))
 
   const toggle = (sense: string, obj: string) => {
     const cur = fly.attachments[sense] ?? []
@@ -19,38 +27,38 @@ export default function SenseGrid({ objects, senses, fly, onChange }: Props) {
   }
 
   return (
-    <table className="grid-table">
-      <thead>
-        <tr>
-          <th />
-          {cols.map((s) => (
-            <th key={s.name} style={{ '--c': s.colour } as CSSProperties} title={s.effect}>
-              <span className={`swatch ${s.line}`} />{s.label}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {objects.map((o) => (
-          <tr key={o.name}>
-            <th className="rowh" title={o.note}>{o.label}</th>
+    <div className="sense-grid" style={{ '--cols': cols.length } as CSSProperties} data-testid="sense-grid">
+      <div className="sg-head">
+        <span>Thing in the level</span>
+        {cols.map((s) => {
+          const [name, what] = splitLabel(s.label)
+          return (
+            <div className="sg-col" key={s.name} style={{ '--c': s.colour } as CSSProperties} title={s.effect}>
+              <span className={`swatch ${s.line}`} />
+              <b>{name}</b>
+              <small>{what}</small>
+            </div>
+          )
+        })}
+      </div>
+      {objects.map((o) => {
+        const shape = shapes.find((s) => s.name === (fly.loom_shapes[o.name] ?? o.default_loom_shape))
+        return (
+          <div className="sg-row" key={o.name}>
+            <div className="sg-thing" title={o.note}>
+              <span className="sprite" />
+              <span><b>{o.label}</b><small>{o.kind} · {shapeWords(shape) || o.note}</small></span>
+            </div>
             {cols.map((s) => {
               const on = (fly.attachments[s.name] ?? []).includes(o.name)
               return (
-                <td key={s.name}>
-                  <button
-                    className={`cell ${s.line} ${on ? 'on' : ''}`}
-                    style={{ '--c': s.colour } as CSSProperties}
-                    aria-pressed={on}
-                    aria-label={`${s.label} on ${o.label}`}
-                    onClick={() => toggle(s.name, o.name)}
-                  />
-                </td>
+                <button key={s.name} className={`toggle ${on ? 'on' : ''}`} style={{ '--c': s.colour } as CSSProperties}
+                  aria-pressed={on} aria-label={`${splitLabel(s.label)[0]} on ${o.label}`} onClick={() => toggle(s.name, o.name)} />
               )
             })}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+          </div>
+        )
+      })}
+    </div>
   )
 }

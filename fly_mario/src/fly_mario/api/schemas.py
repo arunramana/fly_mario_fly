@@ -227,7 +227,8 @@ class FrameEvent(BaseModel):
     type: Literal["frame"] = "frame"
     frame: int
     total: int
-    frame_png: str                        # base64 PNG of the 256x240 game screen, nothing drawn on it
+    frame_png: str                        # base64 PNG of the 256x240 game screen, nothing drawn on it: the screen the
+                                          # senses were looking at (before this frame's action), so the overlay sits on it
     mario: Box                            # in level pixels
     x: float
     buttons: list[str]
@@ -235,8 +236,14 @@ class FrameEvent(BaseModel):
     objects: list[ObjectOnScreen] = []    # every object found this frame (the same data the senses saw)
     scroll_x: int = 0                     # level x of the screen's left edge for mario/objects/overlay: subtract it
                                           # to get screen pixels (they are read before the frame's action)
-    scroll_x_after: int = 0               # the same for frame_png itself, which shows the state after the action
+    scroll_x_after: int = 0               # the same after the action (frame_png shows the screen before it, as the videos do)
     rates: dict[str, float]
+    overlay_png: Optional[str] = None     # base64 PNG, transparent: the senses overlay, cropped to what is drawn;
+                                          # null = nothing to draw on this frame
+    overlay_at: Optional[list[int]] = None  # [x, y] of the overlay's top-left on the 1024 x 960 game-at-x4 canvas
+    brain_jpg: Optional[str] = None       # base64 JPEG, 896 x 1080: the R3 brain panel (glowing somata, nerve cord, LIVE
+                                          # BRAIN, index). Sent only when a newer picture is ready (~10 per second):
+                                          # null = keep showing the last one
 
 
 class StateEvent(BaseModel):

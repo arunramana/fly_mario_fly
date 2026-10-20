@@ -130,21 +130,27 @@ def png_b64(screen: np.ndarray) -> str:
     return base64.b64encode(png).decode("ascii")
 
 
-def frame_event(rec, total: int) -> S.FrameEvent:
+def frame_event(rec, total: int, overlay_png: str | None = None, overlay_at: list | None = None,
+                brain_jpg: str | None = None, screen: np.ndarray | None = None) -> S.FrameEvent:
     m = rec.mario
     overlay = [S.OverlayItem(kind=it.kind, geometry=[float(g) for g in it.geometry], colour=it.colour, line=it.line, anchor=it.anchor)
                for out in rec.outputs.values() for it in out.overlay]
     objects = [S.ObjectOnScreen(type=o.type, id=o.id, box=S.Box(x=o.box.x, y=o.box.y, w=o.box.w, h=o.box.h), side=o.side)
                for o in rec.objects]
-    return S.FrameEvent(frame=rec.frame, total=total, frame_png=png_b64(rec.screen),
+    return S.FrameEvent(frame=rec.frame, total=total, frame_png=png_b64(rec.screen if screen is None else screen),
                         mario=S.Box(x=m.x, y=m.y, w=m.w, h=m.h), x=float(rec.x), buttons=sorted(rec.buttons),
                         overlay=overlay, objects=objects, scroll_x=rec.scroll_x, scroll_x_after=rec.scroll_x_after,
-                        rates={g: float(v) for g, v in rec.rates.items()})
+                        rates={g: float(v) for g, v in rec.rates.items()}, overlay_png=overlay_png, overlay_at=overlay_at,
+                        brain_jpg=brain_jpg)
 
 
 # ---- levels and moments ---------------------------------------------------------------------------------------------
+LEVEL_NAMES = {"full": "Whole game", "lost_levels": "Lost Levels", "random": "Random Stages"}     # the non-stage envs
+LEVEL_ORDER = [f"{w}-{s}" for w in range(1, 9) for s in range(1, 5)] + list(LEVEL_NAMES)
+
+
 def level_to_dto(lv) -> S.LevelInfo:
-    return S.LevelInfo(id=lv.id, label=lv.id, kind=lv.kind, status="cleared" if lv.status.wins else "open",
+    return S.LevelInfo(id=lv.id, label=LEVEL_NAMES.get(lv.id, lv.id), kind=lv.kind, status="cleared" if lv.status.wins else "open",
                        status_text=lv.status.text, scanned=lv.scanned, partial=lv.partial, width=lv.width,
                        objects=None if lv.objects is None else list(lv.objects))
 

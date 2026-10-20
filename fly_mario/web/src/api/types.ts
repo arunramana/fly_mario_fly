@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/brain-map.png": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Brain Map
+         * @description The brain and nerve cord with the neuron groups this fly uses lit: the Fly page's mini map.
+         */
+        post: operations["brain_map_brain_map_png_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/flies": {
         parameters: {
             query?: never;
@@ -83,6 +103,26 @@ export interface paths {
         };
         /** Get Level */
         get: operations["get_level_levels__level_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/levels/{level_id}/thumbnail.png": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Level Thumbnail
+         * @description The level's opening screen (256 x 208 PNG); made with the emulator the first time, then cached.
+         */
+        get: operations["get_level_thumbnail_levels__level_id__thumbnail_png_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -328,6 +368,11 @@ export interface components {
          *     neuron group).
          */
         FrameEvent: {
+            /**
+             * Brain Jpg
+             * @default null
+             */
+            brain_jpg: string | null;
             /** Buttons */
             buttons: string[];
             /** Frame */
@@ -342,6 +387,16 @@ export interface components {
             objects: components["schemas"]["ObjectOnScreen"][];
             /** Overlay */
             overlay: components["schemas"]["OverlayItem"][];
+            /**
+             * Overlay At
+             * @default null
+             */
+            overlay_at: number[] | null;
+            /**
+             * Overlay Png
+             * @default null
+             */
+            overlay_png: string | null;
             /** Rates */
             rates: {
                 [key: string]: number;
@@ -834,6 +889,40 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    brain_map_brain_map_png_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FlyDTO"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/png": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_flies_flies_get: {
         parameters: {
             query?: never;
@@ -1011,6 +1100,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LevelInfo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_level_thumbnail_levels__level_id__thumbnail_png_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                level_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/png": unknown;
                 };
             };
             /** @description Validation Error */

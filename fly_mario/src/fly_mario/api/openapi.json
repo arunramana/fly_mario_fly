@@ -247,6 +247,18 @@
       "FrameEvent": {
         "description": "One frame. The game picture and the overlay are separate layers; `rates` is the light state (0..1 per\nneuron group).",
         "properties": {
+          "brain_jpg": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Brain Jpg"
+          },
           "buttons": {
             "items": {
               "type": "string"
@@ -279,6 +291,33 @@
             },
             "title": "Overlay",
             "type": "array"
+          },
+          "overlay_at": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Overlay At"
+          },
+          "overlay_png": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Overlay Png"
           },
           "rates": {
             "additionalProperties": {
@@ -1465,6 +1504,44 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/brain-map.png": {
+      "post": {
+        "description": "The brain and nerve cord with the neuron groups this fly uses lit: the Fly page's mini map.",
+        "operationId": "brain_map_brain_map_png_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlyDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/png": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Brain Map"
+      }
+    },
     "/flies": {
       "get": {
         "operationId": "list_flies_flies_get",
@@ -1690,6 +1767,45 @@
           }
         },
         "summary": "Get Level"
+      }
+    },
+    "/levels/{level_id}/thumbnail.png": {
+      "get": {
+        "description": "The level's opening screen (256 x 208 PNG); made with the emulator the first time, then cached.",
+        "operationId": "get_level_thumbnail_levels__level_id__thumbnail_png_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "level_id",
+            "required": true,
+            "schema": {
+              "title": "Level Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/png": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Level Thumbnail"
       }
     },
     "/moments/{moment_id}": {

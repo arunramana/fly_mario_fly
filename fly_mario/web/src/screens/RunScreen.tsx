@@ -3,21 +3,28 @@ import { useQuery } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import type { FrameEvent, MomentSummary, RunResult, RunStream } from '../api/models'
-import BrainPanel from '../components/BrainPanel'
-import GameStage from '../components/GameStage'
-import { momentPictures } from '../state'
+import RunStage from '../components/RunStage'
+import { errText, useStartRun } from '../hooks'
+import { momentPictures, runRequests, useDraft, type Picture } from '../draft'
 
-const SPEEDS: [number, string][] = [[0.25, '0.25x'], [0.5, '0.5x'], [1, '1x'], [2, '2x'], [4, '4x'], [100, 'max']]
-const KEEP_PICTURES = 2400 // frames of pictures kept (a few MB) so a moment, even an old one, still has its picture
+const SPEEDS: [number, string][] = [[0.5, '0.5×'], [1, '1×'], [100, 'Fast']]
+const KEEP_PICTURES = 1500 // frames of pictures kept (some MB) so a moment, even an older one, still has its picture
 
+/** Keyed by run id: a restart opens a fresh screen instead of resetting this one. */
 export default function RunScreen() {
   const { runId = '' } = useParams()
+  return <RunView key={runId} runId={runId} />
+}
+
+function RunView({ runId }: { runId: string }) {
   const nav = useNavigate()
+  const { scene, fly } = useDraft()
   const stream = useRef<RunStream | null>(null)
-  const pictures = useRef(new Map<number, string>())
+  const pictures = useRef(new Map<number, Picture>())
   const lastFrame = useRef(0)
   const [diedAt, setDiedAt] = useState<number | null>(null)
   const [frame, setFrame] = useState<FrameEvent | null>(null)
+  const [brain, setBrain] = useState<string>()
   const [moments, setMoments] = useState<MomentSummary[]>([])
   const [result, setResult] = useState<RunResult | null>(null)
   const [error, setError] = useState('')
@@ -26,6 +33,7 @@ export default function RunScreen() {
   const [showSenses, setShowSenses] = useState(true)
   const [showBrain, setShowBrain] = useState(true)
   const registry = useQuery({ queryKey: ['registry'], queryFn: api.getRegistry })
+  const restart = useStartRun()
 
   useEffect(() => {
     const keep = pictures.current
@@ -44,9 +52,10 @@ export default function RunScreen() {
       stream.current = s
       s.onEvent((e) => {
         if (e.type === 'frame') {
-          keep.set(e.frame, e.frame_png)
+          keep.set(e.frame, { game: e.frame_png, overlay: e.overlay_png, at: e.overlay_at })
           keep.delete(e.frame - KEEP_PICTURES)
           lastFrame.current = e.frame
+          if (e.brain_jpg) setBrain(e.brain_jpg)
           setFrame(e)
         } else if (e.type === 'moment') {
           remember(e.moment)
@@ -54,98 +63,91 @@ export default function RunScreen() {
         } else if (e.type === 'end') {
           setResult(e.result)
           if (e.result.outcome === 'died') setDiedAt(lastFrame.current)
-        }
-        else if (e.type === 'error') setError(e.message)
+        } else if (e.type === 'error') setError(e.message)
         else { setPaused(e.paused); setSpeed(e.speed) }
       })
     }, 0)
     return () => { clearTimeout(t); s?.close() }
   }, [runId])
 
-  const total = frame?.total ?? 1
-  const pct = (f: number) => `${(f / total) * 100}%`
+  const total = Math.max(frame?.frame ?? 1, 1) // the bar is the run so far: its end is now
+  const pct = (f: number) => `${Math.min(100, (f / total) * 100)}%`
   const togglePause = () => {
     if (paused) stream.current?.play(); else stream.current?.pause()
     setPaused(!paused)
   }
   const saveHere = async () => {
     if (!frame) return
-    const m = await api.saveMoment(runId, `Moment at frame ${frame.frame}`)
-    setMoments((x) => (x.some((y) => y.id === m.id) ? x : [...x, m]))
-    const png = pictures.current.get(m.frame) ?? frame.frame_png
-    momentPictures.set(m.id, png)
+    try {
+      const m = await api.saveMoment(runId, `Moment at frame ${frame.frame}`)
+      setMoments((x) => (x.some((y) => y.id === m.id) ? x : [...x, m]))
+      momentPictures.set(m.id, pictures.current.get(m.frame) ?? { game: frame.frame_png, overlay: frame.overlay_png, at: frame.overlay_at })
+    } catch (e) { setError(errText(e)) }
   }
   const rewind = async () => {
     const known = moments.find((m) => m.kind === 'death') ?? (await api.getRunMoments(runId)).find((m) => m.kind === 'death')
     if (known) nav(`/moment/${encodeURIComponent(known.id)}`)
     else setError('There is no "3 s before death" moment for this run.')
   }
-
-  const label = (name: string) => registry.data?.objects.find((o) => o.name === name)?.label ?? name
-  const cause = (c: string) => {
-    if (c.startsWith('enemy:')) return `Touched a ${label(c.slice(6))}`
-    return c === 'pit' ? 'Fell in a pit' : 'Died'
+  // Restart: the same fly on the same scene, from the same start (a run that was resumed from a moment resumes again).
+  const again = () => {
+    const req = runRequests.get(runId)?.req ?? { fly, scene, from_moment: result?.parent_moment ?? null }
+    restart.mutate(req)
   }
 
+  const label = (name: string) => registry.data?.objects.find((o) => o.name === name)?.label ?? name
+  const cause = (c: string) => (c.startsWith('enemy:') ? label(c.slice(6)) : c === 'pit' ? 'Pit' : '')
+  const x = (result?.max_x ?? 0).toFixed(0)
+
   return (
-    <>
-      {error && <div className="banner died" role="alert"><p>{error}</p></div>}
+    <div className="run">
+      <RunStage brain={brain} game={frame?.frame_png} overlay={frame?.overlay_png} at={frame?.overlay_at}
+        showBrain={showBrain} showSenses={showSenses} />
+
+      <div className="toolrow">
+        <label className="check"><input type="checkbox" checked={showSenses} onChange={(e) => setShowSenses(e.target.checked)} />Show senses (boxes, lines, dots)</label>
+        <label className="check"><input type="checkbox" checked={showBrain} onChange={(e) => setShowBrain(e.target.checked)} />Show brain</label>
+      </div>
+
+      <div className="toolrow" style={{ flexWrap: 'nowrap' }}>
+        <div className="transport">
+          <button className="tbtn" onClick={again} disabled={restart.isPending} aria-label="restart" title="Restart: the same fly on the same scene">⏮</button>
+          <button className="tbtn play" onClick={togglePause} disabled={!!result} aria-label="pause" title={paused ? 'Play' : 'Pause'}>{paused ? '▶' : '❚❚'}</button>
+          <button className="tbtn" onClick={() => { setPaused(true); stream.current?.step() }} disabled={!!result} aria-label="step" title="One frame">⏭</button>
+        </div>
+        <div className="timeline" data-testid="timeline" aria-label={`frame ${frame?.frame ?? 0}`}>
+          <div className="fill" style={{ width: '100%' }} />
+          {moments.map((m) => <div key={m.id} className="mk" title={m.name} data-testid="moment-mark" style={{ left: pct(m.frame) }} />)}
+          {diedAt != null && <div className="mk death" title="death" data-testid="death-mark" style={{ left: pct(diedAt) }} />}
+        </div>
+        <button className="btn" onClick={saveHere} disabled={!!result || !frame}>◆ Save this moment</button>
+        <div className="speeds" role="group" aria-label="speed">
+          {SPEEDS.map(([v, l]) => (
+            <button key={v} className={`chip ${speed === v ? 'on' : ''}`} aria-pressed={speed === v}
+              onClick={() => { setSpeed(v); stream.current?.setSpeed(v) }}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      {error && <div className="banner died" role="alert"><div><b>Something went wrong</b><p>{error}</p></div></div>}
       {result && (
-        <div className={`banner ${result.outcome === 'flag' ? 'flag' : 'died'}`} role="status" data-outcome={result.outcome}>
-          {result.outcome === 'flag' ? (
-            <>
-              <h2>FLAG REACHED!</h2>
-              <p>Score {result.score} · got as far as {Math.round(result.max_x)} px</p>
-            </>
-          ) : (
-            <>
-              <h2>{result.outcome === 'died' ? 'THE FLY DIED' : `THE RUN ENDED (${result.outcome})`}</h2>
-              <p>{result.outcome === 'died' ? cause(String(result.death?.cause ?? '')) : result.outcome} · got as far as {Math.round(result.max_x)} px</p>
-            </>
-          )}
+        <div className={`banner ${result.outcome === 'flag' ? 'flag' : result.outcome === 'died' ? 'died' : 'info'}`} role="status" data-outcome={result.outcome}>
+          <div>
+            {result.outcome === 'flag' && <><b>Reached the flag!</b><p>Score {result.score} · got as far as x {x}</p></>}
+            {result.outcome === 'died' && <><b>Died at x {x}{cause(String(result.death?.cause ?? '')) ? ` · ${cause(String(result.death?.cause ?? ''))}` : ''}</b>
+              <p>{String(result.death?.cause ?? '').startsWith('enemy:') ? `Touched a ${cause(String(result.death?.cause))}` : cause(String(result.death?.cause ?? '')) ? 'Fell in a pit' : 'The fly died'} · score {result.score}</p></>}
+            {result.outcome !== 'flag' && result.outcome !== 'died' && <><b>The run ended ({result.outcome}) at x {x}</b><p>Score {result.score}</p></>}
+          </div>
           <div className="row">
-            {result.outcome === 'died' && <button className="gold" onClick={rewind}>Rewind 3 s &amp; change the fly</button>}
+            {result.outcome === 'died' && <button className="btn gold" onClick={rewind}>⏪ Rewind 3 s &amp; change the fly</button>}
             {result.parent_moment && (
-              <button onClick={() => nav(`/moment/${encodeURIComponent(result.parent_moment!)}`)}>Back to the moment</button>
+              <button className="btn" onClick={() => nav(`/moment/${encodeURIComponent(result.parent_moment!)}`)}>Back to the moment</button>
             )}
+            <button className="btn" onClick={again} disabled={restart.isPending}>Restart</button>
           </div>
         </div>
       )}
-
-      <div className="run-layout">
-        {showBrain && (
-          <section className="box">
-            <h3>Brain</h3>
-            <BrainPanel rates={frame?.rates ?? {}} />
-          </section>
-        )}
-
-        <section style={showBrain ? undefined : { gridColumn: '1 / -1' }}>
-          <GameStage png={frame?.frame_png} overlay={frame?.overlay} scrollX={frame?.scroll_x} showOverlay={showSenses} />
-          <div className="row" style={{ marginTop: 12 }}>
-            <label className="check"><input type="checkbox" checked={showSenses} onChange={(e) => setShowSenses(e.target.checked)} />Show senses</label>
-            <label className="check"><input type="checkbox" checked={showBrain} onChange={(e) => setShowBrain(e.target.checked)} />Show brain</label>
-          </div>
-
-          <div className="timeline" data-testid="timeline">
-            <div className="fill" style={{ width: pct(frame?.frame ?? 0) }} />
-            {moments.map((m) => <div key={m.id} className="moment" title={m.name} data-testid="moment-mark" style={{ left: pct(m.frame) }} />)}
-            {diedAt != null && <div className="death" title="death" data-testid="death-mark" style={{ left: pct(diedAt) }} />}
-          </div>
-
-          <div className="row spread">
-            <div className="row">
-              <button className="tool" onClick={togglePause} aria-label="pause">{paused ? '▶' : '⏸'}</button>
-              <button className="tool" onClick={() => { setPaused(true); stream.current?.step() }} aria-label="step">⏭</button>
-              <select aria-label="speed" value={speed} onChange={(e) => { const v = Number(e.target.value); setSpeed(v); stream.current?.setSpeed(v) }}>
-                {SPEEDS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-              </select>
-              <span className="muted">frame {frame?.frame ?? 0}</span>
-            </div>
-            <button className="gold" onClick={saveHere} disabled={!!result || !frame}>Save this moment</button>
-          </div>
-        </section>
-      </div>
-    </>
+      {restart.isError && <p className="err" role="alert">{errText(restart.error)}</p>}
+    </div>
   )
 }

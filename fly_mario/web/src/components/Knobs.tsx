@@ -1,32 +1,78 @@
+import type { CSSProperties } from 'react'
 import type { Fly, KnobUI } from '../api/models'
 
 // Sliders carry a position 0..1 and are shown with word labels only; no number reaches the screen.
-export function OriginKey() {
+
+/** One slider. `showReset` adds the little Reset button of the Advanced drawer. */
+export function KnobSlider({ knob, fly, onChange, showReset = false, compact = false, baseline }: {
+  knob: KnobUI
+  fly: Fly
+  onChange: (fly: Fly) => void
+  showReset?: boolean
+  compact?: boolean
+  /** The position the slider is compared with for "changed" (default: the knob's own default). */
+  baseline?: number
+}) {
+  const set = fly.knobs[knob.key]
+  const pos = set ?? knob.position
+  const changed = set !== undefined && Math.abs(set - (baseline ?? knob.position)) > 0.0005
+  const reset = () => {
+    const rest = { ...fly.knobs }
+    delete rest[knob.key]
+    onChange({ ...fly, knobs: rest })
+  }
   return (
-    <div className="origin-key muted">
-      <span className="t">■ from the fly</span><span className="o">■ invented</span>
+    <div className={`knob ${knob.origin}`}>
+      <div className="knob-top">
+        <span className="knob-name">
+          {!compact && <i className={knob.evolvable ? 'evo' : ''} />}
+          {knob.label}{compact && changed && <span className="changed"> · changed</span>}
+        </span>
+        {showReset && <button className="reset" disabled={!changed} onClick={reset}>Reset</button>}
+      </div>
+      <input
+        type="range" min={0} max={1000} aria-label={knob.label} style={{ '--fill': `${pos * 100}%` } as CSSProperties}
+        value={Math.round(pos * 1000)}
+        onChange={(e) => onChange({ ...fly, knobs: { ...fly.knobs, [knob.key]: Number(e.target.value) / 1000 } })}
+      />
+      <div className="ends"><span>{knob.lo_label}</span><span>{knob.hi_label}</span></div>
     </div>
   )
 }
 
-export default function Knobs({ knobs, fly, onChange }: {
-  knobs: KnobUI[]
+export interface KnobSection { key: string; title: string; colour: string; knobs: KnobUI[] }
+
+/** The "Fine-tune this fly" drawer: only the senses and actions that are on appear, each with its sliders. */
+export function AdvancedDrawer({ sections, fly, onChange, onClose, onRun, running }: {
+  sections: KnobSection[]
   fly: Fly
   onChange: (fly: Fly) => void
+  onClose: () => void
+  onRun: () => void
+  running: boolean
 }) {
   return (
-    <div className="drawer-body">
-      {knobs.map((k) => (
-        <div key={k.key} className={`knob ${k.origin}`}>
-          <div className="name">{k.label}</div>
-          <input
-            type="range" min={0} max={1000} aria-label={k.label}
-            value={Math.round((fly.knobs[k.key] ?? k.position) * 1000)}
-            onChange={(e) => onChange({ ...fly, knobs: { ...fly.knobs, [k.key]: Number(e.target.value) / 1000 } })}
-          />
-          <div className="ends"><span>{k.lo_label}</span><span>{k.hi_label}</span></div>
-        </div>
-      ))}
-    </div>
+    <aside className="drawer" role="dialog" aria-label="Fine-tune this fly">
+      <div className="drawer-top">
+        <h2 className="title">Fine-tune this fly</h2>
+        <button className="x" onClick={onClose} aria-label="close">×</button>
+      </div>
+      <p className="lead">Only the senses that are on appear here. Drag to feel the difference, then press Run. The exact values are saved with the fly.</p>
+      <div className="dkey">
+        <span><i className="fly" />from the fly</span><span><i className="invented" />invented</span><span><i className="evo" />tuned by evolution</span>
+      </div>
+      <div className="drawer-body">
+        {sections.length ? sections.map((s) => (
+          <section className="dsec" key={s.key}>
+            <h3 style={{ '--c': s.colour } as CSSProperties}><i />{s.title}</h3>
+            {s.knobs.map((k) => <KnobSlider key={k.key} knob={k} fly={fly} onChange={onChange} showReset />)}
+          </section>
+        )) : <p className="muted">Switch something on to tune it.</p>}
+      </div>
+      <div className="drawer-foot">
+        <button className="btn" onClick={() => onChange({ ...fly, knobs: {} })}>Reset all</button>
+        <button className="btn gold big" onClick={onRun} disabled={running}>▶ Run with these</button>
+      </div>
+    </aside>
   )
 }
