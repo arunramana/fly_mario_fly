@@ -98,7 +98,7 @@ function result(runId: string, req: RunRequest, parent: string | null | undefine
   return {
     id: runId, fly: req.fly.name, scene: req.scene, parent_moment: parent ?? null,
     outcome: flag ? 'flag' : 'died', death: flag ? null : { kind: 'enemy', object_type: 'goomba', object_label: 'Goomba', x: 760 },
-    max_x: flag ? 3168 : 760, score: 0, blocks: 0, mushroom: false, counts: {}, moments: [], hash: '',
+    max_x: flag ? 3168 : 760, score: 0, blocks: 0, mushroom: false, counts: {}, moments: [], hash: '', dials: req.dials ?? 'tuned',
   }
 }
 

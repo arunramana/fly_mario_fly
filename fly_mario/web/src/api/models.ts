@@ -12,9 +12,12 @@ export type ShapeInfo = S['ShapeInfo']
 export type SceneModifierInfo = S['SceneModifierInfo']
 export type Registry = S['RegistryInfo']
 export type Scene = S['SceneDTO']
-export type Fly = S['FlyDTO']
+export type DialView = S['DialView']
+export type Dials = S['RunRequestDTO']['dials']
+/** A fly as the server returns it carries `dials`; one being built in the browser has none yet. */
+export type Fly = S['FlyDTO'] & { dials?: Record<string, DialView> }
 export type LevelInfo = S['LevelInfo']
-export type RunRequest = S['RunRequestDTO']
+export type RunRequest = Omit<S['RunRequestDTO'], 'dials' | 'fly'> & { fly: Fly; dials?: Dials }
 export type RunResult = S['RunResultDTO']
 export type RunSummary = S['RunSummary']
 export type MomentSummary = S['MomentSummary']
