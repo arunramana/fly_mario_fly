@@ -5,7 +5,7 @@ GOAL: a new, simple tool in `fly_mario/` that lets a user attach fly senses to S
 ## Rules
 - Never import or edit the old code in this repo (it is a frozen read-only reference).
 - `fly/` never imports `mario/`, and `mario/` never imports `fly/`. Only `senses/`, `actions/`, `runner/` import both.
-- `evolve/`, `api/`, `render/` go through `runner/` and never name a specific object or sense.
+- `evolve/`, `api/`, `render/` go through `runner/` and never name a specific object or sense. `api/` may also import `render/` (presentation).
 - Attachments are config (`configs/flies/*.yaml`), not code.
 - One plug-in per file, exposing one object named `PLUGIN`.
 - Each lane also owns its own new test files under tests/ (`tests/test_<lane>_*.py`, `tests/parity/test_<lane>_*.py`).

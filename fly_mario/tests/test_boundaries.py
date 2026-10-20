@@ -74,6 +74,8 @@ def test_contracts_imports_nothing_from_fly_mario():
 @pytest.mark.parametrize("area", ["evolve", "api", "render"])
 def test_outer_lanes_only_runner(area):
     allowed = {"fly_mario.runner", "fly_mario.contracts", "fly_mario.registry"}
+    if area == "api":
+        allowed.add("fly_mario.render")        # render is presentation, so the API may call it
     for f in FILES:
         if _area(f) != area:
             continue
