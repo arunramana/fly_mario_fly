@@ -31,13 +31,10 @@ from fly_mario.mario.env import MarioEnv                                      # 
 from fly_mario.mario.walker import Walker                                     # noqa: E402
 from fly_mario.senses.kit.geom import eye_of, gap, theta_of                   # noqa: E402
 from fly_mario.senses.kit.memory import SenseMemory                           # noqa: E402
-from fly_mario.senses.kit.world import floor_y, standing_walls, top_of_wall_at  # noqa: E402
 
 HUD, SCALE = 32, 3                  # the status bar is 32 px; frames are drawn at 3x
 APPROACH = 120                      # px between Mario's front and the near edge for the first frame
 TAKEOFF_WINDOW = 48                 # a jump counts as a pit take-off when the pit's near edge is this close
-WIDE = 96                           # a pit this wide (6 tiles) is probably beyond one running jump: flagged, not tested
-LIFT_TYPES = range(0x24, 0x2C)      # platform / lift object ids in the enemy slots (approximate; flagged as such)
 WALKER_VARIANTS = [(None, None), (32, 28), (16, 28), (40, 40)]   # (pit_trigger, jump_hold); None = the facts
 WHITE, CYAN, RED, YELLOW = "#ffffff", "#00e5ff", "#ff3030", "#ffee00"
 WATER = {lv for lv, k in yaml.safe_load((Path(__file__).resolve().parents[1] / "configs" / "levels.yaml")
@@ -61,48 +58,37 @@ def hull(points):
     return half(pts) + half(pts[::-1])
 
 
-def column_top(ram, facts, wx: int) -> int:
-    """Height (px) of the solid stack above the floor at world x, read from the tiles (not through the sense)."""
-    g = facts["grid"]
-    r = g["stand_row"]
-    while r >= 0 and R.tile(ram, facts, wx, r) != facts["tiles"]["empty"]:
-        r -= 1
-    return (g["stand_row"] - r) * g["tile"]
-
-
-def material(ram, facts, wx: int, h: int) -> str:
-    if h == 0:
-        return "floor"
-    t, tiles = R.tile(ram, facts, wx, facts["grid"]["stand_row"]), facts["tiles"]
+def material(ram, facts, wx: int, y: int) -> str:
+    """What the rim's top tile is made of (facts' tile groups, else its raw id)."""
+    t = R.tile(ram, facts, wx, int(y) // facts["grid"]["tile"])
     for name in ("pipe", "step", "brick", "qblock", "used_block", "ceiling_block"):
-        if t in tiles[name]:
+        if t in facts["tiles"][name]:
             return name
-    return f"tile{t}"
+    return "floor" if t == facts["tiles"]["ground"] else f"tile{t}"
 
 
-def classify(ram, facts, pit: ObjectInstance, shape, knobs, walls) -> dict:
+def on_solid_top(ram, facts, wx: int, y: int) -> bool:
+    """The rim y really is the top of a solid tile: solid at y, not solid just above it."""
+    t, row = facts["grid"]["tile"], int(y) // facts["grid"]["tile"]
+    return R.is_solid(facts, R.tile(ram, facts, wx, row)) and not (row > 0 and R.is_solid(facts, R.tile(ram, facts, wx, row - 1)))
+
+
+def classify(ram, facts, pit: ObjectInstance, shape, knobs) -> dict:
     """Everything the CSV says about one pit, from one frame where the pit is fully on screen."""
-    b, tile, g = pit.box, facts["grid"]["tile"], facts["grid"]
-    near_x, far_x = b.x - tile, b.x + b.w
-    sense_near, sense_far = top_of_wall_at(walls, near_x, facts), top_of_wall_at(walls, far_x, facts)
-    fl = floor_y(facts)
-    true_near, true_far = column_top(ram, facts, near_x), column_top(ram, facts, far_x)
-    obj = ObjectInstance(pit.type, pit.id, b, pit.side, {**pit.state, "loom_rims": (sense_near, sense_far)})
-    tw = shape.shape(obj, facts, knobs)
-    near_h, far_h = fl - sense_near, fl - sense_far
+    b, tile = pit.box, facts["grid"]["tile"]
+    near_y, far_y = pit.state["rims"]
+    ground = pit.state["ground"]
+    tw = shape.shape(ObjectInstance(pit.type, pit.id, b, pit.side, {**pit.state, "loom_rims": (near_y, far_y)}), facts, knobs)
     cols = range(int(b.x), int(b.x + b.w), tile)                    # the pit's own columns only (not the rim stairs)
-    jump_rows = range(g["stand_row"] - 5, g["stand_row"])
+    jump_rows = range(facts["grid"]["stand_row"] - 5, facts["grid"]["stand_row"])
     ceiling = any(R.tile(ram, facts, wx, r) != facts["tiles"]["empty"] for wx in cols for r in jump_rows)
-    return dict(x=int(b.x), width=int(b.w), open=bool(pit.state.get("open")),
-                near_rim_h=int(near_h), far_rim_h=int(far_h),
-                near_rim_made_of=material(ram, facts, near_x, true_near), far_rim_made_of=material(ram, facts, far_x, true_far),
-                near_rim_h_true=int(true_near), far_rim_h_true=int(true_far),
-                tower_h=int(tw.h), tower_top_above_far_rim=int((fl - far_h) - tw.y),
-                tower_reaches_far_rim_top=bool(tw.y <= fl - far_h), tower_y=int(tw.y), ceiling_in_jump_zone=bool(ceiling))
-
-
-def lifts_in(ram, facts):
-    return [x for (_, typ, _, x, _) in R.active_slots(ram, facts) if typ in LIFT_TYPES]
+    return dict(x=int(b.x), width=int(b.w), open=bool(pit.state.get("open")), ground=int(ground),
+                near_rim_h=int(ground - near_y), far_rim_h=int(ground - far_y),
+                near_rim_made_of=material(ram, facts, b.x - tile, near_y), far_rim_made_of=material(ram, facts, b.x + b.w, far_y),
+                rims_on_solid_tops=bool(on_solid_top(ram, facts, b.x - tile, near_y) and (pit.state["open"] or on_solid_top(ram, facts, b.x + b.w, far_y))),
+                tower_h=int(tw.h), tower_base_above_ground=int(ground - (tw.y + tw.h)),
+                tower_top_above_far_rim=int(far_y - tw.y), tower_reaches_far_rim_top=bool(tw.y <= far_y), tower_y=int(tw.y),
+                too_wide=bool(pit.state["too_wide"]), lift_near=bool(pit.state["lift_near"]), ceiling_in_jump_zone=bool(ceiling))
 
 
 # ---- drawing --------------------------------------------------------------------------------------------------
@@ -142,7 +128,7 @@ def render(frame, ram, facts, mario, pit, tower, rims, theta, label, is_open=Fal
 
 
 # ---- one level ------------------------------------------------------------------------------------------------
-def walk(level: str, variant: tuple, found: dict, folder: Path) -> str:
+def walk(level: str, variant: tuple, found: dict, folder: Path, tiles: set) -> str:
     """One walker pass; fills `found` (pit x -> record) with shots of the pits it has not yet got. Returns why it ended."""
     env = MarioEnv()
     st = env.reset(level, "v0", 0)
@@ -153,7 +139,7 @@ def walk(level: str, variant: tuple, found: dict, folder: Path) -> str:
     knobs = {k.key: k.default for s in (loom, pit_shape) for k in s.knobs}
     mem = SenseMemory()
     mem.rng, mem.sigma, mem.mods = None, 0.0, {}
-    drive, grounded_prev, lifts = Driver(), True, set()
+    drive, grounded_prev = Driver(), True
     if variant[0] is not None:
         facts = type(facts)(facts)
         facts["walker"] = {**facts["walker"], "pit_trigger": variant[0], "jump_hold": variant[1]}
@@ -161,33 +147,34 @@ def walk(level: str, variant: tuple, found: dict, folder: Path) -> str:
     for i in range(facts["walker"]["max_frames"]):
         ram = st.ram
         mario = R.read_mario(ram, facts)
-        lifts |= set(lifts_in(ram, facts))
+        if i % 4 == 0:
+            tiles |= {R.tile(ram, facts, wx, r) for wx in R.visible_columns(ram, facts) for r in range(13)}
         world = [o for p in terrain for o in p.find(ram, facts)]
         pits = [o for o in world if o.type == "pit"]
         mem.world = world
         out = loom.cue(pits, mario, facts, knobs, mem)                # keeps the sense's own memory in step (ground, released)
-        walls = standing_walls(world, facts)
         first_col = (int(ram[facts["ram"]["screen_page"]]) * 256 + int(ram[facts["ram"]["screen_x"]])) // facts["grid"]["tile"]             * facts["grid"]["tile"]
         for p in pits:
             # The finder sees only the visible columns, so a pit scrolling off the left edge reappears as a "new",
             # narrower pit starting at the first column. It is the rest of a pit already recorded: skip it.
             if p.box.x == first_col and any(x < p.box.x <= x + r["wmax"] for x, r in found.items()):
                 continue
-            rec = found.setdefault(int(p.box.x), dict(level=level, shots={}, lifts_seen=False, walker=variant, wmax=0))
+            rec = found.setdefault(int(p.box.x), dict(level=level, shots={}, lift_near=False, walker=variant, wmax=0))
             rec["wmax"] = max(rec["wmax"], int(p.box.w))
             front_gap = p.box.x - (mario.x + mario.w)
-            fl_tile = facts["grid"]["tile"]
-            rims = (top_of_wall_at(walls, p.box.x - fl_tile, facts), top_of_wall_at(walls, p.box.x + p.box.w, facts))
+            rims = p.state["rims"]
+            rec["lift_near"] = rec["lift_near"] or p.state["lift_near"]
             tower = pit_shape.shape(ObjectInstance("pit", p.id, p.box, p.side,
                                                    {**p.state, "loom_rims": rims}), facts, knobs)
-            if not p.state.get("open"):
-                rec["meta"] = classify(ram, facts, p, pit_shape, knobs, walls)
             takeoff = mario.airborne and grounded_prev
             want = None
-            if front_gap <= APPROACH and not p.state.get("open") and "approach" not in rec["shots"] and front_gap > 0:
+            if front_gap <= APPROACH and not p.state.get("open") and "approach" not in rec["shots"] and front_gap > 0 \
+                    and (not mario.airborne or front_gap <= 64):       # from the ground he walks on, unless he is nearly there
                 want = "approach"
             elif takeoff and -mario.w < front_gap <= TAKEOFF_WINDOW and "takeoff" not in rec["shots"]:
                 want = "takeoff"
+            if want == "approach" or "meta" not in rec or (rec["meta"]["open"] and not p.state.get("open")):
+                rec["meta"] = classify(ram, facts, p, pit_shape, knobs)       # classified from the approach frame; provisional before it
             if want:
                 h = mario.y + mario.h - tower.y
                 th = theta_of(gap(mario, tower.x, tower.y, tower.w, tower.h), max(h, 0.0))
@@ -208,9 +195,6 @@ def walk(level: str, variant: tuple, found: dict, folder: Path) -> str:
         if st.info.get("flag_get"):
             stop = "flag"
             break
-    for x, rec in found.items():
-        if rec["walker"] == variant:
-            rec["lifts_seen"] = rec["lifts_seen"] or any(x - 48 <= lx <= x + rec.get("meta", {}).get("width", 0) + 48 for lx in lifts)
     env.close()
     return f"{stop}@x={R.mario_x(st.ram, facts)}"
 
@@ -251,30 +235,32 @@ def do_level(level: str) -> dict:
     folder = out_dir() / "frames"
     folder.mkdir(parents=True, exist_ok=True)
     found: dict = {}
-    notes = []
+    notes, tiles = [], set()
     for v in WALKER_VARIANTS:
         before = set(found)
-        end = walk(level, v, found, folder)
+        end = walk(level, v, found, folder, tiles)
         notes.append(f"walker{v}: {end}, +{len(set(found) - before)} pits")
         if end.startswith("flag") and all(len(r["shots"]) == 2 for r in found.values()):
             break
-    return dict(level=level, pits=found, notes=notes)
+    return dict(level=level, pits=found, notes=notes, tiles=sorted(int(t) for t in tiles))
 
 
 # ---- sheets and csv -------------------------------------------------------------------------------------------
 def oddities(level: str, m: dict, rec: dict) -> list:
     odd = []
-    if m.get("width", 0) > WIDE:
-        odd.append(f"wider than a jump (>{WIDE}px)")
+    if m.get("too_wide"):
+        odd.append("wider than a jump")
     if m.get("near_rim_h") != m.get("far_rim_h"):
         odd.append("uneven rims")
-    if m.get("near_rim_h") != m.get("near_rim_h_true") or m.get("far_rim_h") != m.get("far_rim_h_true"):
-        odd.append("sense misses a rim (rim is not a pipe/step)")
+    if m and not m.get("rims_on_solid_tops", True):
+        odd.append("sense misses a rim (rim is not on a solid tile top)")
+    if m.get("tower_base_above_ground", 0) < -16:
+        odd.append("tower base more than a tile below the take-off ground")
     if m.get("ceiling_in_jump_zone"):
         odd.append("solid tiles above the hole (platform or ceiling)")
     if level in WATER:
         odd.append("water level")
-    if rec.get("lifts_seen"):
+    if rec.get("lift_near"):
         odd.append("lift near the pit (approximate type range)")
     if m.get("open"):
         odd.append("only seen running off the screen edge")
@@ -293,8 +279,9 @@ def build(results: list) -> None:
             m = rec.get("meta", {})
             odd = oddities(lv, m, rec)
             rows.append(dict(level=lv, n=n, label=f"{lv} #{n} x={x}", **{k: m.get(k, "") for k in (
-                "x", "width", "near_rim_h", "far_rim_h", "near_rim_made_of", "far_rim_made_of", "near_rim_h_true",
-                "far_rim_h_true", "tower_h", "tower_top_above_far_rim", "tower_reaches_far_rim_top", "ceiling_in_jump_zone")},
+                "x", "width", "ground", "near_rim_h", "far_rim_h", "near_rim_made_of", "far_rim_made_of", "rims_on_solid_tops",
+                "tower_h", "tower_base_above_ground", "tower_top_above_far_rim", "tower_reaches_far_rim_top", "too_wide", "lift_near",
+                "ceiling_in_jump_zone")},
                 oddities="; ".join(odd), frame_approach=rec["shots"].get("approach", ""), frame_takeoff=rec["shots"].get("takeoff", "")))
             rows[-1]["x"] = x
             per_world.setdefault(lv[0], []).append((rows[-1], rec))

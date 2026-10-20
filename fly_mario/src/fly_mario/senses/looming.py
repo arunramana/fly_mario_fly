@@ -104,11 +104,14 @@ class Looming:
         for obj in sorted(objects, key=_order):
             sh = shapes[obj.state.get("loom_shape") or defaults.get(obj.type, "own_box")]
             if sh.family == "tower":
-                if wall_boxes is None:
-                    wall_boxes = standing_walls(mem.world, facts)
-                b0 = obj.box
-                obj = replace(obj, state={**obj.state, "loom_rims": (top_of_wall_at(wall_boxes, b0.x - tile, facts),
-                                                                      top_of_wall_at(wall_boxes, b0.x + b0.w, facts))})
+                if "rims" in obj.state:                     # the pit finder measured them from where Mario walks
+                    rims = obj.state["rims"]
+                else:                                       # a pit made by hand (tests): look the wall tops up
+                    if wall_boxes is None:
+                        wall_boxes = standing_walls(mem.world, facts)
+                    b0 = obj.box
+                    rims = (top_of_wall_at(wall_boxes, b0.x - tile, facts), top_of_wall_at(wall_boxes, b0.x + b0.w, facts))
+                obj = replace(obj, state={**obj.state, "loom_rims": rims})
             box = sh.shape(obj, facts, knobs)
             family = sh.family
             if family == "wall" and box.y + box.h != floor:

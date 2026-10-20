@@ -167,14 +167,15 @@ def test_every_shape_declares_a_family():
         "own_box": "free", "solid_block": "wall", "far_edge_tower": "tower", "custom_box": "free"}
 
 
-def test_far_edge_tower_stands_on_the_far_edge_on_the_highest_rim():
+def test_far_edge_tower_stands_on_the_far_edge_on_the_far_rim():
     pit = instance("pit", box=Box(160, 176, 32, 32))
     flat = SHAPES["far_edge_tower"].shape(pit, FACTS, {})
     assert (flat.x, flat.w, flat.h, flat.y + flat.h) == (192, 16, 32, 176)       # width 32 < the jump, base on the floor
     wide = SHAPES["far_edge_tower"].shape(instance("pit", box=Box(160, 176, 96, 32)), FACTS, {})
     assert wide.h == FACTS["mario"]["jump_apex"]                                 # capped at a full jump
     stair = ObjectInstance("pit", 1, Box(160, 176, 32, 32), "ahead", {"loom_rims": (176, 144)})
-    assert SHAPES["far_edge_tower"].shape(stair, FACTS, {}).y == 144 - 32       # anchored to the highest rim
+    tw = SHAPES["far_edge_tower"].shape(stair, FACTS, {})
+    assert (tw.h, tw.y + tw.h) == (32 + 32, 144)                                 # on the far rim; the 32 px rise is added to its height
 
 
 @pytest.mark.parametrize("key", sorted(ALL_KNOBS))
