@@ -43,7 +43,8 @@ tiles:                     # metatile ids
   brick: [81]
   qblock: [192, 193]               # unused ? block (192 coin, 193 mushroom)
   used_block: [196, 35]            # 196 used, 35 = the bump animation
-  ceiling_extra: [81, 84, 87, 88, 192, 193, 35, 196]   # also stop a rising head (for headroom senses)
+  ceiling_block: [84, 87, 88]      # solid from below, yet no brick/step/pipe/? block: the ceiling_block object
+                                   # (old level.ceiling_tiles = pipe + step + brick + qblock + used_block + these)
 
 objects:                   # per-object facts; type bytes are the RAM object ids
   goomba:
