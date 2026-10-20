@@ -30,6 +30,7 @@ class KnobUI(BaseModel):
     origin: Literal["fly", "invented"]
     evolvable: bool
     floor_position: Optional[Position] = None
+    kind: Literal["slider", "switch"] = "slider"      # a switch is off (position 0) / on (position 1)
 
 
 class ObjectInfo(BaseModel):
@@ -55,7 +56,6 @@ class ShapeInfo(BaseModel):
     name: str
     label: str
     description: str
-    handles: list[str]            # object types it applies to; empty = any
     knobs: list[KnobUI]
 
 

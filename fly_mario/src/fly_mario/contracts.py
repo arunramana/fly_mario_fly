@@ -66,6 +66,7 @@ class KnobSpec:
     origin: Literal["fly", "invented"] = "invented"
     evolvable: bool = True
     floor: Optional[float] = None
+    kind: Literal["slider", "switch"] = "slider"      # a switch is off/on: lo_label / hi_label name the two states
 
 
 @dataclass(frozen=True)
@@ -108,6 +109,8 @@ class Sense(Protocol):
     line: Literal["solid", "dotted", "dashed"]
     feeds: list
     knobs: list
+    raises: list      # names of modifiers it sets for other senses and actions
+    reads: list       # names of modifiers it reads from other senses
 
     def cue(self, objects: list, mario: MarioState, facts: Any, knobs: dict, memory: Any) -> SenseOutput: ...
 
@@ -119,7 +122,6 @@ class LoomShape(Protocol):
     label: str
     description: str
     knobs: list
-    handles: list
 
     def shape(self, obj: ObjectInstance, facts: Any, knobs: dict) -> Box: ...
 
@@ -155,6 +157,7 @@ class Action(Protocol):
     source_groups: list
     knobs: list
     priority: int
+    reads: list       # names of modifiers it reads from the senses
 
     def decide(self, rates: dict, knobs: dict, state: Any) -> ButtonIntent: ...
 

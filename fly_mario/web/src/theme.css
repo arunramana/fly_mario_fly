@@ -172,6 +172,9 @@ input[type='text'] { background: #000; border: calc(3 * var(--px)) solid var(--l
 .dsec h3 { font-family: var(--pix); font-size: calc(8 * var(--px)); color: var(--gold); display: flex; align-items: center; gap: calc(10 * var(--px)); margin-bottom: calc(14 * var(--px)); }
 .dsec h3 i { width: calc(12 * var(--px)); height: calc(12 * var(--px)); background: var(--c); display: inline-block; }
 .knob { margin-bottom: calc(14 * var(--px)); }
+.switch { display: flex; gap: calc(4 * var(--px)); }
+.switch button { flex: 1; padding: calc(6 * var(--px)); border: calc(2 * var(--px)) solid currentColor; background: transparent; color: inherit; font: inherit; opacity: 0.6; cursor: pointer; }
+.switch button.on { opacity: 1; background: var(--gold, #f8b800); color: #000; }
 .knob-top { display: flex; justify-content: space-between; align-items: center; gap: calc(8 * var(--px)); }
 .knob-name { display: flex; align-items: center; gap: calc(8 * var(--px)); font-size: calc(16 * var(--px)); }
 .knob-name i { flex: none; width: calc(8 * var(--px)); height: calc(8 * var(--px)); background: var(--k); }

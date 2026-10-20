@@ -405,6 +405,15 @@
             "title": "Key",
             "type": "string"
           },
+          "kind": {
+            "default": "slider",
+            "enum": [
+              "slider",
+              "switch"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
           "label": {
             "title": "Label",
             "type": "string"
@@ -1347,13 +1356,6 @@
             "title": "Description",
             "type": "string"
           },
-          "handles": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Handles",
-            "type": "array"
-          },
           "knobs": {
             "items": {
               "$ref": "#/components/schemas/KnobUI"
@@ -1374,7 +1376,6 @@
           "name",
           "label",
           "description",
-          "handles",
           "knobs"
         ],
         "title": "ShapeInfo",

@@ -18,7 +18,7 @@ def knob_ui(spec, position: float | None = None) -> S.KnobUI:
     return S.KnobUI(
         key=spec.key, label=spec.label, lo_label=spec.lo_label, hi_label=spec.hi_label,
         position=K.to_position(spec, spec.default) if position is None else position,
-        scale=spec.scale, origin=spec.origin, evolvable=spec.evolvable,
+        scale=spec.scale, origin=spec.origin, evolvable=spec.evolvable, kind=spec.kind,
         floor_position=None if spec.floor is None else K.to_position(spec, spec.floor))
 
 
@@ -41,7 +41,7 @@ def registry_info(levels: list, presets: list) -> S.RegistryInfo:
                             line=s.line, feeds=list(getattr(s, "feeds", ())), knobs=_knobs(s))
                 for s in senses.values()],
         shapes=[S.ShapeInfo(name=s.name, label=s.label, description=s.description,
-                            handles=list(getattr(s, "handles", ())), knobs=_knobs(s)) for s in shapes.values()],
+                            knobs=_knobs(s)) for s in shapes.values()],
         actions=[S.ActionInfo(name=a.name, label=a.label, button=a.button,
                               source_groups=list(a.source_groups), knobs=_knobs(a), priority=a.priority,
                               status=getattr(a, "status", "ready")) for a in actions.values()],

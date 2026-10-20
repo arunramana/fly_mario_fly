@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 import type { Fly, KnobUI } from '../api/models'
 
 // Sliders carry a position 0..1 and are shown with word labels only; no number reaches the screen.
+// A switch knob (kind 'switch') is the same position pinned to 0 or 1, shown as two labelled buttons.
 
 /** One slider. `showReset` adds the little Reset button of the Advanced drawer. */
 export function KnobSlider({ knob, fly, onChange, showReset = false, compact = false, baseline }: {
@@ -21,6 +22,7 @@ export function KnobSlider({ knob, fly, onChange, showReset = false, compact = f
     delete rest[knob.key]
     onChange({ ...fly, knobs: rest })
   }
+  const setPos = (p: number) => onChange({ ...fly, knobs: { ...fly.knobs, [knob.key]: p } })
   return (
     <div className={`knob ${knob.origin}`}>
       <div className="knob-top">
@@ -30,12 +32,19 @@ export function KnobSlider({ knob, fly, onChange, showReset = false, compact = f
         </span>
         {showReset && <button className="reset" disabled={!changed} onClick={reset}>Reset</button>}
       </div>
+      {knob.kind === 'switch' ? (
+        <div className="switch" role="group" aria-label={knob.label}>
+          <button className={pos < 0.5 ? 'on' : ''} aria-pressed={pos < 0.5} onClick={() => setPos(0)}>{knob.lo_label}</button>
+          <button className={pos >= 0.5 ? 'on' : ''} aria-pressed={pos >= 0.5} onClick={() => setPos(1)}>{knob.hi_label}</button>
+        </div>
+      ) : (<>
       <input
         type="range" min={0} max={1000} aria-label={knob.label} style={{ '--fill': `${pos * 100}%` } as CSSProperties}
         value={Math.round(pos * 1000)}
         onChange={(e) => onChange({ ...fly, knobs: { ...fly.knobs, [knob.key]: Number(e.target.value) / 1000 } })}
       />
       <div className="ends"><span>{knob.lo_label}</span><span>{knob.hi_label}</span></div>
+      </>)}
     </div>
   )
 }

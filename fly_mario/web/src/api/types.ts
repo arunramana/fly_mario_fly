@@ -440,6 +440,12 @@ export interface components {
             hi_label: string;
             /** Key */
             key: string;
+            /**
+             * Kind
+             * @default slider
+             * @enum {string}
+             */
+            kind: "slider" | "switch";
             /** Label */
             label: string;
             /** Lo Label */
@@ -820,8 +826,6 @@ export interface components {
         ShapeInfo: {
             /** Description */
             description: string;
-            /** Handles */
-            handles: string[];
             /** Knobs */
             knobs: components["schemas"]["KnobUI"][];
             /** Label */

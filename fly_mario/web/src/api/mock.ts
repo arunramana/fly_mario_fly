@@ -8,7 +8,7 @@ import type {
 
 const knob = (key: string, label: string, lo_label: string, hi_label: string,
   origin: KnobUI['origin'] = 'invented'): KnobUI => ({
-  key, label, lo_label, hi_label, position: 0.5, scale: 'linear', origin, evolvable: true, floor_position: null,
+  key, label, lo_label, hi_label, position: 0.5, scale: 'linear', origin, evolvable: true, floor_position: null, kind: 'slider',
 })
 
 const registry: Registry = {
