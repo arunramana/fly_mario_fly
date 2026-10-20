@@ -218,3 +218,11 @@ def test_groups_driven_by_senses_belong_to_their_mechanisms():
         assert set(out.inputs) <= allowed or s.name == "looming", (s.name, set(out.inputs) - allowed)
     looming = SENSES["looming"].cue([], MARIO, FACTS, ALL_KNOBS, SenseMemory())
     assert set(looming.inputs) <= set(mechs["escape"].input_groups)
+
+
+def test_every_object_declares_block_hit_tile_and_fall_death():
+    """session.py reads both directly, so every object type must declare them; a block_hit_tile is a facts["tiles"] key."""
+    for name, o in OBJECTS.items():
+        assert o.block_hit_tile is None or o.block_hit_tile in FACTS["tiles"], name
+        assert isinstance(o.causes_fall_death, bool), name
+    assert OBJECTS["pit"].causes_fall_death and OBJECTS["usedblock"].block_hit_tile

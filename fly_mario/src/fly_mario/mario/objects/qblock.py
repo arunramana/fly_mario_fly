@@ -9,6 +9,8 @@ class QBlock:
     note = "Unused ? block; state['tile'] is the tile id (192 or 193)."
     kind = "terrain"
     default_loom_shape = "solid_block"
+    block_hit_tile = None
+    causes_fall_death = False
 
     def find(self, ram, facts):
         t = facts["grid"]["tile"]

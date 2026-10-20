@@ -9,6 +9,7 @@ class UsedBlock:
     note = "Empty block after a hit; the bump animation is its own tile id (state['tile'])."
     kind = "terrain"
     default_loom_shape = "solid_block"
+    causes_fall_death = False
     block_hit_tile = "block_hit"        # key in facts["tiles"]: an instance in this tile id counts as a block the run hit
 
     def find(self, ram, facts):

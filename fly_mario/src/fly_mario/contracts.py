@@ -45,6 +45,8 @@ class ObjectType(Protocol):
     note: str
     kind: Literal["enemy", "obstacle", "pickup", "terrain"]
     default_loom_shape: str
+    block_hit_tile: Optional[str] = None     # key in facts["tiles"]: an instance in that tile id is a block the run hit
+    causes_fall_death: bool = False          # Mario dying beside one of these fell in
 
     def find(self, ram: Any, facts: Any) -> list[ObjectInstance]: ...
     def remove(self, env: Any) -> None: ...

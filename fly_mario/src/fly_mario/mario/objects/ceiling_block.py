@@ -10,6 +10,8 @@ class CeilingBlock:
     note = "One 16 x 16 box per solid tile above the ground that is not a brick, pipe, step or ? block; it only matters overhead."
     kind = "terrain"
     default_loom_shape = "solid_block"
+    block_hit_tile = None
+    causes_fall_death = False
 
     def find(self, ram, facts):
         t = facts["grid"]["tile"]

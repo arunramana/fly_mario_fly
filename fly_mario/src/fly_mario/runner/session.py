@@ -244,7 +244,7 @@ class Run:
         self.counts["left_frames"] += int(left)
         self._prev_a, self._prev_left = a, left
         for name, p in self.objects.items():
-            key = getattr(p, "block_hit_tile", None)          # declared by the plug-in; the tile id is a fact
+            key = p.block_hit_tile          # declared by the plug-in; the tile id is a fact
             if key:
                 tid = self.env.facts["tiles"][key]
                 self.hit_blocks |= {int(o.box.x) for o in found.get(name, ()) if o.state.get("tile") == tid}
@@ -290,7 +290,7 @@ class Run:
             near = [(abs(o.box.x - self._last_mario.x), o.type) for objs in self._last_found.values() for o in objs
                     if self.objects[o.type].kind == "enemy"]
             near = [n for n in near if n[0] <= 20]
-            fell = [n for n, p in self.objects.items() if getattr(p, "causes_fall_death", False)
+            fell = [n for n, p in self.objects.items() if p.causes_fall_death
                     and any(o.box.x - 12 <= x <= o.box.x + o.box.w + 12 for o in self._last_found.get(n, ()))]
             self.death = {"x": x, "cause": fell[0] if fell else (f"enemy:{min(near)[1]}" if near else "other")}
 

@@ -9,6 +9,8 @@ class Mushroom:
     note = "The live power-up in object slot 5."
     kind = "pickup"
     default_loom_shape = "own_box"
+    block_hit_tile = None
+    causes_fall_death = False
 
     def find(self, ram, facts):
         r, g, spec = facts["ram"], facts["grid"], facts["objects"]["mushroom"]

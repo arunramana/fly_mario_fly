@@ -8,6 +8,8 @@ class Pipe:
     note = "Raw column stack of pipe tiles; neighbouring equal-height columns are one pipe."
     kind = "terrain"
     default_loom_shape = "solid_block"
+    block_hit_tile = None
+    causes_fall_death = False
 
     def find(self, ram, facts):
         return [R.instance("pipe", x0, R.face_box(x0, x1, H, facts), ram, facts)
