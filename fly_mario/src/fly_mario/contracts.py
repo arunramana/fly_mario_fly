@@ -85,6 +85,7 @@ class OverlayItem:
     geometry: tuple
     colour: str
     line: Literal["solid", "dotted", "dashed"] = "solid"
+    anchor: Literal["level", "screen_right"] = "level"   # level pixels, or pinned to the screen's right edge
 
 
 @dataclass(frozen=True)

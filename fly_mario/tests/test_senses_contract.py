@@ -99,6 +99,7 @@ def test_every_sense_runs_on_every_object_type(sense, obj):
     for item in out.overlay:
         assert item.kind in ("box", "line", "dot", "wedge") and item.line in ("solid", "dotted", "dashed")
         assert all(math.isfinite(g) for g in item.geometry)
+        assert item.anchor in ("level", "screen_right")
     for st in out.steps:
         assert math.isfinite(st.value) and 0.0 <= st.norm <= 1.0
 

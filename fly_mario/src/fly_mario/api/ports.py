@@ -1,48 +1,38 @@
-"""Things the API needs that the runner does not provide yet. Each is a stub that raises NotImplementedError (the
-app answers 501); together they are the list for the next runner step.
-
-  list_moments / get_moment   a store of SavedMoments per run (Run.snapshot() and Run.restore() exist; nothing keeps
-                              the moments, nothing lists them, and no cadence takes automatic ones)
-  resume                      start a Run from a moment id (RunRequest.from_moment): Run has no from_moment argument
-                              and no way to look a moment up
-  frame_objects               the ObjectInstances found in a frame (Run keeps them in a private attribute)
-  scroll_x                    the screen's scroll offset, to put level-pixel overlays on the 256-px picture
-  level_catalogue             level width, the object types each level holds, cleared/locked status
-
-level_catalogue has a fallback so the level grid is not empty: the 32 stages, all open, width and objects unknown.
-"""
+"""The runner's moment store and level catalogue, as the API's JSON shapes. Every moment id a client passes in is
+looked up here; an unknown one is a KeyError, which the app answers with 404."""
 from __future__ import annotations
 
+from fly_mario import runner
+from fly_mario.api import convert as V
+from fly_mario.api import schemas as S
 
-def _lacks(what: str):
-    raise NotImplementedError(f"the runner has no {what} yet")
+
+def level_catalogue(runs_dir=None) -> list:
+    return [V.level_to_dto(lv) for lv in runner.level_catalogue(runs_dir)]
+
+
+def level_info(level_id: str, runs_dir=None) -> S.LevelInfo:
+    if level_id not in {lv.id for lv in runner.level_catalogue(runs_dir)}:
+        raise KeyError(f"no level {level_id!r}")
+    return V.level_to_dto(runner.level_info(level_id, runs_dir))
 
 
 def list_moments(run_id: str) -> list:
-    _lacks("saved-moment store")
+    return [V.moment_to_dto(i) for i in runner.list_moments(run_id)]
 
 
-def get_moment(moment_id: str):
-    _lacks("saved-moment store")
+def get_moment(moment_id: str) -> S.MomentSummary:
+    return V.moment_to_dto(runner.moment_info(moment_id))
 
 
-def resume(run, moment_id: str) -> None:
-    _lacks("resume-from-moment")
+def rename_moment(moment_id: str, name: str) -> S.MomentSummary:
+    return V.moment_to_dto(runner.rename_moment(moment_id, name))
 
 
-def frame_objects(run) -> list:
-    _lacks("per-frame object list")
+def delete_moment(moment_id: str) -> None:
+    runner.delete_moment(moment_id)
 
 
-def scroll_x(run) -> int:
-    _lacks("scroll offset")
-
-
-def level_catalogue() -> list:
-    """[{id, label, kind, status, width, objects}] for every level."""
-    out = []
-    for world in range(1, 9):
-        for stage in range(1, 5):
-            out.append({"id": f"{world}-{stage}", "label": f"{world}-{stage}",
-                        "kind": "castle" if stage == 4 else "stage", "status": "open", "width": None, "objects": []})
-    return out
+def tries_from(moment_id: str) -> list:
+    return [S.TryDTO(run_id=t.run_id, change=t.change, outcome=t.outcome, max_x=t.max_x)
+            for t in runner.tries_from(moment_id)]

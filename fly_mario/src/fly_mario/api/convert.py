@@ -63,7 +63,7 @@ def test_scenes(objs: dict, mods: dict, levels: list) -> list:
             continue
         for o in objs.values():
             out.append(S.TestScene(name=f"{m.name}:{o.name}", label=f"{m.label}: {o.label}",
-                                   scene=S.SceneDTO(level_id=levels[0]["id"], modifiers=[(m.name, {key: [o.name]})])))
+                                   scene=S.SceneDTO(level_id=levels[0].id, modifiers=[(m.name, {key: [o.name]})])))
     return out
 
 
@@ -132,8 +132,23 @@ def png_b64(screen: np.ndarray) -> str:
 
 def frame_event(rec, total: int) -> S.FrameEvent:
     m = rec.mario
-    overlay = [S.OverlayItem(kind=it.kind, geometry=[float(g) for g in it.geometry], colour=it.colour, line=it.line)
+    overlay = [S.OverlayItem(kind=it.kind, geometry=[float(g) for g in it.geometry], colour=it.colour, line=it.line, anchor=it.anchor)
                for out in rec.outputs.values() for it in out.overlay]
+    objects = [S.ObjectOnScreen(type=o.type, id=o.id, box=S.Box(x=o.box.x, y=o.box.y, w=o.box.w, h=o.box.h), side=o.side)
+               for o in rec.objects]
     return S.FrameEvent(frame=rec.frame, total=total, frame_png=png_b64(rec.screen),
                         mario=S.Box(x=m.x, y=m.y, w=m.w, h=m.h), x=float(rec.x), buttons=sorted(rec.buttons),
-                        overlay=overlay, rates={g: float(v) for g, v in rec.rates.items()})
+                        overlay=overlay, objects=objects, scroll_x=rec.scroll_x, scroll_x_after=rec.scroll_x_after,
+                        rates={g: float(v) for g, v in rec.rates.items()})
+
+
+# ---- levels and moments ---------------------------------------------------------------------------------------------
+def level_to_dto(lv) -> S.LevelInfo:
+    return S.LevelInfo(id=lv.id, label=lv.id, kind=lv.kind, status="cleared" if lv.status.wins else "open",
+                       status_text=lv.status.text, scanned=lv.scanned, partial=lv.partial, width=lv.width,
+                       objects=None if lv.objects is None else list(lv.objects))
+
+
+def moment_to_dto(i) -> S.MomentSummary:
+    return S.MomentSummary(id=i.id, run_id=i.run_id, name=i.name, frame=i.frame, x=i.x, auto=i.auto, kind=i.kind,
+                           scene=scene_to_dto(i.scene), fly=fly_to_dto(i.fly), on_screen=list(i.on_screen))
