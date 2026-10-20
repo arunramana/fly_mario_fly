@@ -122,3 +122,36 @@ def tile_boxes(ram, facts, ids) -> list:
     ids = set(ids)
     return [(wx, r, tile(ram, facts, wx, r)) for wx in visible_columns(ram, facts)
             for r in range(g["ground_row"]) if tile(ram, facts, wx, r) in ids]
+
+
+# ---- support: what Mario can stand on (the pit rule) ---------------------------------------------------------------
+
+def is_solid(facts, tile_id: int) -> bool:
+    """Does this metatile stop Mario? The game's own rule, from facts["collision"]: non-zero and below its group's upper extent."""
+    c = facts["collision"]
+    t = int(tile_id)
+    return t != c["empty"] and t < c["stop_upper_ext"][t >> 6] and t not in c["not_solid"]
+
+
+def takeoff_ground(ram, facts) -> int:
+    """Feet y of the ground Mario is walking on, or took off from: his feet on the ground, else where the jump began."""
+    r = facts["ram"]
+    if int(ram[r["player_state"]]) == 0:
+        return int(ram[r["mario_feet_y"]])
+    origin = int(ram[r["jump_origin_y"]])
+    return origin if origin else facts["grid"]["ground_row"] * facts["grid"]["tile"]
+
+
+def support_top(ram, facts, wx: int, ground: int):
+    """y of the top of what a column offers Mario: the first solid tile at or below the `ground` row, then up through the
+    solid stack that sits on it (a pipe or stair column beside the floor). None when the column has nothing to stand on."""
+    g = facts["grid"]
+    t, last = g["tile"], g["ground_row"] + 1
+    row = max(0, min(int(ground) // t, last))
+    while row <= last and not is_solid(facts, tile(ram, facts, wx, row)):
+        row += 1
+    if row > last:
+        return None
+    while row > 0 and is_solid(facts, tile(ram, facts, wx, row - 1)):
+        row -= 1
+    return row * t

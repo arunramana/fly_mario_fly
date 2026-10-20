@@ -17,6 +17,7 @@ ram:                       # CPU RAM addresses (hex)
   enemy_page: 0x006E
   enemy_x: 0x0087
   enemy_y: 0x00CF          # = the enemy's feet y + enemy_feet_offset
+  jump_origin_y: 0x0708    # feet y where the current jump began (0 until the first jump); verified at take-off on 1-1
   tile_buffer: 0x0500      # 0x0500 + page_bytes * (page % 2) + 16 * row + col
 
 grid:
@@ -33,6 +34,8 @@ mario:
   box_small: [12, 16]      # w, h
   box_big: [12, 24]        # big / fire (power >= 1); same feet reference as small
   power_names: [small, big, fire]
+  jump_reach: 69           # px: a pit this wide or wider is flagged too_wide. Measured on 1-1 with the enemies off: a walking jump
+                           # (right + A) travels 81 px in the air, minus his 12 px body = 69; a running jump (right + B + A) 144 - 12 = 132
   jump_apex: 68            # px a full walking jump rises above take-off (measured, flyrun S2c)
 
 tiles:                     # metatile ids
@@ -46,6 +49,19 @@ tiles:                     # metatile ids
   block_hit: 196                   # the used_block id that means a block was hit (35 is only the bump animation)
   ceiling_block: [84, 87, 88]      # solid from below, yet no brick/step/pipe/? block: the ceiling_block object
                                    # (old level.ceiling_tiles = pipe + step + brick + qblock + used_block + these)
+
+collision:                 # the game's own "does this metatile stop Mario" rule, as data (pit.py / ram.is_solid read it)
+  # A metatile id's top two bits pick one of 4 groups ("palettes") of 64 ids. The ROM keeps two 4-entry tables indexed by
+  # that group: SolidMTileUpperExt at CPU $DF93 = 10 61 88 c4 and ClimbMTileUpperExt at $DF9B = 24 6d 8a c6
+  # (read out of the bundled super-mario-bros.nes; $DF93/$DF9B are PRG addresses). The first is what the game's
+  # solid-check compares against, but it is NOT the rule that stops Mario: poking every id 0-255 into the tile buffer
+  # (as a wall across his path, and as a floor under his feet; tests/test_pits_tiles.py repeats this probe) showed that
+  # an id stops him iff it is non-zero and below its group's ClimbMTileUpperExt entry, bar the exceptions listed.
+  # (ids 36, 37 also hang the game when poked into the buffer; the probe skips them. They are above the extent anyway.)
+  stop_upper_ext: [0x24, 0x6d, 0x8a, 0xc6]
+  solid_upper_ext: [0x10, 0x61, 0x88, 0xc4]        # kept for the record; not used by the rule
+  empty: 0
+  not_solid: [95, 96, 194, 195]                    # measured exceptions: 0x5f, 0x60 and the two coin ids 0xc2, 0xc3
 
 objects:                   # per-object facts; type bytes are the RAM object ids
   goomba:
@@ -62,6 +78,9 @@ objects:                   # per-object facts; type bytes are the RAM object ids
     types: [0x0D]
     size: [16, 24]         # the part above its pipe's rim is all that exists
     live_states: [0]
+  lift:
+    types: [0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B]   # platforms in the enemy slots (APPROXIMATE id range: balance, vertical, horizontal, falling)
+    near_px: 48                                               # a lift within this many px of a pit counts as near
   mushroom:
     types: [0x2E]
     size: [16, 16]
