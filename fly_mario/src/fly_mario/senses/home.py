@@ -27,7 +27,7 @@ class Home:
         drive = knobs["home.drive"]
         return SenseOutput(
             inputs={"LC10a_R": drive},
-            overlay=[OverlayItem("dot", {"anchor": "screen_right", "y": mario.y}, draw.WHITE)],   # a marker on the right edge, at eye height
+            overlay=[OverlayItem("dot", (mario.x, mario.y, 2.75), draw.WHITE, anchor="screen_right")],   # on the right edge, at eye height (x unused)
             steps=[draw.step("home", "constant drive into LC10a_R", drive, drive / 2.0, "LC10a_R")])
 
 
