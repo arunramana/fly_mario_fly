@@ -18,6 +18,9 @@ class Home:
     line = "solid"
     feeds = ["walking"]
     order = 60
+    raises = []
+    reads = []
+    DRIVE_NORM = 2.0               # a drive of this size fills the "home" bar
     knobs = [
         KnobSpec("home.drive", "Pull to the right", "weak", "strong", 0.5, 0.1134, 1.8142, scale="log",
                  origin="invented", evolvable=True, floor=0.1003),
@@ -28,7 +31,7 @@ class Home:
         return SenseOutput(
             inputs={"LC10a_R": drive},
             overlay=[OverlayItem("dot", (mario.x, mario.y, 2.75), draw.WHITE, anchor="screen_right")],   # on the right edge, at eye height (x unused)
-            steps=[draw.step("home", "constant drive into LC10a_R", drive, drive / 2.0, "LC10a_R")])
+            steps=[draw.step("home", "constant drive into LC10a_R", drive, drive / self.DRIVE_NORM, "LC10a_R")])
 
 
 PLUGIN = Home()

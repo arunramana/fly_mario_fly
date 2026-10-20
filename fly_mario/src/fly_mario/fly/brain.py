@@ -22,16 +22,25 @@ import numpy as np
 
 from fly_mario import registry
 from fly_mario.fly import connectome as cn
-from fly_mario.fly.groups import masks_for
+from fly_mario.fly.groups import group_types, masks_for
 from fly_mario.fly.spec import BrainSpec
 
 BUILD_VERSION = 1
-BASE_TYPES = ("LC4", "LPLC2", "DNp01", "TTMn", "DNp09", "LC10a", "DNa01", "DNa02")
 N_RELAYS = 40
-BASE_RECIPE = {
-    "name": "steer636", "types": list(BASE_TYPES), "relays": N_RELAYS,
-    "rule": "relays = top-40 bodies by min(synapses from LC10a, synapses to DNa01/02); edges among the cast keep every count",
-}
+
+
+def base_types() -> tuple:
+    """Cell types of the base: those of the groups owned by the mechanisms that add no neurons (escape, walking).
+    groups.yaml is the one table; the order is its order, which the brain's content hash depends on."""
+    own = {g for m in registry.list_plugins("mechanisms").values() if m.extra is None for g in m.neuron_sets}
+    return group_types(own)
+
+
+def base_recipe() -> dict:
+    return {
+        "name": "steer636", "types": list(base_types()), "relays": N_RELAYS,
+        "rule": "relays = top-40 bodies by min(synapses from LC10a, synapses to DNa01/02); edges among the cast keep every count",
+    }
 
 
 @dataclass(frozen=True)
@@ -130,7 +139,7 @@ def brain_name(spec: BrainSpec) -> str:
 
 
 def recipe(spec: BrainSpec, root: Path) -> dict:
-    return {"build_version": BUILD_VERSION, "base": BASE_RECIPE, "data": _data_signature(root),
+    return {"build_version": BUILD_VERSION, "base": base_recipe(), "data": _data_signature(root),
             "mechanisms": [{"name": p.name, "writes_into_base": p.extra.writes_into_base, **p.extra.recipe} for p in _mechanisms(spec)]}
 
 
@@ -155,12 +164,12 @@ class _Net:
 
 
 def _base_net(conn: cn.Connectome) -> _Net:
-    h = hashlib.sha256(json.dumps([BUILD_VERSION, BASE_RECIPE, _data_signature(conn.root)], sort_keys=True).encode()).hexdigest()[:12]
+    h = hashlib.sha256(json.dumps([BUILD_VERSION, base_recipe(), _data_signature(conn.root)], sort_keys=True).encode()).hexdigest()[:12]
     cache = conn.derived / f"base_{h}.npz"
     if cache.exists():
         d = np.load(cache)
         return _Net(d["ids"], d["types"], d["sides"], d["signs"], d["counts"])
-    core = conn.body_ids(types=BASE_TYPES)
+    core = conn.body_ids(types=base_types())
     lc10a, dna = conn.body_ids(types=["LC10a"]), conn.body_ids(types=["DNa01", "DNa02"])
     # Relays: bodies that both receive from LC10a and send to DNa; keep the 40 with the most synapses on the weaker side.
     from_ids, from_w, to_ids, to_w = conn.through_scores(lc10a, dna)

@@ -15,6 +15,7 @@ class Jump:
     label = "Jump"
     button = "A"
     source_groups = ["TTMn"]
+    reads = []
     priority = 0
     knobs = [
         KnobSpec("jump.ttmn_thresh", "Press A when TTMn is above", "jumpy", "only when sure", 0.10, 0.06374, 0.1912,

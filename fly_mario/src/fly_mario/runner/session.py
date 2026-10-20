@@ -243,7 +243,11 @@ class Run:
         self.counts["left_presses"] += int(left and not self._prev_left)
         self.counts["left_frames"] += int(left)
         self._prev_a, self._prev_left = a, left
-        self.hit_blocks |= {int(o.box.x) for o in found.get("usedblock", ()) if o.state.get("tile") == 196}
+        for name, p in self.objects.items():
+            key = getattr(p, "block_hit_tile", None)          # declared by the plug-in; the tile id is a fact
+            if key:
+                tid = self.env.facts["tiles"][key]
+                self.hit_blocks |= {int(o.box.x) for o in found.get(name, ()) if o.state.get("tile") == tid}
         self.big_seen |= mario.power != "small"
         self._last_found, self._last_mario = found, mario
 
@@ -286,8 +290,9 @@ class Run:
             near = [(abs(o.box.x - self._last_mario.x), o.type) for objs in self._last_found.values() for o in objs
                     if self.objects[o.type].kind == "enemy"]
             near = [n for n in near if n[0] <= 20]
-            in_pit = any(o.box.x - 12 <= x <= o.box.x + o.box.w + 12 for o in self._last_found.get("pit", ()))
-            self.death = {"x": x, "cause": "pit" if in_pit else (f"enemy:{min(near)[1]}" if near else "other")}
+            fell = [n for n, p in self.objects.items() if getattr(p, "causes_fall_death", False)
+                    and any(o.box.x - 12 <= x <= o.box.x + o.box.w + 12 for o in self._last_found.get(n, ()))]
+            self.death = {"x": x, "cause": fell[0] if fell else (f"enemy:{min(near)[1]}" if near else "other")}
 
     # ---- whole run ------------------------------------------------------------------------------------
     def play(self, on_frame=None) -> RunResult:

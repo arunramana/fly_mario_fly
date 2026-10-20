@@ -9,6 +9,7 @@ class Pit:
     note = "The hole itself. A pit running off the right edge of the screen has a lower-bound width (state['open'])."
     kind = "terrain"
     default_loom_shape = "far_edge_tower"
+    causes_fall_death = True            # Mario dying beside one of these (within its box +- 12 px) fell in
 
     def find(self, ram, facts):
         g = facts["grid"]

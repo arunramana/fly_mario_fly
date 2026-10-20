@@ -13,7 +13,6 @@ class FarEdgeTower:
         KnobSpec("shape.tower.h", "Tower height", "short", "tall", 1.0, 0.25, 2.0,
                  origin="invented", evolvable=True),
     ]
-    handles = ["pit"]
     family = "tower"
 
     def shape(self, obj, facts, knobs):

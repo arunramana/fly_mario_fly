@@ -10,6 +10,7 @@ class Walk:
     label = "Walk"
     button = "right"
     source_groups = ["DNp09"]
+    reads = []
     priority = 0
     knobs = [
         KnobSpec("walk.thresh", "Walk when DNp09 is above", "easily", "only when strong", 0.05, 0.01, 0.2,

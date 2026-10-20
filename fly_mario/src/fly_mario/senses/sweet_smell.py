@@ -22,6 +22,9 @@ class SweetSmell:
     line = "solid"
     feeds = ["attraction"]
     order = 40
+    raises = []
+    reads = []
+    LEVEL_NORM = 200.0             # an antenna drive of this size fills its bar
     knobs = [
         KnobSpec("sweet_smell.gain", "Smell strength", "faint", "strong", 213.9495, 109.86, 1757.7, scale="log",
                  origin="invented", evolvable=True, floor=6.452),
@@ -51,10 +54,10 @@ class SweetSmell:
                 right = level
             overlay = [draw.box(b.x, b.y, b.w, b.h, draw.GREEN)]
         steps = [
-            draw.step("distance", "eye to the object's centre", d, d / 256.0),
+            draw.step("distance", "eye to the object's centre", d, d / facts["grid"]["screen_w"]),
             draw.step("angle", "theta = 2*atan(h / 2d)", theta, theta / np.pi),
-            draw.step("left antenna", "gain * theta (object on the left)", left, left / 200.0, "ORN_L"),
-            draw.step("right antenna", "gain * theta (object on the right)", right, right / 200.0, "ORN_R"),
+            draw.step("left antenna", "gain * theta (object on the left)", left, left / self.LEVEL_NORM, "ORN_L"),
+            draw.step("right antenna", "gain * theta (object on the right)", right, right / self.LEVEL_NORM, "ORN_R"),
         ]
         return SenseOutput(inputs={"ORN_L": left, "ORN_R": right}, overlay=overlay, steps=steps)
 

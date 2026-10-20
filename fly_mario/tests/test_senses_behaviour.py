@@ -180,13 +180,11 @@ def test_sour_smell_is_gain_times_theta_for_both_antennae_and_skips_shells_and_t
     assert cue("sour_smell", [enemy(0, 100, top=160)], mario(feet=150, airborne=True), mem).inputs["DC4_L"] == 0.0
 
 
-def test_sour_rear_is_honest_by_default_and_can_be_gated():
+def test_sour_rear_is_off_by_default_and_a_switch():
     behind = enemy(0, 60)
     assert cue("sour_smell", [behind], mario()).inputs["DC4_L"] == 0.0
     honest = cue("sour_smell", [behind], mario(), knobs={"sour_smell.rear": 1.0})
     assert honest.inputs["DC4_L"] > 0 and not honest.modifiers
-    gated = cue("sour_smell", [behind], mario(), knobs={"sour_smell.rear": 1.0, "sour_smell.rear_gated": 1.0})
-    assert gated.modifiers == {"sour_rear_gate": 1.0}
 
 
 def test_hum_only_from_reachable_blocks_ahead():

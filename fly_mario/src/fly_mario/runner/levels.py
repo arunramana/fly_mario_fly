@@ -3,7 +3,7 @@ saved runs have gone on it.
 
 level_catalogue() never touches the emulator: the kind comes from configs/levels.yaml, the width and object list from
 $FLY_MARIO_DATA/levels.json, and a level nobody has scanned yet shows `scanned=False, objects=None, width=None`
-(unknown). scan_level(id) scans one level (a walk-right-and-jump driver with enemies switched off, capped in frames
+(unknown). scan_level(id) scans one level (mario/walker.py's walk-right-and-jump driver with enemies switched off, capped in frames
 and seconds) and caches it; a scan that stopped before the flag is `partial=True` (width = how far it got, objects =
 what it saw up to there). `objects` also includes every type a saved run on that level found (summary.json
 `objects_seen`), so a run that got past the scan's reach adds what it met. precompute() scans the levels the yaml lists (1-1, 1-2).
@@ -25,6 +25,7 @@ from fly_mario import registry
 from fly_mario.fly import connectome as cn
 from fly_mario.mario import ram as R
 from fly_mario.mario.env import MarioEnv, level_ids
+from fly_mario.mario.walker import Walker
 from fly_mario.runner import record
 
 CONFIG = Path(__file__).resolve().parents[3] / "configs" / "levels.yaml"      # fly_mario/configs/levels.yaml
@@ -73,36 +74,14 @@ def _write_cache(levels: dict) -> None:
     cache_path().write_text(json.dumps({"version": CACHE_VERSION, "levels": levels}, indent=1), encoding="utf-8")
 
 
-# ---- the scan ----------------------------------------------------------------------------------------------
-class _Driver:
-    """Hold Right; jump (A held for a fixed time) when a wall or pit is close. mario/walker.py's rule."""
-
-    def __init__(self):
-        self.left = 0
-
-    def act(self, env) -> tuple:
-        facts, ram = env.facts, env.ram
-        w, g, t = facts["walker"], facts["grid"], facts["tiles"]
-        mx = R.mario_x(ram, facts)
-        grounded = int(ram[facts["ram"]["player_state"]]) == 0
-        walls = [x for x0, x1, _ in R.merged_faces(ram, facts, t["pipe"] + t["step"]) for x in range(x0, x1, g["tile"]) if x >= mx]
-        pits = [wx for wx in R.visible_columns(ram, facts) if wx + 1 > mx
-                and R.tile(ram, facts, wx, g["ground_row"]) == t["empty"] and R.tile(ram, facts, wx, g["ground_row"] + 1) == t["empty"]]
-        near = (walls and min(walls) - mx < w["wall_trigger"]) or (pits and 0 <= min(pits) - mx < w["pit_trigger"])
-        if self.left == 0 and near and grounded:
-            self.left = w["jump_hold"]
-        buttons = ("right", "A") if self.left > 0 else ("right",)
-        self.left = max(0, self.left - 1)
-        return buttons
-
-
+# ---- the scan (drives with mario/walker.py) ----------------------------------------------------------------
 def scan_level(level_id: str, env: MarioEnv | None = None) -> dict:
     """Scan one level now and cache it; returns its cache entry {width, flag_x, partial, stop, objects}."""
     sc = config()["scan"]
     own = env is None
     env = env or MarioEnv()
     env.reset(level_id, "v0", 0)
-    facts, objects, driver = env.facts, registry.list_plugins("objects"), _Driver()
+    facts, objects, driver = env.facts, registry.list_plugins("objects"), Walker()
     seen: set = set()
     max_x, flag_x, stop, t0 = R.mario_x(env.ram, facts), None, "cap", time.monotonic()
     for i in range(int(sc["max_frames"])):

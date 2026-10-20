@@ -15,6 +15,7 @@ class BrainData:
     colours     {group: (r, g, b)}
     other_xyz   (m, 3) circuit neurons that belong to no group (relays): drawn faint, they have no rate of their own
     index       [(label, role, [groups])] the rows of the index; a row's value is the neuron-weighted mean of its groups
+    placed_by_terminal  groups with no soma of their own, drawn at a terminal proxy (the panel says so in its caption)
     rate_max    {group: float} the group's maximum over the run: brightness = rate / rate_max
     counts      {group: neurons in the group}, the weights of an index row's mean
     """
@@ -28,6 +29,7 @@ class BrainData:
     counts: dict = field(default_factory=dict)
     big: frozenset = frozenset()                # groups drawn with the larger core (the few, important cells)
     n_neurons: int = 0
+    placed_by_terminal: frozenset = frozenset()  # groups drawn at a terminal proxy, not a soma (brain_display's placed_by_terminal)
 
 
 @dataclass

@@ -21,6 +21,9 @@ class RearEye:
     line = "dotted"
     feeds = ["escape"]
     order = 0
+    raises = ["rear_eye"]
+    reads = []
+    BEHIND_NORM = 5.0              # this many enemies behind fill the "behind" bar
     knobs = []
 
     def cue(self, objects, mario, facts, knobs, memory):
@@ -28,7 +31,7 @@ class RearEye:
         overlay = [draw.box(o.box.x, o.box.y, o.box.w, o.box.h, draw.RED, "dotted")
                    for o in objects if kind_of(o.type) == "enemy" and is_behind(mario, o.box.x, o.box.w)]
         return SenseOutput(overlay=overlay, modifiers={"rear_eye": 1.0},
-                           steps=[draw.step("behind", "enemies fully behind his left edge", behind, behind / 5.0)])
+                           steps=[draw.step("behind", "enemies fully behind his left edge", behind, behind / self.BEHIND_NORM)])
 
 
 PLUGIN = RearEye()

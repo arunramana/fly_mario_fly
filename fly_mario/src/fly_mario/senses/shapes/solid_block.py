@@ -9,7 +9,6 @@ class SolidBlock:
                    "off from up to its top, and stops looming once his feet are above that top and his body is over it. "
                    "A block floating in the air is just a box.")
     knobs = []
-    handles = ["pipe", "step", "brick", "qblock", "usedblock"]
     family = "wall"
 
     def shape(self, obj, facts, knobs):

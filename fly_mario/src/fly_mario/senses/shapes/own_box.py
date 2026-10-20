@@ -7,7 +7,6 @@ class OwnBox:
     label = "Its own box"
     description = "The object's own silhouette. A Goomba looms as a 16 x 16 box."
     knobs = []
-    handles = ["goomba", "koopa", "piranha", "mushroom"]
     family = "free"          # how a looming sense treats it: a free-standing box that Mario can get past
 
     def shape(self, obj, facts, knobs):
