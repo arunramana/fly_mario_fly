@@ -679,6 +679,15 @@
       },
       "OverlayItem": {
         "properties": {
+          "anchor": {
+            "default": "level",
+            "enum": [
+              "level",
+              "screen_right"
+            ],
+            "title": "Anchor",
+            "type": "string"
+          },
           "colour": {
             "title": "Colour",
             "type": "string"

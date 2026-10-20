@@ -8,6 +8,7 @@ from typing import Annotated, Literal, Optional, Union
 from pydantic import BaseModel, Field
 
 LineStyle = Literal["solid", "dotted", "dashed"]
+Anchor = Literal["level", "screen_right"]
 Position = Annotated[float, Field(ge=0.0, le=1.0)]
 
 
@@ -208,6 +209,7 @@ class OverlayItem(BaseModel):
     geometry: list[float]
     colour: str
     line: LineStyle
+    anchor: Anchor = "level"
 
 
 # ---- the live stream: server -> client --------------------------------------------------------------------------

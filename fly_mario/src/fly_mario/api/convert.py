@@ -132,7 +132,7 @@ def png_b64(screen: np.ndarray) -> str:
 
 def frame_event(rec, total: int) -> S.FrameEvent:
     m = rec.mario
-    overlay = [S.OverlayItem(kind=it.kind, geometry=[float(g) for g in it.geometry], colour=it.colour, line=it.line)
+    overlay = [S.OverlayItem(kind=it.kind, geometry=[float(g) for g in it.geometry], colour=it.colour, line=it.line, anchor=it.anchor)
                for out in rec.outputs.values() for it in out.overlay]
     objects = [S.ObjectOnScreen(type=o.type, id=o.id, box=S.Box(x=o.box.x, y=o.box.y, w=o.box.w, h=o.box.h), side=o.side)
                for o in rec.objects]
