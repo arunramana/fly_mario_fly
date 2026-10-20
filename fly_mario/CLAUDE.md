@@ -8,6 +8,7 @@ GOAL: a new, simple tool in `fly_mario/` that lets a user attach fly senses to S
 - `evolve/`, `api/`, `render/` go through `runner/` and never name a specific object or sense.
 - Attachments are config (`configs/flies/*.yaml`), not code.
 - One plug-in per file, exposing one object named `PLUGIN`.
+- Each lane also owns its own new test files under tests/ (`tests/test_<lane>_*.py`, `tests/parity/test_<lane>_*.py`).
 - `contracts.py` and this file change only in the lead session.
 
 ## Folder owners (a lane writes only in its own folders; needing a contract change = stop and ask)

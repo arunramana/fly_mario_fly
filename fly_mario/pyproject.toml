@@ -8,11 +8,12 @@ version = "0.0.1"
 description = "Attach MaleCNS fly senses to Super Mario objects; watch, rewind, retry."
 requires-python = ">=3.12"
 # Same pins as the old repo: nes-py breaks under numpy 2.
-dependencies = ["numpy>=1.26,<1.27", "pyyaml", "pyarrow"]
+dependencies = ["numpy>=1.26,<1.27", "pyyaml", "pyarrow",
+    "fastapi>=0.150,<0.151", "uvicorn", "pydantic>=2", "httpx"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
-test = ["pandas"]
+test = ["pandas", "pytest-timeout"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

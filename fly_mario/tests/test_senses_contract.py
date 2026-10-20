@@ -18,17 +18,20 @@ SHAPES = registry.list_plugins("shapes")
 ACTIONS = registry.list_plugins("actions")
 OBJECTS = registry.list_plugins("objects")
 
-# a plausible raw box and state for each type, ahead of Mario
-BOXES = {"goomba": Box(140, 160, 16, 16), "koopa": Box(140, 152, 16, 24), "piranha": Box(140, 152, 16, 24),
-         "mushroom": Box(140, 160, 16, 16), "pipe": Box(140, 144, 32, 32), "step": Box(140, 160, 16, 16),
-         "pit": Box(140, 176, 32, 32), "qblock": Box(140, 112, 16, 16), "brick": Box(140, 112, 16, 16),
-         "usedblock": Box(140, 112, 16, 16)}
-STATES = {"goomba": {"slot": 0, "shell": False}, "koopa": {"slot": 1, "shell": False}, "piranha": {"slot": 2, "shell": False},
-          "mushroom": {"slot": 5}, "pit": {"open": False}, "qblock": {"tile": 192, "row": 7}}
+# A 16x16 box ahead of Mario, placed by the object's kind, so a new object type needs no edit here.
+KIND_Y = {"enemy": 160, "obstacle": 160, "pickup": 160, "terrain": 112}
+
+
+def box_for(kind):
+    return Box(140, KIND_Y[kind], 16, 16)
 
 
 def instance(name, **over):
-    return ObjectInstance(name, 7, over.get("box", BOXES[name]), "ahead", dict(STATES.get(name, {})))
+    kind = OBJECTS[name].kind if name in OBJECTS else DUMMY_KIND
+    return ObjectInstance(name, 7, over.get("box", box_for(kind)), "ahead", {})
+
+
+DUMMY_KIND = "enemy"
 
 
 def knobs_of(components):
@@ -41,8 +44,26 @@ def knobs_of(components):
 ALL_KNOBS = knobs_of(list(SENSES.values()) + list(ACTIONS.values()) + list(SHAPES.values()))
 
 
-def test_every_object_type_has_a_box_here():
-    assert set(OBJECTS) == set(BOXES), "a new object type needs a row in BOXES"
+def test_a_dummy_object_type_is_covered_automatically(monkeypatch):
+    """No per-type table: a freshly registered object type gets a box from its kind and runs through every sense and shape."""
+    class Dummy:
+        name, label, note, kind, default_loom_shape = "dummy", "Dummy", "", "pickup", "own_box"
+
+        def find(self, ram, facts):
+            return []
+
+        def remove(self, env):
+            pass
+
+    monkeypatch.setitem(OBJECTS, "dummy", Dummy())
+    o = instance("dummy")
+    assert o.box == box_for("pickup")
+    mem = SenseMemory()
+    mem.world = [o]
+    for s in SENSES.values():
+        assert len(s.cue([o], MARIO, FACTS, ALL_KNOBS, mem).steps) >= 1
+    for sh in SHAPES.values():
+        assert sh.shape(o, FACTS, ALL_KNOBS).w > 0
 
 
 def test_expected_plugins_exist():
