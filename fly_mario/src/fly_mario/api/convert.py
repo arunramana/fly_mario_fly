@@ -38,13 +38,15 @@ def registry_info(levels: list, presets: list) -> S.RegistryInfo:
         objects=[S.ObjectInfo(name=o.name, label=o.label, note=getattr(o, "note", ""), kind=o.kind,
                               default_loom_shape=o.default_loom_shape) for o in objs.values()],
         senses=[S.SenseInfo(name=s.name, label=s.label, effect=s.effect, scope=s.scope, colour=s.colour,
-                            line=s.line, feeds=list(getattr(s, "feeds", ())), knobs=_knobs(s))
+                            line=s.line, feeds=list(getattr(s, "feeds", ())), knobs=_knobs(s),
+                            order=int(getattr(s, "order", 0)))
                 for s in senses.values()],
         shapes=[S.ShapeInfo(name=s.name, label=s.label, description=s.description,
                             knobs=_knobs(s)) for s in shapes.values()],
         actions=[S.ActionInfo(name=a.name, label=a.label, button=a.button,
                               source_groups=list(a.source_groups), knobs=_knobs(a), priority=a.priority,
-                              status=getattr(a, "status", "ready")) for a in actions.values()],
+                              order=int(getattr(a, "order", i)), status=getattr(a, "status", "ready"))
+                 for i, a in enumerate(actions.values())],
         scene_modifiers=[S.SceneModifierInfo(name=m.name, label=m.label, description=m.description,
                                              params=[dict(p) for p in getattr(m, "params", ())],
                                              per_object=per_object[n]) for n, m in mods.items()],
@@ -108,10 +110,26 @@ def dto_to_scene(dto: S.SceneDTO) -> Scene:
                  stuck_frames=dto.stuck_frames)
 
 
+def death_to_dto(death: dict | None) -> S.DeathDTO | None:
+    """The runner's death dict ({x, cause}: "enemy:<type>", a fall-death object's name, or "other") -> the structured
+    shape, with the object's label from the registry. This is the only place the cause string is read."""
+    if not death:
+        return None
+    cause = str(death.get("cause", "other"))
+    kind, otype = "other", None
+    if cause.startswith("enemy:"):
+        kind, otype = "enemy", cause[len("enemy:"):]
+    elif cause != "other":
+        kind, otype = "fall", cause
+    obj = registry.list_plugins("objects").get(otype) if otype else None
+    return S.DeathDTO(x=float(death.get("x", 0)), kind=kind, object_type=otype,
+                      object_label=getattr(obj, "label", otype))
+
+
 def result_to_dto(r) -> S.RunResultDTO:
     return S.RunResultDTO(
         id=r.id, fly=r.fly, scene=scene_to_dto(r.scene), parent_moment=r.parent_moment, outcome=r.outcome,
-        death=r.death, max_x=r.max_x, score=r.score, blocks=r.blocks, mushroom=r.mushroom,
+        death=death_to_dto(r.death), max_x=r.max_x, score=r.score, blocks=r.blocks, mushroom=r.mushroom,
         counts={k: float(v) for k, v in r.counts.items()}, moments=list(r.moments), hash=r.hash)
 
 

@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { Fly, ObjectInfo, SenseInfo, ShapeInfo } from '../api/models'
-import { bySenseOrder, splitLabel } from './senseUtil'
+import { byOrder, splitLabel } from './senseUtil'
 
 const shapeWords = (shape?: ShapeInfo) => {
   if (!shape) return ''
@@ -18,7 +18,7 @@ interface Props {
 
 /** The sense grid of the Fly page: a row per thing in the level, a column per per-object sense, one switch per cell. */
 export default function SenseGrid({ objects, senses, shapes, fly, onChange }: Props) {
-  const cols = bySenseOrder(senses.filter((s) => s.scope === 'per_object'))
+  const cols = byOrder(senses.filter((s) => s.scope === 'per_object'))
 
   const toggle = (sense: string, obj: string) => {
     const cur = fly.attachments[sense] ?? []

@@ -1,6 +1,6 @@
 """Throwaway: two frames of 1-2 near the Koopa (x ~ 850-900) with every terrain box drawn; ceiling_block in magenta.
 
-    python tests/ceiling_koopa_screenshot.py            -> tests/_out/ceiling_koopa.png
+    python tools/ceiling_koopa_screenshot.py            -> tools/_out/ceiling_koopa.png
 """
 import sys
 from pathlib import Path

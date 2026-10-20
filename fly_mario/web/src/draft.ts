@@ -5,7 +5,7 @@ export const emptyFly: Fly = {
   name: 'blank', attachments: {}, loom_shapes: {}, whole_fly: [], actions: [], knobs: {}, provenance: {},
 }
 export const defaultScene: Scene = {
-  level_id: '1-1', rom: 'v0', modifiers: [['whole_level', {}]], start: 'level_start', noop: 0, sigma: 0, seed: 0,
+  level_id: '1-1', rom: 'v0', modifiers: [], start: 'level_start', noop: 0, sigma: 0, seed: 0,
   max_frames: 6000, stuck_frames: 300,
 }
 

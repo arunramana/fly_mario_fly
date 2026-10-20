@@ -11,9 +11,5 @@ export const byKind = (objects: ObjectInfo[]) =>
   [...objects].sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind))
 
 
-/** Columns and buttons in the order of the wireframes; anything the registry adds later follows, in its own order. */
-const SENSE_ORDER = ['looming', 'sour_smell', 'hearing', 'sweet_smell']
-const ACTION_ORDER = ['walk', 'steer', 'jump', 'back_up']
-const rank = (order: string[], n: string) => (order.includes(n) ? order.indexOf(n) : order.length)
-export const bySenseOrder = <T extends { name: string }>(l: T[]) => [...l].sort((a, b) => rank(SENSE_ORDER, a.name) - rank(SENSE_ORDER, b.name))
-export const byActionOrder = <T extends { name: string }>(l: T[]) => [...l].sort((a, b) => rank(ACTION_ORDER, a.name) - rank(ACTION_ORDER, b.name))
+/** Columns and buttons in the order the API gives each plug-in (`order`); ties keep the registry's order. */
+export const byOrder = <T extends { order: number }>(l: T[]) => [...l].sort((a, b) => a.order - b.order)

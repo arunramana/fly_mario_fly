@@ -22,6 +22,11 @@
             "title": "Name",
             "type": "string"
           },
+          "order": {
+            "default": 0,
+            "title": "Order",
+            "type": "integer"
+          },
           "priority": {
             "title": "Priority",
             "type": "integer"
@@ -112,6 +117,54 @@
           "type"
         ],
         "title": "ClientMessage",
+        "type": "object"
+      },
+      "DeathDTO": {
+        "description": "How a run ended in death: where, and what did it. `object_type`/`label` name the thing (null for \"other\").",
+        "properties": {
+          "kind": {
+            "enum": [
+              "fall",
+              "enemy",
+              "other"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "object_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Object Label"
+          },
+          "object_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Object Type"
+          },
+          "x": {
+            "title": "X",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "kind"
+        ],
+        "title": "DeathDTO",
         "type": "object"
       },
       "EndEvent": {
@@ -1009,15 +1062,13 @@
           "death": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/DeathDTO"
               },
               {
                 "type": "null"
               }
             ],
-            "default": null,
-            "title": "Death"
+            "default": null
           },
           "fly": {
             "title": "Fly",
@@ -1327,6 +1378,11 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "order": {
+            "default": 0,
+            "title": "Order",
+            "type": "integer"
           },
           "scope": {
             "enum": [

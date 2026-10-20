@@ -50,6 +50,7 @@ class SenseInfo(BaseModel):
     line: LineStyle
     feeds: list[str]
     knobs: list[KnobUI]
+    order: int = 0                        # column order in the UI (the sense's own `order`)
 
 
 class ShapeInfo(BaseModel):
@@ -66,6 +67,7 @@ class ActionInfo(BaseModel):
     source_groups: list[str]
     knobs: list[KnobUI]
     priority: int
+    order: int = 0                        # button order in the UI (the registry's order)
     status: Literal["ready", "soon"] = "ready"
 
 
@@ -140,13 +142,21 @@ class RunRequestDTO(BaseModel):
     from_moment: Optional[str] = None
 
 
+class DeathDTO(BaseModel):
+    """How a run ended in death: where, and what did it. `object_type`/`label` name the thing (null for "other")."""
+    x: float
+    kind: Literal["fall", "enemy", "other"]
+    object_type: Optional[str] = None
+    object_label: Optional[str] = None
+
+
 class RunResultDTO(BaseModel):
     id: str
     fly: str
     scene: SceneDTO
     parent_moment: Optional[str] = None
     outcome: Literal["flag", "died", "stuck", "timeout"]
-    death: Optional[dict] = None
+    death: Optional[DeathDTO] = None
     max_x: float
     score: float
     blocks: int

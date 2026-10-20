@@ -20,19 +20,19 @@ const registry: Registry = {
   ],
   senses: [
     { name: 'looming', label: 'Looming', effect: 'Things that grow fast feel dangerous.', scope: 'per_object',
-      colour: '#F83800', line: 'solid', feeds: ['LC4', 'LPLC2'],
+      colour: '#F83800', line: 'solid', feeds: ['LC4', 'LPLC2'], order: 10,
       knobs: [knob('loom.eyes', 'Eyes used', 'right eye only', 'both eyes', 'fly')] },
     { name: 'sour_smell', label: 'Sour smell', effect: 'An enemy smells of acid.', scope: 'per_object',
-      colour: '#F8D800', line: 'dotted', feeds: ['ORN'],
+      colour: '#F8D800', line: 'dotted', feeds: ['ORN'], order: 20,
       knobs: [knob('sour_smell.gain', 'Sourness', 'faint', 'strong', 'invented')] },
     { name: 'home', label: 'Home', effect: 'Keep going right.', scope: 'whole_fly',
-      colour: '#FFFFFF', line: 'solid', feeds: ['LC10a'],
+      colour: '#FFFFFF', line: 'solid', feeds: ['LC10a'], order: 60,
       knobs: [knob('home.drive', 'Pull to the right', 'weak', 'strong', 'fly')] },
   ],
   shapes: [],
   actions: [
-    { name: 'jump', label: 'Jump', button: 'A', source_groups: ['GF'], priority: 2, status: 'ready', knobs: [] },
-    { name: 'walk', label: 'Walk', button: 'right', source_groups: ['DNa'], priority: 1, status: 'soon', knobs: [] },
+    { name: 'jump', label: 'Jump', button: 'A', source_groups: ['GF'], priority: 2, order: 0, status: 'ready', knobs: [] },
+    { name: 'walk', label: 'Walk', button: 'right', source_groups: ['DNa'], priority: 1, order: 1, status: 'soon', knobs: [] },
   ],
   scene_modifiers: [
     { name: 'whole_level', label: 'Whole level', description: '', params: [], per_object: false },
@@ -97,7 +97,7 @@ function frameEvent(frame: number): FrameEvent {
 function result(runId: string, req: RunRequest, parent: string | null | undefined, flag: boolean): RunResult {
   return {
     id: runId, fly: req.fly.name, scene: req.scene, parent_moment: parent ?? null,
-    outcome: flag ? 'flag' : 'died', death: flag ? null : { cause: 'enemy:goomba', x: 760 },
+    outcome: flag ? 'flag' : 'died', death: flag ? null : { kind: 'enemy', object_type: 'goomba', object_label: 'Goomba', x: 760 },
     max_x: flag ? 3168 : 760, score: 0, blocks: 0, mushroom: false, counts: {}, moments: [], hash: '',
   }
 }

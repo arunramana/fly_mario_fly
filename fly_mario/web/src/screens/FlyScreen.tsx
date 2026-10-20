@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Fly } from '../api/models'
 import SenseGrid from '../components/SenseGrid'
-import { byActionOrder, byKind, splitLabel } from '../components/senseUtil'
+import { byKind, byOrder, splitLabel } from '../components/senseUtil'
 import { AdvancedDrawer, type KnobSection } from '../components/Knobs'
 import { errText, useStartRun } from '../hooks'
 import { useDraft } from '../draft'
@@ -93,7 +93,7 @@ export default function FlyScreen() {
             <section className="box">
               <h2 className="label">What the fly can do</h2>
               <div className="actions">
-                {byActionOrder(reg.actions).map((a) => (
+                {byOrder(reg.actions).map((a) => (
                   <button key={a.name} className={`action ${a.status === 'soon' ? 'off' : ''}`} disabled={a.status === 'soon'}
                     aria-pressed={fly.actions.includes(a.name)} style={fly.actions.includes(a.name) || a.status === 'soon' ? undefined : { background: '#000', borderColor: '#666', boxShadow: 'none' }}
                     onClick={() => setFly({ ...fly, actions: toggleIn(fly.actions, a.name) })}>
