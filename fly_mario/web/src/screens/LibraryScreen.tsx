@@ -37,7 +37,7 @@ export default function LibraryScreen() {
           <h2 className="label">Runs</h2>
           {runs.data?.length ? [...runs.data].reverse().slice(0, 40).map((r) => (
             <div className="lib-row" key={r.id}>
-              <span>{r.fly} · {r.level_id}</span>
+              <span>{r.fly} · {r.level_id} · {r.dials === 'original' ? 'original dials' : 'tuned dials'}</span>
               <span className={r.outcome === 'flag' ? 'ok' : 'bad'}>{r.outcome ? `${r.outcome} x ${Math.round(r.max_x ?? 0)}` : r.status}</span>
             </div>
           )) : <p className="muted">No runs yet.</p>}

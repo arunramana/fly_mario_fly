@@ -4,7 +4,7 @@ from __future__ import annotations
 import base64
 import struct
 import zlib
-from dataclasses import asdict
+from dataclasses import asdict, replace
 
 import numpy as np
 
@@ -76,6 +76,24 @@ def fly_to_dto(fly: FlyConfig) -> S.FlyDTO:
         loom_shapes=dict(fly.loom_shapes), whole_fly=sorted(fly.whole_fly), actions=sorted(fly.actions),
         knobs={k: K.to_position(specs[k], v) for k, v in sorted(fly.knobs.items()) if k in specs},
         provenance=dict(fly.provenance))
+
+
+def fly_to_view(fly: FlyConfig) -> S.FlyView:
+    """The FlyDTO plus every knob's dial: position, original (KnobSpec default) position, tuned or not."""
+    specs = K.specs_by_key()
+    dials = {}
+    for key, spec in sorted(specs.items()):
+        orig = K.to_position(spec, spec.default)
+        pos = K.to_position(spec, fly.knobs[key]) if key in fly.knobs else orig
+        dials[key] = S.DialView(position=pos, original_position=orig, tuned=abs(pos - orig) > 1e-9)
+    return S.FlyView(**fly_to_dto(fly).model_dump(), dials=dials)
+
+
+def with_dials(fly: FlyConfig, dials: str) -> FlyConfig:
+    """"original": every knob back at its KnobSpec default (the hand-set value before evolution); "tuned": as is."""
+    if dials == "tuned":
+        return fly
+    return replace(fly, knobs={}, provenance={**fly.provenance, "dials": "original"})
 
 
 def dto_to_fly(dto: S.FlyDTO) -> FlyConfig:

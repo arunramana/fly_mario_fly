@@ -26,7 +26,7 @@ function useBrainMap(fly: Fly) {
 }
 
 export default function FlyScreen() {
-  const { scene, fly, setFly } = useDraft()
+  const { scene, fly, setFly, dials, setDials } = useDraft()
   const [open, setOpen] = useState(false)
   const [naming, setNaming] = useState(false)
   const registry = useQuery({ queryKey: ['registry'], queryFn: api.getRegistry })
@@ -50,7 +50,9 @@ export default function FlyScreen() {
   const seen = new Set<string>()
   for (const s of sections) s.knobs = s.knobs.filter((k) => !seen.has(k.key) && !!seen.add(k.key))   // a knob shared by two senses shows once
   const nSenses = reg.senses.filter((s) => senseOn(s.name)).length
-  const startRun = () => run.mutate({ fly, scene, from_moment: null })
+  const nTuned = Object.values(fly.dials ?? {}).filter((d) => d.tuned).length
+  const tunedNote = nTuned ? `${nTuned} knob${nTuned === 1 ? '' : 's'} changed by evolution.` : 'No knob changed by evolution.'
+  const startRun = () => run.mutate({ fly, scene, from_moment: null, dials })
 
   return (
     <>
@@ -115,6 +117,15 @@ export default function FlyScreen() {
               <span><i style={{ background: 'var(--orange)' }} />Orange = invented by us</span>
             </div>
           </section>
+          <div className="dials" role="group" aria-label="Dials">
+            <span className="label">Dials</span>
+            {(['original', 'tuned'] as const).map((d) => (
+              <button key={d} className={`chip ${dials === d ? 'on' : ''}`} aria-pressed={dials === d} onClick={() => setDials(d)}>
+                {d === 'original' ? 'Original' : 'Tuned'}
+              </button>
+            ))}
+            <small>{dials === 'original' ? 'Every knob at the value set by hand before evolution.' : tunedNote}</small>
+          </div>
           <button className="adv-toggle" onClick={() => { window.scrollTo(0, 0); setOpen(true) }} aria-expanded={open}>
             <span>Advanced: fine-tune</span><span>›</span>
           </button>
@@ -134,7 +145,7 @@ export default function FlyScreen() {
         </aside>
       </div>
       {open && <div className="scrim" onClick={() => setOpen(false)} />}
-      {open && <AdvancedDrawer sections={sections} fly={fly} onChange={setFly} onClose={() => setOpen(false)} onRun={startRun} running={run.isPending} />}
+      {open && <AdvancedDrawer sections={sections} fly={fly} original={dials === 'original'} onChange={setFly} onClose={() => setOpen(false)} onRun={startRun} running={run.isPending} />}
     </>
   )
 }

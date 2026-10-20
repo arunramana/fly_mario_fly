@@ -98,6 +98,7 @@ function RunView({ runId }: { runId: string }) {
   const label = (name: string) => registry.data?.objects.find((o) => o.name === name)?.label ?? name
   const cause = (c: string) => (c.startsWith('enemy:') ? label(c.slice(6)) : c === 'pit' ? 'Pit' : '')
   const x = (result?.max_x ?? 0).toFixed(0)
+  const dials = result?.dials ?? runRequests.get(runId)?.req.dials ?? 'tuned'
 
   return (
     <div className="run">
@@ -131,8 +132,9 @@ function RunView({ runId }: { runId: string }) {
 
       {error && <div className="banner died" role="alert"><div><b>Something went wrong</b><p>{error}</p></div></div>}
       {result && (
-        <div className={`banner ${result.outcome === 'flag' ? 'flag' : result.outcome === 'died' ? 'died' : 'info'}`} role="status" data-outcome={result.outcome}>
+        <div className={`banner ${result.outcome === 'flag' ? 'flag' : result.outcome === 'died' ? 'died' : 'info'}`} role="status" data-outcome={result.outcome} data-dials={dials}>
           <div>
+            <small className="dials-note">Dials: {dials === 'original' ? 'Original' : 'Tuned'}</small>
             {result.outcome === 'flag' && <><b>Reached the flag!</b><p>Score {result.score} · got as far as x {x}</p></>}
             {result.outcome === 'died' && <><b>Died at x {x}{cause(String(result.death?.cause ?? '')) ? ` · ${cause(String(result.death?.cause ?? ''))}` : ''}</b>
               <p>{String(result.death?.cause ?? '').startsWith('enemy:') ? `Touched a ${cause(String(result.death?.cause))}` : cause(String(result.death?.cause ?? '')) ? 'Fell in a pit' : 'The fly died'} · score {result.score}</p></>}

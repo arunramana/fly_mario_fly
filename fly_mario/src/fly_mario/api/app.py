@@ -53,13 +53,13 @@ def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = N
             raise HTTPException(422, str(e))
         return fly
 
-    def write_fly(dto: S.FlyDTO) -> S.FlyDTO:
+    def write_fly(dto: S.FlyDTO) -> S.FlyView:
         if not NAME.match(dto.name):
             raise HTTPException(422, "fly name: letters, digits, _ and - only")
         fly = check_fly(dto)
         flies.mkdir(parents=True, exist_ok=True)
         (flies / f"{dto.name}.yaml").write_text(dump_fly(fly), encoding="utf-8")
-        return V.fly_to_dto(load_fly(flies / f"{dto.name}.yaml"))
+        return V.fly_to_view(load_fly(flies / f"{dto.name}.yaml"))
 
     # ---- registry and levels ----------------------------------------------------------------------------------
     @app.get("/registry", response_model=S.RegistryInfo)
@@ -84,26 +84,26 @@ def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = N
     def list_flies():
         return [V.fly_summary(read_fly(n)) for n in fly_names()]
 
-    @app.get("/flies/presets", response_model=list[S.FlyDTO])
+    @app.get("/flies/presets", response_model=list[S.FlyView])
     def fly_presets():
-        return [V.fly_to_dto(read_fly(n)) for n in fly_names()]
+        return [V.fly_to_view(read_fly(n)) for n in fly_names()]
 
     @app.post("/brain-map.png", responses={200: {"content": {"image/png": {}}}})
     def brain_map(dto: S.FlyDTO):
         """The brain and nerve cord with the neuron groups this fly uses lit: the Fly page's mini map."""
         return Response(layers.brain_map_png(check_fly(dto)), media_type="image/png")
 
-    @app.get("/flies/{name}", response_model=S.FlyDTO)
+    @app.get("/flies/{name}", response_model=S.FlyView)
     def get_fly(name: str):
-        return V.fly_to_dto(read_fly(name))
+        return V.fly_to_view(read_fly(name))
 
-    @app.post("/flies", response_model=S.FlyDTO, status_code=201)
+    @app.post("/flies", response_model=S.FlyView, status_code=201)
     def create_fly(dto: S.FlyDTO):
         if NAME.match(dto.name) and (flies / f"{dto.name}.yaml").exists():
             raise HTTPException(409, f"a fly named {dto.name!r} already exists; PUT to replace it")
         return write_fly(dto)
 
-    @app.put("/flies/{name}", response_model=S.FlyDTO)
+    @app.put("/flies/{name}", response_model=S.FlyView)
     def put_fly(name: str, dto: S.FlyDTO):
         if dto.name != name:
             raise HTTPException(422, "the name in the body must match the name in the path")
@@ -125,7 +125,7 @@ def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = N
             if (moment.scene.level_id, moment.scene.rom) != (req.scene.level_id, req.scene.rom):
                 raise HTTPException(422, f"moment {req.from_moment!r} is on {moment.scene.level_id}, "
                                          f"not {req.scene.level_id}")
-        live = runs.create(fly, V.dto_to_scene(req.scene), req.from_moment)
+        live = runs.create(V.with_dials(fly, req.dials), V.dto_to_scene(req.scene), req.from_moment)
         return runs._summary(live)
 
     @app.get("/runs", response_model=list[S.RunSummary])

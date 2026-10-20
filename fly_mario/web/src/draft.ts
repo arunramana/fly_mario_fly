@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { Fly, RunRequest, Scene } from './api/models'
+import type { Dials, Fly, RunRequest, Scene } from './api/models'
 
 export const emptyFly: Fly = {
   name: 'blank', attachments: {}, loom_shapes: {}, whole_fly: [], actions: [], knobs: {}, provenance: {},
@@ -14,6 +14,9 @@ export interface Draft {
   setScene: (s: Scene) => void
   fly: Fly
   setFly: (f: Fly) => void
+  /** Which dials the next run uses: the fly's tuned knobs, or every knob at its hand-set original. */
+  dials: Dials
+  setDials: (d: Dials) => void
   lastRunId: string | null
   setLastRunId: (id: string) => void
 }

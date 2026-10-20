@@ -30,6 +30,10 @@ FPS = 60.0
 # pictures instead of falling behind; the emulator still runs every frame, at the pace the speed asks for.
 
 
+def _dials_of(provenance: dict) -> str:
+    return "original" if (provenance or {}).get("dials") == "original" else "tuned"
+
+
 @dataclass
 class LiveRun:
     id: str
@@ -78,7 +82,7 @@ class Runs:
         if rid in self.live:
             r = self.live[rid]
             return S.RunDetail(**self._summary(r).model_dump(), scene=V.scene_to_dto(r.scene),
-                               result=V.result_to_dto(r.result) if r.result else None)
+                               result=self._live_result(r) if r.result else None)
         p = self.dir / rid / "summary.json"
         s = self._saved_summary(p) if p.exists() else None
         if s is None:
@@ -90,7 +94,8 @@ class Runs:
         res = r.result
         return S.RunSummary(id=r.id, fly=r.fly.name, level_id=r.scene.level_id, status=r.status,
                             outcome=res.outcome if res else None, max_x=res.max_x if res else None,
-                            score=res.score if res else None, parent_moment=r.parent_moment)
+                            score=res.score if res else None, parent_moment=r.parent_moment,
+                            dials=_dials_of(r.fly.provenance))
 
     @staticmethod
     def _saved_summary(p: Path) -> Optional[S.RunSummary]:
@@ -98,9 +103,23 @@ class Runs:
             d = json.loads(p.read_text(encoding="utf-8"))
             return S.RunSummary(id=d["id"], fly=d["fly"], level_id=d["level"], status="finished",
                                 outcome=d["outcome"], max_x=d["max_x"], score=d["score"],
-                                parent_moment=d.get("parent_moment"))
+                                parent_moment=d.get("parent_moment"),
+                                dials=Runs._saved_dials(p.parent))
         except (OSError, ValueError, KeyError):
             return None
+
+    @staticmethod
+    def _live_result(r: LiveRun) -> S.RunResultDTO:
+        return V.result_to_dto(r.result).model_copy(update={"dials": _dials_of(r.fly.provenance)})
+
+    @staticmethod
+    def _saved_dials(folder: Path) -> str:
+        try:
+            import yaml
+            cfg = yaml.safe_load((folder / "config.yaml").read_text(encoding="utf-8"))
+            return _dials_of(cfg["fly"].get("provenance"))
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            return "tuned"
 
     def _saved_scene(self, rid: str) -> Optional[S.SceneDTO]:
         try:
@@ -116,7 +135,8 @@ class Runs:
             d = json.loads((self.dir / rid / "summary.json").read_text(encoding="utf-8"))
             return S.RunResultDTO(id=d["id"], fly=d["fly"], scene=scene, outcome=d["outcome"], death=d.get("death"),
                                   max_x=d["max_x"], score=d["score"], blocks=d["blocks"], mushroom=d["mushroom"],
-                                  counts=d.get("counts", {}), hash=d.get("hash", "")) if scene else None
+                                  counts=d.get("counts", {}), hash=d.get("hash", ""),
+                                  dials=self._saved_dials(self.dir / rid)) if scene else None
         except (OSError, ValueError, KeyError):
             return None
 
@@ -231,7 +251,7 @@ class Runs:
     @staticmethod
     async def _finish(ws: WebSocket, live: LiveRun) -> None:
         if live.result is not None:
-            await ws.send_json(S.EndEvent(result=V.result_to_dto(live.result)).model_dump())
+            await ws.send_json(S.EndEvent(result=Runs._live_result(live)).model_dump())
         else:
             await ws.send_json(S.ErrorEvent(message=live.error or f"run {live.status}").model_dump())
         await ws.close()

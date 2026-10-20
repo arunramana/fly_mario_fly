@@ -12,6 +12,9 @@ Anchor = Literal["level", "screen_right"]
 Position = Annotated[float, Field(ge=0.0, le=1.0)]
 
 
+Dials = Literal["tuned", "original"]
+
+
 class Box(BaseModel):
     x: float
     y: float
@@ -116,6 +119,18 @@ class FlyDTO(BaseModel):
     provenance: dict = {}
 
 
+class DialView(BaseModel):
+    """One knob of a fly as the dials switch sees it: where evolution left it and where the hand-set original sits."""
+    position: Position
+    original_position: Position
+    tuned: bool                           # position differs from original_position
+
+
+class FlyView(FlyDTO):
+    """A fly as the server returns it: the FlyDTO plus, for every knob any plug-in declares, its dial."""
+    dials: dict[str, DialView] = {}
+
+
 class FlySummary(BaseModel):
     name: str
     senses: list[str]
@@ -136,6 +151,7 @@ class LevelInfo(BaseModel):
 
 class RunRequestDTO(BaseModel):
     fly: FlyDTO
+    dials: Dials = "tuned"                # "original" runs the fly with every knob at its hand-set default
     scene: SceneDTO
     from_moment: Optional[str] = None
 
@@ -154,6 +170,7 @@ class RunResultDTO(BaseModel):
     counts: dict[str, float] = {}
     moments: list[str] = []
     hash: str = ""
+    dials: Dials = "tuned"                # which dials the run used
 
 
 class RunSummary(BaseModel):
@@ -165,6 +182,7 @@ class RunSummary(BaseModel):
     max_x: Optional[float] = None
     score: Optional[float] = None
     parent_moment: Optional[str] = None   # the moment this run was resumed from
+    dials: Dials = "tuned"                # which dials the run used
 
 
 class RunDetail(RunSummary):

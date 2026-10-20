@@ -4,7 +4,7 @@
 //   terminal 3:  npm run test:e2e                    (screenshots land in screenshots/)
 // Flow: Scene (the level catalogue, then level 1-2, whole level) -> Fly (champion_e1s, Advanced drawer) -> Run (layers,
 // toggles, restart) -> dies at the Koopa -> Rewind 3 s -> sour smell stronger -> Resume -> back on the moment screen,
-// the new try is in the list.
+// the new try is in the list. Then the champion on 1-1 with Original dials: the banner names them.
 import assert from 'node:assert/strict'
 import { chromium } from 'playwright'
 
@@ -112,6 +112,31 @@ await page.getByTestId('try').first().waitFor()
 assert.equal(await page.getByTestId('try').count(), triesBefore + 1, 'the new try is in the list')
 console.log('tries:', await page.getByTestId('try').allInnerTexts())
 await shot('7-tries')
+
+// Dials: the champion with its ORIGINAL dials on 1-1 (the banner says which dials the run used)
+await page.goto(`${base}/scene`)
+await page.locator('[data-level="1-1"]').click()
+await page.getByRole('button', { name: 'Whole level' }).click()
+await page.getByText('Next: choose the fly').click()
+await page.getByText('Scene: 1-1').waitFor()
+await page.getByLabel('preset').selectOption('champion_e1s')
+await page.getByLabel('Home').waitFor()
+assert.equal(await page.getByRole('button', { name: 'Tuned' }).getAttribute('aria-pressed'), 'true', 'Tuned is the default')
+await page.getByText('Advanced: fine-tune').click()
+await page.getByRole('dialog', { name: 'Fine-tune this fly' }).waitFor()
+assert.ok(await page.locator('.knob[data-tuned=true]').count() > 0, 'knobs evolution moved are marked')
+assert.ok(await page.getByTestId('original-tick').count() > 0, 'each slider has a tick at its original position')
+await page.getByLabel('close').click()
+await page.getByRole('button', { name: 'Original' }).click()
+assert.equal(await page.getByRole('button', { name: 'Original' }).getAttribute('aria-pressed'), 'true')
+await shot('8-fly-original')
+await page.getByText('▶ Run', { exact: true }).click()
+await page.getByText('◆ Save this moment').waitFor()
+await page.getByRole('button', { name: 'Fast' }).click()
+await finish('original-dials run on 1-1')
+assert.equal(await page.locator('.banner[role=status]').getAttribute('data-dials'), 'original')
+assert.match(await page.locator('.banner[role=status]').innerText(), /Dials: Original/, 'the banner says Original')
+await shot('9-original-banner')
 
 assert.deepEqual(errors, [], 'no page errors')
 await browser.close()

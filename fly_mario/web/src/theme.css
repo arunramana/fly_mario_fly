@@ -265,3 +265,12 @@ input[type='range']::-moz-range-thumb { width: calc(16 * var(--px)); height: cal
   .app-header { flex-wrap: wrap; height: auto; padding: calc(12 * var(--px)) calc(16 * var(--px)); }
   main { padding-inline: calc(16 * var(--px)); }
 }
+
+/* dials: Original | Tuned switch, the tick at the original position, the "tuned" mark */
+.dials { display: flex; align-items: center; gap: calc(8 * var(--px)); flex-wrap: wrap; margin: calc(12 * var(--px)) 0; }
+.dials small { flex-basis: 100%; font-size: calc(13 * var(--px)); opacity: 0.8; }
+.knob .track { position: relative; }
+.knob .track .tick { position: absolute; left: var(--tick); top: 0; bottom: 0; width: calc(3 * var(--px)); margin-left: calc(-1.5 * var(--px)); background: var(--gold); pointer-events: none; }
+.dkey i.tick { position: static; display: inline-block; width: calc(3 * var(--px)); height: calc(12 * var(--px)); background: var(--gold); }
+.knob .tuned-mark { color: var(--orange); font-size: calc(14 * var(--px)); }
+.dials-note { display: block; font-size: calc(13 * var(--px)); opacity: 0.85; margin-bottom: calc(4 * var(--px)); }

@@ -289,6 +289,18 @@ export interface components {
              */
             value: number | null;
         };
+        /**
+         * DialView
+         * @description One knob of a fly as the dials switch sees it: where evolution left it and where the hand-set original sits.
+         */
+        DialView: {
+            /** Original Position */
+            original_position: number;
+            /** Position */
+            position: number;
+            /** Tuned */
+            tuned: boolean;
+        };
         /** EndEvent */
         EndEvent: {
             result: components["schemas"]["RunResultDTO"];
@@ -361,6 +373,59 @@ export interface components {
             name: string;
             /** Senses */
             senses: string[];
+        };
+        /**
+         * FlyView
+         * @description A fly as the server returns it: the FlyDTO plus, for every knob any plug-in declares, its dial.
+         */
+        FlyView: {
+            /**
+             * Actions
+             * @default []
+             */
+            actions: string[];
+            /**
+             * Attachments
+             * @default {}
+             */
+            attachments: {
+                [key: string]: string[];
+            };
+            /**
+             * Dials
+             * @default {}
+             */
+            dials: {
+                [key: string]: components["schemas"]["DialView"];
+            };
+            /**
+             * Knobs
+             * @default {}
+             */
+            knobs: {
+                [key: string]: number;
+            };
+            /**
+             * Loom Shapes
+             * @default {}
+             */
+            loom_shapes: {
+                [key: string]: string;
+            };
+            /** Name */
+            name: string;
+            /**
+             * Provenance
+             * @default {}
+             */
+            provenance: {
+                [key: string]: unknown;
+            };
+            /**
+             * Whole Fly
+             * @default []
+             */
+            whole_fly: string[];
         };
         /**
          * FrameEvent
@@ -629,6 +694,12 @@ export interface components {
         };
         /** RunDetail */
         RunDetail: {
+            /**
+             * Dials
+             * @default tuned
+             * @enum {string}
+             */
+            dials: "tuned" | "original";
             /** Fly */
             fly: string;
             /** Id */
@@ -655,6 +726,12 @@ export interface components {
         RunEvent: components["schemas"]["FrameEvent"] | components["schemas"]["StateEvent"] | components["schemas"]["MomentEvent"] | components["schemas"]["EndEvent"] | components["schemas"]["ErrorEvent"];
         /** RunRequestDTO */
         RunRequestDTO: {
+            /**
+             * Dials
+             * @default tuned
+             * @enum {string}
+             */
+            dials: "tuned" | "original";
             fly: components["schemas"]["FlyDTO"];
             /** From Moment */
             from_moment?: string | null;
@@ -678,6 +755,12 @@ export interface components {
             death: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Dials
+             * @default tuned
+             * @enum {string}
+             */
+            dials: "tuned" | "original";
             /** Fly */
             fly: string;
             /**
@@ -712,6 +795,12 @@ export interface components {
         };
         /** RunSummary */
         RunSummary: {
+            /**
+             * Dials
+             * @default tuned
+             * @enum {string}
+             */
+            dials: "tuned" | "original";
             /** Fly */
             fly: string;
             /** Id */
@@ -966,7 +1055,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FlyDTO"];
+                    "application/json": components["schemas"]["FlyView"];
                 };
             };
             /** @description Validation Error */
@@ -995,7 +1084,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FlyDTO"][];
+                    "application/json": components["schemas"]["FlyView"][];
                 };
             };
         };
@@ -1017,7 +1106,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FlyDTO"];
+                    "application/json": components["schemas"]["FlyView"];
                 };
             };
             /** @description Validation Error */
@@ -1052,7 +1141,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FlyDTO"];
+                    "application/json": components["schemas"]["FlyView"];
                 };
             };
             /** @description Validation Error */
