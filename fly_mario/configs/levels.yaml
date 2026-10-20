@@ -1,0 +1,45 @@
+# How the runner classifies and scans levels for the catalogue.
+# kind per env: read from the area-type RAM byte (0x074E: 0 water, 1 ground, 2 underground, 3 castle) at each
+# level's first frame, so the catalogue can answer without touching the emulator. No stage starts in a sky area.
+# The three whole-game envs: "full" and "lost_levels" start in 1-1 style ground; "random" picks a stage, so "mixed".
+kinds:
+  1-1: overground
+  1-2: underground
+  1-3: overground
+  1-4: castle
+  2-1: overground
+  2-2: water
+  2-3: overground
+  2-4: castle
+  3-1: overground
+  3-2: overground
+  3-3: overground
+  3-4: castle
+  4-1: overground
+  4-2: underground
+  4-3: overground
+  4-4: castle
+  5-1: overground
+  5-2: overground
+  5-3: overground
+  5-4: castle
+  6-1: overground
+  6-2: overground
+  6-3: overground
+  6-4: castle
+  7-1: overground
+  7-2: water
+  7-3: overground
+  7-4: castle
+  8-1: overground
+  8-2: overground
+  8-3: overground
+  8-4: castle
+  full: overground
+  random: mixed
+  lost_levels: overground
+scan:                         # a level's object list is scanned the first time it is asked for
+  every: 2                    # look for objects every n frames
+  max_frames: 3000            # frame cap of the walk-right-and-jump driver
+  max_seconds: 60             # wall-clock cap
+precompute: [1-1, 1-2]

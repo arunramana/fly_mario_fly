@@ -57,8 +57,24 @@ class FrameRecord:
     rates: dict                 # neuron group -> mean rate
     intents: dict               # action name -> ButtonIntent
     mods: dict                  # modifiers raised by the senses this frame
-    screen: np.ndarray
+    screen: np.ndarray          # the picture AFTER the frame's action
     done: bool = False
+    # What the senses looked at this frame, for the renderer and the API (read from the RAM BEFORE the action).
+    found: dict = field(default_factory=dict)      # object type -> [ObjectInstance]: type, id, box (level px), side, state
+    scroll_x: int = 0           # level x of the screen's left edge in that RAM; subtract it from level-pixel overlays
+                                # and draw them on the previous frame's screen (or on `screen` with scroll_x_after)
+    scroll_x_after: int = 0     # the same, after the action: the offset that matches `screen`
+
+    @property
+    def objects(self) -> list:
+        """Every object found this frame, all types in one list (types sorted, as found)."""
+        return [o for objs in self.found.values() for o in objs]
+
+
+def screen_scroll(ram, facts) -> int:
+    """Level x (pixels) of the screen's left edge: add it to a screen x to get a level x, subtract it to go back."""
+    r = facts["ram"]
+    return int(ram[r["screen_page"]]) * 256 + int(ram[r["screen_x"]])
 
 
 def resolve_buttons(intents) -> frozenset:
@@ -138,6 +154,7 @@ class Run:
         for mod, p in self.scene_mods:
             mod.on_frame(env, p)
         facts, ram = env.facts, env.ram
+        scroll_before = screen_scroll(ram, facts)
         mario = R.read_mario(ram, facts)
         found = {name: p.find(ram, facts) for name, p in self.objects.items()}
         world = [o for objs in found.values() for o in objs]
@@ -176,7 +193,8 @@ class Run:
         st = self._send(buttons)
         x = int(st.info.get("x_pos", mario.x))
         rec = FrameRecord(self.scene.noop + self.frame, x, mario, mario.airborne, buttons, outputs, rates, intents,
-                          dict(mods), st.frame)
+                          dict(mods), st.frame, found={k: list(v) for k, v in found.items()}, scroll_x=scroll_before,
+                          scroll_x_after=screen_scroll(env.ram, env.facts))
         self._log(rec, st)
         self._advance(x, st, found, mario)
         rec.done = self.finished
