@@ -167,6 +167,34 @@
         "title": "DeathDTO",
         "type": "object"
       },
+      "DialView": {
+        "description": "One knob of a fly as the dials switch sees it: where evolution left it and where the hand-set original sits.",
+        "properties": {
+          "original_position": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Original Position",
+            "type": "number"
+          },
+          "position": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Position",
+            "type": "number"
+          },
+          "tuned": {
+            "title": "Tuned",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "position",
+          "original_position",
+          "tuned"
+        ],
+        "title": "DialView",
+        "type": "object"
+      },
       "EndEvent": {
         "properties": {
           "result": {
@@ -295,6 +323,79 @@
           "actions"
         ],
         "title": "FlySummary",
+        "type": "object"
+      },
+      "FlyView": {
+        "description": "A fly as the server returns it: the FlyDTO plus, for every knob any plug-in declares, its dial.",
+        "properties": {
+          "actions": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "attachments": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "default": {},
+            "title": "Attachments",
+            "type": "object"
+          },
+          "dials": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DialView"
+            },
+            "default": {},
+            "title": "Dials",
+            "type": "object"
+          },
+          "knobs": {
+            "additionalProperties": {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            "default": {},
+            "title": "Knobs",
+            "type": "object"
+          },
+          "loom_shapes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Loom Shapes",
+            "type": "object"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "provenance": {
+            "additionalProperties": true,
+            "default": {},
+            "title": "Provenance",
+            "type": "object"
+          },
+          "whole_fly": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Whole Fly",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "FlyView",
         "type": "object"
       },
       "FrameEvent": {
@@ -895,6 +996,15 @@
       },
       "RunDetail": {
         "properties": {
+          "dials": {
+            "default": "tuned",
+            "enum": [
+              "tuned",
+              "original"
+            ],
+            "title": "Dials",
+            "type": "string"
+          },
           "fly": {
             "title": "Fly",
             "type": "string"
@@ -1020,6 +1130,15 @@
       },
       "RunRequestDTO": {
         "properties": {
+          "dials": {
+            "default": "tuned",
+            "enum": [
+              "tuned",
+              "original"
+            ],
+            "title": "Dials",
+            "type": "string"
+          },
           "fly": {
             "$ref": "#/components/schemas/FlyDTO"
           },
@@ -1069,6 +1188,15 @@
               }
             ],
             "default": null
+          },
+          "dials": {
+            "default": "tuned",
+            "enum": [
+              "tuned",
+              "original"
+            ],
+            "title": "Dials",
+            "type": "string"
           },
           "fly": {
             "title": "Fly",
@@ -1144,6 +1272,15 @@
       },
       "RunSummary": {
         "properties": {
+          "dials": {
+            "default": "tuned",
+            "enum": [
+              "tuned",
+              "original"
+            ],
+            "title": "Dials",
+            "type": "string"
+          },
           "fly": {
             "title": "Fly",
             "type": "string"
@@ -1637,7 +1774,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FlyDTO"
+                  "$ref": "#/components/schemas/FlyView"
                 }
               }
             },
@@ -1666,7 +1803,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/FlyDTO"
+                    "$ref": "#/components/schemas/FlyView"
                   },
                   "title": "Response Fly Presets Flies Presets Get",
                   "type": "array"
@@ -1698,7 +1835,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FlyDTO"
+                  "$ref": "#/components/schemas/FlyView"
                 }
               }
             },
@@ -1745,7 +1882,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FlyDTO"
+                  "$ref": "#/components/schemas/FlyView"
                 }
               }
             },

@@ -98,6 +98,7 @@ function RunView({ runId }: { runId: string }) {
   const death = result?.death
   const what = death?.object_label ?? death?.object_type ?? ''
   const x = (result?.max_x ?? 0).toFixed(0)
+  const dials = result?.dials ?? runRequests.get(runId)?.req.dials ?? 'tuned'
 
   return (
     <div className="run">
@@ -131,8 +132,9 @@ function RunView({ runId }: { runId: string }) {
 
       {error && <div className="banner died" role="alert"><div><b>Something went wrong</b><p>{error}</p></div></div>}
       {result && (
-        <div className={`banner ${result.outcome === 'flag' ? 'flag' : result.outcome === 'died' ? 'died' : 'info'}`} role="status" data-outcome={result.outcome}>
+        <div className={`banner ${result.outcome === 'flag' ? 'flag' : result.outcome === 'died' ? 'died' : 'info'}`} role="status" data-outcome={result.outcome} data-dials={dials}>
           <div>
+            <small className="dials-note">Dials: {dials === 'original' ? 'Original' : 'Tuned'}</small>
             {result.outcome === 'flag' && <><b>Reached the flag!</b><p>Score {result.score} · got as far as x {x}</p></>}
             {result.outcome === 'died' && <><b>Died at x {death?.x ?? x}{what ? ` · ${what}` : ''}</b>
               <p>{death?.kind === 'enemy' ? `Touched a ${what}` : death?.kind === 'fall' ? `Fell in (${what})` : 'The fly died'} · score {result.score}</p></>}

@@ -20,7 +20,9 @@ class Jump:
     knobs = [
         KnobSpec("jump.ttmn_thresh", "Press A when TTMn is above", "jumpy", "only when sure", 0.10, 0.06374, 0.1912,
                  origin="invented", evolvable=True),
-        KnobSpec("jump.release_thresh", "Keep A down while TTMn is above", "lets go early", "holds long", 0.0978,
+        # Original dial = the old hand-set RELEASE_THRESH = TTMN_THRESH (0.10, i.e. no hysteresis).
+        # 0.0978 was the E1-evolved value, so it belongs in the tuned flies' yaml, not here.
+        KnobSpec("jump.release_thresh", "Keep A down while TTMn is above", "lets go early", "holds long", 0.10,
                  0.04889, 0.1467, origin="invented", evolvable=True),
     ]
 
