@@ -2,12 +2,13 @@ import { useState, type CSSProperties } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
-import type { FlyConfig } from '../api/types'
+import type { Fly } from '../api/models'
 import SenseGrid from '../components/SenseGrid'
 import Knobs, { OriginKey } from '../components/Knobs'
 import { useDraft } from '../state'
 
 const toggleIn = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v])
+const errText = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
 export default function FlyScreen() {
   const { scene, fly, setFly, setLastRunId } = useDraft()
@@ -15,7 +16,7 @@ export default function FlyScreen() {
   const [open, setOpen] = useState(false)
   const registry = useQuery({ queryKey: ['registry'], queryFn: api.getRegistry })
   const levels = useQuery({ queryKey: ['levels'], queryFn: api.getLevels })
-  const save = useMutation({ mutationFn: (f: FlyConfig) => api.saveFly(f) })
+  const save = useMutation({ mutationFn: (f: Fly) => api.saveFly(f, true) })
   const run = useMutation({
     mutationFn: () => api.startRun({ fly, scene, from_moment: null }),
     onSuccess: ({ run_id }) => { setLastRunId(run_id); nav(`/run/${run_id}`) },
@@ -23,7 +24,8 @@ export default function FlyScreen() {
   if (!registry.data || !levels.data) return <p>Loading…</p>
   const reg = registry.data
   const level = levels.data.find((l) => l.id === scene.level_id)
-  const rows = reg.objects.filter((o) => level?.objects.includes(o.name))
+  // A level that has not been scanned has unknown objects: offer every object type then.
+  const rows = reg.objects.filter((o) => !level?.objects || level.objects.includes(o.name))
   const wholeSenses = reg.senses.filter((s) => s.scope === 'whole_fly')
 
   // Knobs of everything switched on.
@@ -31,7 +33,7 @@ export default function FlyScreen() {
   const knobs = [
     ...reg.senses.filter((s) => attached.has(s.name) || fly.whole_fly.includes(s.name)).flatMap((s) => s.knobs),
     ...reg.actions.filter((a) => fly.actions.includes(a.name)).flatMap((a) => a.knobs),
-  ]
+  ].filter((k, i, all) => all.findIndex((x) => x.key === k.key) === i)
 
   return (
     <>
@@ -92,8 +94,12 @@ export default function FlyScreen() {
           <input type="text" aria-label="fly name" value={fly.name} onChange={(e) => setFly({ ...fly, name: e.target.value })} />
           <button onClick={() => save.mutate(fly)}>Save fly</button>
           {save.isSuccess && <span style={{ color: 'var(--green)' }}>saved</span>}
+          {save.isError && <span style={{ color: 'var(--red)' }} role="alert">{errText(save.error)}</span>}
         </div>
-        <button className="gold" onClick={() => run.mutate()} disabled={run.isPending}>Run ▶</button>
+        <div className="row">
+          {run.isError && <span style={{ color: 'var(--red)' }} role="alert">{errText(run.error)}</span>}
+          <button className="gold" onClick={() => run.mutate()} disabled={run.isPending}>Run ▶</button>
+        </div>
       </div>
     </>
   )

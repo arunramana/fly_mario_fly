@@ -109,3 +109,5 @@ input[type='checkbox'] { accent-color: var(--gold); width: 18px; height: 18px; }
 .try .bad { color: var(--red); }
 .soon { font-size: 9px; color: var(--gold); margin-left: 6px; }
 .frozen { filter: grayscale(0.3); }
+.level-facts { display: block; font-size: 14px; }
+.stage canvas { image-rendering: pixelated; }
