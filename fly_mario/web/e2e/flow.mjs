@@ -2,6 +2,8 @@
 //   terminal 1:  python -m fly_mario.api            (http://127.0.0.1:8000)
 //   terminal 2:  npm run dev                         (http://localhost:5173)
 //   terminal 3:  npm run test:e2e                    (screenshots land in screenshots/)
+// "Use this fly" writes a fly yaml: run the whole stack with `python tools/e2e_stack.py` (from fly_mario/), which points the API at a
+// temp flies folder (FLY_MARIO_FLIES_DIR) and deletes that folder afterwards, so nothing lands in configs/flies/.
 // Flow: Scene (the level catalogue, then level 1-2, whole level) -> Fly (champion_e1s, Advanced drawer) -> Run (layers,
 // toggles, restart) -> dies at the Koopa -> Rewind 3 s -> sour smell stronger -> Resume -> back on the moment screen,
 // the new try is in the list. Then the champion on 1-1 with Original dials: the banner names them.

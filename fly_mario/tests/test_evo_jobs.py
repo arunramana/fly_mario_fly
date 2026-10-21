@@ -78,10 +78,15 @@ class FakeProc:
         return None
 
 
+def copy_presets(dst):
+    """The preset flies only: a fly saved earlier by "Use this fly" (named *_evo_*) must not make the test's names collide."""
+    shutil.copytree(FLIES, dst, ignore=shutil.ignore_patterns("*_evo_*"))
+
+
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     flies = tmp_path / "flies"
-    shutil.copytree(FLIES, flies)
+    copy_presets(flies)
     monkeypatch.setattr(J.subprocess, "Popen", lambda *a, **k: FakeProc())
     killed = []
     monkeypatch.setattr(J, "kill_tree", killed.append)
@@ -162,7 +167,7 @@ def test_use_saves_the_best_fly_with_provenance(client):
 # ---- the real thing: a tiny evolution through the API, in its own process, to the end -------------------------------
 def test_tiny_evolution_runs_to_completion_with_progress(tmp_path):
     flies = tmp_path / "flies"
-    shutil.copytree(FLIES, flies)
+    copy_presets(flies)
     c = TestClient(create_app(flies, tmp_path / "runs"))
     fly = c.get("/flies/champion_e1s").json()
     jid = c.post("/jobs/evolve", json={"fly": fly, "level": "1-1", "generations": 2, "population": 4, "workers": 4,

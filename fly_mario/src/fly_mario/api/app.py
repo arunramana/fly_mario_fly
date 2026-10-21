@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 from typing import Optional
@@ -29,7 +30,7 @@ NAME = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
 def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = None) -> FastAPI:
-    flies = Path(flies_dir) if flies_dir else FLIES
+    flies = Path(flies_dir or os.environ.get("FLY_MARIO_FLIES_DIR") or FLIES)    # env var: e2e runs write their flies elsewhere
     runs = Runs(Path(runs_folder) if runs_folder else runs_dir())
     jobs = Jobs(runs.dir, flies)
     videos = Videos(runs.dir)
