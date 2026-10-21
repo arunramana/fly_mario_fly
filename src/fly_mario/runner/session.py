@@ -164,7 +164,7 @@ class Run:
         self.frame = 0                           # fly frames played
         self.max_x = self.x0 = R.mario_x(env.ram, env.facts)
         self.best_frame = 0                      # legacy: absolute frame of the last new max x
-        self.last_progress = 0                   # frame of the last new max x once Mario has moved
+        self.last_progress = 0                   # fly frame of the last new max x (0 = the start)
         self.moved = False
         self.hit_blocks: set = set()
         self.big_seen = False
@@ -279,8 +279,8 @@ class Run:
             self._finish("died", x)
         elif legacy and abs_frame - self.best_frame >= sc.stuck_frames:
             self._finish("stuck", x)                 # the old rule: counted from frame 0, before Mario ever moved
-        elif not legacy and self.moved and idx - self.last_progress >= sc.stuck_frames:
-            self._finish("stuck", x)                 # counted only after Mario's first move
+        elif not legacy and idx - self.last_progress >= sc.stuck_frames:
+            self._finish("stuck", x)                 # counted from the start; a run that never moves is stuck too
         elif (abs_frame + 1 if legacy else self.frame) >= sc.max_frames:
             self._finish("timeout", x)
 

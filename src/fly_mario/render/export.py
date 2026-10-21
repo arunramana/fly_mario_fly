@@ -3,8 +3,9 @@
 Two kinds, one job folder each under $FLY_MARIO_DATA/videos/<id>/ (the spec is in job.json, see specs.py):
 
     run       one saved run in the approved brain | game look; speed, an optional frame range
-    montage   one short clip per generation of an evolution (that generation's best fly), with the fitness of
-              every generation along the bottom and the current one highlighted
+    montage   one clip per generation of an evolution (that generation's best fly), each played from the start to its
+              end (flag, death or stuck), with the fitness of every generation along the bottom and the current one
+              highlighted; speed 1x / 2x / 4x
 
 An export is one process, `python -m fly_mario.render job <folder>`: it writes video.mp4 as video.part.mp4 and renames
 it when it is complete. Only factual labels are drawn: dials, fly or generation names, how a run ended. No claims.
@@ -33,6 +34,7 @@ PW, PH = 256 * SCALE, 240 * SCALE           # 768 x 720
 GOLD, GREY = (232, 176, 40), (120, 120, 118)
 OK_COL, BAD_COL = (96, 200, 120), (230, 100, 90)
 ALIVE_EVERY = 5.0
+HOLD = 30                                   # output frames the last picture of a montage clip stays, so its caption can be read
 
 
 def videos_dir() -> Path:
@@ -223,21 +225,21 @@ class RunExport:
 
 
 class MontageExport:
-    """One short clip per generation's best fly, with the fitness of every generation along the bottom."""
+    """One clip per generation's best fly, played to its end, with the fitness of every generation along the bottom.
+    A clip is about frames / speed output frames (every speed-th one, and the last) plus HOLD frames of the last picture."""
 
     GAME_Y, LABEL_Y, CAP_Y = 84, 16, 808
     BAR_Y0, BAR_Y1 = 920, 1030
 
     def __init__(self, spec: dict):
         self.spec = spec
-        self.steps = int(round(spec["clip_seconds"] * FPS)) * spec["speed"]     # game frames per clip
         if spec["show_brain"]:                      # the R3 brain panel on the left, the game and the chart on the right
             self.GAME_X, self.BAR_X0, self.BAR_X1 = LEFT_W + (W - LEFT_W - PW) // 2, LEFT_W + 32, W - 32
         else:
             self.GAME_X, self.BAR_X0, self.BAR_X1 = (W - PW) // 2, 160, 1760
 
     def total(self) -> int:
-        return self.steps * len(self.spec["sides"])
+        return len(self.spec["sides"])              # progress counts clips: how long each is is only known once it has played
 
     def _base(self, side: dict) -> np.ndarray:
         pil = _canvas()
@@ -278,32 +280,37 @@ class MontageExport:
         if getattr(self, "_shared", None) is None:
             rmax: dict = {}
             for side in self.spec["sides"]:
-                for g, v in source.rate_max_of(source.run_from_side(side), self.steps).items():
+                for g, v in source.rate_max_of(source.run_from_side(side)).items():
                     rmax[g] = max(rmax.get(g, 0.0), v)
             self._shared = BrainPanel(source.brain_data(run, rate_max=rmax))
         return self._shared
 
     def frames(self):
         s = self.spec
+        self.clips = []                             # per clip: its label, its game frames and the output frames it took
         for k, side in enumerate(s["sides"]):
             lane, base = Lane(side), self._base(side)
             panel = self._panel(lane.run) if s["show_brain"] else None
-            for i in range(self.steps):
-                if not lane.advance():
-                    break
-                if i % s["speed"] and not lane.ended:
+            out_frames = 0
+            while lane.advance():
+                if lane.index % s["speed"] and not lane.ended:
                     continue
-                fd = lane.fd
-                out = base.copy()
-                if panel:
-                    out[:, :LEFT_W] = panel.draw(fd.rates, fd.frame)
-                out[self.GAME_Y:self.GAME_Y + PH, self.GAME_X:self.GAME_X + PW] = game_panel(fd.game, fd.overlay, fd.scroll_x, s["show_senses"], SCALE)
-                if lane.ended:
-                    _caption(out[self.CAP_Y:self.CAP_Y + 48, self.GAME_X - 40:self.GAME_X + PW + 40], PW // 2 + 40, 2, lane.caption, lane.run.outcome == "flag")
-                yield k, out
-                if lane.ended:
-                    break
+                out = self._compose(base, lane, panel)
+                for _ in range(1 + (HOLD if lane.ended else 0)):
+                    out_frames += 1
+                    yield k, out
+            self.clips.append({"label": side["label"], "outcome": lane.run.outcome, "game_frames": lane.index + 1, "output_frames": out_frames})
         self.report = []
+
+    def _compose(self, base: np.ndarray, lane, panel) -> np.ndarray:
+        s, fd = self.spec, lane.fd
+        out = base.copy()
+        if panel:
+            out[:, :LEFT_W] = panel.draw(fd.rates, fd.frame)
+        out[self.GAME_Y:self.GAME_Y + PH, self.GAME_X:self.GAME_X + PW] = game_panel(fd.game, fd.overlay, fd.scroll_x, s["show_senses"], SCALE)
+        if lane.ended:
+            _caption(out[self.CAP_Y:self.CAP_Y + 48, self.GAME_X - 40:self.GAME_X + PW + 40], PW // 2 + 40, 2, lane.caption, lane.run.outcome == "flag")
+        return out
 
 
 EXPORTS = {"run": RunExport, "montage": MontageExport}
@@ -314,14 +321,13 @@ def make_video(folder: Path, spec: dict) -> dict:
     ex = EXPORTS[spec["export"]](spec)
     part, final = folder / "video.part.mp4", folder / "video.mp4"
     prog = Progress(folder, "rendering", ex.total())
-    t0, n, sim = time.time(), 0, 0
+    t0, n, key = time.time(), 0, 0
     w = Writer(part)
     try:
         for key, img in ex.frames():
             w.write(img)
             n += 1
-            sim = n * spec.get("speed", 1)
-            prog.tick(sim)
+            prog.tick(key if spec["export"] == "montage" else n * spec.get("speed", 1))
     finally:
         w.close()
     try:
@@ -332,6 +338,8 @@ def make_video(folder: Path, spec: dict) -> dict:
     info = {"export": spec["export"], "file": "video.mp4", "width": W, "height": H, "fps": FPS, "frames": n,
             "duration_s": round(n / FPS, 2), "bytes": final.stat().st_size, "render_s": round(time.time() - t0, 1),
             "replay_checks": checks, "speed": spec.get("speed", 1)}
+    if hasattr(ex, "clips"):
+        info["clips"] = ex.clips
     prog.tick(prog.total, force=True)
     return info
 

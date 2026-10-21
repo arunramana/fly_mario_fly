@@ -22,6 +22,7 @@ from fly_mario.runner.record import runs_dir
 # may not import evolve, and a start's {noop, sigma, seed} alone does not say them.
 TEST_MAX_FRAMES, TEST_STUCK_FRAMES = 3000, 150
 SPEEDS = (1, 2)
+MONTAGE_SPEEDS = (1, 2, 4)
 
 
 def _runs(root) -> Path:
@@ -49,7 +50,7 @@ def saved_side(run_id: str, root=None, label: str = "") -> dict:
                        "hash": summ["hash"], "death": summ.get("death")}}
 
 
-def generation_side(evo_id: str, gen: int, clip_frames: int, root=None) -> dict:
+def generation_side(evo_id: str, gen: int, root=None) -> dict:
     """The best fly of one generation of an evolution (gen -1 = the fly it started from), on the level's start, no noise."""
     folder = _runs(root) / evo_id
     job, prog = _json(folder / "job.json"), _json(folder / "progress.json")
@@ -64,13 +65,13 @@ def generation_side(evo_id: str, gen: int, clip_frames: int, root=None) -> dict:
     scene = {"level_id": job["level"], "rom": "v0", "modifiers": [], "start": "level_start", "noop": 0, "sigma": 0.0,
              "seed": 0, "max_frames": TEST_MAX_FRAMES, "stuck_frames": TEST_STUCK_FRAMES}
     return {"run_id": "", "fly": fly_to_dict(fly), "scene": scene, "options": {}, "from_moment": moment, "rates": "",
-            "label": "Starting fly" if gen < 0 else f"Generation {gen}", "gen": gen, "expect": {"frames": clip_frames}}
+            "label": "Starting fly" if gen < 0 else f"Generation {gen}", "gen": gen, "expect": {}}
 
 
 # ---- the three export specs ---------------------------------------------------------------------------------------
-def _speed(speed) -> int:
-    if int(speed) not in SPEEDS:
-        raise ValueError(f"speed is 1 or 2, not {speed!r}")
+def _speed(speed, allowed=SPEEDS) -> int:
+    if int(speed) not in allowed:
+        raise ValueError(f"speed is {' or '.join(map(str, allowed))}, not {speed!r}")
     return int(speed)
 
 
@@ -86,23 +87,21 @@ def run_spec(run_id: str, show_senses: bool = True, show_brain: bool = True, spe
             "speed": _speed(speed), "frame_from": a, "frame_to": b}
 
 
-def montage_spec(evo_id: str, clip_seconds: float = 6.0, speed: int = 2, show_senses: bool = True,
-                 show_brain: bool = True, root=None) -> dict:
-    """One clip per finished generation (its best fly), with the fitness chart along the bottom."""
+def montage_spec(evo_id: str, speed: int = 2, show_senses: bool = True, show_brain: bool = True, root=None) -> dict:
+    """One clip per generation of a finished evolution (its best fly), each played to its end, with the fitness chart
+    along the bottom."""
     folder = _runs(root) / evo_id
-    prog = _json(folder / "progress.json")
-    if not prog or not _json(folder / "job.json"):
+    prog, job = _json(folder / "progress.json"), _json(folder / "job.json")
+    if not prog or not job:
         raise ValueError(f"no evolution {evo_id!r}")
+    if job.get("status") in ("queued", "running"):
+        raise ValueError("the evolution is still running: the montage shows every generation, so wait until it has finished")
     rows = [r for r in prog["rows"] if r["gen"] >= 0]
     if not rows:
         raise ValueError("the evolution has not finished a generation yet")
-    speed = _speed(speed)
-    frames = int(round(float(clip_seconds) * 60)) * speed
-    if frames < 60:
-        raise ValueError("a clip must be at least one second")
-    return {"export": "montage", "evo": evo_id, "speed": speed, "clip_seconds": float(clip_seconds),
+    return {"export": "montage", "evo": evo_id, "speed": _speed(speed, MONTAGE_SPEEDS),
             "show_senses": bool(show_senses), "show_brain": bool(show_brain),
-            "sides": [generation_side(evo_id, r["gen"], frames, root) for r in rows],
+            "sides": [generation_side(evo_id, r["gen"], root) for r in rows],
             "bars": [{"gen": r["gen"], "best": float(r["best"]), "mean": float(r["mean"])} for r in rows]}
 
 

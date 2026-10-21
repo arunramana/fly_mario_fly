@@ -143,7 +143,8 @@ function RunView({ runId }: { runId: string }) {
             {result.outcome === 'flag' && <><b>Reached the flag!</b><p>Score {result.score} · got as far as x {x}</p></>}
             {result.outcome === 'died' && <><b>Died at x {death?.x ?? x}{what ? ` · ${what}` : ''}</b>
               <p>{death?.kind === 'enemy' ? `Touched a ${what}` : death?.kind === 'fall' ? `Fell in (${what})` : 'The fly died'} · score {result.score}</p></>}
-            {result.outcome !== 'flag' && result.outcome !== 'died' && <><b>The run ended ({result.outcome}) at x {x}</b><p>Score {result.score}</p></>}
+            {result.outcome === 'stuck' && <><b>Mario got stuck at x {x}</b><p>He stopped making progress · score {result.score}</p></>}
+            {result.outcome === 'timeout' && <><b>Ran out of time at x {x}</b><p>Score {result.score}</p></>}
           </div>
           <div className="row">
             {result.outcome === 'died' && <button className="btn gold" onClick={rewind}>⏪ Rewind 3 s &amp; change the fly</button>}

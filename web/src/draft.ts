@@ -9,9 +9,16 @@ export const defaultScene: Scene = {
   max_frames: 6000, stuck_frames: 300,
 }
 
+/** What the user has actually chosen on the Scene page: the defaults in `defaultScene` do not count until clicked. */
+export interface Picked { level: boolean; test: boolean; start: boolean }
+export const nothingPicked: Picked = { level: false, test: false, start: false }
+export const everythingPicked: Picked = { level: true, test: true, start: true }
+
 export interface Draft {
   scene: Scene
   setScene: (s: Scene) => void
+  picked: Picked
+  setPicked: (p: Picked) => void
   fly: Fly
   setFly: (f: Fly) => void
   /** Which dials the next run uses: the fly's tuned knobs, or every knob at its hand-set original. */

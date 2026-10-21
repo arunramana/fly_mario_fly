@@ -34,7 +34,7 @@ function Subtitle() {
 }
 
 export default function App() {
-  const { lastRunId } = useDraft()
+  const { lastRunId, picked } = useDraft()
   const { pathname } = useLocation()
   const here = STEPS.findIndex((s) => pathname.startsWith(s)) + (pathname.startsWith('/moment') ? 3 : 0)
   const tab = (to: string, i: number, label: string, off = false) => (
@@ -50,7 +50,7 @@ export default function App() {
         <span className="subtitle"><Subtitle /></span>
         <nav>
           {tab('/scene', 0, '1 Scene')}
-          {tab('/fly', 1, '2 Fly')}
+          {tab('/fly', 1, '2 Fly', here < 1 && !(picked.level && picked.test && picked.start))}
           {tab(lastRunId ? `/run/${lastRunId}` : '/run', 2, '3 Run', !lastRunId)}
           {FEATURES.evolution && tab('/evolution', 3, '4 Evolution')}
         </nav>

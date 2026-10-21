@@ -34,10 +34,10 @@ def test_the_fly_takes_over_only_after_the_idle_frames():
     assert run.rows[0]["frame"] == 10 and run.replay[:10] == [0] * 10
 
 
-def test_stuck_counts_only_after_the_first_move_unless_legacy():
-    """A fly that never moves: the new rule never calls it stuck (it times out); the old rule counted from frame 0."""
+def test_a_run_that_never_moves_is_stuck_and_legacy_counts_the_idle_frames():
+    """A fly that never moves is stuck after stuck_frames of its own frames; the old rule counted from the very first frame."""
     run, res = play("blank", noop=5, max_frames=80, stuck_frames=30)
-    assert res.outcome == "timeout" and res.counts["frames"] == 80
+    assert res.outcome == "stuck" and res.counts["frames"] == 31
     run, res = play("blank", legacy=True, noop=5, max_frames=80, stuck_frames=30)
     assert res.outcome == "stuck" and 5 + res.counts["frames"] == 31             # frame 30 counted from the very first frame
 

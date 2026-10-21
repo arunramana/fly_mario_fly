@@ -37,7 +37,7 @@ class Videos:
             return Sp.run_spec(req.run_id, req.show_senses, req.show_brain, 1, None, None, self.runs)
         if not req.job_id:
             raise ValueError("a montage needs the evolution's job_id")
-        return Sp.montage_spec(req.job_id, 6.0, 2, req.show_senses, req.show_brain, self.runs)
+        return Sp.montage_spec(req.job_id, req.speed, req.show_senses, req.show_brain, self.runs)
 
     def create(self, req: S.VideoRequest) -> str:
         spec = self.spec(req)
@@ -107,6 +107,8 @@ class Videos:
             video=f"/videos/{vid}/video.mp4" if have_video else None, error=job.get("error", ""),
             duration_s=info["duration_s"] if info else None, size_mb=round(info["bytes"] / 1e6, 1) if info else None,
             render_s=info["render_s"] if info else None,
+            speed=info.get("speed") if info and job["export"] == "montage" else None,
+            clips=len(info["clips"]) if info and "clips" in info else None,
             checks=[S.VideoCheck(label=c["label"], outcome=c["outcome"], max_x=c["max_x"], hash_ok=c["hash_ok"])
                     for c in (info or {}).get("replay_checks", [])])
 
