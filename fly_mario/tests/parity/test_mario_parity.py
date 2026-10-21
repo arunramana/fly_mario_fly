@@ -24,6 +24,8 @@ from fly_mario import registry                           # noqa: E402
 from fly_mario.mario import ram as R                      # noqa: E402
 from fly_mario.mario.env import MarioEnv                  # noqa: E402
 
+pytestmark = pytest.mark.parity_old
+
 DIFFERENCES = """
 - brick, usedblock, step: new types. The old code only had walls (pipe + stair columns, one set) and tile ids for ceilings.
   Pipe and step are compared together, per column height, so the old merged wall set is reproduced.

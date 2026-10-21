@@ -19,6 +19,8 @@ from fly_mario.mario import ram as R                      # noqa: E402
 from fly_mario.mario.env import MarioEnv                  # noqa: E402
 from fly_mario.senses.kit.headroom import rise_available  # noqa: E402
 
+pytestmark = pytest.mark.parity_old
+
 
 def pulse(i, period=30, hold=16):
     return ("right", "A") if i % period < hold else ("right",)
