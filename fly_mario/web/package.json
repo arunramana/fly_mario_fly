@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "gen:types": "npx --yes -p typescript@5.9.3 -p openapi-typescript@7.13.0 openapi-typescript ../src/fly_mario/api/openapi.json -o src/api/types.ts",
     "test:e2e": "node e2e/flow.mjs",
+    "test:e2e:video": "node e2e/video.mjs",
     "dev:mock": "vite --mode mock"
   },
   "dependencies": {

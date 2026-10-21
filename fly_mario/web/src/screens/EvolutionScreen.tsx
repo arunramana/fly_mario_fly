@@ -5,6 +5,7 @@ import { api } from '../api/client'
 import type { DevSetResult, JobDetail } from '../api/models'
 import LiveRun from '../components/LiveRun'
 import TestPanel from '../components/TestPanel'
+import VideoExport from '../components/VideoExport'
 import { errText } from '../hooks'
 import { defaultScene, useDraft } from '../draft'
 import { eta, isLive, useJob } from '../jobs'
@@ -77,6 +78,7 @@ function EvolutionView({ job }: { job: JobDetail }) {
   const [picked, setPicked] = useState<number | null>(null)
   const [watch, setWatch] = useState<{ gen: number; runId: string } | null>(null)
   const [error, setError] = useState('')
+  const [montage, setMontage] = useState(false)
   const p = job.progress
   const live = isLive(job.status)
   const best = job.best_generation ?? null
@@ -109,12 +111,14 @@ function EvolutionView({ job }: { job: JobDetail }) {
         </div>
         <div className="row">
           {live && <button className="btn" onClick={() => cancel.mutate()} disabled={cancel.isPending}>Cancel</button>}
+          <button className="btn" onClick={() => setMontage(true)} disabled={p.bars.length === 0} title="One short clip per generation's best fly, with the fitness chart underneath">Download montage</button>
           {saved
             ? <button className="btn gold" onClick={() => nav('/fly')}>Saved as {saved} · open it</button>
             : <button className="btn gold" disabled={job.status !== 'finished' || use.isPending} onClick={() => use.mutate()}>Use the best fly</button>}
         </div>
       </div>
 
+      {montage && <MontageVideo job={job} onClose={() => setMontage(false)} />}
       {live && (
         <section className="box job-progress-box" data-testid="evo-progress">
           <div className="pbar" role="progressbar"><i style={{ width: `${job.generations ? (p.generation / job.generations) * 100 : 0}%` }} /></div>
@@ -148,5 +152,34 @@ function EvolutionView({ job }: { job: JobDetail }) {
         <Changes job={job} />
       </div>
     </div>
+  )
+}
+
+/** "Download montage": which generations, how long each clip is, then the shared preview-then-render panel. */
+function MontageVideo({ job, onClose }: { job: JobDetail; onClose: () => void }) {
+  const gens = job.progress.bars.map((b) => b.gen)
+  const [chosen, setChosen] = useState<number[]>([])
+  const [seconds, setSeconds] = useState(6)
+  const [speed, setSpeed] = useState(2)
+  const [withStart, setWithStart] = useState(false)
+  const [brain, setBrain] = useState(false)
+  const toggle = (g: number) => setChosen((c) => (c.includes(g) ? c.filter((x) => x !== g) : [...c, g]))
+  return (
+    <VideoExport label="Download montage" onClose={onClose}
+      build={() => ({ export: 'montage', job_id: job.id, generations: chosen, clip_seconds: seconds, speed, include_start: withStart, show_brain: brain })}>
+      <div className="toolrow">
+        <span className="muted">Generations:</span>
+        <button className={`chip ${chosen.length === 0 ? 'on' : ''}`} aria-pressed={chosen.length === 0} onClick={() => setChosen([])}>All</button>
+        {gens.map((g) => <button key={g} className={`chip ${chosen.includes(g) ? 'on' : ''}`} aria-pressed={chosen.includes(g)} aria-label={`generation ${g}`} onClick={() => toggle(g)}>{g}</button>)}
+      </div>
+      <div className="toolrow">
+        <label>Clip length <select aria-label="clip seconds" value={seconds} onChange={(e) => setSeconds(Number(e.target.value))}>{[3, 4, 6, 8, 10].map((s) => <option key={s} value={s}>{s} s</option>)}</select></label>
+        <div className="speeds" role="group" aria-label="video speed">
+          {[1, 2].map((v) => <button key={v} className={`chip ${speed === v ? 'on' : ''}`} aria-pressed={speed === v} onClick={() => setSpeed(v)}>{v}×</button>)}
+        </div>
+        <label className="check"><input type="checkbox" checked={brain} onChange={(e) => setBrain(e.target.checked)} />Show brain</label>
+        <label className="check"><input type="checkbox" checked={withStart} onChange={(e) => setWithStart(e.target.checked)} />Start with the fly it began from</label>
+      </div>
+    </VideoExport>
   )
 }

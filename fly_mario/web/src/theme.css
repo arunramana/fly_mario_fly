@@ -317,3 +317,12 @@ input[type='range']::-moz-range-thumb { width: calc(16 * var(--px)); height: cal
 .live-run .stage { width: 100%; }
 .gen { max-width: calc(110 * var(--px)); }
 .bars { justify-content: flex-start; }
+
+.video-export { margin-top: calc(16 * var(--px)); }
+.video-options { border: 0; padding: 0; margin: calc(10 * var(--px)) 0 0; min-width: 0; }
+.video-options:disabled { opacity: 0.6; }
+.video-stills { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(240 * var(--px)), 1fr)); gap: calc(10 * var(--px)); margin-top: calc(12 * var(--px)); }
+.video-stills img { width: 100%; display: block; border: calc(2 * var(--px)) solid #555; background: #000; }
+.video-thumb { height: calc(44 * var(--px)); display: block; border: calc(2 * var(--px)) solid #555; }
+.sr.pickable { grid-template-columns: calc(110 * var(--px)) minmax(0, 2fr) repeat(6, minmax(0, 1fr)) calc(150 * var(--px)); }
+.sr.head:has(span:nth-child(9)) { grid-template-columns: calc(110 * var(--px)) minmax(0, 2fr) repeat(6, minmax(0, 1fr)) calc(150 * var(--px)); }

@@ -8,7 +8,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import TypeAdapter
 
 from fly_mario import registry
@@ -22,6 +22,7 @@ from fly_mario.api import ports
 from fly_mario.api import schemas as S
 from fly_mario.api.jobs import Jobs
 from fly_mario.api.live import Runs
+from fly_mario.api.videos import Videos
 
 OPENAPI_PATH = Path(__file__).with_name("openapi.json")
 NAME = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
@@ -31,6 +32,7 @@ def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = N
     flies = Path(flies_dir) if flies_dir else FLIES
     runs = Runs(Path(runs_folder) if runs_folder else runs_dir())
     jobs = Jobs(runs.dir, flies)
+    videos = Videos(runs.dir)
     app = FastAPI(title="fly_mario", version="0.0.1")
     app.add_middleware(CORSMiddleware, allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
                        allow_methods=["*"], allow_headers=["*"])
@@ -234,6 +236,57 @@ def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = N
         if name is None:
             raise HTTPException(404, f"job {job_id!r} has no evolved fly (yet)")
         return V.fly_to_view(read_fly(name))
+
+    # ---- video exports: clips for editing (stills first, the mp4 only when asked for) ------------------------------
+    @app.post("/videos", response_model=S.VideoSummary, status_code=201)
+    def start_video(req: S.VideoRequest):
+        """Ask for an export: its 2-3 preview stills are made in the background; render the mp4 with /render."""
+        try:
+            return videos.detail(videos.create(req))
+        except ValueError as e:
+            raise HTTPException(422, str(e))
+
+    @app.get("/videos", response_model=list[S.VideoSummary])
+    def list_videos():
+        return videos.list()
+
+    @app.get("/videos/{video_id}", response_model=S.VideoSummary)
+    def get_video(video_id: str):
+        d = videos.detail(video_id)
+        if d is None:
+            raise HTTPException(404, f"no video export {video_id!r}")
+        return d
+
+    @app.post("/videos/{video_id}/render", response_model=S.VideoSummary)
+    def render_video(video_id: str):
+        """The user looked at the stills and wants the mp4."""
+        try:
+            if not videos.render(video_id):
+                raise HTTPException(404, f"no video export {video_id!r}")
+        except RuntimeError as e:
+            raise HTTPException(409, str(e))
+        return videos.detail(video_id)
+
+    @app.post("/videos/{video_id}/cancel", response_model=S.VideoSummary)
+    def cancel_video(video_id: str):
+        if not videos.cancel(video_id):
+            raise HTTPException(404, f"no video export {video_id!r}")
+        return videos.detail(video_id)
+
+    @app.get("/videos/{video_id}/stills/{n}.png", responses={200: {"content": {"image/png": {}}}})
+    def video_still(video_id: str, n: int):
+        p = videos.still_path(video_id, n)
+        if p is None:
+            raise HTTPException(404, "no such still")
+        return FileResponse(p, media_type="image/png")
+
+    @app.get("/videos/{video_id}/video.mp4", responses={200: {"content": {"video/mp4": {}}}})
+    def video_file(video_id: str, download: bool = False):
+        p = videos.video_path(video_id)
+        if p is None:
+            raise HTTPException(404, "this export has no mp4 yet")
+        return FileResponse(p, media_type="video/mp4", filename=f"{video_id}.mp4",
+                            content_disposition_type="attachment" if download else "inline")
 
     @app.websocket("/runs/{run_id}/live")
     async def live(ws: WebSocket, run_id: str):
