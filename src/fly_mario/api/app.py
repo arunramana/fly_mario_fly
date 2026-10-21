@@ -238,10 +238,10 @@ def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = N
             raise HTTPException(404, f"job {job_id!r} has no evolved fly (yet)")
         return V.fly_to_view(read_fly(name))
 
-    # ---- video exports: clips for editing (stills first, the mp4 only when asked for) ------------------------------
+    # ---- video exports: "Download video" (a run) and "Download montage" (an evolution) -------------------------------
     @app.post("/videos", response_model=S.VideoSummary, status_code=201)
     def start_video(req: S.VideoRequest):
-        """Ask for an export: its 2-3 preview stills are made in the background; render the mp4 with /render."""
+        """Render an export in the background; poll GET /videos/{id} until it is finished, then fetch its video."""
         try:
             return videos.detail(videos.create(req))
         except ValueError as e:
@@ -258,31 +258,15 @@ def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = N
             raise HTTPException(404, f"no video export {video_id!r}")
         return d
 
-    @app.post("/videos/{video_id}/render", response_model=S.VideoSummary)
-    def render_video(video_id: str):
-        """The user looked at the stills and wants the mp4."""
-        try:
-            if not videos.render(video_id):
-                raise HTTPException(404, f"no video export {video_id!r}")
-        except RuntimeError as e:
-            raise HTTPException(409, str(e))
-        return videos.detail(video_id)
-
     @app.post("/videos/{video_id}/cancel", response_model=S.VideoSummary)
     def cancel_video(video_id: str):
         if not videos.cancel(video_id):
             raise HTTPException(404, f"no video export {video_id!r}")
         return videos.detail(video_id)
 
-    @app.get("/videos/{video_id}/stills/{n}.png", responses={200: {"content": {"image/png": {}}}})
-    def video_still(video_id: str, n: int):
-        p = videos.still_path(video_id, n)
-        if p is None:
-            raise HTTPException(404, "no such still")
-        return FileResponse(p, media_type="image/png")
-
     @app.get("/videos/{video_id}/video.mp4", responses={200: {"content": {"video/mp4": {}}}})
     def video_file(video_id: str, download: bool = False):
+        """The mp4. Plain, it plays in the page; with ?download=true the browser saves it as <id>.mp4."""
         p = videos.video_path(video_id)
         if p is None:
             raise HTTPException(404, "this export has no mp4 yet")

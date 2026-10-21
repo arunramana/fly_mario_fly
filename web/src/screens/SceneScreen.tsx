@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api, thumbnailUrl } from '../api/client'
 import type { LevelInfo, ObjectInfo, Scene } from '../api/models'
-import { saveScene, useDraft } from '../draft'
+import { loadScenes, saveScene, useDraft } from '../draft'
 
 type Mods = Scene['modifiers']
 const sameMods = (a: Mods, b: Mods) => JSON.stringify(a) === JSON.stringify(b)
@@ -151,6 +151,12 @@ export default function SceneScreen() {
 
         <div className="foot">
           <button className="btn" onClick={() => { saveScene({ name: sceneName, scene }); setSaved(true) }}>{saved ? 'Scene saved' : 'Save scene'}</button>
+          {loadScenes().length > 0 && (
+            <select aria-label="saved scene" value="" onChange={(e) => { const s = loadScenes().find((x) => x.name === e.target.value); if (s) setScene(s.scene) }}>
+              <option value="" disabled>Load a saved scene…</option>
+              {loadScenes().map((s) => <option key={s.name} value={s.name}>{s.name}</option>)}
+            </select>
+          )}
           <button className="btn gold big" onClick={() => nav('/fly')}>Next: choose the fly →</button>
         </div>
       </aside>

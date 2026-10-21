@@ -170,7 +170,7 @@ function startJob(kind: 'evolve' | 'test', req: EvolveRequest | TestJobRequest):
         progress: { phase: done === true ? 'done' : kind === 'test' ? 'testing' : 'training', generation: g, generations: gens, done: done === true ? 20 : 8, total: 20,
           eta_s: 5, elapsed_s: 3, best: 1, mean: 0.8, bars: Array.from({ length: g }, (_, i) => ({ gen: i, best: 0.6 + i * 0.05, mean: 0.4 + i * 0.03, best_ever: 0.6 + i * 0.05 })) } }
       return { ...s, error: '', generations: gens, start: 'level_start', results: (done === true && kind === 'test' ? { original: dev(8), tuned: dev(10) } : {}) as Record<string, DevSetResult>,
-        changes: done === true && kind === 'evolve' ? [{ key: 'sour_smell.gain', label: 'Sourness', lo_label: 'faint', hi_label: 'strong', words: 'a bit toward faint', direction: 'lo' }] : [],
+        changes: done === true && kind === 'evolve' ? [{ key: 'sour_smell.gain', label: 'Sourness', owner: 'Sour smell', lo_label: 'faint', hi_label: 'strong', words: 'a bit toward faint', direction: 'lo' }] : [],
         dev_best: done === true && kind === 'evolve' ? dev(10) : null, dev_start: done === true && kind === 'evolve' ? dev(8) : null, best_generation: gens - 1, saved_as: null }
     },
   }
@@ -178,19 +178,17 @@ function startJob(kind: 'evolve' | 'test', req: EvolveRequest | TestJobRequest):
   return delay(id)
 }
 
-// A video export in the mock: stills after 1.5 s, the mp4 3 s after "render".
-const PIC = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="320" height="180" fill="#6b8cff"/></svg>')
-interface MockVideo { req: VideoRequest; t0: number; renderAt: number | null; cancelled: boolean }
+// A video export in the mock: the mp4 is ready 3 s after the request.
+interface MockVideo { req: VideoRequest; t0: number; cancelled: boolean }
 const videos = new Map<string, MockVideo>()
 function videoView(id: string): VideoSummary {
   const v = videos.get(id)!
-  const stillsReady = Date.now() - v.t0 > 1500
-  const rendered = v.renderAt != null && Date.now() - v.renderAt > 3000
-  const status = v.cancelled ? 'cancelled' : v.renderAt != null ? (rendered ? 'finished' : 'running') : stillsReady ? 'finished' : 'running'
-  return { id, export: v.req.export, title: `Video (${v.req.export})`, status, stage: v.renderAt != null ? 'video' : 'stills', created: v.t0 / 1000,
-    progress: { phase: v.renderAt != null ? 'rendering' : 'stills', done: 1, total: 4, eta_s: 3, elapsed_s: 1 },
-    stills: stillsReady ? [PIC, PIC, PIC] : [], video: rendered && status === 'finished' ? 'data:video/mp4;base64,' : null, error: '',
-    duration_s: rendered ? 75 : null, size_mb: rendered ? 38 : null, render_s: rendered ? 60 : null, checks: [] }
+  const done = Date.now() - v.t0 > 3000
+  const status = v.cancelled ? 'cancelled' : done ? 'finished' : 'running'
+  return { id, export: v.req.export, of: v.req.run_id || v.req.job_id || '', title: `Video (${v.req.export})`, status, created: v.t0 / 1000,
+    progress: { phase: 'rendering', done: 1, total: 4, eta_s: 3, elapsed_s: 1 },
+    video: status === 'finished' ? 'data:video/mp4;base64,' : null, error: '',
+    duration_s: done ? 75 : null, size_mb: done ? 38 : null, render_s: done ? 60 : null, checks: [] }
 }
 
 export const mockApi: Api = {
@@ -229,15 +227,13 @@ export const mockApi: Api = {
   getJobs: () => delay([...jobs.values()].map((j) => j.summary)),
   getJob: (id) => delay(jobs.get(id)!.detail()),
   cancelJob: (id) => { jobs.get(id)!.cancelled = true; return delay(jobs.get(id)!.detail()) },
-  getGenerationFly: (id, gen) => delay({ ...(jobs.get(id)?.fly ?? flies.blank), name: `gen${gen}` }),
   useEvolvedFly: (id, name) => delay({ ...(jobs.get(id)?.fly ?? flies.blank), name: name || 'evolved' }),
   startVideo: (req) => {
     const id = `v-${counter++}`
-    videos.set(id, { req, t0: Date.now(), renderAt: null, cancelled: false })
+    videos.set(id, { req, t0: Date.now(), cancelled: false })
     return delay(videoView(id))
   },
   getVideo: (id) => delay(videoView(id)),
   getVideos: () => delay([...videos.keys()].map(videoView)),
-  renderVideo: (id) => { videos.get(id)!.renderAt = Date.now(); return delay(videoView(id)) },
   cancelVideo: (id) => { videos.get(id)!.cancelled = true; return delay(videoView(id)) },
 }

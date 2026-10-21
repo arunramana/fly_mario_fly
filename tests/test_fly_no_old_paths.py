@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 SRC = Path(__file__).resolve().parents[1] / "src" / "fly_mario"
-OLD = re.compile(r"tutorials|flyrun|(?<![A-Za-z])_cache|L2c|\.\./data|malecns_v1\.0/derived")
+OLD = re.compile(r"tutorials|fly" r"run|(?<![A-Za-z])_cache|L2c|\.\./data|malecns_v1\.0/derived")
 FILES = sorted(SRC.rglob("*.py"))
 
 

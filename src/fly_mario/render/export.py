@@ -1,17 +1,13 @@
 """Video exports: replay runs through the runner and draw them as clips (1920 x 1080, 60 fps, H.264).
 
-Three kinds, one job folder each under $FLY_MARIO_DATA/videos/<id>/ (the spec is in job.json, see specs.py):
+Two kinds, one job folder each under $FLY_MARIO_DATA/videos/<id>/ (the spec is in job.json, see specs.py):
 
-    run            one saved run in the approved brain | game look; speed, an optional frame range
-    side_by_side   two runs from the same start, two game panels (NES x3) with a label above each, frames in step;
-                   a run that ends freezes on its last frame with how it ended
-    montage        one short clip per generation of an evolution (that generation's best fly), with the fitness of
-                   every generation along the bottom and the current one highlighted
+    run       one saved run in the approved brain | game look; speed, an optional frame range
+    montage   one short clip per generation of an evolution (that generation's best fly), with the fitness of
+              every generation along the bottom and the current one highlighted
 
-Every export has two stages, run as separate processes by `python -m fly_mario.render job <folder>`:
-    stills   2-3 PNGs for the user to look at (stills/still_1.png ...)
-    video    the full mp4 (video.mp4), written as video.part.mp4 and renamed when it is complete
-Only factual labels are drawn: dials, fly or generation names, how a run ended. No claims.
+An export is one process, `python -m fly_mario.render job <folder>`: it writes video.mp4 as video.part.mp4 and renames
+it when it is complete. Only factual labels are drawn: dials, fly or generation names, how a run ended. No claims.
 """
 from __future__ import annotations
 
@@ -32,9 +28,8 @@ from fly_mario.render.draw import H, LEFT_W, W, BrainPanel, Renderer, font, game
 from fly_mario.runner.record import runs_dir
 
 FPS = 60
-SCALE = 3                                   # NES x3 in the side-by-side and montage frames
+SCALE = 3                                   # NES x3 in the montage frames
 PW, PH = 256 * SCALE, 240 * SCALE           # 768 x 720
-HOLD_S = 2.0                                # the side-by-side's last frame is held this long once both runs have ended
 GOLD, GREY = (232, 176, 40), (120, 120, 118)
 OK_COL, BAD_COL = (96, 200, 120), (230, 100, 90)
 ALIVE_EVERY = 5.0
@@ -201,7 +196,7 @@ def _caption(img: np.ndarray, cx: int, y: int, text: str, good: bool) -> None:
     img[:] = np.asarray(pil)
 
 
-# ---- the three layouts --------------------------------------------------------------------------------------------
+# ---- the two layouts --------------------------------------------------------------------------------------------
 class RunExport:
     """One saved run, the approved brain | game frame."""
 
@@ -213,95 +208,18 @@ class RunExport:
     def total(self) -> int:
         return int(self.side["expect"]["frames"])
 
-    def stills_plan(self) -> list:
-        n = self.f1 - self.f0
-        return [self.f0 + int(n * f) for f in (0.15, 0.5, 0.85)]
-
-    def frames(self, picks: list | None = None):
-        """(key, image) for every frame to be drawn, or just for the frames in `picks` (then it stops after the last)."""
+    def frames(self):
+        """(key, image) for every frame to be drawn."""
         s = self.spec
         lane = Lane(self.side)
         probe = source.run_from_side(self.side)
         rd = Renderer(_brain(self.side, probe) if s["show_brain"] else None, show_senses=s["show_senses"], show_brain=s["show_brain"])
-        want = set(picks or ())
         while lane.advance():
             f = lane.fd.frame
-            if (picks is None and self.f0 <= f <= self.f1 and (f - self.f0) % s["speed"] == 0) or f in want:
+            if self.f0 <= f <= self.f1 and (f - self.f0) % s["speed"] == 0:
                 yield lane.index, rd.frame(lane.fd)
-            if picks and f >= max(picks):
-                return
         lane.drain()
         self.report = verify([lane])
-
-
-class SideBySideExport:
-    """Two runs from the same start, frames in step."""
-
-    X = (128, 1024)                                 # the panels' left edges (768 wide, 128 margins and gap)
-    LABEL_Y, GAME_Y, CAP_Y, STRIP_Y = 40, 104, 836, 884
-    STRIP_H, STRIP_W = 186, 210
-
-    def __init__(self, spec: dict):
-        self.spec = spec
-        dy = 0 if spec["show_brain"] else 60            # nothing under the games: centre them
-        self.label_y, self.game_y, self.cap_y = self.LABEL_Y + dy, self.GAME_Y + dy, self.CAP_Y + dy
-
-    def total(self) -> int:
-        return max(int(s["expect"].get("frames", 1500)) for s in self.spec["sides"])
-
-    def stills_plan(self) -> list:
-        n = self.total()
-        return [int(n * 0.3), int(n * 0.65), -1]    # -1: the last frame of the longer run
-
-    def _base(self) -> np.ndarray:
-        pil = _canvas()
-        dr = ImageDraw.Draw(pil)
-        for x, side in zip(self.X, self.spec["sides"]):
-            _centred(dr, x + PW // 2, self.label_y, side["label"], 38, (255, 255, 255))
-        return np.asarray(pil).copy()
-
-    def _strip(self, panel: BrainPanel, rates: dict) -> np.ndarray:
-        """The brain, small: the glow image cropped to the brain and nerve cord, scaled to fit under a game panel."""
-        g = panel.glow(rates)[:575, 128:770]
-        return cv2.resize(g, (self.STRIP_W, self.STRIP_H), interpolation=cv2.INTER_AREA)
-
-    def frames(self, picks: list | None = None):
-        s = self.spec
-        lanes = [Lane(side) for side in s["sides"]]
-        panels = [BrainPanel(_brain(side, ln.run)) for side, ln in zip(s["sides"], lanes)] if s["show_brain"] else None
-        base = self._base()
-        want = set(p for p in (picks or ()) if p >= 0)
-
-        def compose() -> np.ndarray:
-            out = base.copy()
-            for k, (x, ln) in enumerate(zip(self.X, lanes)):
-                fd = ln.fd
-                out[self.game_y:self.game_y + PH, x:x + PW] = game_panel(fd.game, fd.overlay, fd.scroll_x, s["show_senses"], SCALE)
-                if ln.ended:
-                    _caption(out[self.cap_y:self.cap_y + 48, x - 40:x + PW + 40], PW // 2 + 40, 2, ln.caption, ln.run.outcome == "flag")
-                if panels:
-                    strip = self._strip(panels[k], fd.rates)
-                    out[self.STRIP_Y:self.STRIP_Y + self.STRIP_H, x + (PW - self.STRIP_W) // 2:x + (PW + self.STRIP_W) // 2] = strip
-            return out
-
-        i = 0
-        while not all(ln.ended for ln in lanes):
-            before = [ln.ended for ln in lanes]
-            for ln in lanes:
-                ln.advance()
-            just_ended = any(a != ln.ended for a, ln in zip(before, lanes))
-            if (picks is None and (i % s["speed"] == 0 or just_ended)) or i in want:
-                yield i, compose()
-            if picks and want and i >= max(want) and -1 not in picks:
-                return
-            i += 1
-        last = compose()
-        if picks is None:
-            for _ in range(int(HOLD_S * FPS)):
-                yield i, last
-        elif -1 in picks:
-            yield -1, last
-        self.report = verify(lanes)
 
 
 class MontageExport:
@@ -320,10 +238,6 @@ class MontageExport:
 
     def total(self) -> int:
         return self.steps * len(self.spec["sides"])
-
-    def stills_plan(self) -> list:
-        n = len(self.spec["sides"])
-        return sorted({0, n // 2, n - 1})            # clip numbers; each shown half way through its clip
 
     def _base(self, side: dict) -> np.ndarray:
         pil = _canvas()
@@ -369,22 +283,15 @@ class MontageExport:
             self._shared = BrainPanel(source.brain_data(run, rate_max=rmax))
         return self._shared
 
-    def frames(self, picks: list | None = None):
+    def frames(self):
         s = self.spec
-        sides = s["sides"]
-        want_clips = set(picks) if picks is not None else set(range(len(sides)))
-        for k, side in enumerate(sides):
-            if k not in want_clips:
-                continue
+        for k, side in enumerate(s["sides"]):
             lane, base = Lane(side), self._base(side)
             panel = self._panel(lane.run) if s["show_brain"] else None
-            stop = self.steps // 2 if picks is not None else self.steps
-            for i in range(stop + 1 if picks is not None else stop):
+            for i in range(self.steps):
                 if not lane.advance():
                     break
-                if picks is None and i % s["speed"] and not lane.ended:
-                    continue
-                if picks is not None and i != stop and not lane.ended:
+                if i % s["speed"] and not lane.ended:
                     continue
                 fd = lane.fd
                 out = base.copy()
@@ -394,31 +301,15 @@ class MontageExport:
                 if lane.ended:
                     _caption(out[self.CAP_Y:self.CAP_Y + 48, self.GAME_X - 40:self.GAME_X + PW + 40], PW // 2 + 40, 2, lane.caption, lane.run.outcome == "flag")
                 yield k, out
-                if lane.ended or i == stop:
+                if lane.ended:
                     break
         self.report = []
 
 
-EXPORTS = {"run": RunExport, "side_by_side": SideBySideExport, "montage": MontageExport}
+EXPORTS = {"run": RunExport, "montage": MontageExport}
 
 
-# ---- the two stages -----------------------------------------------------------------------------------------------
-def make_stills(folder: Path, spec: dict) -> dict:
-    ex = EXPORTS[spec["export"]](spec)
-    out = folder / "stills"
-    out.mkdir(exist_ok=True)
-    plan = ex.stills_plan()
-    prog = Progress(folder, "stills", len(plan))
-    files, keys = [], []
-    for key, img in ex.frames(plan):
-        name = f"still_{len(files) + 1}.png"
-        cv2.imwrite(str(out / name), cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
-        files.append(name)
-        keys.append(key)
-        prog.tick(len(files), force=True)
-    return {"stills": files, "keys": keys}
-
-
+# ---- the video -----------------------------------------------------------------------------------------------------
 def make_video(folder: Path, spec: dict) -> dict:
     ex = EXPORTS[spec["export"]](spec)
     part, final = folder / "video.part.mp4", folder / "video.mp4"
@@ -453,7 +344,7 @@ def _heartbeat(folder: Path, stop: threading.Event) -> None:
 
 
 def run_job(folder) -> int:
-    """Run the stage job.json asks for ("stills" or "video") and record how it went."""
+    """Render the export job.json asks for and record how it went."""
     folder = Path(folder)
     job = read_json(folder / "job.json")
     stop = threading.Event()
@@ -461,10 +352,7 @@ def run_job(folder) -> int:
     job.update(status="running", pid=os.getpid(), started=time.time())
     _write_json(folder / "job.json", job)
     try:
-        if job["stage"] == "stills":
-            _write_json(folder / "stills.json", make_stills(folder, job["spec"]))
-        else:
-            _write_json(folder / "info.json", make_video(folder, job["spec"]))
+        _write_json(folder / "info.json", make_video(folder, job["spec"]))
         job = read_json(folder / "job.json") or job
         if job["status"] != "cancelled":
             job.update(status="finished", finished=time.time())
@@ -480,11 +368,11 @@ def run_job(folder) -> int:
 
 
 def new_job_folder(spec: dict, title: str, root: Path | None = None) -> Path:
-    """Create videos/<id>/ with a job.json at stage "stills" (not started)."""
+    """Create videos/<id>/ with a job.json (not started). `of` is what it shows: the run id, or the evolution's."""
     import uuid
     jid = f"vid_{time.strftime('%Y%m%d-%H%M%S')}_{spec['export']}_{uuid.uuid4().hex[:4]}"
     folder = (root or videos_dir()) / jid
     folder.mkdir(parents=True, exist_ok=True)
-    _write_json(folder / "job.json", {"id": jid, "kind": "video", "export": spec["export"], "title": title, "stage": "stills",
-                                       "status": "queued", "spec": spec, "created": time.time(), "pid": None, "error": ""})
+    _write_json(folder / "job.json", {"id": jid, "kind": "video", "export": spec["export"], "title": title,
+                                       "of": spec["sides"][0]["run_id"] if spec["export"] == "run" else spec["evo"], "status": "queued", "spec": spec, "created": time.time(), "pid": None, "error": ""})
     return folder

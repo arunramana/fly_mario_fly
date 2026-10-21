@@ -37,3 +37,15 @@ def specs_by_key() -> dict:
             for k in getattr(plugin, "knobs", ()):
                 out[k.key] = k
     return out
+
+
+def owners_by_key() -> dict:
+    """The name of the sense, action or loom shape each knob belongs to ("Looming", "Jump"), by knob key."""
+    out: dict = {}
+    for kind in ("senses", "actions", "shapes"):
+        for plugin in registry.list_plugins(kind).values():
+            label = str(getattr(plugin, "label", getattr(plugin, "name", "")))
+            name = label.split("(")[0].strip() or label
+            for k in getattr(plugin, "knobs", ()):
+                out.setdefault(k.key, name)
+    return out

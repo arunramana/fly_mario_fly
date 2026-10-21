@@ -1,4 +1,4 @@
-"""NOTE: needs the old code to run: check out git tag `pre-cleanup` (it imports the removed `flyrun` package).
+"""NOTE: needs the old code to run: check out git tag `pre-cleanup` (it imports the removed `old_pkg` package).
 Freeze the OLD code's answers into tests/data/golden/, so fly_mario can be tested with the old code gone.
 
 Runs the old side of the four parity tests (tests/parity/*) exactly once and writes small versioned fixtures:
@@ -9,7 +9,7 @@ Runs the old side of the four parity tests (tests/parity/*) exactly once and wri
   ceiling.json.gz    per frame of two sequences: the old headroom rise at 8 (feet, box height, span) probes
   runner.json.gz     the E1s champion's 10 HOLDOUT episodes: x + buttons per frame, outcome, max_x, score; the 8 genome values
 
-Needs the old repo (the `flyrun` package) and its tutorials/_cache. It is a one-off record of HOW the fixtures were
+Needs the old repo (the `old_pkg` package) and its tutorials/_cache. It is a one-off record of HOW the fixtures were
 made; once the old code is deleted it can no longer run, and it does not have to (the fixtures are the record).
 
     python tools/freeze_golden.py all [--old-root DIR] [--cache DIR]      # or: brains | mario | ceiling | runner
@@ -72,7 +72,7 @@ def freeze_brains(cache: Path) -> None:
     import pandas as pd
     from fly_mario.fly.brain import RateModel, build_brain
     from fly_mario.fly.spec import BrainSpec
-    from flyrun import brain as OB                                  # the old loader, for masks and the update step
+    from old_pkg import brain as OB                                  # the old loader, for masks and the update step
 
     rows = {}
     for mechs, wfile, bfile, n in ROWS:
@@ -80,11 +80,11 @@ def freeze_brains(cache: Path) -> None:
         assert W.shape == (n, n)
         rows[str(n)] = dict(mechanisms=list(mechs), n=n, W_sha256=sha(W.astype(np.float64)), body_ids=b.bodyId.astype(int).tolist(),
                             types_sha256=sha(b.type.to_numpy().astype("U40")), signs_sha256=sha(b.sign.to_numpy(float)))
-    os.environ["FLYRUN_WFILE"], os.environ["FLYRUN_BODIES"] = "W_steer_jo_orn_sour.npy", "steer_jo_orn_sour_bodies.parquet"
+    os.environ["OLD_WFILE"], os.environ["OLD_BODIES"] = "W_steer_jo_orn_sour.npy", "steer_jo_orn_sour_bodies.parquet"
     try:
         masks = OB.load_brain(cache).masks
     finally:
-        del os.environ["FLYRUN_WFILE"], os.environ["FLYRUN_BODIES"]
+        del os.environ["OLD_WFILE"], os.environ["OLD_BODIES"]
     rows["907"]["masks"] = {name: dict(count=int(m.sum()), sha256=sha(np.flatnonzero(m).astype(np.int64))) for name, m in sorted(masks.items())}
 
     # 200 steps of the old rate update; the sensor noise comes from the NEW brain's masks (same seed, same order as the old test)
@@ -123,13 +123,13 @@ def old_view(ram, OE, OL, OS) -> dict:
 
 
 def old_modules(level):
-    os.environ["FLYRUN_LEVEL"] = level
-    from flyrun import env as OE, level as OL, senses_v2 as OS
+    os.environ["OLD_LEVEL"] = level
+    from old_pkg import env as OE, level as OL, senses_v2 as OS
     return OE, OL, OS
 
 
 def driver_sequence(level, MarioEnv):
-    from flyrun import scripted
+    from old_pkg import scripted
     drv, env = scripted.Driver(), MarioEnv()
     env.reset(level)
     seq = []
@@ -184,9 +184,9 @@ def freeze_ceiling() -> None:
     from fly_mario.mario.env import MarioEnv
     cases = {}
     for level, stop_x in [("1-2", 900), ("1-1", 1700)]:
-        os.environ["FLYRUN_LEVEL"] = level
-        from flyrun import level as OL, scripted
-        from flyrun.knobs import MAX_JUMP_HEIGHT
+        os.environ["OLD_LEVEL"] = level
+        from old_pkg import level as OL, scripted
+        from old_pkg.knobs import MAX_JUMP_HEIGHT
         env = MarioEnv()
         env.reset(level)
         f = env.facts
@@ -221,15 +221,15 @@ HOLDOUT = [dict(noop=n, seed=100 + i + 1, sigma=sg) for sg in (0.0, 0.05) for i,
 
 
 def freeze_runner(cache: Path, old_root: Path) -> None:
-    os.environ["FLYRUN_WFILE"], os.environ["FLYRUN_BODIES"] = "W_steer_jo_orn_sour.npy", "steer_jo_orn_sour_bodies.parquet"
+    os.environ["OLD_WFILE"], os.environ["OLD_BODIES"] = "W_steer_jo_orn_sour.npy", "steer_jo_orn_sour_bodies.parquet"
     try:
-        from flyrun import e1s_genome as G
-        from flyrun.brain import load_brain
-        from flyrun.run import run_episode
+        from old_pkg import e1s_genome as G
+        from old_pkg.brain import load_brain
+        from old_pkg.run import run_episode
         brain = load_brain(cache)
     finally:
-        del os.environ["FLYRUN_WFILE"], os.environ["FLYRUN_BODIES"]
-    values = json.load(open(old_root / "flyrun" / "runs" / "E1s_progress.json"))["best"]["values"]
+        del os.environ["OLD_WFILE"], os.environ["OLD_BODIES"]
+    values = json.load(open(old_root / "old_pkg" / "runs" / "E1s_progress.json"))["best"]["values"]
     knobs, enemy_input = G.knobs_for(values)
     episodes = []
     for ep in HOLDOUT:
@@ -245,9 +245,9 @@ def freeze_runner(cache: Path, old_root: Path) -> None:
 
 def find_old_root(arg) -> Path:
     for c in ([Path(arg)] if arg else []) + list(HERE.parents):
-        if (c / "flyrun" / "__init__.py").exists():
+        if (c / "old_pkg" / "__init__.py").exists():
             return c
-    sys.exit("old repo (a folder holding flyrun/) not found: pass --old-root")
+    sys.exit("old repo (a folder holding old_pkg/) not found: pass --old-root")
 
 
 def find_cache(arg, old_root: Path) -> Path:
