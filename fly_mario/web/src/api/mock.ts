@@ -2,7 +2,7 @@
 // NAME lives only here; components render whatever the registry says.
 import type { Api } from './client'
 import type {
-  Fly, FrameEvent, KnobUI, LevelInfo, MomentSummary, Registry, RunEvent, RunRequest, RunResult, RunStream,
+  DevSetResult, EvolveRequest, Fly, FrameEvent, JobDetail, JobSummary, KnobUI, TestJobRequest, LevelInfo, MomentSummary, Registry, RunEvent, RunRequest, RunResult, RunStream,
   Scene, Try,
 } from './models'
 
@@ -145,6 +145,39 @@ function openRun(runId: string): RunStream {
   }
 }
 
+// ---- jobs: an evolution takes 2 s a generation, a test 4 s; the numbers are made up for the offline look only
+const dev = (flags: number): DevSetResult => ({
+  flags, n: 10, mean_max_x: 2400, min_max_x: 1200, mean_score: 800,
+  episodes: Array.from({ length: 10 }, (_, i) => ({
+    label: `start ${i + 1}`, outcome: i < flags ? 'flag' : 'died', max_x: i < flags ? 3168 : 1200, score: 800, jumps: 30, back_ups: 5,
+    blocks: 3, mushroom: i % 2 === 0, death: null,
+  })),
+})
+interface MockJob { summary: JobSummary; fly: Fly; cancelled: boolean; t0: number; kind: 'evolve' | 'test'; gens: number; detail: () => JobDetail }
+const jobs = new Map<string, MockJob>()
+function startJob(kind: 'evolve' | 'test', req: EvolveRequest | TestJobRequest): Promise<string> {
+  const id = `${kind}-${counter++}`
+  const gens = kind === 'evolve' ? ((req as EvolveRequest).generations ?? 15) : 0
+  const job: MockJob = {
+    kind, gens, fly: req.fly, cancelled: false, t0: Date.now(),
+    summary: { id, kind, status: 'running', fly: req.fly.name, level_id: req.level, dials: req.dials ?? 'tuned', created: Date.now() / 1000,
+      title: `${kind === 'evolve' ? 'Evolution' : 'Test'} of ${req.fly.name} on ${req.level}`, headline: '', progress: {} as JobSummary['progress'] },
+    detail: () => {
+      const done = job.cancelled ? 'cancelled' : (Date.now() - job.t0) / (kind === 'evolve' ? 2000 * gens + 1000 : 4000) >= 1
+      const g = Math.min(gens, Math.floor((Date.now() - job.t0) / 2000))
+      const s: JobSummary = { ...job.summary, status: job.cancelled ? 'cancelled' : done ? 'finished' : 'running',
+        headline: done === true ? (kind === 'test' ? 'Original 8/10 · Tuned 10/10' : '10/10 on unseen starts (was 8/10)') : '',
+        progress: { phase: done === true ? 'done' : kind === 'test' ? 'testing' : 'training', generation: g, generations: gens, done: done === true ? 20 : 8, total: 20,
+          eta_s: 5, elapsed_s: 3, best: 1, mean: 0.8, bars: Array.from({ length: g }, (_, i) => ({ gen: i, best: 0.6 + i * 0.05, mean: 0.4 + i * 0.03, best_ever: 0.6 + i * 0.05 })) } }
+      return { ...s, error: '', generations: gens, start: 'level_start', results: (done === true && kind === 'test' ? { original: dev(8), tuned: dev(10) } : {}) as Record<string, DevSetResult>,
+        changes: done === true && kind === 'evolve' ? [{ key: 'sour_smell.gain', label: 'Sourness', lo_label: 'faint', hi_label: 'strong', words: 'a bit toward faint', direction: 'lo' }] : [],
+        dev_best: done === true && kind === 'evolve' ? dev(10) : null, dev_start: done === true && kind === 'evolve' ? dev(8) : null, best_generation: gens - 1, saved_as: null }
+    },
+  }
+  jobs.set(id, job)
+  return delay(id)
+}
+
 export const mockApi: Api = {
   getRegistry: () => delay(registry),
   getLevels: () => delay(levels),
@@ -176,4 +209,11 @@ export const mockApi: Api = {
   getMoment: (id) => delay(moments.find((m) => m.id === id) ?? moments[0]),
   getTries: (id) => delay(tries.filter((t) => t.moment === id)),
   getBrainMap: () => delay(''),
+  startEvolve: (req) => startJob('evolve', req),
+  startTest: (req) => startJob('test', req),
+  getJobs: () => delay([...jobs.values()].map((j) => j.summary)),
+  getJob: (id) => delay(jobs.get(id)!.detail()),
+  cancelJob: (id) => { jobs.get(id)!.cancelled = true; return delay(jobs.get(id)!.detail()) },
+  getGenerationFly: (id, gen) => delay({ ...(jobs.get(id)?.fly ?? flies.blank), name: `gen${gen}` }),
+  useEvolvedFly: (id, name) => delay({ ...(jobs.get(id)?.fly ?? flies.blank), name: name || 'evolved' }),
 }

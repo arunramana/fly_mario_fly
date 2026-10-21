@@ -20,6 +20,7 @@ from fly_mario.api import convert as V
 from fly_mario.api import layers
 from fly_mario.api import ports
 from fly_mario.api import schemas as S
+from fly_mario.api.jobs import Jobs
 from fly_mario.api.live import Runs
 
 OPENAPI_PATH = Path(__file__).with_name("openapi.json")
@@ -29,6 +30,7 @@ NAME = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = None) -> FastAPI:
     flies = Path(flies_dir) if flies_dir else FLIES
     runs = Runs(Path(runs_folder) if runs_folder else runs_dir())
+    jobs = Jobs(runs.dir, flies)
     app = FastAPI(title="fly_mario", version="0.0.1")
     app.add_middleware(CORSMiddleware, allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
                        allow_methods=["*"], allow_headers=["*"])
@@ -173,6 +175,65 @@ def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = N
     @app.get("/moments/{moment_id}/tries", response_model=list[S.TryDTO])
     def moment_tries(moment_id: str):
         return ports.tries_from(moment_id)
+
+    # ---- background jobs: evolution and "test this fly" -------------------------------------------------------
+    def start_job(kind: str, req, **kw) -> S.JobCreated:
+        fly = check_fly(req.fly)
+        try:
+            return S.JobCreated(id=jobs.create(kind, fly, req.level, req.dials, workers=req.workers, **kw))
+        except ValueError as e:
+            raise HTTPException(422, str(e))
+
+    @app.post("/jobs/evolve", response_model=S.JobCreated, status_code=201)
+    def start_evolve(req: S.EvolveRequest):
+        if req.start != "level_start":
+            moment = ports.get_moment(req.start)                       # unknown id -> 404
+            if moment.scene.level_id != req.level:
+                raise HTTPException(422, f"moment {req.start!r} is on {moment.scene.level_id}, not {req.level}")
+        return start_job("evolve", req, generations=req.generations, start=req.start, seed=req.seed, pop=req.population,
+                         train_n=req.train_n, flag_x=req.flag_x)
+
+    @app.post("/jobs/test", response_model=S.JobCreated, status_code=201)
+    def start_test(req: S.TestJobRequest):
+        return start_job("test", req)
+
+    @app.get("/jobs", response_model=list[S.JobSummary])
+    def list_jobs():
+        return jobs.list()
+
+    @app.get("/jobs/{job_id}", response_model=S.JobDetail)
+    def get_job(job_id: str):
+        d = jobs.detail(job_id)
+        if d is None:
+            raise HTTPException(404, f"no job {job_id!r}")
+        return d
+
+    @app.post("/jobs/{job_id}/cancel", response_model=S.JobDetail)
+    def cancel_job(job_id: str):
+        if not jobs.cancel(job_id):
+            raise HTTPException(404, f"no job {job_id!r}")
+        return jobs.detail(job_id)
+
+    @app.get("/jobs/{job_id}/generations/{gen}/fly", response_model=S.FlyDTO)
+    def generation_fly(job_id: str, gen: int):
+        """The best fly of one generation (-1 = the fly evolution started from): start a run with it to watch it."""
+        fly = jobs.generation_fly(job_id, gen)
+        if fly is None:
+            raise HTTPException(404, f"job {job_id!r} has no generation {gen}")
+        return fly
+
+    @app.post("/jobs/{job_id}/use", response_model=S.FlyView, status_code=201)
+    def use_evolved_fly(job_id: str, body: S.UseFly = S.UseFly()):
+        """"Use this fly": save the evolution's best fly as a new fly yaml, with where it came from."""
+        if body.name and not NAME.match(body.name):
+            raise HTTPException(422, "fly name: letters, digits, _ and - only")
+        try:
+            name = jobs.use(job_id, body.name)
+        except FileExistsError as e:
+            raise HTTPException(409, str(e))
+        if name is None:
+            raise HTTPException(404, f"job {job_id!r} has no evolved fly (yet)")
+        return V.fly_to_view(read_fly(name))
 
     @app.websocket("/runs/{run_id}/live")
     async def live(ws: WebSocket, run_id: str):

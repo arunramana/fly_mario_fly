@@ -6,6 +6,7 @@
 // toggles, restart) -> dies at the Koopa -> Rewind 3 s -> sour smell stronger -> Resume -> back on the moment screen,
 // the new try is in the list. Then the champion on 1-1 with Original dials: the banner names them.
 import assert from 'node:assert/strict'
+import { mkdirSync } from 'node:fs'
 import { chromium } from 'playwright'
 
 const base = process.env.BASE ?? 'http://localhost:5173'
@@ -137,6 +138,51 @@ await finish('original-dials run on 1-1')
 assert.equal(await page.locator('.banner[role=status]').getAttribute('data-dials'), 'original')
 assert.match(await page.locator('.banner[role=status]').innerText(), /Dials: Original/, 'the banner says Original')
 await shot('9-original-banner')
+
+// Test this fly: the champion on 1-1 reaches the flag from all 10 unseen starts when Tuned; the summary names Original too
+await page.goto(`${base}/scene`)
+await page.locator('[data-level="1-1"]').click()
+await page.getByRole('button', { name: 'Whole level' }).click()
+await page.getByText('Next: choose the fly').click()
+await page.getByLabel('preset').selectOption('champion_e1s')
+await page.getByLabel('Home').waitFor()
+await page.getByText('Test this fly (10 starts)').click()
+await page.getByTestId('test-headline').waitFor({ timeout: 900_000 })
+const headline = await page.getByTestId('test-headline').innerText()
+console.log('test ->', headline)
+assert.match(headline, /Original \d+\/10 · Tuned 10\/10/, 'the test summary names Original and Tuned')
+assert.equal(await page.getByTestId('start-row').count(), 10, 'a row per start')
+await shot('10-test-result')
+
+// Evolve this fly (2 generations, a quick small search): the Evolution screen shows 2 bars, the words, the dev-set result
+await page.getByLabel('generations').selectOption('2')
+await page.getByLabel('quick try').check()
+await page.getByText('Evolve this fly', { exact: true }).click()
+await page.getByTestId('evolution').waitFor()
+await page.getByTestId('evo-progress').waitFor()
+await shot('11-evolving')
+await page.waitForFunction(() => document.querySelectorAll('[data-testid=gen-bar]').length === 2, null, { timeout: 1_800_000 })
+await page.locator('[data-testid=evolution][data-status=finished]').waitFor({ timeout: 900_000 })
+assert.equal(await page.getByTestId('gen-bar').count(), 2, 'two generations, two bars')
+const changes = await page.getByTestId('change').allInnerTexts()
+assert.ok(!changes.some((t) => /\d/.test(t)), 'knob changes are words, never numbers')
+assert.match(await page.getByTestId('dev-result').innerText(), /reached the flag \d+ of 10 times/)
+// click a generation: its best fly runs live
+await page.getByTestId('gen-bar').first().click()
+await page.locator('[data-testid=live-run] [data-testid=picture]').waitFor({ timeout: 120_000 })
+await page.locator('[data-testid=live-run] [data-testid=brain-panel]').waitFor({ timeout: 60_000 })
+mkdirSync('screenshots/mine', { recursive: true })
+await page.screenshot({ path: 'screenshots/mine/evolution.png', fullPage: true })
+await shot('12-evolution')
+// Use this fly: saved as a new fly with provenance
+await page.getByText('Use the best fly').click()
+await page.getByText(/^Saved as /).waitFor()
+// Library: the Evolutions tab lists both jobs
+await page.getByText('4 Library').click()
+await page.getByRole('tab', { name: 'Evolutions' }).click()
+await page.getByTestId('job-row').first().waitFor()
+assert.ok((await page.getByTestId('job-row').count()) >= 2, 'the test and the evolution are listed')
+await shot('13-library-evolutions')
 
 assert.deepEqual(errors, [], 'no page errors')
 await browser.close()
