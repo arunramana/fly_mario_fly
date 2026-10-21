@@ -67,9 +67,21 @@ def test_montage_spec_has_a_clip_per_generation_with_its_knobs(tmp_path):
     assert [x["label"] for x in s["sides"]] == ["Generation 0", "Generation 1", "Generation 2"]
     assert [x["fly"]["knobs"]["sour_smell.gain"] for x in s["sides"]] == [5.0, 6.0, 7.0]
     assert [b["gen"] for b in s["bars"]] == [0, 1, 2]
-    assert s["show_brain"] is True and s["speed"] == 2
+    assert s["show_brain"] is True and s["speed"] == 2 and "clip_seconds" not in s
+    assert Sp.montage_spec(eid, speed=4, root=tmp_path)["speed"] == 4
+    for bad in (3, 8):
+        with pytest.raises(ValueError):
+            Sp.montage_spec(eid, speed=bad, root=tmp_path)
     with pytest.raises(ValueError):
         Sp.montage_spec("nope", root=tmp_path)
+
+
+def test_montage_waits_for_the_evolution_to_finish(tmp_path):
+    eid = _evolution(tmp_path)
+    job = json.loads((tmp_path / eid / "job.json").read_text())
+    (tmp_path / eid / "job.json").write_text(json.dumps({**job, "status": "running"}), encoding="utf-8")
+    with pytest.raises(ValueError, match="still running"):
+        Sp.montage_spec(eid, root=tmp_path)
 
 
 # ---- how a run is worded ---------------------------------------------------------------------------------------------
@@ -105,17 +117,31 @@ class FakeLane:
         return {"label": "", "run_id": "", "outcome": "", "max_x": 0, "frames": 0, "hash": "", "hash_ok": None, "matches_test": None}
 
 
-def test_montage_clips_are_one_per_generation_with_the_current_one_marked(monkeypatch):
+def _montage_spec(lengths, speed, show_brain=False):
+    return {"export": "montage", "speed": speed, "show_senses": True, "show_brain": show_brain,
+            "bars": [{"gen": g, "best": 1 + g, "mean": 0.5 + g * 0.5} for g in range(len(lengths))],
+            "sides": [{"label": f"Generation {g}", "gen": g, "n": n, "outcome": "died", "caption": "", "expect": {}} for g, n in enumerate(lengths)]}
+
+
+def test_montage_plays_every_clip_to_its_end_at_the_chosen_speed(monkeypatch):
+    """Clips of different lengths are not cut short: output frames = every speed-th frame (and the last) + the hold on the last picture."""
     monkeypatch.setattr(X, "Lane", FakeLane)
-    spec = {"export": "montage", "speed": 1, "clip_seconds": 1.0, "show_senses": True, "show_brain": False,
-            "bars": [{"gen": g, "best": 1 + g, "mean": 0.5 + g * 0.5} for g in range(3)],
-            "sides": [{"label": f"Generation {g}", "gen": g, "n": 10_000, "outcome": "died", "caption": "", "expect": {}} for g in range(3)]}
-    ex = X.MontageExport(spec)
-    frames = list(ex.frames())
-    assert [k for k, _ in frames].count(0) == [k for k, _ in frames].count(1) == 60 and len(frames) == 180
-    assert not np.array_equal(frames[0][1][950:1050], frames[-1][1][950:1050])      # the fitness strip highlights a different generation
-    assert frames[0][1].shape == (1080, 1920, 3)
-    assert X.MontageExport({**spec, "show_brain": True}).GAME_X == 896 + (1920 - 896 - 768) // 2          # the brain panel takes the left 896 px
+    lengths = [900, 1500, 2501]
+    for speed in (1, 2, 4):
+        ex = X.MontageExport(_montage_spec(lengths, speed))
+        counts, first, last = {}, None, None
+        for k, img in ex.frames():                                                # (not kept: a frame is 6 MB)
+            counts[k] = counts.get(k, 0) + 1
+            first = img[950:1050].copy() if first is None else first
+            last = img[950:1050].copy()
+        per_clip = [len(range(0, n, speed)) + int((n - 1) % speed != 0) + X.HOLD for n in lengths]   # every speed-th frame, plus the last
+        assert [counts[i] for i in range(3)] == per_clip == [c["output_frames"] for c in ex.clips]
+        assert [c["game_frames"] for c in ex.clips] == lengths and len(ex.clips) == len(lengths)
+        assert sum(counts.values()) == sum(per_clip)                              # duration = frames / 60 s
+        assert not np.array_equal(first, last)                                    # the fitness strip highlights a different generation
+    img = next(X.MontageExport(_montage_spec(lengths, 2)).frames())[1]
+    assert img.shape == (1080, 1920, 3)
+    assert X.MontageExport(_montage_spec(lengths, 2, show_brain=True)).GAME_X == 896 + (1920 - 896 - 768) // 2     # the brain panel takes the left 896 px
 
 
 def test_writer_makes_an_h264_mp4(tmp_path):
@@ -184,6 +210,8 @@ def test_montage_request(client):
     m = client.post("/videos", json={"export": "montage", "job_id": eid})
     assert m.status_code == 201 and m.json()["of"] == eid
     mspec = json.loads((client.videos / m.json()["id"] / "job.json").read_text())["spec"]
+    assert client.post("/videos", json={"export": "montage", "job_id": eid, "speed": 4}).status_code == 201
+    assert client.post("/videos", json={"export": "montage", "job_id": eid, "speed": 3}).status_code == 422
     assert (mspec["speed"], [s["label"] for s in mspec["sides"]]) == (2, ["Generation 0", "Generation 1", "Generation 2"])
 
 

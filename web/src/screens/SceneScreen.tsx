@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api, thumbnailUrl } from '../api/client'
 import type { LevelInfo, ObjectInfo, Scene } from '../api/models'
-import { loadScenes, saveScene, useDraft } from '../draft'
+import { everythingPicked, loadScenes, saveScene, useDraft } from '../draft'
 
 type Mods = Scene['modifiers']
 const sameMods = (a: Mods, b: Mods) => JSON.stringify(a) === JSON.stringify(b)
@@ -20,7 +20,7 @@ function statusClass(l: LevelInfo) {
 const statusText = (l: LevelInfo) => l.status_text.replace(/^best x/, 'dies at x')
 
 export default function SceneScreen() {
-  const { scene, setScene } = useDraft()
+  const { scene, setScene, picked, setPicked } = useDraft()
   const nav = useNavigate()
   const [kind, setKind] = useState('all')
   const [saved, setSaved] = useState(false)
@@ -61,8 +61,10 @@ export default function SceneScreen() {
       })
   }
 
-  const setStart = (start: Scene['start']) => setScene({ ...scene, start })
-  const pickLevel = (l: LevelInfo) => setScene({ ...scene, level_id: l.id, start: 'level_start' })
+  const setStart = (start: Scene['start']) => { setScene({ ...scene, start }); setPicked({ ...picked, start: true }) }
+  const pickLevel = (l: LevelInfo) => { setScene({ ...scene, level_id: l.id, start: 'level_start' }); setPicked({ ...picked, level: true, start: false }) }
+  const missing = [!picked.level && 'a level', !picked.test && 'a test scene', !picked.start && 'a start'].filter(Boolean) as string[]
+  const ready = missing.length === 0
   const sceneName = `${level?.label ?? scene.level_id} · ${chips.find((c) => sameMods(c.mods, scene.modifiers))?.label ?? 'custom'}`
 
   return (
@@ -78,8 +80,8 @@ export default function SceneScreen() {
         </div>
         <div className="level-grid" data-testid="level-grid">
           {shown.map((l) => (
-            <button key={l.id} className={`level ${scene.level_id === l.id ? 'on' : ''}`} data-level={l.id}
-              aria-pressed={scene.level_id === l.id} onClick={() => pickLevel(l)}>
+            <button key={l.id} className={`level ${picked.level && scene.level_id === l.id ? 'on' : ''}`} data-level={l.id}
+              aria-pressed={picked.level && scene.level_id === l.id} onClick={() => pickLevel(l)}>
               <span className="thumb"><img src={thumbnailUrl(l.id)} alt="" loading="lazy" /></span>
               <span className="level-line">
                 <span className="level-id">{l.label}</span>
@@ -124,16 +126,16 @@ export default function SceneScreen() {
           <p className="lead" style={{ marginTop: 0 }}>Keep only what you want to test. Everything else is removed from the level.</p>
           <div className="row" style={{ marginTop: 14, gap: 10 }}>
             {chips.map((c) => (
-              <button key={c.key} className={`chip test ${sameMods(scene.modifiers, c.mods) ? 'on' : ''}`}
-                onClick={() => setScene({ ...scene, modifiers: c.mods })}>{c.label}</button>
+              <button key={c.key} className={`chip test ${picked.test && sameMods(scene.modifiers, c.mods) ? 'on' : ''}`}
+                onClick={() => { setScene({ ...scene, modifiers: c.mods }); setPicked({ ...picked, test: true }) }}>{c.label}</button>
             ))}
           </div>
           <div className="group">
             <h3>Start from</h3>
-            <label className="radio"><input type="radio" name="start" checked={startKind === 'level_start'} onChange={() => setStart('level_start')} />the level start</label>
-            <label className="radio"><input type="radio" name="start" checked={startKind === 'point'} disabled={width == null}
+            <label className="radio"><input type="radio" name="start" checked={picked.start && startKind === 'level_start'} onChange={() => setStart('level_start')} />the level start</label>
+            <label className="radio"><input type="radio" name="start" checked={picked.start && startKind === 'point'} disabled={width == null}
               onChange={() => setStart(typeof scene.start === 'number' ? scene.start : 0)} />a point on the level strip</label>
-            <label className="radio"><input type="radio" name="start" checked={startKind === 'moment'} disabled={!moments.data?.length}
+            <label className="radio"><input type="radio" name="start" checked={picked.start && startKind === 'moment'} disabled={!moments.data?.length}
               onChange={() => moments.data?.[0] && setStart(moments.data[0].id)} />a saved moment</label>
             {startKind === 'moment' && (
               <select aria-label="saved moment" value={String(scene.start)} onChange={(e) => setStart(e.target.value)}>
@@ -141,23 +143,22 @@ export default function SceneScreen() {
               </select>
             )}
           </div>
-          <div className="group">
-            <label className="place" style={{ opacity: 0.5 }}>
-              <span>Place an object<small>e.g. mushroom behind Mario (not available yet)</small></span>
-              <span className="check"><input type="checkbox" disabled aria-label="place an object" /></span>
-            </label>
-          </div>
         </section>
 
+        <div className="scene-foot">
         <div className="foot">
           <button className="btn" onClick={() => { saveScene({ name: sceneName, scene }); setSaved(true) }}>{saved ? 'Scene saved' : 'Save scene'}</button>
           {loadScenes().length > 0 && (
-            <select aria-label="saved scene" value="" onChange={(e) => { const s = loadScenes().find((x) => x.name === e.target.value); if (s) setScene(s.scene) }}>
+            <select aria-label="saved scene" value="" onChange={(e) => { const s = loadScenes().find((x) => x.name === e.target.value); if (s) { setScene(s.scene); setPicked(everythingPicked) } }}>
               <option value="" disabled>Load a saved scene…</option>
               {loadScenes().map((s) => <option key={s.name} value={s.name}>{s.name}</option>)}
             </select>
           )}
-          <button className="btn gold big" onClick={() => nav('/fly')}>Next: choose the fly →</button>
+          <button className="btn gold big" disabled={!ready} aria-describedby="scene-missing" onClick={() => nav('/fly')}>Next: choose the fly →</button>
+        </div>
+        <p id="scene-missing" className={`missing ${ready ? 'ok' : ''}`} data-testid="scene-missing">
+          {ready ? 'Level, test scene and start are chosen.' : `Still to choose: ${missing.join(', ')}.`}
+        </p>
         </div>
       </aside>
     </div>

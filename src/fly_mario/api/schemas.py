@@ -428,6 +428,7 @@ class VideoRequest(BaseModel):
     show_brain: bool = True
     run_id: str = ""                          # run: the saved run
     job_id: str = ""                          # montage: the evolution
+    speed: Literal[1, 2, 4] = 2               # montage: playback speed (a run video is always 1x)
 
 
 class VideoCheck(BaseModel):
@@ -459,4 +460,6 @@ class VideoSummary(BaseModel):
     duration_s: Optional[float] = None
     size_mb: Optional[float] = None
     render_s: Optional[float] = None
+    speed: Optional[int] = None               # montage: the playback speed it was made at
+    clips: Optional[int] = None               # montage: how many clips it has (one per generation)
     checks: list[VideoCheck] = []

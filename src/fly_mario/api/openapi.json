@@ -2431,6 +2431,16 @@
             "default": true,
             "title": "Show Senses",
             "type": "boolean"
+          },
+          "speed": {
+            "default": 2,
+            "enum": [
+              1,
+              2,
+              4
+            ],
+            "title": "Speed",
+            "type": "integer"
           }
         },
         "required": [
@@ -2448,6 +2458,17 @@
             },
             "title": "Checks",
             "type": "array"
+          },
+          "clips": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clips"
           },
           "created": {
             "title": "Created",
@@ -2515,6 +2536,17 @@
               }
             ],
             "title": "Size Mb"
+          },
+          "speed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speed"
           },
           "status": {
             "enum": [

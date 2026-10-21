@@ -1592,6 +1592,12 @@ export interface components {
              * @default true
              */
             show_senses: boolean;
+            /**
+             * Speed
+             * @default 2
+             * @enum {integer}
+             */
+            speed: 1 | 2 | 4;
         };
         /** VideoSummary */
         VideoSummary: {
@@ -1600,6 +1606,8 @@ export interface components {
              * @default []
              */
             checks: components["schemas"]["VideoCheck"][];
+            /** Clips */
+            clips?: number | null;
             /** Created */
             created: number;
             /** Duration S */
@@ -1631,6 +1639,8 @@ export interface components {
             render_s?: number | null;
             /** Size Mb */
             size_mb?: number | null;
+            /** Speed */
+            speed?: number | null;
             /**
              * Status
              * @enum {string}

@@ -162,10 +162,11 @@ function EvolutionView({ job }: { job: JobDetail }) {
   const qc = useQueryClient()
   const { setFly } = useDraft()
   const [name, setName] = useState('')
+  const [speed, setSpeed] = useState<1 | 2 | 4>(2)
   const live = isLive(job.status)
   const p = job.progress
   const videos = useQuery({ queryKey: ['videos'], queryFn: api.getVideos, staleTime: 0, refetchInterval: 5000 })
-  const montage = (videos.data ?? []).find((v) => v.export === 'montage' && v.of === job.id && v.status === 'finished' && v.video)
+  const montage = (videos.data ?? []).find((v) => v.export === 'montage' && v.of === job.id && v.speed === speed && v.status === 'finished' && v.video)
   const cancel = useMutation({ mutationFn: () => api.cancelJob(job.id), onSuccess: () => qc.invalidateQueries({ queryKey: ['job', job.id] }) })
   const save = useMutation({
     mutationFn: () => api.useEvolvedFly(job.id, name.trim()),
@@ -210,13 +211,20 @@ function EvolutionView({ job }: { job: JobDetail }) {
       <section className="box montage" data-testid="montage">
         <div className="row spread">
           <h2 className="label" style={{ margin: 0 }}>Montage</h2>
-          <DownloadButton label="Download montage" disabled={p.bars.length === 0} readyPath={montage?.video}
-            title="One short clip per generation's best fly, with the fitness chart underneath"
-            build={() => ({ export: 'montage', job_id: job.id })} onDone={() => videos.refetch()} />
+          <div className="row" style={{ gap: 10 }}>
+            <div className="speeds" role="group" aria-label="montage speed">
+              {([1, 2, 4] as const).map((v) => (
+                <button key={v} className={`chip ${speed === v ? 'on' : ''}`} aria-pressed={speed === v} onClick={() => setSpeed(v)}>{v}×</button>
+              ))}
+            </div>
+            <DownloadButton label="Download montage" disabled={p.bars.length === 0 || live} readyPath={montage?.video}
+              title={live ? 'Available when the evolution has finished: the montage has every generation' : "One clip per generation's best fly, each played to its end, with the fitness chart underneath"}
+              build={() => ({ export: 'montage', job_id: job.id, speed })} onDone={() => videos.refetch()} />
+          </div>
         </div>
         {montage?.video
           ? <video className="montage-video" data-testid="montage-video" src={videoUrl(montage.video)} controls preload="metadata" />
-          : <p className="muted">One short clip per generation&apos;s best fly. Press Download montage to make it; it plays here once it is made.</p>}
+          : <p className="muted">One clip per generation&apos;s best fly, each played to its end. Pick a speed and press Download montage once the evolution has finished; it plays here once it is made.</p>}
       </section>
 
       <section className="box save-fly">

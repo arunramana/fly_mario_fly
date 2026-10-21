@@ -63,6 +63,7 @@ assert.deepEqual((await page.locator('.app-header nav a').allInnerTexts()).map((
 await page.locator('[data-level="1-2"]').click()
 assert.equal(await page.locator('[data-level="1-2"]').getAttribute('aria-pressed'), 'true')
 await page.getByRole('button', { name: 'Whole level' }).click()
+await page.getByLabel('the level start').check()
 await fits('1-scene')
 
 // Fly: the champion; the Evolve / Test controls are no longer here
@@ -154,6 +155,7 @@ assert.equal(await page.getByTestId('try').count(), triesBefore + 1, 'the new tr
 await page.goto(`${base}/scene`)
 await page.locator('[data-level="1-1"]').click()
 await page.getByRole('button', { name: 'Whole level' }).click()
+await page.getByLabel('the level start').check()
 await page.getByText('Next: choose the fly').click()
 await page.getByText('Scene: 1-1').waitFor()
 await page.getByLabel('preset').selectOption('champion_e1s')
