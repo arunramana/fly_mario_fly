@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import type { FrameEvent, MomentSummary, RunResult, RunStream } from '../api/models'
 import RunStage from '../components/RunStage'
+import VideoExport from '../components/VideoExport'
 import { errText, useStartRun } from '../hooks'
 import { momentPictures, runRequests, useDraft, type Picture } from '../draft'
 
@@ -33,6 +34,7 @@ function RunView({ runId }: { runId: string }) {
   const [speed, setSpeed] = useState(1)
   const [showSenses, setShowSenses] = useState(true)
   const [showBrain, setShowBrain] = useState(true)
+  const [videoOpen, setVideoOpen] = useState(false)
   const restart = useStartRun()
 
   useEffect(() => {
@@ -122,6 +124,7 @@ function RunView({ runId }: { runId: string }) {
           {diedAt != null && <div className="mk death" title="death" data-testid="death-mark" style={{ left: pct(diedAt) }} />}
         </div>
         <button className="btn" onClick={saveHere} disabled={!!result || !frame}>◆ Save this moment</button>
+        <button className="btn" onClick={() => setVideoOpen(true)} disabled={!result} title={result ? 'Replay this run as a 1080p mp4' : 'Available when the run has ended'}>Download video</button>
         <div className="speeds" role="group" aria-label="speed">
           {SPEEDS.map(([v, l]) => (
             <button key={v} className={`chip ${speed === v ? 'on' : ''}`} aria-pressed={speed === v}
@@ -150,6 +153,26 @@ function RunView({ runId }: { runId: string }) {
         </div>
       )}
       {restart.isError && <p className="err" role="alert">{errText(restart.error)}</p>}
+      {videoOpen && result && <RunVideo runId={runId} senses={showSenses} brain={showBrain} onClose={() => setVideoOpen(false)} />}
     </div>
+  )
+}
+
+/** "Download video" of a finished run: the options, then the shared preview-then-render panel. */
+function RunVideo({ runId, senses, brain, onClose }: { runId: string; senses: boolean; brain: boolean; onClose: () => void }) {
+  const [sn, setSn] = useState(senses)
+  const [br, setBr] = useState(brain)
+  const [speed, setSpeed] = useState(1)
+  return (
+    <VideoExport label="Download video" onClose={onClose}
+      build={() => ({ export: 'run', run_id: runId, show_senses: sn, show_brain: br, speed })}>
+      <div className="toolrow">
+        <label className="check"><input type="checkbox" checked={sn} onChange={(e) => setSn(e.target.checked)} />Show senses</label>
+        <label className="check"><input type="checkbox" checked={br} onChange={(e) => setBr(e.target.checked)} />Show brain</label>
+        <div className="speeds" role="group" aria-label="video speed">
+          {[1, 2].map((v) => <button key={v} className={`chip ${speed === v ? 'on' : ''}`} aria-pressed={speed === v} onClick={() => setSpeed(v)}>{v}×</button>)}
+        </div>
+      </div>
+    </VideoExport>
   )
 }

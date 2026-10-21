@@ -1,7 +1,7 @@
 // The only module components import for data. `python -m fly_mario.api` serves it (default http://127.0.0.1:8000,
 // override with VITE_API_URL); VITE_MOCK=1 swaps in the offline mock.
 import type {
-  EvolveRequest, Fly, JobDetail, JobSummary, LevelInfo, MomentSummary, TestJobRequest, Registry, RunEvent, RunRequest, RunResult, RunStream, RunSummary, Try,
+  EvolveRequest, Fly, JobDetail, JobSummary, LevelInfo, MomentSummary, TestJobRequest, Registry, RunEvent, RunRequest, RunResult, RunStream, RunSummary, Try, VideoRequest, VideoSummary,
 } from './models'
 import { mockApi } from './mock'
 
@@ -32,6 +32,12 @@ export interface Api {
   getGenerationFly(id: string, gen: number): Promise<Fly>
   /** "Use this fly": saves the evolved fly as a new fly; returns it. */
   useEvolvedFly(id: string, name?: string): Promise<Fly>
+  /** Video exports (clips for editing): ask for the preview stills first, render the mp4 only when the user says so. */
+  startVideo(req: VideoRequest): Promise<VideoSummary>
+  getVideo(id: string): Promise<VideoSummary>
+  getVideos(): Promise<VideoSummary[]>
+  renderVideo(id: string): Promise<VideoSummary>
+  cancelVideo(id: string): Promise<VideoSummary>
 }
 
 const BASE: string = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
@@ -62,6 +68,10 @@ const enc = encodeURIComponent
 
 /** The level's opening screen (PNG), made by the server with the emulator the first time it is asked for. */
 export const thumbnailUrl = (levelId: string): string => `${BASE}/levels/${enc(levelId)}/thumbnail.png`
+
+/** A file of a video export (a still, or the mp4 with `download`) from the path the API gave. */
+export const videoUrl = (path: string, download = false): string =>
+  path.startsWith('data:') ? path : `${BASE}${path}${download ? '?download=true' : ''}`
 
 function openRun(runId: string): RunStream {
   const ws = new WebSocket(`${BASE.replace(/^http/, 'ws')}/runs/${enc(runId)}/live`)
@@ -118,6 +128,11 @@ const httpApi: Api = {
   cancelJob: (id) => call('POST', `/jobs/${enc(id)}/cancel`),
   getGenerationFly: (id, gen) => call('GET', `/jobs/${enc(id)}/generations/${gen}/fly`),
   useEvolvedFly: (id, name = '') => call('POST', `/jobs/${enc(id)}/use`, { name }),
+  startVideo: (req) => call('POST', '/videos', req),
+  getVideo: (id) => call('GET', `/videos/${enc(id)}`),
+  getVideos: () => call('GET', '/videos'),
+  renderVideo: (id) => call('POST', `/videos/${enc(id)}/render`),
+  cancelVideo: (id) => call('POST', `/videos/${enc(id)}/cancel`),
 }
 
 export const api: Api = import.meta.env.VITE_MOCK === '1' ? mockApi : httpApi

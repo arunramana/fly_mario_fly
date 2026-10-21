@@ -362,6 +362,115 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/videos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Videos */
+        get: operations["list_videos_videos_get"];
+        put?: never;
+        /**
+         * Start Video
+         * @description Ask for an export: its 2-3 preview stills are made in the background; render the mp4 with /render.
+         */
+        post: operations["start_video_videos_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/videos/{video_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Video */
+        get: operations["get_video_videos__video_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/videos/{video_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Video */
+        post: operations["cancel_video_videos__video_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/videos/{video_id}/render": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Render Video
+         * @description The user looked at the stills and wants the mp4.
+         */
+        post: operations["render_video_videos__video_id__render_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/videos/{video_id}/stills/{n}.png": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Video Still */
+        get: operations["video_still_videos__video_id__stills__n__png_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/videos/{video_id}/video.mp4": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Video File */
+        get: operations["video_file_videos__video_id__video_mp4_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1443,6 +1552,184 @@ export interface components {
             /** Error Type */
             type: string;
         };
+        /**
+         * VideoCheck
+         * @description What a replay did against what was recorded; hash_ok is None when nothing was recorded to compare with.
+         */
+        VideoCheck: {
+            /** Hash Ok */
+            hash_ok?: boolean | null;
+            /** Label */
+            label: string;
+            /** Max X */
+            max_x: number;
+            /** Outcome */
+            outcome: string;
+        };
+        /** VideoProgress */
+        VideoProgress: {
+            /**
+             * Done
+             * @default 0
+             */
+            done: number;
+            /**
+             * Elapsed S
+             * @default 0
+             */
+            elapsed_s: number;
+            /** Eta S */
+            eta_s?: number | null;
+            /**
+             * Phase
+             * @default
+             */
+            phase: string;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+        };
+        /**
+         * VideoRequest
+         * @description Asks for the preview stills of an export; the mp4 is rendered later by POST /videos/{id}/render.
+         */
+        VideoRequest: {
+            a?: components["schemas"]["VideoSideRef"] | null;
+            b?: components["schemas"]["VideoSideRef"] | null;
+            /**
+             * Clip Seconds
+             * @default 6
+             */
+            clip_seconds: number;
+            /**
+             * Export
+             * @enum {string}
+             */
+            export: "run" | "side_by_side" | "montage";
+            /** Frame From */
+            frame_from?: number | null;
+            /** Frame To */
+            frame_to?: number | null;
+            /**
+             * Generations
+             * @default []
+             */
+            generations: number[];
+            /**
+             * Include Start
+             * @default false
+             */
+            include_start: boolean;
+            /**
+             * Job Id
+             * @default
+             */
+            job_id: string;
+            /**
+             * Run Id
+             * @default
+             */
+            run_id: string;
+            /** Show Brain */
+            show_brain?: boolean | null;
+            /**
+             * Show Senses
+             * @default true
+             */
+            show_senses: boolean;
+            /** Speed */
+            speed?: number | null;
+        };
+        /**
+         * VideoSideRef
+         * @description One run of a side-by-side: a saved run, or one start of a finished test at one dials setting.
+         */
+        VideoSideRef: {
+            /**
+             * Dials
+             * @default tuned
+             * @enum {string}
+             */
+            dials: "tuned" | "original";
+            /**
+             * Job Id
+             * @default
+             */
+            job_id: string;
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+            /**
+             * Run Id
+             * @default
+             */
+            run_id: string;
+            /**
+             * Start
+             * @default 1
+             */
+            start: number;
+        };
+        /** VideoSummary */
+        VideoSummary: {
+            /**
+             * Checks
+             * @default []
+             */
+            checks: components["schemas"]["VideoCheck"][];
+            /** Created */
+            created: number;
+            /** Duration S */
+            duration_s?: number | null;
+            /**
+             * Error
+             * @default
+             */
+            error: string;
+            /**
+             * Export
+             * @enum {string}
+             */
+            export: "run" | "side_by_side" | "montage";
+            /** Id */
+            id: string;
+            /**
+             * @default {
+             *       "done": 0,
+             *       "elapsed_s": 0,
+             *       "phase": "",
+             *       "total": 0
+             *     }
+             */
+            progress: components["schemas"]["VideoProgress"];
+            /** Render S */
+            render_s?: number | null;
+            /** Size Mb */
+            size_mb?: number | null;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "stills" | "video";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "finished" | "failed" | "cancelled";
+            /**
+             * Stills
+             * @default []
+             */
+            stills: string[];
+            /** Title */
+            title: string;
+            /** Video */
+            video?: string | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -2206,6 +2493,219 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MomentSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_videos_videos_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoSummary"][];
+                };
+            };
+        };
+    };
+    start_video_videos_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VideoRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_video_videos__video_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_video_videos__video_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    render_video_videos__video_id__render_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    video_still_videos__video_id__stills__n__png_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+                n: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/png": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    video_file_videos__video_id__video_mp4_get: {
+        parameters: {
+            query?: {
+                download?: boolean;
+            };
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "video/mp4": unknown;
                 };
             };
             /** @description Validation Error */

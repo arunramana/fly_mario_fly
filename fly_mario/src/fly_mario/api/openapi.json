@@ -2323,6 +2323,363 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "VideoCheck": {
+        "description": "What a replay did against what was recorded; hash_ok is None when nothing was recorded to compare with.",
+        "properties": {
+          "hash_ok": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hash Ok"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "max_x": {
+            "title": "Max X",
+            "type": "number"
+          },
+          "outcome": {
+            "title": "Outcome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "outcome",
+          "max_x"
+        ],
+        "title": "VideoCheck",
+        "type": "object"
+      },
+      "VideoProgress": {
+        "properties": {
+          "done": {
+            "default": 0,
+            "title": "Done",
+            "type": "integer"
+          },
+          "elapsed_s": {
+            "default": 0,
+            "title": "Elapsed S",
+            "type": "integer"
+          },
+          "eta_s": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eta S"
+          },
+          "phase": {
+            "default": "",
+            "title": "Phase",
+            "type": "string"
+          },
+          "total": {
+            "default": 0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "title": "VideoProgress",
+        "type": "object"
+      },
+      "VideoRequest": {
+        "description": "Asks for the preview stills of an export; the mp4 is rendered later by POST /videos/{id}/render.",
+        "properties": {
+          "a": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoSideRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "b": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoSideRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "clip_seconds": {
+            "default": 6.0,
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Clip Seconds",
+            "type": "number"
+          },
+          "export": {
+            "enum": [
+              "run",
+              "side_by_side",
+              "montage"
+            ],
+            "title": "Export",
+            "type": "string"
+          },
+          "frame_from": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frame From"
+          },
+          "frame_to": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frame To"
+          },
+          "generations": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Generations",
+            "type": "array"
+          },
+          "include_start": {
+            "default": false,
+            "title": "Include Start",
+            "type": "boolean"
+          },
+          "job_id": {
+            "default": "",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "run_id": {
+            "default": "",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "show_brain": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Brain"
+          },
+          "show_senses": {
+            "default": true,
+            "title": "Show Senses",
+            "type": "boolean"
+          },
+          "speed": {
+            "anyOf": [
+              {
+                "maximum": 2.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speed"
+          }
+        },
+        "required": [
+          "export"
+        ],
+        "title": "VideoRequest",
+        "type": "object"
+      },
+      "VideoSideRef": {
+        "description": "One run of a side-by-side: a saved run, or one start of a finished test at one dials setting.",
+        "properties": {
+          "dials": {
+            "default": "tuned",
+            "enum": [
+              "tuned",
+              "original"
+            ],
+            "title": "Dials",
+            "type": "string"
+          },
+          "job_id": {
+            "default": "",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "label": {
+            "default": "",
+            "title": "Label",
+            "type": "string"
+          },
+          "run_id": {
+            "default": "",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "start": {
+            "default": 1,
+            "minimum": 1.0,
+            "title": "Start",
+            "type": "integer"
+          }
+        },
+        "title": "VideoSideRef",
+        "type": "object"
+      },
+      "VideoSummary": {
+        "properties": {
+          "checks": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/VideoCheck"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "created": {
+            "title": "Created",
+            "type": "number"
+          },
+          "duration_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration S"
+          },
+          "error": {
+            "default": "",
+            "title": "Error",
+            "type": "string"
+          },
+          "export": {
+            "enum": [
+              "run",
+              "side_by_side",
+              "montage"
+            ],
+            "title": "Export",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/VideoProgress",
+            "default": {
+              "done": 0,
+              "elapsed_s": 0,
+              "phase": "",
+              "total": 0
+            }
+          },
+          "render_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Render S"
+          },
+          "size_mb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Mb"
+          },
+          "stage": {
+            "enum": [
+              "stills",
+              "video"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "finished",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "stills": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Stills",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "video": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video"
+          }
+        },
+        "required": [
+          "id",
+          "export",
+          "title",
+          "status",
+          "stage",
+          "created"
+        ],
+        "title": "VideoSummary",
+        "type": "object"
       }
     }
   },
@@ -3277,6 +3634,278 @@
           }
         },
         "summary": "Save Moment"
+      }
+    },
+    "/videos": {
+      "get": {
+        "operationId": "list_videos_videos_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VideoSummary"
+                  },
+                  "title": "Response List Videos Videos Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Videos"
+      },
+      "post": {
+        "description": "Ask for an export: its 2-3 preview stills are made in the background; render the mp4 with /render.",
+        "operationId": "start_video_videos_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Video"
+      }
+    },
+    "/videos/{video_id}": {
+      "get": {
+        "operationId": "get_video_videos__video_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Video"
+      }
+    },
+    "/videos/{video_id}/cancel": {
+      "post": {
+        "operationId": "cancel_video_videos__video_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Video"
+      }
+    },
+    "/videos/{video_id}/render": {
+      "post": {
+        "description": "The user looked at the stills and wants the mp4.",
+        "operationId": "render_video_videos__video_id__render_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Render Video"
+      }
+    },
+    "/videos/{video_id}/stills/{n}.png": {
+      "get": {
+        "operationId": "video_still_videos__video_id__stills__n__png_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "title": "Video Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "n",
+            "required": true,
+            "schema": {
+              "title": "N",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/png": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Video Still"
+      }
+    },
+    "/videos/{video_id}/video.mp4": {
+      "get": {
+        "operationId": "video_file_videos__video_id__video_mp4_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "title": "Video Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "download",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Download",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "video/mp4": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Video File"
       }
     }
   }

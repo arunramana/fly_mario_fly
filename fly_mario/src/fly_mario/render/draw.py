@@ -152,32 +152,34 @@ def _line(img, p0, p1, col, width, style):
         cv2.line(img, tuple(int(round(v)) for v in a), tuple(int(round(v)) for v in b), col, width, cv2.LINE_AA)
 
 
-def game_panel(game: np.ndarray, overlay: list, scroll_x: float, show_senses: bool = True) -> np.ndarray:
-    """NES x4 (1024 x 960). With show_senses False the result is the plain upscaled game, pixel for pixel."""
-    img = cv2.resize(np.ascontiguousarray(game), None, fx=4, fy=4, interpolation=cv2.INTER_NEAREST)
+def game_panel(game: np.ndarray, overlay: list, scroll_x: float, show_senses: bool = True, scale: int = 4) -> np.ndarray:
+    """NES x`scale` (x4 = 1024 x 960 by default). With show_senses False the result is the plain upscaled game, pixel for pixel."""
+    k = scale
+    img = cv2.resize(np.ascontiguousarray(game), None, fx=k, fy=k, interpolation=cv2.INTER_NEAREST)
     if not show_senses or not overlay:
         return img
     img = img.copy()
-    sx = lambda wx: (wx - scroll_x) * 4
-    sy = lambda ly: (ly + 32) * 4                                      # level y has the 32 px status bar above it
+    sx = lambda wx: (wx - scroll_x) * k
+    sy = lambda ly: (ly + 32) * k                                      # level y has the 32 px status bar above it
+    lw = 3 if k >= 4 else 2
     for it in overlay:
         col, g = hex_rgb(it.colour), it.geometry
         if it.kind == "box":
             x, y, w, h = g
             c = [(sx(x), sy(y)), (sx(x + w), sy(y)), (sx(x + w), sy(y + h)), (sx(x), sy(y + h))]
             for i in range(4):
-                _line(img, c[i], c[(i + 1) % 4], col, 3, it.line)
+                _line(img, c[i], c[(i + 1) % 4], col, lw, it.line)
         elif it.kind == "line":
             x0, y0, x1, y1 = g
-            _line(img, (sx(x0), sy(y0)), (sx(x1), sy(y1)), col, 3, it.line)
+            _line(img, (sx(x0), sy(y0)), (sx(x1), sy(y1)), col, lw, it.line)
         elif it.kind == "dot":
             x, y, r = g
             if it.anchor == "screen_right":                            # a direction marker, 22 px inside the edge, half transparent (as R3)
                 ov = img.copy()
-                cv2.circle(ov, (GAME_W - 22, int(round(sy(y)))), max(2, int(round(r * 4))), col, -1, cv2.LINE_AA)
+                cv2.circle(ov, (256 * k - 22, int(round(sy(y)))), max(2, int(round(r * k))), col, -1, cv2.LINE_AA)
                 img = cv2.addWeighted(ov, 0.5, img, 0.5, 0)
             else:
-                cv2.circle(img, (int(round(sx(x))), int(round(sy(y)))), max(2, int(round(r * 4))), col, -1, cv2.LINE_AA)
+                cv2.circle(img, (int(round(sx(x))), int(round(sy(y)))), max(2, int(round(r * k))), col, -1, cv2.LINE_AA)
         elif it.kind == "wedge":                                       # the cone from Mario's eye to the box it measures
             ex, ey, x, y, w, h = g
             near = x if x >= ex else x + w

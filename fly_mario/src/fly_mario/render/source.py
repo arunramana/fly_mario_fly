@@ -36,13 +36,32 @@ def load_run(run_dir) -> Run:
     return Run(fly_from_dict(cfg["fly"]), Scene(**sc), Options(**cfg.get("options", {})), run_id=run_dir.name)
 
 
-def brain_data(run: Run, run_dir) -> BrainData:
-    """Soma positions, group membership, colours and run maxima for the brain this run uses (all from brain_display)."""
+def run_from_side(side: dict) -> Run:
+    """A fresh Run from an export spec's side: {fly, scene, options, from_moment?} (plain dicts, as job.json keeps them)."""
+    from fly_mario.runner.record import scene_from_dict
+    return Run(fly_from_dict(side["fly"]), scene_from_dict(side["scene"]), Options(**side.get("options", {})),
+               run_id=side.get("run_id") or "", from_moment=side.get("from_moment"))
+
+
+def rate_max_of(run: Run) -> dict:
+    """The per-group run maxima of a run that has no rates.npz: play it once, nothing drawn."""
+    run.start()
+    hist: dict = {g: [] for g in run.brain.masks}
+    while not run.finished:
+        for g, v in run.step().rates.items():
+            hist[g].append(v)
+    return {g: float(_smooth(np.asarray(v)).max()) for g, v in hist.items() if v}
+
+
+def brain_data(run: Run, run_dir=None, rate_max: dict | None = None) -> BrainData:
+    """Soma positions, group membership, colours and run maxima for the brain this run uses (all from brain_display).
+
+    The maxima come from `rate_max`, else the run folder's rates.npz."""
     bd = brain_display(run.fly)
     disp = bd.display
-    rmax = {}
-    rates_file = Path(run_dir) / "rates.npz"
-    if rates_file.exists():
+    rmax = dict(rate_max or {})
+    rates_file = Path(run_dir) / "rates.npz" if run_dir is not None else None
+    if not rmax and rates_file is not None and rates_file.exists():
         z = np.load(rates_file)
         rmax = {g: float(_smooth(z[g]).max()) for g in z.files}
     return BrainData(
