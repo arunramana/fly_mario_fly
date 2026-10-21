@@ -7,6 +7,7 @@ import FlyScreen from './screens/FlyScreen'
 import RunScreen from './screens/RunScreen'
 import MomentScreen from './screens/MomentScreen'
 import LibraryScreen from './screens/LibraryScreen'
+import EvolutionScreen from './screens/EvolutionScreen'
 
 const STEPS = ['/scene', '/fly', '/run', '/library']
 
@@ -28,6 +29,7 @@ function Subtitle() {
     return <>{levels.data?.find((l) => l.id === lv)?.label ?? lv} · {info?.req.fly.name ?? fly.name}{info ? ` · try ${info.tryNo}` : ''}</>
   }
   if (pathname.startsWith('/moment')) return <>{level} · paused at a saved moment</>
+  if (pathname.startsWith('/evolution')) return <>Evolution, running in the background</>
   if (pathname.startsWith('/library')) return <>Saved flies, scenes and runs</>
   return <>MaleCNS fly brain × Super Mario Bros</>
 }
@@ -37,7 +39,7 @@ export default function App() {
   const { pathname } = useLocation()
   const here = STEPS.findIndex((s) => pathname.startsWith(s)) + (pathname.startsWith('/moment') ? 3 : 0)
   const tab = (to: string, i: number, label: string, off = false) => (
-    <NavLink to={to} className={({ isActive }) => `tab ${isActive || (i === 2 && pathname.startsWith('/moment')) ? 'active' : ''} ${off ? 'off' : ''}`}>
+    <NavLink to={to} className={({ isActive }) => `tab ${isActive || (i === 2 && pathname.startsWith('/moment')) || (i === 3 && pathname.startsWith('/evolution')) ? 'active' : ''} ${off ? 'off' : ''}`}>
       {label}{i < here && i < 3 && !off ? ' ✓' : ''}
     </NavLink>
   )
@@ -63,6 +65,7 @@ export default function App() {
           <Route path="/run/:runId" element={<RunScreen />} />
           <Route path="/moment/:momentId" element={<MomentScreen />} />
           <Route path="/library" element={<LibraryScreen />} />
+          <Route path="/evolution/:id" element={<EvolutionScreen />} />
         </Routes>
       </main>
     </>

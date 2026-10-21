@@ -35,7 +35,12 @@ def main(argv=None) -> int:
     c.add_argument("id")
     c.add_argument("--gens", type=int, default=None)
     c.add_argument("--workers", type=int, default=None)
+    j = sub.add_parser("job", help="run one background job folder (what the API starts)")
+    j.add_argument("folder")
     a = ap.parse_args(argv)
+    if a.cmd == "job":
+        from fly_mario.evolve import jobs
+        return jobs.run_job(a.folder)
 
     if a.cmd == "resume":
         folder = record.runs_dir() / (a.id if a.id.startswith("evo_") else f"evo_{a.id}")

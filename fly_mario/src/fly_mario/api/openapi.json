@@ -167,6 +167,47 @@
         "title": "DeathDTO",
         "type": "object"
       },
+      "DevSetResult": {
+        "properties": {
+          "episodes": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/StartResult"
+            },
+            "title": "Episodes",
+            "type": "array"
+          },
+          "flags": {
+            "title": "Flags",
+            "type": "integer"
+          },
+          "mean_max_x": {
+            "title": "Mean Max X",
+            "type": "number"
+          },
+          "mean_score": {
+            "title": "Mean Score",
+            "type": "number"
+          },
+          "min_max_x": {
+            "title": "Min Max X",
+            "type": "number"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "flags",
+          "n",
+          "mean_max_x",
+          "min_max_x",
+          "mean_score"
+        ],
+        "title": "DevSetResult",
+        "type": "object"
+      },
       "DialView": {
         "description": "One knob of a fly as the dials switch sees it: where evolution left it and where the hand-set original sits.",
         "properties": {
@@ -230,6 +271,86 @@
           "message"
         ],
         "title": "ErrorEvent",
+        "type": "object"
+      },
+      "EvolveRequest": {
+        "properties": {
+          "dials": {
+            "default": "tuned",
+            "enum": [
+              "tuned",
+              "original"
+            ],
+            "title": "Dials",
+            "type": "string"
+          },
+          "flag_x": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flag X"
+          },
+          "fly": {
+            "$ref": "#/components/schemas/FlyDTO"
+          },
+          "generations": {
+            "default": 15,
+            "maximum": 200.0,
+            "minimum": 1.0,
+            "title": "Generations",
+            "type": "integer"
+          },
+          "level": {
+            "default": "1-1",
+            "title": "Level",
+            "type": "string"
+          },
+          "population": {
+            "default": 12,
+            "maximum": 64.0,
+            "minimum": 4.0,
+            "title": "Population",
+            "type": "integer"
+          },
+          "seed": {
+            "default": 1,
+            "title": "Seed",
+            "type": "integer"
+          },
+          "start": {
+            "default": "level_start",
+            "title": "Start",
+            "type": "string"
+          },
+          "train_n": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Train N",
+            "type": "integer"
+          },
+          "workers": {
+            "anyOf": [
+              {
+                "maximum": 32.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workers"
+          }
+        },
+        "required": [
+          "fly"
+        ],
+        "title": "EvolveRequest",
         "type": "object"
       },
       "FlyDTO": {
@@ -518,6 +639,34 @@
         "title": "FrameEvent",
         "type": "object"
       },
+      "Generation": {
+        "properties": {
+          "best": {
+            "title": "Best",
+            "type": "number"
+          },
+          "best_ever": {
+            "title": "Best Ever",
+            "type": "number"
+          },
+          "gen": {
+            "title": "Gen",
+            "type": "integer"
+          },
+          "mean": {
+            "title": "Mean",
+            "type": "number"
+          }
+        },
+        "required": [
+          "gen",
+          "best",
+          "mean",
+          "best_ever"
+        ],
+        "title": "Generation",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -529,6 +678,375 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "JobCreated": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "JobCreated",
+        "type": "object"
+      },
+      "JobDetail": {
+        "properties": {
+          "best_generation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Generation"
+          },
+          "changes": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/KnobChange"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "created": {
+            "title": "Created",
+            "type": "number"
+          },
+          "dev_best": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DevSetResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dev_start": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DevSetResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dials": {
+            "enum": [
+              "tuned",
+              "original",
+              "both"
+            ],
+            "title": "Dials",
+            "type": "string"
+          },
+          "error": {
+            "default": "",
+            "title": "Error",
+            "type": "string"
+          },
+          "fly": {
+            "title": "Fly",
+            "type": "string"
+          },
+          "generations": {
+            "default": 0,
+            "title": "Generations",
+            "type": "integer"
+          },
+          "headline": {
+            "default": "",
+            "title": "Headline",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "evolve",
+              "test"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "level_id": {
+            "title": "Level Id",
+            "type": "string"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/JobProgress",
+            "default": {
+              "bars": [],
+              "done": 0,
+              "elapsed_s": 0,
+              "generation": 0,
+              "generations": 0,
+              "phase": "",
+              "total": 0
+            }
+          },
+          "results": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DevSetResult"
+            },
+            "default": {},
+            "title": "Results",
+            "type": "object"
+          },
+          "saved_as": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saved As"
+          },
+          "start": {
+            "default": "level_start",
+            "title": "Start",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "finished",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "fly",
+          "level_id",
+          "dials",
+          "created",
+          "title"
+        ],
+        "title": "JobDetail",
+        "type": "object"
+      },
+      "JobProgress": {
+        "properties": {
+          "bars": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Generation"
+            },
+            "title": "Bars",
+            "type": "array"
+          },
+          "best": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best"
+          },
+          "done": {
+            "default": 0,
+            "title": "Done",
+            "type": "integer"
+          },
+          "elapsed_s": {
+            "default": 0,
+            "title": "Elapsed S",
+            "type": "integer"
+          },
+          "eta_s": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eta S"
+          },
+          "generation": {
+            "default": 0,
+            "title": "Generation",
+            "type": "integer"
+          },
+          "generations": {
+            "default": 0,
+            "title": "Generations",
+            "type": "integer"
+          },
+          "mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean"
+          },
+          "phase": {
+            "default": "",
+            "title": "Phase",
+            "type": "string"
+          },
+          "total": {
+            "default": 0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "title": "JobProgress",
+        "type": "object"
+      },
+      "JobSummary": {
+        "properties": {
+          "created": {
+            "title": "Created",
+            "type": "number"
+          },
+          "dials": {
+            "enum": [
+              "tuned",
+              "original",
+              "both"
+            ],
+            "title": "Dials",
+            "type": "string"
+          },
+          "fly": {
+            "title": "Fly",
+            "type": "string"
+          },
+          "headline": {
+            "default": "",
+            "title": "Headline",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "evolve",
+              "test"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "level_id": {
+            "title": "Level Id",
+            "type": "string"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/JobProgress",
+            "default": {
+              "bars": [],
+              "done": 0,
+              "elapsed_s": 0,
+              "generation": 0,
+              "generations": 0,
+              "phase": "",
+              "total": 0
+            }
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "finished",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "fly",
+          "level_id",
+          "dials",
+          "created",
+          "title"
+        ],
+        "title": "JobSummary",
+        "type": "object"
+      },
+      "KnobChange": {
+        "description": "What evolution did to one knob, in words (\"a bit toward strong\"); never a number.",
+        "properties": {
+          "direction": {
+            "enum": [
+              "same",
+              "lo",
+              "hi"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "hi_label": {
+            "title": "Hi Label",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "lo_label": {
+            "title": "Lo Label",
+            "type": "string"
+          },
+          "words": {
+            "title": "Words",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "lo_label",
+          "hi_label",
+          "words",
+          "direction"
+        ],
+        "title": "KnobChange",
         "type": "object"
       },
       "KnobUI": {
@@ -1574,6 +2092,71 @@
         "title": "ShapeInfo",
         "type": "object"
       },
+      "StartResult": {
+        "description": "One dev-set start: how the fly did from it.",
+        "properties": {
+          "back_ups": {
+            "title": "Back Ups",
+            "type": "integer"
+          },
+          "blocks": {
+            "title": "Blocks",
+            "type": "integer"
+          },
+          "death": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeathDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "jumps": {
+            "title": "Jumps",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "max_x": {
+            "title": "Max X",
+            "type": "number"
+          },
+          "mushroom": {
+            "title": "Mushroom",
+            "type": "boolean"
+          },
+          "outcome": {
+            "enum": [
+              "flag",
+              "died",
+              "stuck",
+              "timeout"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "label",
+          "outcome",
+          "max_x",
+          "score",
+          "jumps",
+          "back_ups",
+          "blocks",
+          "mushroom"
+        ],
+        "title": "StartResult",
+        "type": "object"
+      },
       "StateEvent": {
         "properties": {
           "paused": {
@@ -1596,6 +2179,46 @@
           "speed"
         ],
         "title": "StateEvent",
+        "type": "object"
+      },
+      "TestJobRequest": {
+        "properties": {
+          "dials": {
+            "default": "both",
+            "enum": [
+              "tuned",
+              "original",
+              "both"
+            ],
+            "title": "Dials",
+            "type": "string"
+          },
+          "fly": {
+            "$ref": "#/components/schemas/FlyDTO"
+          },
+          "level": {
+            "default": "1-1",
+            "title": "Level",
+            "type": "string"
+          },
+          "workers": {
+            "anyOf": [
+              {
+                "maximum": 32.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workers"
+          }
+        },
+        "required": [
+          "fly"
+        ],
+        "title": "TestJobRequest",
         "type": "object"
       },
       "TestScene": {
@@ -1648,6 +2271,17 @@
           "max_x"
         ],
         "title": "TryDTO",
+        "type": "object"
+      },
+      "UseFly": {
+        "properties": {
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "title": "UseFly",
         "type": "object"
       },
       "ValidationError": {
@@ -1900,6 +2534,283 @@
           }
         },
         "summary": "Put Fly"
+      }
+    },
+    "/jobs": {
+      "get": {
+        "operationId": "list_jobs_jobs_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/JobSummary"
+                  },
+                  "title": "Response List Jobs Jobs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Jobs"
+      }
+    },
+    "/jobs/evolve": {
+      "post": {
+        "operationId": "start_evolve_jobs_evolve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvolveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobCreated"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Evolve"
+      }
+    },
+    "/jobs/test": {
+      "post": {
+        "operationId": "start_test_jobs_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobCreated"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Test"
+      }
+    },
+    "/jobs/{job_id}": {
+      "get": {
+        "operationId": "get_job_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Job"
+      }
+    },
+    "/jobs/{job_id}/cancel": {
+      "post": {
+        "operationId": "cancel_job_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Job"
+      }
+    },
+    "/jobs/{job_id}/generations/{gen}/fly": {
+      "get": {
+        "description": "The best fly of one generation (-1 = the fly evolution started from): start a run with it to watch it.",
+        "operationId": "generation_fly_jobs__job_id__generations__gen__fly_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "gen",
+            "required": true,
+            "schema": {
+              "title": "Gen",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlyDTO"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generation Fly"
+      }
+    },
+    "/jobs/{job_id}/use": {
+      "post": {
+        "description": "\"Use this fly\": save the evolution's best fly as a new fly yaml, with where it came from.",
+        "operationId": "use_evolved_fly_jobs__job_id__use_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UseFly",
+                "default": {
+                  "name": ""
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlyView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Use Evolved Fly"
       }
     },
     "/levels": {

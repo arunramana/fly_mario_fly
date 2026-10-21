@@ -21,8 +21,6 @@ WORST = -1.0
 # The old E1s training set: idle frames 0,7,15,19,29,37 at sensor noise 0 and 0.05 (seeds 301..312).
 TRAIN_NOOPS = (0, 7, 15, 19, 29, 37)
 TRAIN_SIGMAS = (0.0, 0.05)
-# The old holdout set, kept as the dev set: seen only by the final best genome.
-DEV_NOOPS = (3, 11, 25, 33, 41)
 STUCK_FRAMES = 150          # the old run's stuck rule length (now counted only after Mario's first move)
 MAX_FRAMES = 3000
 
@@ -33,8 +31,9 @@ def train_scenes(level: str) -> list:
 
 
 def dev_scenes(level: str) -> list:
-    return [Scene(level, noop=n, sigma=sg, seed=101 + i, max_frames=MAX_FRAMES, stuck_frames=STUCK_FRAMES)
-            for sg in TRAIN_SIGMAS for i, n in enumerate(DEV_NOOPS)]
+    """The level's dev set (configs/dev_sets.yaml; 1-1 is the old holdout 10), seen only by a final best genome."""
+    from fly_mario.evolve import devset
+    return [devset.start_scene(level, s) for s in devset.dev_starts(level)]
 
 
 def moment_scenes(level: str, moment_ids: list) -> list:
@@ -73,7 +72,8 @@ def play_episode(job: dict, run_id: str = "", save: bool = False) -> dict:
         from fly_mario.runner import save_run
         save_run(run, result)
     return {"max_x": result.max_x, "score": result.score, "outcome": result.outcome, "violations": blind.violations,
-            "frames": result.counts["frames"], "fitness": episode_fitness(result.max_x, result.score, job["flag_x"]),
+            "frames": result.counts["frames"], "counts": dict(result.counts), "blocks": result.blocks,
+            "mushroom": result.mushroom, "death": result.death, "fitness": episode_fitness(result.max_x, result.score, job["flag_x"]),
             "hash": result.hash}
 
 

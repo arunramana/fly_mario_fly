@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw
 HERE = Path(__file__).resolve().parents[1]
 OUT = HERE / "screenshots" / "compare"
 OUT.mkdir(parents=True, exist_ok=True)
-PAIRS = {"scene": "Main", "fly": "Fly", "advanced": "Advanced", "run": "Run", "retry": "Retry"}
+PAIRS = {"scene": "Main", "fly": "Fly", "advanced": "Advanced", "run": "Run", "retry": "Retry", "evolution": "Evolution"}
 
 
 def pair(left: Path, right: Path, out: Path, names=("wireframe", "ours")) -> None:

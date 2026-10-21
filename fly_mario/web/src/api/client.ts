@@ -1,7 +1,7 @@
 // The only module components import for data. `python -m fly_mario.api` serves it (default http://127.0.0.1:8000,
 // override with VITE_API_URL); VITE_MOCK=1 swaps in the offline mock.
 import type {
-  Fly, LevelInfo, MomentSummary, Registry, RunEvent, RunRequest, RunResult, RunStream, RunSummary, Try,
+  EvolveRequest, Fly, JobDetail, JobSummary, LevelInfo, MomentSummary, TestJobRequest, Registry, RunEvent, RunRequest, RunResult, RunStream, RunSummary, Try,
 } from './models'
 import { mockApi } from './mock'
 
@@ -22,6 +22,16 @@ export interface Api {
   getTries(momentId: string): Promise<Try[]>
   /** The mini brain map of a fly: an object URL of a PNG with the neuron groups it uses lit ('' when unavailable). */
   getBrainMap(fly: Fly): Promise<string>
+  /** Background jobs: an evolution, or "test this fly" on the level's 10 dev-set starts. */
+  startEvolve(req: EvolveRequest): Promise<string>
+  startTest(req: TestJobRequest): Promise<string>
+  getJobs(): Promise<JobSummary[]>
+  getJob(id: string): Promise<JobDetail>
+  cancelJob(id: string): Promise<JobDetail>
+  /** The best fly of one generation of an evolution (-1 = the fly it started from), to start a run with. */
+  getGenerationFly(id: string, gen: number): Promise<Fly>
+  /** "Use this fly": saves the evolved fly as a new fly; returns it. */
+  useEvolvedFly(id: string, name?: string): Promise<Fly>
 }
 
 const BASE: string = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
@@ -101,6 +111,13 @@ const httpApi: Api = {
     const res = await fetch(`${BASE}/brain-map.png`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fly) })
     return res.ok ? URL.createObjectURL(await res.blob()) : ''
   },
+  startEvolve: async (req) => (await call<{ id: string }>('POST', '/jobs/evolve', req)).id,
+  startTest: async (req) => (await call<{ id: string }>('POST', '/jobs/test', req)).id,
+  getJobs: () => call('GET', '/jobs'),
+  getJob: (id) => call('GET', `/jobs/${enc(id)}`),
+  cancelJob: (id) => call('POST', `/jobs/${enc(id)}/cancel`),
+  getGenerationFly: (id, gen) => call('GET', `/jobs/${enc(id)}/generations/${gen}/fly`),
+  useEvolvedFly: (id, name = '') => call('POST', `/jobs/${enc(id)}/use`, { name }),
 }
 
 export const api: Api = import.meta.env.VITE_MOCK === '1' ? mockApi : httpApi

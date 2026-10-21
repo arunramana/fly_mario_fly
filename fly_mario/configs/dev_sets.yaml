@@ -1,0 +1,16 @@
+# The dev set: a fixed set of starts per level, used to judge a fly (never to train it).
+# A start is the idle frames before the run begins (noop), the sensor noise (sigma) and the noise seed.
+# 1-1 is exactly the old HOLDOUT 10: idle frames 3, 11, 25, 33, 41 at noise 0 and 0.05, seeds 101..105.
+# A level with no entry of its own uses `default`.
+default: &holdout10
+  - {noop: 3,  sigma: 0.0,  seed: 101}
+  - {noop: 11, sigma: 0.0,  seed: 102}
+  - {noop: 25, sigma: 0.0,  seed: 103}
+  - {noop: 33, sigma: 0.0,  seed: 104}
+  - {noop: 41, sigma: 0.0,  seed: 105}
+  - {noop: 3,  sigma: 0.05, seed: 101}
+  - {noop: 11, sigma: 0.05, seed: 102}
+  - {noop: 25, sigma: 0.05, seed: 103}
+  - {noop: 33, sigma: 0.05, seed: 104}
+  - {noop: 41, sigma: 0.05, seed: 105}
+1-1: *holdout10

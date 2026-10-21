@@ -77,6 +77,131 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Jobs */
+        get: operations["list_jobs_jobs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/evolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Evolve */
+        post: operations["start_evolve_jobs_evolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Test */
+        post: operations["start_test_jobs_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Job */
+        get: operations["get_job_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Job */
+        post: operations["cancel_job_jobs__job_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/{job_id}/generations/{gen}/fly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Generation Fly
+         * @description The best fly of one generation (-1 = the fly evolution started from): start a run with it to watch it.
+         */
+        get: operations["generation_fly_jobs__job_id__generations__gen__fly_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/{job_id}/use": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Use Evolved Fly
+         * @description "Use this fly": save the evolution's best fly as a new fly yaml, with where it came from.
+         */
+        post: operations["use_evolved_fly_jobs__job_id__use_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/levels": {
         parameters: {
             query?: never;
@@ -317,6 +442,24 @@ export interface components {
             /** X */
             x: number;
         };
+        /** DevSetResult */
+        DevSetResult: {
+            /**
+             * Episodes
+             * @default []
+             */
+            episodes: components["schemas"]["StartResult"][];
+            /** Flags */
+            flags: number;
+            /** Mean Max X */
+            mean_max_x: number;
+            /** Mean Score */
+            mean_score: number;
+            /** Min Max X */
+            min_max_x: number;
+            /** N */
+            n: number;
+        };
         /**
          * DialView
          * @description One knob of a fly as the dials switch sees it: where evolution left it and where the hand-set original sits.
@@ -349,6 +492,50 @@ export interface components {
              * @constant
              */
             type: "error";
+        };
+        /** EvolveRequest */
+        EvolveRequest: {
+            /**
+             * Dials
+             * @default tuned
+             * @enum {string}
+             */
+            dials: "tuned" | "original";
+            /** Flag X */
+            flag_x?: number | null;
+            fly: components["schemas"]["FlyDTO"];
+            /**
+             * Generations
+             * @default 15
+             */
+            generations: number;
+            /**
+             * Level
+             * @default 1-1
+             */
+            level: string;
+            /**
+             * Population
+             * @default 12
+             */
+            population: number;
+            /**
+             * Seed
+             * @default 1
+             */
+            seed: number;
+            /**
+             * Start
+             * @default level_start
+             */
+            start: string;
+            /**
+             * Train N
+             * @default 0
+             */
+            train_n: number;
+            /** Workers */
+            workers?: number | null;
         };
         /** FlyDTO */
         FlyDTO: {
@@ -515,10 +702,214 @@ export interface components {
             /** X */
             x: number;
         };
+        /** Generation */
+        Generation: {
+            /** Best */
+            best: number;
+            /** Best Ever */
+            best_ever: number;
+            /** Gen */
+            gen: number;
+            /** Mean */
+            mean: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** JobCreated */
+        JobCreated: {
+            /** Id */
+            id: string;
+        };
+        /** JobDetail */
+        JobDetail: {
+            /** Best Generation */
+            best_generation?: number | null;
+            /**
+             * Changes
+             * @default []
+             */
+            changes: components["schemas"]["KnobChange"][];
+            /** Created */
+            created: number;
+            dev_best?: components["schemas"]["DevSetResult"] | null;
+            dev_start?: components["schemas"]["DevSetResult"] | null;
+            /**
+             * Dials
+             * @enum {string}
+             */
+            dials: "tuned" | "original" | "both";
+            /**
+             * Error
+             * @default
+             */
+            error: string;
+            /** Fly */
+            fly: string;
+            /**
+             * Generations
+             * @default 0
+             */
+            generations: number;
+            /**
+             * Headline
+             * @default
+             */
+            headline: string;
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "evolve" | "test";
+            /** Level Id */
+            level_id: string;
+            /**
+             * @default {
+             *       "bars": [],
+             *       "done": 0,
+             *       "elapsed_s": 0,
+             *       "generation": 0,
+             *       "generations": 0,
+             *       "phase": "",
+             *       "total": 0
+             *     }
+             */
+            progress: components["schemas"]["JobProgress"];
+            /**
+             * Results
+             * @default {}
+             */
+            results: {
+                [key: string]: components["schemas"]["DevSetResult"];
+            };
+            /** Saved As */
+            saved_as?: string | null;
+            /**
+             * Start
+             * @default level_start
+             */
+            start: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "finished" | "failed" | "cancelled";
+            /** Title */
+            title: string;
+        };
+        /** JobProgress */
+        JobProgress: {
+            /**
+             * Bars
+             * @default []
+             */
+            bars: components["schemas"]["Generation"][];
+            /** Best */
+            best?: number | null;
+            /**
+             * Done
+             * @default 0
+             */
+            done: number;
+            /**
+             * Elapsed S
+             * @default 0
+             */
+            elapsed_s: number;
+            /** Eta S */
+            eta_s?: number | null;
+            /**
+             * Generation
+             * @default 0
+             */
+            generation: number;
+            /**
+             * Generations
+             * @default 0
+             */
+            generations: number;
+            /** Mean */
+            mean?: number | null;
+            /**
+             * Phase
+             * @default
+             */
+            phase: string;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+        };
+        /** JobSummary */
+        JobSummary: {
+            /** Created */
+            created: number;
+            /**
+             * Dials
+             * @enum {string}
+             */
+            dials: "tuned" | "original" | "both";
+            /** Fly */
+            fly: string;
+            /**
+             * Headline
+             * @default
+             */
+            headline: string;
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "evolve" | "test";
+            /** Level Id */
+            level_id: string;
+            /**
+             * @default {
+             *       "bars": [],
+             *       "done": 0,
+             *       "elapsed_s": 0,
+             *       "generation": 0,
+             *       "generations": 0,
+             *       "phase": "",
+             *       "total": 0
+             *     }
+             */
+            progress: components["schemas"]["JobProgress"];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "finished" | "failed" | "cancelled";
+            /** Title */
+            title: string;
+        };
+        /**
+         * KnobChange
+         * @description What evolution did to one knob, in words ("a bit toward strong"); never a number.
+         */
+        KnobChange: {
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "same" | "lo" | "hi";
+            /** Hi Label */
+            hi_label: string;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Lo Label */
+            lo_label: string;
+            /** Words */
+            words: string;
         };
         /**
          * KnobUI
@@ -950,6 +1341,32 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * StartResult
+         * @description One dev-set start: how the fly did from it.
+         */
+        StartResult: {
+            /** Back Ups */
+            back_ups: number;
+            /** Blocks */
+            blocks: number;
+            death?: components["schemas"]["DeathDTO"] | null;
+            /** Jumps */
+            jumps: number;
+            /** Label */
+            label: string;
+            /** Max X */
+            max_x: number;
+            /** Mushroom */
+            mushroom: boolean;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "flag" | "died" | "stuck" | "timeout";
+            /** Score */
+            score: number;
+        };
         /** StateEvent */
         StateEvent: {
             /** Paused */
@@ -962,6 +1379,23 @@ export interface components {
              * @constant
              */
             type: "state";
+        };
+        /** TestJobRequest */
+        TestJobRequest: {
+            /**
+             * Dials
+             * @default both
+             * @enum {string}
+             */
+            dials: "tuned" | "original" | "both";
+            fly: components["schemas"]["FlyDTO"];
+            /**
+             * Level
+             * @default 1-1
+             */
+            level: string;
+            /** Workers */
+            workers?: number | null;
         };
         /**
          * TestScene
@@ -987,6 +1421,14 @@ export interface components {
             outcome: string;
             /** Run Id */
             run_id: string;
+        };
+        /** UseFly */
+        UseFly: {
+            /**
+             * Name
+             * @default
+             */
+            name: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -1165,6 +1607,221 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlyView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_jobs_jobs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobSummary"][];
+                };
+            };
+        };
+    };
+    start_evolve_jobs_evolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvolveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_test_jobs_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestJobRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_job_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_job_jobs__job_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generation_fly_jobs__job_id__generations__gen__fly_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+                gen: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlyDTO"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    use_evolved_fly_jobs__job_id__use_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UseFly"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -5,6 +5,7 @@ import type { Fly } from '../api/models'
 import SenseGrid from '../components/SenseGrid'
 import { byKind, byOrder, splitLabel } from '../components/senseUtil'
 import { AdvancedDrawer, type KnobSection } from '../components/Knobs'
+import EvolvePanel from '../components/EvolvePanel'
 import { errText, useStartRun } from '../hooks'
 import { useDraft } from '../draft'
 
@@ -105,6 +106,7 @@ export default function FlyScreen() {
               </div>
             </section>
           </div>
+          <EvolvePanel fly={fly} />
         </section>
 
         <aside>

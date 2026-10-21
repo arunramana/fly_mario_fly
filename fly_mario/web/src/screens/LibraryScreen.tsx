@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { loadScenes, useDraft } from '../draft'
+import { eta, isLive } from '../jobs'
 
 /** Everything saved: flies (on the server), scenes (in this browser) and finished runs. */
 export default function LibraryScreen() {
@@ -9,12 +11,36 @@ export default function LibraryScreen() {
   const { setFly, setScene } = useDraft()
   const registry = useQuery({ queryKey: ['registry'], queryFn: api.getRegistry })
   const runs = useQuery({ queryKey: ['runs'], queryFn: api.getRuns, staleTime: 0 })
+  const jobs = useQuery({ queryKey: ['jobs'], queryFn: api.getJobs, staleTime: 0, refetchInterval: 3000 })
+  const [tab, setTab] = useState<'saved' | 'evolutions'>('saved')
   const scenes = loadScenes()
   return (
     <>
       <h1 className="title">Library</h1>
-      <p className="lead">Flies and scenes to start from again, and every run so far.</p>
-      <div className="lib">
+      <p className="lead">Flies and scenes to start from again, every run so far, and the evolutions and tests that ran in the background.</p>
+      <div className="dials" role="tablist" aria-label="library tabs">
+        {([['saved', 'Saved'], ['evolutions', 'Evolutions']] as const).map(([k, l]) => (
+          <button key={k} role="tab" className={`chip ${tab === k ? 'on' : ''}`} aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>
+        ))}
+      </div>
+      {tab === 'evolutions' && (
+        <section className="box" data-testid="evolutions-list" style={{ marginTop: 18 }}>
+          <h2 className="label">Evolutions and tests</h2>
+          {jobs.data?.length ? jobs.data.map((j) => (
+            <div className="lib-row" key={j.id} data-testid="job-row">
+              <span>
+                <Link to={`/evolution/${encodeURIComponent(j.id)}`}>{j.title}</Link>
+                <small className="muted" style={{ display: 'block' }}>
+                  {isLive(j.status) ? (j.kind === 'evolve' ? `generation ${j.progress.generation} of ${j.progress.generations} · ` : `${j.progress.done} of ${j.progress.total} runs · `) + eta(j.progress.eta_s)
+                    : j.status === 'finished' ? j.headline : j.status}
+                </small>
+              </span>
+              <Link className="btn sm" to={`/evolution/${encodeURIComponent(j.id)}`}>Open</Link>
+            </div>
+          )) : <p className="muted">Nothing yet. Press “Evolve this fly” or “Test this fly” on the Fly page.</p>}
+        </section>
+      )}
+      <div className="lib" style={tab === 'saved' ? undefined : { display: 'none' }}>
         <section className="box">
           <h2 className="label">Flies</h2>
           {registry.data?.presets.map((p) => (

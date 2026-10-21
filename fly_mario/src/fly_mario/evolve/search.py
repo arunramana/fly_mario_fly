@@ -28,6 +28,7 @@ import yaml
 
 from fly_mario.runner import config as C
 from fly_mario.runner import levels, record
+from fly_mario.evolve import devset
 from fly_mario.evolve import fitness as F
 from fly_mario.evolve import genome as G
 
@@ -54,10 +55,18 @@ class Pool:
                 os.environ[v] = "1"           # inherited by the spawned workers before numpy loads there
             self.ex = ProcessPoolExecutor(workers, mp_context=get_context("spawn"), initializer=F.worker_init)
 
-    def map(self, jobs: list) -> list:
+    def map(self, jobs: list, on_done=None) -> list:
+        """Results in submission order (deterministic). on_done(i, n) fires as the i-th result is collected."""
         if self.ex is None:
-            return [F.play_episode(j) for j in jobs]
-        return list(self.ex.map(F.play_episode, jobs, chunksize=1))      # in submission order: deterministic
+            it = (F.play_episode(j) for j in jobs)
+        else:
+            it = self.ex.map(F.play_episode, jobs, chunksize=1)
+        out = []
+        for r in it:
+            out.append(r)
+            if on_done:
+                on_done(len(out), len(jobs))
+        return out
 
     def close(self) -> None:
         if self.ex is not None:
@@ -71,6 +80,8 @@ def resolve_flag_x(level: str, override: float | None) -> float:
     info = levels.level_info(level)
     if info.flag_x:
         return float(info.flag_x)
+    if info.status.wins:                       # a scan that stopped short: the furthest x a winning run reached is the flag
+        return float(info.status.best_x)
     raise SystemExit(f"level {level} has no known flag x (its scan did not reach the flag): pass --flag-x")
 
 
@@ -113,7 +124,7 @@ def save_best_run(fly, scene, moment, flag_x, run_id: str) -> str:
 def run(cfg: dict, pool: Pool | None = None, log=print) -> dict:
     """cfg: id, fly (yaml path or name), level, gens, seed, pop, train_n, flag_x, moments, workers."""
     import cma
-    folder = record.runs_dir() / cfg["id"]
+    folder = Path(cfg["folder"]) if cfg.get("folder") else record.runs_dir() / cfg["id"]
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "config.json").write_text(json.dumps(cfg, indent=1), encoding="utf-8")
     fly0 = C.load_fly(cfg["fly"])
@@ -129,6 +140,18 @@ def run(cfg: dict, pool: Pool | None = None, log=print) -> dict:
     own_pool = pool is None
     pool = pool or Pool(cfg.get("workers", 0))
     state_path, prog_path = folder / "state.pkl", folder / "progress.json"
+    t_start = time.time()
+
+    def progress(rows, best, phase, gen_done, extra=None):
+        """progress.json: the rows per generation plus where the job is (phase, generation, ETA) for the job screen."""
+        done = [r for r in rows if r["gen"] >= 0]
+        secs = float(np.mean([r["secs"] for r in done])) if done else None
+        left = max(0, cfg["gens"] - gen_done)
+        _atomic_write(prog_path, json.dumps({
+            "rows": rows, "best_ever": _slim(best), "phase": phase, "generation": gen_done, "gens": cfg["gens"],
+            "best": best["fitness"], "mean": rows[-1]["mean"] if rows else None,
+            "eta_s": None if secs is None else round(secs * left), "elapsed_s": round(time.time() - t_start),
+            "updated": time.time(), **(extra or {})}, indent=1).encode())
     try:
         if state_path.exists():
             es, rows, best, gen0 = pickle.loads(state_path.read_bytes())
@@ -146,6 +169,7 @@ def run(cfg: dict, pool: Pool | None = None, log=print) -> dict:
             start_row = {"gen": -1, "best": start["fitness"], "mean": start["fitness"], "best_ever": start["fitness"],
                          "rejected": int(start["rejected"]), "best_values": start["values"], "best_run": best["run"]}
             rows.append(start_row)
+            progress(rows, best, "training", 0)
         for gen in range(gen0, cfg["gens"]):
             t0 = time.time()
             us = es.ask()
@@ -160,10 +184,13 @@ def run(cfg: dict, pool: Pool | None = None, log=print) -> dict:
                          "best_flags": gb["flags"], "best_values": gb["values"], "best_run": best["run"],
                          "secs": round(time.time() - t0, 1)})
             _atomic_write(state_path, pickle.dumps((es, rows, _slim(best), gen + 1)))
-            _atomic_write(prog_path, json.dumps({"rows": rows, "best_ever": _slim(best)}, indent=1).encode())
+            progress(rows, best, "training", gen + 1)
             log(f"gen {gen:2d} best {gb['fitness']:.4f} mean {rows[-1]['mean']:.4f} best-ever {best['fitness']:.4f} "
                 f"(gen {best['gen']}) rejected {rows[-1]['rejected']}/{cfg['pop']} {rows[-1]['secs']:.0f}s")
-        return finish(cfg, fly0, genes, best, rows, flag_x, pool, folder, log)
+        progress(rows, best, "dev set", cfg["gens"])
+        out = finish(cfg, fly0, genes, best, rows, flag_x, pool, folder, log)
+        progress(rows, best, "done", cfg["gens"], {"dev": {k: v["summary"] for k, v in out["dev"].items()}})
+        return out
     finally:
         if own_pool:
             pool.close()
@@ -182,15 +209,14 @@ def _keep_run(fly, cand: dict, scenes, flag_x, cfg: dict, tag: str) -> str:
 
 
 def finish(cfg, fly0, genes, best, rows, flag_x, pool, folder: Path, log) -> dict:
-    """Write the best fly, then run the dev set once on the final best (and on the start, for comparison)."""
+    """Write the best fly, then run the level's dev set once on the final best (and on the start, for comparison)."""
     fly_best = best_fly(fly0, best["values"], cfg, best["gen"], best["fitness"])
     (folder / "best.yaml").write_text(C.dump_fly(fly_best), encoding="utf-8")
-    dev = F.dev_scenes(cfg["level"]) if not cfg.get("moments") else F.moment_scenes(cfg["level"], cfg["moments"])
     out = {}
     for tag, fly in (("best", fly_best), ("start", fly0)):
-        eps = pool.map(_jobs(fly, dev, flag_x))
-        out[tag] = {"flags": sum(e["outcome"] == "flag" for e in eps), "n": len(eps),
-                    "mean_max_x": float(np.mean([e["max_x"] for e in eps])), "fitness": F.candidate_fitness(eps),
+        ev = devset.evaluate(fly, cfg["level"], "tuned", pool=pool, flag_x=flag_x)
+        eps = ev["episodes"]
+        out[tag] = {**ev["summary"], "summary": ev["summary"], "fitness": F.candidate_fitness(eps),
                     "violations": sum(e["violations"] for e in eps), "episodes": eps}
     (folder / "dev.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
     log(f"dev set: best {out['best']['flags']}/{out['best']['n']} flags, start {out['start']['flags']}/{out['start']['n']}")

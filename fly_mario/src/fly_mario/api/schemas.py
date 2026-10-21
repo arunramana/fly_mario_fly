@@ -303,3 +303,114 @@ class ClientMessage(BaseModel):
     """{"type": "play"|"pause"|"step"|"speed", "value": multiplier}  (speed 0 or >= 100 means as fast as possible)."""
     type: Literal["play", "pause", "step", "speed"]
     value: Optional[float] = None
+
+
+# ---- background jobs (evolution, "test this fly") ---------------------------------------------------------------
+TestDials = Literal["tuned", "original", "both"]
+JobKind = Literal["evolve", "test"]
+JobStatus = Literal["queued", "running", "finished", "failed", "cancelled"]
+
+
+class EvolveRequest(BaseModel):
+    fly: FlyDTO
+    dials: Dials = "tuned"                    # which knobs evolution starts from: the fly's own, or the hand-set originals
+    level: str = "1-1"
+    generations: int = Field(default=15, ge=1, le=200)
+    start: str = "level_start"                # "level_start", or a saved moment id to train from
+    workers: Optional[int] = Field(default=None, ge=0, le=32)     # None = what this machine has; 0 = in the job's own process
+    population: int = Field(default=12, ge=4, le=64)
+    seed: int = 1
+    train_n: int = Field(default=0, ge=0)     # 0 = every training episode; N = a small training set (smoke runs)
+    flag_x: Optional[float] = None            # the level's flag x, for a level no run has reached it on yet
+
+
+class TestJobRequest(BaseModel):
+    fly: FlyDTO
+    dials: TestDials = "both"                 # "both" tests the original and the tuned fly, for the Original vs Tuned summary
+    level: str = "1-1"
+    workers: Optional[int] = Field(default=None, ge=0, le=32)
+
+
+class StartResult(BaseModel):
+    """One dev-set start: how the fly did from it."""
+    label: str                                # "start 3": which of the set's starts (no noise values shown)
+    outcome: Literal["flag", "died", "stuck", "timeout"]
+    max_x: float
+    score: float
+    jumps: int
+    back_ups: int
+    blocks: int
+    mushroom: bool
+    death: Optional[DeathDTO] = None
+
+
+class DevSetResult(BaseModel):
+    flags: int
+    n: int
+    mean_max_x: float
+    min_max_x: float
+    mean_score: float
+    episodes: list[StartResult] = []
+
+
+class KnobChange(BaseModel):
+    """What evolution did to one knob, in words ("a bit toward strong"); never a number."""
+    key: str
+    label: str
+    lo_label: str
+    hi_label: str
+    words: str
+    direction: Literal["same", "lo", "hi"]
+
+
+class Generation(BaseModel):
+    gen: int
+    best: float                               # fitness of the generation's best fly, and of the generation's average
+    mean: float
+    best_ever: float
+
+
+class JobProgress(BaseModel):
+    phase: str = ""                           # training | dev set | testing | done
+    generation: int = 0                       # generations finished
+    generations: int = 0
+    done: int = 0                             # test: episodes finished
+    total: int = 0
+    best: Optional[float] = None
+    mean: Optional[float] = None
+    eta_s: Optional[int] = None
+    elapsed_s: int = 0
+    bars: list[Generation] = []               # evolve: one per finished generation
+
+
+class JobSummary(BaseModel):
+    id: str
+    kind: JobKind
+    status: JobStatus
+    fly: str
+    level_id: str
+    dials: TestDials
+    created: float
+    title: str                                # "Evolution of champion_e1s on 1-1" / "Test of champion_e1s on 1-1"
+    headline: str = ""                        # a finished job's result: "Original 8/10 · Tuned 10/10", "10/10 on unseen starts"
+    progress: JobProgress = JobProgress()
+
+
+class JobDetail(JobSummary):
+    error: str = ""
+    generations: int = 0
+    start: str = "level_start"
+    results: dict[str, DevSetResult] = {}     # test: "original" and / or "tuned"
+    changes: list[KnobChange] = []            # evolve: what evolution changed, in words
+    dev_best: Optional[DevSetResult] = None   # evolve: the dev set on the best fly ...
+    dev_start: Optional[DevSetResult] = None  # ... and on the fly it started from
+    best_generation: Optional[int] = None
+    saved_as: Optional[str] = None            # the fly yaml made by "Use this fly"
+
+
+class UseFly(BaseModel):
+    name: str = ""                            # "" = the evolved fly's own name
+
+
+class JobCreated(BaseModel):
+    id: str
