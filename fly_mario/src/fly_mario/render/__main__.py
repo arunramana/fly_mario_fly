@@ -4,9 +4,9 @@ Old form (one saved run, straight to a file):
     python -m fly_mario.render <run_dir> --still FRAME | --video [--no-senses] [--no-brain] [--out PATH]
 
 Video exports (a job folder under $FLY_MARIO_DATA/videos/<id>/; --stills first, then --video on the same job):
-    python -m fly_mario.render run <run> [--no-senses] [--no-brain] [--speed 2] [--from F] [--to F]  (--stills | --video [--job ID])
-    python -m fly_mario.render side-by-side <runA> <runB> | --test JOB --start N   [--label-a T] [--label-b T] [--brain] [--speed 2]
-    python -m fly_mario.render montage <evolution id> [--gens 0,3,5] [--clip-seconds 6] [--speed 2] [--with-start]
+    python -m fly_mario.render run <run> [--no-senses] [--brain|--no-brain] [--speed 2] [--from F] [--to F]  (--stills | --video [--job ID])
+    python -m fly_mario.render side-by-side <runA> <runB> | --test JOB --start N   [--label-a T] [--label-b T] [--brain|--no-brain] [--speed 2]
+    python -m fly_mario.render montage <evolution id> [--gens 0,3,5] [--clip-seconds 6] [--speed 2] [--with-start] [--brain|--no-brain]
     python -m fly_mario.render job <folder>          (what the API starts)
 
 <run> is a folder under $FLY_MARIO_DATA/runs/ (or just its name).
@@ -85,7 +85,8 @@ def exports(argv) -> int:
     r = sub.add_parser("run")
     r.add_argument("run")
     r.add_argument("--no-senses", action="store_true")
-    r.add_argument("--no-brain", action="store_true")
+    brain = argparse.BooleanOptionalAction
+    r.add_argument("--brain", action=brain, default=True, help="the brain panel beside the game (default on)")
     r.add_argument("--speed", type=int, default=1)
     r.add_argument("--from", dest="frame_from", type=int, default=None)
     r.add_argument("--to", dest="frame_to", type=int, default=None)
@@ -96,7 +97,7 @@ def exports(argv) -> int:
     s.add_argument("--start", type=int, default=1, help="with --test: which start (1-based)")
     s.add_argument("--label-a", default="")
     s.add_argument("--label-b", default="")
-    s.add_argument("--brain", action="store_true")
+    s.add_argument("--brain", action=brain, default=False, help="a small brain under each game (default off)")
     s.add_argument("--no-senses", action="store_true")
     s.add_argument("--speed", type=int, default=1)
     stage(s)
@@ -106,6 +107,7 @@ def exports(argv) -> int:
     m.add_argument("--clip-seconds", type=float, default=6.0)
     m.add_argument("--speed", type=int, default=2)
     m.add_argument("--with-start", action="store_true", help="also a clip of the fly the evolution started from")
+    m.add_argument("--brain", action=brain, default=False, help="the brain panel next to the game (default off)")
     m.add_argument("--no-senses", action="store_true")
     stage(m)
     j = sub.add_parser("job")
@@ -123,7 +125,7 @@ def exports(argv) -> int:
     else:
         try:
             if a.cmd == "run":
-                spec = specs.run_spec(a.run, not a.no_senses, not a.no_brain, a.speed, a.frame_from, a.frame_to)
+                spec = specs.run_spec(a.run, not a.no_senses, a.brain, a.speed, a.frame_from, a.frame_to)
             elif a.cmd == "side-by-side":
                 if a.test:
                     sa, sb = specs.test_side(a.test, a.start, "original"), specs.test_side(a.test, a.start, "tuned")
@@ -134,7 +136,7 @@ def exports(argv) -> int:
                 spec = specs.side_by_side_spec(sa, sb, a.label_a, a.label_b, a.brain, not a.no_senses, a.speed)
             else:
                 spec = specs.montage_spec(a.evolution, [int(g) for g in a.gens.split(",") if g] or None, a.clip_seconds,
-                                          a.speed, a.with_start, not a.no_senses)
+                                          a.speed, a.with_start, not a.no_senses, a.brain)
         except ValueError as e:
             print(f"error: {e}", file=sys.stderr)
             return 2

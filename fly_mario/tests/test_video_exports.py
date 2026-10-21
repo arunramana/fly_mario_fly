@@ -182,6 +182,7 @@ def test_montage_clips_are_one_per_generation_with_the_current_one_marked(monkey
     assert [k for k, _ in frames].count(0) == [k for k, _ in frames].count(1) == 60 and len(frames) == 180
     assert not np.array_equal(frames[0][1][950:1050], frames[-1][1][950:1050])      # the fitness strip highlights a different generation
     assert frames[0][1].shape == (1080, 1920, 3)
+    assert X.MontageExport({**spec, "show_brain": True}).GAME_X == 896 + (1920 - 896 - 768) // 2          # the brain panel takes the left 896 px
     stills = list(X.MontageExport(spec).frames(picks=[0, 2]))
     assert [k for k, _ in stills] == [0, 2]
 

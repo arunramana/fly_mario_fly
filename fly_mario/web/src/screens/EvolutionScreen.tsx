@@ -162,10 +162,11 @@ function MontageVideo({ job, onClose }: { job: JobDetail; onClose: () => void })
   const [seconds, setSeconds] = useState(6)
   const [speed, setSpeed] = useState(2)
   const [withStart, setWithStart] = useState(false)
+  const [brain, setBrain] = useState(false)
   const toggle = (g: number) => setChosen((c) => (c.includes(g) ? c.filter((x) => x !== g) : [...c, g]))
   return (
     <VideoExport label="Download montage" onClose={onClose}
-      build={() => ({ export: 'montage', job_id: job.id, generations: chosen, clip_seconds: seconds, speed, include_start: withStart })}>
+      build={() => ({ export: 'montage', job_id: job.id, generations: chosen, clip_seconds: seconds, speed, include_start: withStart, show_brain: brain })}>
       <div className="toolrow">
         <span className="muted">Generations:</span>
         <button className={`chip ${chosen.length === 0 ? 'on' : ''}`} aria-pressed={chosen.length === 0} onClick={() => setChosen([])}>All</button>
@@ -176,6 +177,7 @@ function MontageVideo({ job, onClose }: { job: JobDetail; onClose: () => void })
         <div className="speeds" role="group" aria-label="video speed">
           {[1, 2].map((v) => <button key={v} className={`chip ${speed === v ? 'on' : ''}`} aria-pressed={speed === v} onClick={() => setSpeed(v)}>{v}×</button>)}
         </div>
+        <label className="check"><input type="checkbox" checked={brain} onChange={(e) => setBrain(e.target.checked)} />Show brain</label>
         <label className="check"><input type="checkbox" checked={withStart} onChange={(e) => setWithStart(e.target.checked)} />Start with the fly it began from</label>
       </div>
     </VideoExport>

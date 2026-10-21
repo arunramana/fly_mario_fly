@@ -52,7 +52,7 @@ class Videos:
         if not req.job_id:
             raise ValueError("a montage needs the evolution's job_id")
         return Sp.montage_spec(req.job_id, req.generations or None, req.clip_seconds, req.speed or 2, req.include_start,
-                               req.show_senses, self.runs)
+                               req.show_senses, bool(req.show_brain), self.runs)
 
     def create(self, req: S.VideoRequest) -> str:
         spec = self.spec(req)

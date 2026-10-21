@@ -43,11 +43,11 @@ def run_from_side(side: dict) -> Run:
                run_id=side.get("run_id") or "", from_moment=side.get("from_moment"))
 
 
-def rate_max_of(run: Run) -> dict:
-    """The per-group run maxima of a run that has no rates.npz: play it once, nothing drawn."""
+def rate_max_of(run: Run, steps: int | None = None) -> dict:
+    """The per-group run maxima of a run that has no rates.npz: play it once (its first `steps` frames), nothing drawn."""
     run.start()
     hist: dict = {g: [] for g in run.brain.masks}
-    while not run.finished:
+    while not run.finished and (steps is None or len(hist[next(iter(hist))]) < steps):
         for g, v in run.step().rates.items():
             hist[g].append(v)
     return {g: float(_smooth(np.asarray(v)).max()) for g, v in hist.items() if v}

@@ -28,7 +28,7 @@ from PIL import Image, ImageDraw
 from fly_mario import registry
 from fly_mario.render import palette as P
 from fly_mario.render import source
-from fly_mario.render.draw import H, W, BrainPanel, Renderer, font, game_panel
+from fly_mario.render.draw import H, LEFT_W, W, BrainPanel, Renderer, font, game_panel
 from fly_mario.runner.record import runs_dir
 
 FPS = 60
@@ -176,10 +176,10 @@ def verify(lanes: list) -> list:
     return checks
 
 
-def _brain(side: dict, run) -> "source.BrainData":
+def _brain(side: dict, run, steps: int | None = None) -> "source.BrainData":
     if side.get("rates"):
         return source.brain_data(run, Path(side["rates"]).parent)
-    return source.brain_data(run, rate_max=source.rate_max_of(source.run_from_side(side)))
+    return source.brain_data(run, rate_max=source.rate_max_of(source.run_from_side(side), steps))
 
 
 # ---- compositing helpers ------------------------------------------------------------------------------------------
@@ -307,12 +307,16 @@ class SideBySideExport:
 class MontageExport:
     """One short clip per generation's best fly, with the fitness of every generation along the bottom."""
 
-    GAME_X, GAME_Y, LABEL_Y, CAP_Y = (W - PW) // 2, 84, 16, 808
-    BAR_X0, BAR_X1, BAR_Y0, BAR_Y1 = 160, 1760, 920, 1030
+    GAME_Y, LABEL_Y, CAP_Y = 84, 16, 808
+    BAR_Y0, BAR_Y1 = 920, 1030
 
     def __init__(self, spec: dict):
         self.spec = spec
         self.steps = int(round(spec["clip_seconds"] * FPS)) * spec["speed"]     # game frames per clip
+        if spec["show_brain"]:                      # the R3 brain panel on the left, the game and the chart on the right
+            self.GAME_X, self.BAR_X0, self.BAR_X1 = LEFT_W + (W - LEFT_W - PW) // 2, LEFT_W + 32, W - 32
+        else:
+            self.GAME_X, self.BAR_X0, self.BAR_X1 = (W - PW) // 2, 160, 1760
 
     def total(self) -> int:
         return self.steps * len(self.spec["sides"])
@@ -324,14 +328,14 @@ class MontageExport:
     def _base(self, side: dict) -> np.ndarray:
         pil = _canvas()
         dr = ImageDraw.Draw(pil)
-        _centred(dr, W // 2, self.LABEL_Y, side["label"], 46, (255, 255, 255), maxw=1200)
+        _centred(dr, self.GAME_X + PW // 2, self.LABEL_Y, side["label"], 46, (255, 255, 255), maxw=1200)
         bars = self.spec["bars"]
         cur = side.get("gen", -1)
         dr.text((self.BAR_X0, self.BAR_Y0 - 44), "Fitness of each generation's fly", font=font(20, True), fill=P.TXT)
-        dr.rectangle([self.BAR_X1 - 300, self.BAR_Y0 - 38, self.BAR_X1 - 284, self.BAR_Y0 - 24], fill=GOLD)
-        dr.text((self.BAR_X1 - 276, self.BAR_Y0 - 44), "best", font=font(18), fill=P.TXT)
-        dr.rectangle([self.BAR_X1 - 200, self.BAR_Y0 - 38, self.BAR_X1 - 184, self.BAR_Y0 - 24], fill=GREY)
-        dr.text((self.BAR_X1 - 176, self.BAR_Y0 - 44), "average", font=font(18), fill=P.TXT)
+        dr.rectangle([self.BAR_X1 - 200, self.BAR_Y0 - 38, self.BAR_X1 - 184, self.BAR_Y0 - 24], fill=GOLD)
+        dr.text((self.BAR_X1 - 176, self.BAR_Y0 - 44), "best", font=font(18), fill=P.TXT)
+        dr.rectangle([self.BAR_X1 - 120, self.BAR_Y0 - 38, self.BAR_X1 - 104, self.BAR_Y0 - 24], fill=GREY)
+        dr.text((self.BAR_X1 - 96, self.BAR_Y0 - 44), "average", font=font(18), fill=P.TXT)
         top = max(1e-9, *(b["best"] for b in bars), *(b["mean"] for b in bars))
         slot = min((self.BAR_X1 - self.BAR_X0) / len(bars), 90)                   # few generations: bars stay close, centred
         x0 = (self.BAR_X0 + self.BAR_X1) / 2 - slot * len(bars) / 2
@@ -350,7 +354,7 @@ class MontageExport:
                 dr.text((cx, self.BAR_Y1 + 6), str(b["gen"]), font=font(16, on), fill=(255, 255, 255) if on else P.DIM, anchor="ma")
         row = next((b for b in bars if b["gen"] == cur), None)
         if row:
-            dr.text((self.BAR_X0 + 420, self.BAR_Y0 - 44), f"Generation {cur}:  best {row['best']:.2f}  ·  average {row['mean']:.2f}",
+            dr.text((self.BAR_X0 + 380, self.BAR_Y0 - 44), f"gen {cur}:  best {row['best']:.2f} · average {row['mean']:.2f}",
                     font=font(20), fill=(255, 255, 255))
         return np.asarray(pil).copy()
 
@@ -362,6 +366,7 @@ class MontageExport:
             if k not in want_clips:
                 continue
             lane, base = Lane(side), self._base(side)
+            panel = BrainPanel(_brain(side, lane.run, self.steps)) if s["show_brain"] else None
             stop = self.steps // 2 if picks is not None else self.steps
             for i in range(stop + 1 if picks is not None else stop):
                 if not lane.advance():
@@ -372,6 +377,8 @@ class MontageExport:
                     continue
                 fd = lane.fd
                 out = base.copy()
+                if panel:
+                    out[:, :LEFT_W] = panel.draw(fd.rates, fd.frame)
                 out[self.GAME_Y:self.GAME_Y + PH, self.GAME_X:self.GAME_X + PW] = game_panel(fd.game, fd.overlay, fd.scroll_x, s["show_senses"], SCALE)
                 if lane.ended:
                     _caption(out[self.CAP_Y:self.CAP_Y + 48, self.GAME_X - 40:self.GAME_X + PW + 40], PW // 2 + 40, 2, lane.caption, lane.run.outcome == "flag")

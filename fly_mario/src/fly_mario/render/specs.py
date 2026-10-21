@@ -156,7 +156,7 @@ def side_by_side_spec(a: dict, b: dict, label_a: str = "", label_b: str = "", sh
 
 
 def montage_spec(evo_id: str, gens: list | None = None, clip_seconds: float = 6.0, speed: int = 2,
-                 include_start: bool = False, show_senses: bool = True, root=None) -> dict:
+                 include_start: bool = False, show_senses: bool = True, show_brain: bool = False, root=None) -> dict:
     folder = _runs(root) / evo_id
     prog = _json(folder / "progress.json")
     if not prog or not _json(folder / "job.json"):
@@ -175,7 +175,7 @@ def montage_spec(evo_id: str, gens: list | None = None, clip_seconds: float = 6.
         raise ValueError("a clip must be at least one second")
     ids = ([-1] if include_start and any(r["gen"] == -1 for r in prog["rows"]) else []) + chosen
     return {"export": "montage", "evo": evo_id, "speed": speed, "clip_seconds": float(clip_seconds),
-            "show_senses": bool(show_senses), "show_brain": False,
+            "show_senses": bool(show_senses), "show_brain": bool(show_brain),
             "sides": [generation_side(evo_id, g, frames, root) for g in ids],
             "bars": [{"gen": r["gen"], "best": float(r["best"]), "mean": float(r["mean"])} for r in rows]}
 

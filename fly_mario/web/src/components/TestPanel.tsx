@@ -103,7 +103,7 @@ function PairVideo({ jobId, pair, onClose }: { jobId: string; pair: [Pick, Pick]
         a: { job_id: jobId, start: pair[0].start, dials: pair[0].dials as 'original' | 'tuned' },
         b: { job_id: jobId, start: pair[1].start, dials: pair[1].dials as 'original' | 'tuned' } })}>
       <div className="toolrow">
-        <label className="check"><input type="checkbox" checked={brain} onChange={(e) => setBrain(e.target.checked)} />Small brain under each game</label>
+        <label className="check"><input type="checkbox" checked={brain} onChange={(e) => setBrain(e.target.checked)} />Show brain (small, under each game)</label>
         <div className="speeds" role="group" aria-label="video speed">
           {[1, 2].map((v) => <button key={v} className={`chip ${speed === v ? 'on' : ''}`} aria-pressed={speed === v} onClick={() => setSpeed(v)}>{v}×</button>)}
         </div>
