@@ -13,10 +13,6 @@ def old_code_present() -> bool:
     return any((p / "flyrun" / "__init__.py").exists() for p in Path(__file__).resolve().parents)
 
 
-def pytest_configure(config):
-    config.addinivalue_line("markers", "parity_old: compares against the old repo's code; skipped when that code is absent")
-
-
 def pytest_collection_modifyitems(config, items):
     if old_code_present():
         return
