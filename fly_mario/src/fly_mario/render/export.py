@@ -358,6 +358,17 @@ class MontageExport:
                     font=font(20), fill=(255, 255, 255))
         return np.asarray(pil).copy()
 
+    def _panel(self, run) -> BrainPanel:
+        """One brain panel for every clip, brightness scaled to the maximum over ALL the clips (as the run video scales to
+        its whole run), so a bright neuron means the same activity in every generation."""
+        if getattr(self, "_shared", None) is None:
+            rmax: dict = {}
+            for side in self.spec["sides"]:
+                for g, v in source.rate_max_of(source.run_from_side(side), self.steps).items():
+                    rmax[g] = max(rmax.get(g, 0.0), v)
+            self._shared = BrainPanel(source.brain_data(run, rate_max=rmax))
+        return self._shared
+
     def frames(self, picks: list | None = None):
         s = self.spec
         sides = s["sides"]
@@ -366,7 +377,7 @@ class MontageExport:
             if k not in want_clips:
                 continue
             lane, base = Lane(side), self._base(side)
-            panel = BrainPanel(_brain(side, lane.run, self.steps)) if s["show_brain"] else None
+            panel = self._panel(lane.run) if s["show_brain"] else None
             stop = self.steps // 2 if picks is not None else self.steps
             for i in range(stop + 1 if picks is not None else stop):
                 if not lane.advance():
