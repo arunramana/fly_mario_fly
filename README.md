@@ -1,109 +1,30 @@
 # fly_mario
-
-Super Mario Bros (NES) played by a real fruit-fly brain. The circuits come
-from the Janelia FlyEM MaleCNS v1.0 connectome. A Goomba approaches, the
-looming detectors (LC4/LPLC2) fire, the Giant Fiber (DNp01) commits, the jump
-muscle (TTMn) contracts, and Mario jumps. Nothing is trained: the weight
-matrices are the connectome's, and every hand-set scalar is logged in
-[`docs/SCALARS.md`](docs/SCALARS.md).
-
-The project rules and invariants are in [`CLAUDE.md`](CLAUDE.md). Read
-[`docs/SPEC_jump.md`](docs/SPEC_jump.md) before changing circuit code.
-
-## Layout
-
-```
-fly/        the fly: connectome loading, circuits, network/integrator,
-            sensing, internal state, plasticity. Never imports mario/.
-mario/      the game: emulator, RAM addresses, entity records, actions.
-            Never imports fly/.
-bridge/     the only place both meet: perception (RAM -> stimuli),
-            motor (command -> button), and the policies.
-sim/        Episode loop, protocols, fitness, telemetry, reports.
-config/     per-component params (the 49 scalars) and ProjectConfig.
-render/     the live-brain panel and video output.
-scripts/    diagnostics, calibration sweeps, the shuffled-connectome
-            control, and benchmarks.
-projects/   run artifacts per experiment line (videos, telemetry CSVs).
-logs/       one log file per run (gitignored; created on first run).
-tests/      unit tests plus the golden-telemetry characterisation tests.
-docs/       specs, the run log, audits.
-```
-
-Every `.py` file opens with a short `# What this file does, in plain
-English:` comment, so you can skim a file's purpose before reading its code.
+Attach MaleCNS fly senses to Super Mario objects, watch a run, rewind and retry, so the fly can win 1-2.
+Evolution runs in the background. Small on purpose: hard boundaries, one plug-in per file.
+Rules and lanes: see CLAUDE.md.
 
 ## Setup
-
-Windows, Python 3.12. The pins in `requirements.txt` are load-bearing
-(nes-py needs `numpy<2` and `gym==0.23.1`; the reasons are in that file).
+Python 3.12. Everything below runs from the repo root (the folder holding `pyproject.toml`); nothing outside it is needed except `$FLY_MARIO_DATA`.
 
 ```
 python -m venv .venv
-.venv/Scripts/python.exe -m pip install -r requirements.txt
+.venv\Scripts\activate                 # POSIX: source .venv/bin/activate
+pip install -e ".[test]"
+set FLY_MARIO_DATA=D:\fly_mario_data   # POSIX: export FLY_MARIO_DATA=~/fly_mario_data; any empty folder outside the repo
+python -m fly_mario.fly build-brains   # downloads MaleCNS v1.0 (about 1.2 GB), builds and caches every brain
+python -m pytest tests -q
 ```
 
-The connectome data is not in this repo. It lives one level up, in
-`../data/malecns_v1.0/`, and is read through `../mcns.py` (both belong to
-the parent `fly_brain/` workspace).
+- numpy must stay `<1.27` (nes-py breaks under numpy 2), which is why `pyarrow` and `pandas` are capped in `pyproject.toml`.
+- `build-brains` fetches three public files (CC-BY 4.0) from Janelia's `flyem-male-cns` bucket into `$FLY_MARIO_DATA/malecns_v1.0/`
+  (resumable if interrupted), then builds the brains into `$FLY_MARIO_DATA/brains/`. Measured on a home connection:
+  about 5.5 minutes, 1.2 GB on disk. Without `FLY_MARIO_DATA` the fly tests are skipped.
+- The tests compare the code to answers recorded once from the old code (`tests/data/golden/`, checked by `tests/golden/`).
+  `tools/freeze_golden.py` records how those fixtures were made; it needs the old code (git tag `pre-cleanup`) and cannot run on this tree.
 
-## Running
-
-Full system (jump, steering, terrain, mushroom body, habituation, MDN):
-
+## Run the tool
 ```
-.venv/Scripts/python.exe -c "import run_steering; run_steering.main(out_mp4='projects/<name>/runs/NNN_slug.mp4')"
+python -m fly_mario.api                # the API, http://127.0.0.1:8000 (needs FLY_MARIO_DATA set)
+cd web && npm ci && npm run dev        # the web app, http://localhost:5173  (first time: npm ci)
+python tools/e2e_stack.py              # end-to-end check on its own ports and a temp flies folder (web/e2e/*.mjs)
 ```
-
-Or from a project config (for example `projects/legacy/config.json`):
-`sim.project_runner.run_from_config(config, "NNN_slug.mp4")`.
-
-The original jump-only demo:
-
-```
-.venv/Scripts/python.exe run_mario.py
-```
-
-Each run writes a log file to `logs/` (for example
-`logs/2026-09-23_165928_028_my_run.log`). The screen shows only the run
-summary and the files written; the log file also has the circuit build
-reports and every per-frame event (jumps, climbs, `?`-block hits). This is
-set up by `config/logging_setup.py`. A tool that imports this code can call
-`setup_logging("my_tool")` itself first, to choose the file name or levels.
-The scripts in `scripts/` still print to the screen.
-
-Diagnostics and sweeps run from the repo root as modules:
-
-```
-.venv/Scripts/python.exe -m scripts.diag4 --sweep
-.venv/Scripts/python.exe -m scripts.compare_controllers
-```
-
-## Tests
-
-```
-.venv/Scripts/python.exe -m pytest tests/
-```
-
-`tests/test_golden.py` replays three frozen scenarios and requires their
-telemetry CSVs to be byte-identical. That is the project's specification of
-correct behaviour: if a golden fails, diff it before re-baselining.
-
-## Docs
-
-- [`docs/RUNS.md`](docs/RUNS.md): the running log of every run, append-only.
-- [`docs/SPEC_jump.md`](docs/SPEC_jump.md) and the other `docs/SPEC_*.md`
-  files: the design spec for each circuit.
-- [`docs/SCALARS.md`](docs/SCALARS.md): every hand-set scalar, generated
-  from `config/params.py`.
-- [`docs/REFACTOR_PLAN.md`](docs/REFACTOR_PLAN.md): the package split and
-  the SOLID decisions.
-- [`docs/CODE_AUDIT.md`](docs/CODE_AUDIT.md): open code-audit findings (structure, hard-coded values).
-- [`docs/CHANGES_2026-09.md`](docs/CHANGES_2026-09.md): what the September
-  2026 cleanup changed, how to call the code from a tool, and what's still open.
-- [`docs/MECHANISMS.md`](docs/MECHANISMS.md),
-  [`docs/ENTITIES.md`](docs/ENTITIES.md),
-  [`docs/TRACE_BIOLOGY.md`](docs/TRACE_BIOLOGY.md): mechanism notes, the
-  entity model, and the eligibility-trace biology.
-- [`docs/JUMP_WRITEUP.md`](docs/JUMP_WRITEUP.md): the original sprint-1 jump
-  writeup (measurements, diagnostics, controller comparison).

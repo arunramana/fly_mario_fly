@@ -1,8 +1,0 @@
-# On top of the pinned root requirements.txt. Installed and verified in
-# P0 (tool/PLAN.md): numpy stays at the root pin (1.26.4, <2) after
-# installing these, and tests/golden/ (3/3) stays byte-identical.
-PySide6==6.11.2
-pyqtgraph==0.14.0
-pytest-qt==4.5.0
-pytest-timeout==2.4.0
-qtawesome==1.4.2  # Run tab redesign: icons for the transport bar/overlay toggles

@@ -1,35 +1,27 @@
-# What this file does, in plain English:
-# Tells git which files never to save: the virtual environment, Python's
-# compiled caches, videos and images (re-renderable from the saved telemetry
-# CSVs), log files, and the large connectome data files.
+# Never saved: environments and caches, build output, run output (re-renderable), and the connectome data (lives
+# outside the repo at $FLY_MARIO_DATA).
 .venv/
 __pycache__/
 *.pyc
+*.egg-info/
+.pytest_cache/
+node_modules/
+dist/
+# Profiler output
+prof
+*.prof
+*.pstats
+# Videos and images are re-rendered from saved data; the few that are documentation were force-added (web/design/).
 *.mp4
 *.png
-# Exception: tool/README.md's own screenshots are documentation, not a run's
-# re-renderable output -- these are the only PNGs meant to be committed.
-!tool/docs/screenshots/*.png
-!tool/docs/screenshots/redesign/*.png
-# Exception: tool/SPEC_ui_retro.md section 9's card images -- the
-# placeholder ships with the feature (generated once, not per-run), and
-# user-supplied character/entity card images are real assets, not a run's
-# re-renderable output. tool/assets/generated/ (section 8's circuit brain-
-# maps) stays ignored -- those ARE regenerable from the connectome data.
-!tool/assets/placeholder.png
-!tool/assets/characters/*.png
-!tool/assets/entities/*.png
-# Downloaded SMB1 sprites (Super Mario Wiki): Nintendo art, kept local only.
-tool/assets/sprites/
-tool/assets/derived/
 *.parquet
 *.feather
-.pytest_cache/
-# Outputs live in projects/<name>/runs/; stray top-level runs/ from old defaults.
+# Throwaway local state
 /runs/
-# Per-run log files (config/logging_setup.py); telemetry CSVs are the record.
 /logs/
-
-# Throwaway audit scripts/results (docs/AUDIT_biological_validity.md)
-audit/
 .claude/worktrees/
+# Local tooling that stays on this machine
+/.agents/
+/.claude/skills/
+/claude_setup/
+/skills-lock.json
