@@ -1,6 +1,6 @@
-"""Run the web e2e scripts against a private stack: python tools/e2e_stack.py [flow.mjs video.mjs]  (from the repo root).
+"""Run the web e2e scripts against a private stack: python tools/e2e_stack.py [e2e/flow.mjs]  (from the repo root).
 
-The API gets a temp flies folder (FLY_MARIO_FLIES_DIR, a copy of the preset flies), so "Use this fly" never writes into
+The API gets a temp flies folder (FLY_MARIO_FLIES_DIR, a copy of the preset flies), so "Save as fly" never writes into
 configs/flies/. It starts its own API (8010) and vite (5180), stops exactly those two process trees, and removes exactly
 the temp folder it made; nothing else is touched.
 """
@@ -49,7 +49,7 @@ def main(scripts):
         wait_for(f"http://localhost:{WEB_PORT}/")
         (WEB / "screenshots").mkdir(exist_ok=True)
         code = 0
-        for s in scripts or ["e2e/flow.mjs", "e2e/video.mjs"]:
+        for s in scripts or ["e2e/flow.mjs"]:
             code |= subprocess.run(["node", s], cwd=WEB, env={**os.environ, "BASE": f"http://localhost:{WEB_PORT}"}).returncode
         return code
     finally:

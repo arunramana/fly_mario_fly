@@ -69,7 +69,7 @@ def change_words(spec, before: float, after: float) -> tuple:
 
 def knob_changes(start: FlyConfig, best: FlyConfig, keys: list) -> list:
     """What evolution changed, one row per knob it was free to move. Words only."""
-    specs = K.specs_by_key()
+    specs, owners = K.specs_by_key(), K.owners_by_key()
     was, now = runner.resolve_knobs(start), runner.resolve_knobs(best)
     out = []
     for key in keys:
@@ -77,7 +77,7 @@ def knob_changes(start: FlyConfig, best: FlyConfig, keys: list) -> list:
             continue
         words, direction = change_words(specs[key], was[key], now[key])
         s = specs[key]
-        out.append(S.KnobChange(key=key, label=s.label, lo_label=s.lo_label, hi_label=s.hi_label, words=words, direction=direction))
+        out.append(S.KnobChange(key=key, label=s.label, owner=owners.get(key, ""), lo_label=s.lo_label, hi_label=s.hi_label, words=words, direction=direction))
     return out
 
 

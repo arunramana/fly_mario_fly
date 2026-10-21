@@ -1,5 +1,5 @@
-# Super Mario Bros (NES) facts shared by every level. Source: the old flyrun code
-# (flyrun/env.py, level.py, knobs.py, senses_v2.py), each value measured or read off RAM there.
+# Super Mario Bros (NES) facts shared by every level. Source: the old code
+# (env.py, level.py, knobs.py, senses_v2.py there), each value measured or read off RAM there.
 # Per-level files in levels/ extend this one: lists are appended, maps are merged.
 
 ram:                       # CPU RAM addresses (hex)
@@ -36,7 +36,7 @@ mario:
   power_names: [small, big, fire]
   jump_reach: 69           # px: a pit this wide or wider is flagged too_wide. Measured on 1-1 with the enemies off: a walking jump
                            # (right + A) travels 81 px in the air, minus his 12 px body = 69; a running jump (right + B + A) 144 - 12 = 132
-  jump_apex: 68            # px a full walking jump rises above take-off (measured, flyrun S2c)
+  jump_apex: 68            # px a full walking jump rises above take-off (measured, old S2c)
 
 tiles:                     # metatile ids
   empty: 0

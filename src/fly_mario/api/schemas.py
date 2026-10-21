@@ -357,6 +357,7 @@ class KnobChange(BaseModel):
     """What evolution did to one knob, in words ("a bit toward strong"); never a number."""
     key: str
     label: str
+    owner: str = ""                           # the sense or action the knob belongs to ("Looming", "Jump")
     lo_label: str
     hi_label: str
     words: str
@@ -405,7 +406,7 @@ class JobDetail(JobSummary):
     dev_best: Optional[DevSetResult] = None   # evolve: the dev set on the best fly ...
     dev_start: Optional[DevSetResult] = None  # ... and on the fly it started from
     best_generation: Optional[int] = None
-    saved_as: Optional[str] = None            # the fly yaml made by "Use this fly"
+    saved_as: Optional[str] = None            # the fly yaml made by "Save as fly"
 
 
 class UseFly(BaseModel):
@@ -417,33 +418,16 @@ class JobCreated(BaseModel):
 
 
 # ---- video exports (clips for editing; each is a background job in $FLY_MARIO_DATA/videos/<id>/) ---------------------
-VideoExport = Literal["run", "side_by_side", "montage"]
-
-
-class VideoSideRef(BaseModel):
-    """One run of a side-by-side: a saved run, or one start of a finished test at one dials setting."""
-    run_id: str = ""                          # a saved run ...
-    job_id: str = ""                          # ... or a finished test job, with its start number (1-based) and dials
-    start: int = Field(default=1, ge=1)
-    dials: Dials = "tuned"
-    label: str = ""                           # "" = "Original dials" / "Tuned dials", or the fly's name
+VideoExport = Literal["run", "montage"]
 
 
 class VideoRequest(BaseModel):
-    """Asks for the preview stills of an export; the mp4 is rendered later by POST /videos/{id}/render."""
+    """Asks for an export: it renders in the background and the mp4 is ready when the status says finished."""
     export: VideoExport
     show_senses: bool = True
-    show_brain: Optional[bool] = None         # run: on by default; side by side: off by default (a small brain under each game)
-    speed: Optional[int] = Field(default=None, ge=1, le=2)    # 1x or 2x (run and side by side 1x, montage 2x)
+    show_brain: bool = True
     run_id: str = ""                          # run: the saved run
-    frame_from: Optional[int] = None          # run: optional frame range (frame numbers as the player shows them)
-    frame_to: Optional[int] = None
-    a: Optional[VideoSideRef] = None          # side by side: the two runs, from the same start
-    b: Optional[VideoSideRef] = None
     job_id: str = ""                          # montage: the evolution
-    generations: list[int] = []               # montage: which generations (none = all)
-    clip_seconds: float = Field(default=6.0, ge=1, le=30)
-    include_start: bool = False               # montage: a clip of the fly the evolution started from first
 
 
 class VideoCheck(BaseModel):
@@ -455,7 +439,7 @@ class VideoCheck(BaseModel):
 
 
 class VideoProgress(BaseModel):
-    phase: str = ""                           # stills | rendering
+    phase: str = ""                           # rendering
     done: int = 0
     total: int = 0
     eta_s: Optional[int] = None
@@ -465,12 +449,11 @@ class VideoProgress(BaseModel):
 class VideoSummary(BaseModel):
     id: str
     export: VideoExport
+    of: str                                   # the run id (run) or the evolution's job id (montage) it shows
     title: str
     status: JobStatus
-    stage: Literal["stills", "video"]         # which stage the status is about; stills + finished = "ready to render"
     created: float
     progress: VideoProgress = VideoProgress()
-    stills: list[str] = []                    # URLs of the preview PNGs, once made
     video: Optional[str] = None               # URL of the mp4, once rendered
     error: str = ""
     duration_s: Optional[float] = None

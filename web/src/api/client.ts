@@ -28,15 +28,12 @@ export interface Api {
   getJobs(): Promise<JobSummary[]>
   getJob(id: string): Promise<JobDetail>
   cancelJob(id: string): Promise<JobDetail>
-  /** The best fly of one generation of an evolution (-1 = the fly it started from), to start a run with. */
-  getGenerationFly(id: string, gen: number): Promise<Fly>
-  /** "Use this fly": saves the evolved fly as a new fly; returns it. */
+  /** "Save as fly": saves the evolution's best fly under a name; returns it. */
   useEvolvedFly(id: string, name?: string): Promise<Fly>
-  /** Video exports (clips for editing): ask for the preview stills first, render the mp4 only when the user says so. */
+  /** Video exports: asking renders the mp4 in the background; poll until its status is finished. */
   startVideo(req: VideoRequest): Promise<VideoSummary>
   getVideo(id: string): Promise<VideoSummary>
   getVideos(): Promise<VideoSummary[]>
-  renderVideo(id: string): Promise<VideoSummary>
   cancelVideo(id: string): Promise<VideoSummary>
 }
 
@@ -69,7 +66,7 @@ const enc = encodeURIComponent
 /** The level's opening screen (PNG), made by the server with the emulator the first time it is asked for. */
 export const thumbnailUrl = (levelId: string): string => `${BASE}/levels/${enc(levelId)}/thumbnail.png`
 
-/** A file of a video export (a still, or the mp4 with `download`) from the path the API gave. */
+/** The mp4 of a video export from the path the API gave; with `download` the server sends it as an attachment. */
 export const videoUrl = (path: string, download = false): string =>
   path.startsWith('data:') ? path : `${BASE}${path}${download ? '?download=true' : ''}`
 
@@ -126,12 +123,10 @@ const httpApi: Api = {
   getJobs: () => call('GET', '/jobs'),
   getJob: (id) => call('GET', `/jobs/${enc(id)}`),
   cancelJob: (id) => call('POST', `/jobs/${enc(id)}/cancel`),
-  getGenerationFly: (id, gen) => call('GET', `/jobs/${enc(id)}/generations/${gen}/fly`),
   useEvolvedFly: (id, name = '') => call('POST', `/jobs/${enc(id)}/use`, { name }),
   startVideo: (req) => call('POST', '/videos', req),
   getVideo: (id) => call('GET', `/videos/${enc(id)}`),
   getVideos: () => call('GET', '/videos'),
-  renderVideo: (id) => call('POST', `/videos/${enc(id)}/render`),
   cancelVideo: (id) => call('POST', `/videos/${enc(id)}/cancel`),
 }
 

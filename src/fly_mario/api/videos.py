@@ -1,9 +1,8 @@
 """Video exports as the API sees them: one folder per export under $FLY_MARIO_DATA/videos/, one process per stage.
 
 Same shape as the evolution jobs (api/jobs.py): the API writes job.json, starts `python -m fly_mario.render job <folder>`,
-reads progress.json / stills.json / info.json as the process writes them, and stops the process tree to cancel.
-An export goes through two stages in the same folder: "stills" (2-3 PNGs, made as soon as the export is requested)
-and "video" (the mp4, only after the user asks for it with `render`). Nothing here waits for a process.
+reads progress.json / info.json as the process writes them, and stops the process tree to cancel.
+An export is one process that renders the mp4 as soon as it is requested. Nothing here waits for a process.
 """
 from __future__ import annotations
 
@@ -30,52 +29,25 @@ class Videos:
         self.procs: dict[str, subprocess.Popen] = {}
 
     # ---- asking for an export -----------------------------------------------------------------------------------
-    def _side(self, ref: S.VideoSideRef) -> dict:
-        if ref.run_id:
-            return Sp.saved_side(ref.run_id, self.runs, ref.label)
-        if ref.job_id:
-            return Sp.test_side(ref.job_id, ref.start, ref.dials, self.runs, ref.label)
-        raise ValueError("each side needs a run_id or a test job_id")
-
     def spec(self, req: S.VideoRequest) -> dict:
         """The export spec for a request. Raises ValueError (a 422) for anything that cannot be made."""
         if req.export == "run":
             if not req.run_id:
                 raise ValueError("a run video needs a run_id")
-            return Sp.run_spec(req.run_id, req.show_senses, True if req.show_brain is None else req.show_brain,
-                               req.speed or 1, req.frame_from, req.frame_to, self.runs)
-        if req.export == "side_by_side":
-            if req.a is None or req.b is None:
-                raise ValueError("a side-by-side needs two runs (a and b)")
-            return Sp.side_by_side_spec(self._side(req.a), self._side(req.b), req.a.label, req.b.label,
-                                        bool(req.show_brain), req.show_senses, req.speed or 1)
+            return Sp.run_spec(req.run_id, req.show_senses, req.show_brain, 1, None, None, self.runs)
         if not req.job_id:
             raise ValueError("a montage needs the evolution's job_id")
-        return Sp.montage_spec(req.job_id, req.generations or None, req.clip_seconds, req.speed or 2, req.include_start,
-                               req.show_senses, bool(req.show_brain), self.runs)
+        return Sp.montage_spec(req.job_id, 6.0, 2, req.show_senses, req.show_brain, self.runs)
 
     def create(self, req: S.VideoRequest) -> str:
         spec = self.spec(req)
         folder = X.new_job_folder(spec, Sp.title(spec), self.dir)
-        self._start(folder, "stills")
+        self._start(folder)
         return folder.name
 
-    def render(self, vid: str) -> bool:
-        """Start the mp4 stage of an export whose stills have been made. False if there is no such export."""
-        folder = self._folder(vid)
-        job = self._job(folder) if folder else None
-        if job is None:
-            return False
-        if job["status"] in ("queued", "running"):
-            raise RuntimeError("this export is still working")
-        if job["stage"] == "video" and job["status"] == "finished":
-            return True                                              # already rendered
-        self._start(folder, "video")
-        return True
-
-    def _start(self, folder: Path, stage: str) -> None:
+    def _start(self, folder: Path) -> None:
         job = _read(folder / "job.json")
-        _write(folder / "job.json", {**job, "stage": stage, "status": "queued", "error": "", "pid": None})
+        _write(folder / "job.json", {**job, "status": "queued", "error": "", "pid": None})
         (folder / "progress.json").unlink(missing_ok=True)
         log = open(folder / "log.txt", "ab")
         kw = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
@@ -126,14 +98,12 @@ class Videos:
     def _summary(self, job: dict, folder: Path) -> S.VideoSummary:
         prog = _read(folder / "progress.json") or {}
         vid = job["id"]
-        stills = (_read(folder / "stills.json") or {}).get("stills", [])
-        info = _read(folder / "info.json") if job["stage"] == "video" and job["status"] == "finished" else None
+        info = _read(folder / "info.json") if job["status"] == "finished" else None
         have_video = info is not None and (folder / info["file"]).exists()
         return S.VideoSummary(
-            id=vid, export=job["export"], title=job["title"], status=job["status"], stage=job["stage"], created=job["created"],
+            id=vid, export=job["export"], of=job.get("of", ""), title=job["title"], status=job["status"], created=job["created"],
             progress=S.VideoProgress(phase=prog.get("phase", ""), done=int(prog.get("done", 0)), total=int(prog.get("total", 0)),
                                      eta_s=prog.get("eta_s"), elapsed_s=int(prog.get("elapsed_s", 0))),
-            stills=[f"/videos/{vid}/stills/{i + 1}.png" for i in range(len(stills))],
             video=f"/videos/{vid}/video.mp4" if have_video else None, error=job.get("error", ""),
             duration_s=info["duration_s"] if info else None, size_mb=round(info["bytes"] / 1e6, 1) if info else None,
             render_s=info["render_s"] if info else None,
@@ -144,7 +114,7 @@ class Videos:
         out = []
         for p in self.dir.glob("*/job.json") if self.dir.exists() else ():
             job = self._job(p.parent)
-            if job:
+            if job and job.get("export") in ("run", "montage"):         # exports of removed kinds (side by side) are not listed
                 out.append(self._summary(job, p.parent))
         return sorted(out, key=lambda s: s.created, reverse=True)
 
@@ -152,11 +122,6 @@ class Videos:
         folder = self._folder(vid)
         job = self._job(folder) if folder else None
         return self._summary(job, folder) if job else None
-
-    def still_path(self, vid: str, n: int) -> Optional[Path]:
-        folder = self._folder(vid)
-        p = folder / "stills" / f"still_{n}.png" if folder else None
-        return p if p and p.exists() else None
 
     def video_path(self, vid: str) -> Optional[Path]:
         folder = self._folder(vid)

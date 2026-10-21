@@ -374,7 +374,7 @@ export interface paths {
         put?: never;
         /**
          * Start Video
-         * @description Ask for an export: its 2-3 preview stills are made in the background; render the mp4 with /render.
+         * @description Render an export in the background; poll GET /videos/{id} until it is finished, then fetch its video.
          */
         post: operations["start_video_videos_post"];
         delete?: never;
@@ -417,43 +417,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/videos/{video_id}/render": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Render Video
-         * @description The user looked at the stills and wants the mp4.
-         */
-        post: operations["render_video_videos__video_id__render_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/videos/{video_id}/stills/{n}.png": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Video Still */
-        get: operations["video_still_videos__video_id__stills__n__png_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/videos/{video_id}/video.mp4": {
         parameters: {
             query?: never;
@@ -461,7 +424,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Video File */
+        /**
+         * Video File
+         * @description The mp4. Plain, it plays in the page; with ?download=true the browser saves it as <id>.mp4.
+         */
         get: operations["video_file_videos__video_id__video_mp4_get"];
         put?: never;
         post?: never;
@@ -1017,6 +983,11 @@ export interface components {
             label: string;
             /** Lo Label */
             lo_label: string;
+            /**
+             * Owner
+             * @default
+             */
+            owner: string;
             /** Words */
             words: string;
         };
@@ -1593,35 +1564,14 @@ export interface components {
         };
         /**
          * VideoRequest
-         * @description Asks for the preview stills of an export; the mp4 is rendered later by POST /videos/{id}/render.
+         * @description Asks for an export: it renders in the background and the mp4 is ready when the status says finished.
          */
         VideoRequest: {
-            a?: components["schemas"]["VideoSideRef"] | null;
-            b?: components["schemas"]["VideoSideRef"] | null;
-            /**
-             * Clip Seconds
-             * @default 6
-             */
-            clip_seconds: number;
             /**
              * Export
              * @enum {string}
              */
-            export: "run" | "side_by_side" | "montage";
-            /** Frame From */
-            frame_from?: number | null;
-            /** Frame To */
-            frame_to?: number | null;
-            /**
-             * Generations
-             * @default []
-             */
-            generations: number[];
-            /**
-             * Include Start
-             * @default false
-             */
-            include_start: boolean;
+            export: "run" | "montage";
             /**
              * Job Id
              * @default
@@ -1632,47 +1582,16 @@ export interface components {
              * @default
              */
             run_id: string;
-            /** Show Brain */
-            show_brain?: boolean | null;
+            /**
+             * Show Brain
+             * @default true
+             */
+            show_brain: boolean;
             /**
              * Show Senses
              * @default true
              */
             show_senses: boolean;
-            /** Speed */
-            speed?: number | null;
-        };
-        /**
-         * VideoSideRef
-         * @description One run of a side-by-side: a saved run, or one start of a finished test at one dials setting.
-         */
-        VideoSideRef: {
-            /**
-             * Dials
-             * @default tuned
-             * @enum {string}
-             */
-            dials: "tuned" | "original";
-            /**
-             * Job Id
-             * @default
-             */
-            job_id: string;
-            /**
-             * Label
-             * @default
-             */
-            label: string;
-            /**
-             * Run Id
-             * @default
-             */
-            run_id: string;
-            /**
-             * Start
-             * @default 1
-             */
-            start: number;
         };
         /** VideoSummary */
         VideoSummary: {
@@ -1694,9 +1613,11 @@ export interface components {
              * Export
              * @enum {string}
              */
-            export: "run" | "side_by_side" | "montage";
+            export: "run" | "montage";
             /** Id */
             id: string;
+            /** Of */
+            of: string;
             /**
              * @default {
              *       "done": 0,
@@ -1711,20 +1632,10 @@ export interface components {
             /** Size Mb */
             size_mb?: number | null;
             /**
-             * Stage
-             * @enum {string}
-             */
-            stage: "stills" | "video";
-            /**
              * Status
              * @enum {string}
              */
             status: "queued" | "running" | "finished" | "failed" | "cancelled";
-            /**
-             * Stills
-             * @default []
-             */
-            stills: string[];
             /** Title */
             title: string;
             /** Video */
@@ -2608,70 +2519,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VideoSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    render_video_videos__video_id__render_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                video_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VideoSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    video_still_videos__video_id__stills__n__png_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                video_id: string;
-                n: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                    "image/png": unknown;
                 };
             };
             /** @description Validation Error */

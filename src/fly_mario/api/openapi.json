@@ -1033,6 +1033,11 @@
             "title": "Lo Label",
             "type": "string"
           },
+          "owner": {
+            "default": "",
+            "title": "Owner",
+            "type": "string"
+          },
           "words": {
             "title": "Words",
             "type": "string"
@@ -2397,78 +2402,15 @@
         "type": "object"
       },
       "VideoRequest": {
-        "description": "Asks for the preview stills of an export; the mp4 is rendered later by POST /videos/{id}/render.",
+        "description": "Asks for an export: it renders in the background and the mp4 is ready when the status says finished.",
         "properties": {
-          "a": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/VideoSideRef"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "b": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/VideoSideRef"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "clip_seconds": {
-            "default": 6.0,
-            "maximum": 30.0,
-            "minimum": 1.0,
-            "title": "Clip Seconds",
-            "type": "number"
-          },
           "export": {
             "enum": [
               "run",
-              "side_by_side",
               "montage"
             ],
             "title": "Export",
             "type": "string"
-          },
-          "frame_from": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Frame From"
-          },
-          "frame_to": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Frame To"
-          },
-          "generations": {
-            "default": [],
-            "items": {
-              "type": "integer"
-            },
-            "title": "Generations",
-            "type": "array"
-          },
-          "include_start": {
-            "default": false,
-            "title": "Include Start",
-            "type": "boolean"
           },
           "job_id": {
             "default": "",
@@ -2481,76 +2423,20 @@
             "type": "string"
           },
           "show_brain": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Show Brain"
+            "default": true,
+            "title": "Show Brain",
+            "type": "boolean"
           },
           "show_senses": {
             "default": true,
             "title": "Show Senses",
             "type": "boolean"
-          },
-          "speed": {
-            "anyOf": [
-              {
-                "maximum": 2.0,
-                "minimum": 1.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Speed"
           }
         },
         "required": [
           "export"
         ],
         "title": "VideoRequest",
-        "type": "object"
-      },
-      "VideoSideRef": {
-        "description": "One run of a side-by-side: a saved run, or one start of a finished test at one dials setting.",
-        "properties": {
-          "dials": {
-            "default": "tuned",
-            "enum": [
-              "tuned",
-              "original"
-            ],
-            "title": "Dials",
-            "type": "string"
-          },
-          "job_id": {
-            "default": "",
-            "title": "Job Id",
-            "type": "string"
-          },
-          "label": {
-            "default": "",
-            "title": "Label",
-            "type": "string"
-          },
-          "run_id": {
-            "default": "",
-            "title": "Run Id",
-            "type": "string"
-          },
-          "start": {
-            "default": 1,
-            "minimum": 1.0,
-            "title": "Start",
-            "type": "integer"
-          }
-        },
-        "title": "VideoSideRef",
         "type": "object"
       },
       "VideoSummary": {
@@ -2586,7 +2472,6 @@
           "export": {
             "enum": [
               "run",
-              "side_by_side",
               "montage"
             ],
             "title": "Export",
@@ -2594,6 +2479,10 @@
           },
           "id": {
             "title": "Id",
+            "type": "string"
+          },
+          "of": {
+            "title": "Of",
             "type": "string"
           },
           "progress": {
@@ -2627,14 +2516,6 @@
             ],
             "title": "Size Mb"
           },
-          "stage": {
-            "enum": [
-              "stills",
-              "video"
-            ],
-            "title": "Stage",
-            "type": "string"
-          },
           "status": {
             "enum": [
               "queued",
@@ -2645,14 +2526,6 @@
             ],
             "title": "Status",
             "type": "string"
-          },
-          "stills": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Stills",
-            "type": "array"
           },
           "title": {
             "title": "Title",
@@ -2673,9 +2546,9 @@
         "required": [
           "id",
           "export",
+          "of",
           "title",
           "status",
-          "stage",
           "created"
         ],
         "title": "VideoSummary",
@@ -3658,7 +3531,7 @@
         "summary": "List Videos"
       },
       "post": {
-        "description": "Ask for an export: its 2-3 preview stills are made in the background; render the mp4 with /render.",
+        "description": "Render an export in the background; poll GET /videos/{id} until it is finished, then fetch its video.",
         "operationId": "start_video_videos_post",
         "requestBody": {
           "content": {
@@ -3773,95 +3646,9 @@
         "summary": "Cancel Video"
       }
     },
-    "/videos/{video_id}/render": {
-      "post": {
-        "description": "The user looked at the stills and wants the mp4.",
-        "operationId": "render_video_videos__video_id__render_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "video_id",
-            "required": true,
-            "schema": {
-              "title": "Video Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VideoSummary"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Render Video"
-      }
-    },
-    "/videos/{video_id}/stills/{n}.png": {
-      "get": {
-        "operationId": "video_still_videos__video_id__stills__n__png_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "video_id",
-            "required": true,
-            "schema": {
-              "title": "Video Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "n",
-            "required": true,
-            "schema": {
-              "title": "N",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              },
-              "image/png": {}
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Video Still"
-      }
-    },
     "/videos/{video_id}/video.mp4": {
       "get": {
+        "description": "The mp4. Plain, it plays in the page; with ?download=true the browser saves it as <id>.mp4.",
         "operationId": "video_file_videos__video_id__video_mp4_get",
         "parameters": [
           {

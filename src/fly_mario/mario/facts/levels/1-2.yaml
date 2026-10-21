@@ -1,4 +1,4 @@
-# World 1-2 (underground). Emulator-tested in flyrun L2b (runs/L2b_tiles.json, L2b_enemies.json).
+# World 1-2 (underground). Emulator-tested in the old code's L2b (runs/L2b_tiles.json, L2b_enemies.json).
 tiles:
   step: [82, 90, 92, 93, 94]       # underground bricks that stand on the floor as wall / step faces
   brick: [82, 90, 92, 93, 94]

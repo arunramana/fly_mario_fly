@@ -2,11 +2,10 @@
 
 A *side* is one run to replay: {fly, scene, options, label, run_id?, from_moment?, expect}. `expect` is what we already
 know about how that run ends (outcome, max_x, frames, and the hash for a saved run), so the replay can be checked.
-An export spec is {"export": "run" | "side_by_side" | "montage", "sides": [...], ...options}.
+An export spec is {"export": "run" | "montage", "sides": [...], ...options}.
 
-Sides come from three places: a saved run folder (`saved_side`), one start of a finished "test this fly" job at a
-given dials setting (`test_side`), and a generation of an evolution job (`generation_side`). Everything is read from
-the job / run folders; nothing is played here.
+Sides come from two places: a saved run folder (`saved_side`) and a generation of an evolution job (`generation_side`).
+Everything is read from the job / run folders; nothing is played here.
 """
 from __future__ import annotations
 
@@ -36,25 +35,6 @@ def _json(path: Path):
         return None
 
 
-def dials_of(fly: dict) -> str:
-    return "original" if (fly.get("provenance") or {}).get("dials") == "original" else "tuned"
-
-
-def with_dials(fly: dict, dials: str) -> dict:
-    """The fly dict with every knob at its hand-set default ("original"), or as it is ("tuned")."""
-    if dials == "tuned":
-        return fly
-    f = fly_from_dict(fly)
-    return fly_to_dict(replace(f, knobs={}, provenance={**f.provenance, "dials": "original"}))
-
-
-def dials_label(fly: dict) -> str:
-    """"Original dials", or "Tuned dials (evolved)" when the fly came out of an evolution, else "Tuned dials"."""
-    if dials_of(fly) == "original":
-        return "Original dials"
-    return "Tuned dials (evolved)" if (fly.get("provenance") or {}).get("evolution") else "Tuned dials"
-
-
 # ---- sides --------------------------------------------------------------------------------------------------------
 def saved_side(run_id: str, root=None, label: str = "") -> dict:
     folder = _runs(root) / run_id
@@ -67,28 +47,6 @@ def saved_side(run_id: str, root=None, label: str = "") -> dict:
             "rates": str(folder / "rates.npz") if (folder / "rates.npz").exists() else "",
             "expect": {"outcome": summ["outcome"], "max_x": summ["max_x"], "frames": summ["counts"]["frames"],
                        "hash": summ["hash"], "death": summ.get("death")}}
-
-
-def test_side(job_id: str, start: int, dials: str, root=None, label: str = "") -> dict:
-    """Start number `start` (1-based, as the Test panel's rows) of a finished test job, played at `dials`."""
-    folder = _runs(root) / job_id
-    job, res = _json(folder / "job.json"), _json(folder / "result.json")
-    if not job or job.get("kind") != "test" or not res:
-        raise ValueError(f"{job_id!r} is not a finished test")
-    got = res["results"].get(dials)
-    if got is None:
-        raise ValueError(f"the test {job_id!r} has no {dials!r} result")
-    eps = got["episodes"]
-    if not 1 <= start <= len(eps):
-        raise ValueError(f"the test has starts 1 to {len(eps)}, not {start}")
-    ep = eps[start - 1]
-    st = ep["start"]
-    fly = with_dials(job["fly_config"], dials)
-    scene = {"level_id": job["level"], "rom": "v0", "modifiers": [], "start": "level_start", "noop": int(st["noop"]),
-             "sigma": float(st["sigma"]), "seed": int(st["seed"]), "max_frames": TEST_MAX_FRAMES, "stuck_frames": TEST_STUCK_FRAMES}
-    return {"run_id": "", "fly": fly, "scene": scene, "options": {}, "label": label, "rates": "",
-            "expect": {"outcome": ep["outcome"], "max_x": ep["max_x"], "frames": ep["frames"], "hash": ep.get("hash", ""),
-                       "death": ep.get("death")}}
 
 
 def generation_side(evo_id: str, gen: int, clip_frames: int, root=None) -> dict:
@@ -128,35 +86,9 @@ def run_spec(run_id: str, show_senses: bool = True, show_brain: bool = True, spe
             "speed": _speed(speed), "frame_from": a, "frame_to": b}
 
 
-def _same_start(a: dict, b: dict) -> None:
-    keys = ("level_id", "rom", "start", "noop", "sigma", "seed", "modifiers")
-    diff = [k for k in keys if a["scene"].get(k) != b["scene"].get(k)]
-    if diff:
-        raise ValueError("the two runs do not start from the same place (they differ in " + ", ".join(diff) + ")")
-
-
-def side_labels(a: dict, b: dict, label_a: str = "", label_b: str = "") -> tuple:
-    """Default labels: the dials when they differ, else the fly names (numbered when those are equal too)."""
-    da, db = dials_of(a["fly"]), dials_of(b["fly"])
-    if da != db:
-        la, lb = dials_label(a["fly"]), dials_label(b["fly"])
-    elif a["fly"]["name"] != b["fly"]["name"]:
-        la, lb = a["fly"]["name"], b["fly"]["name"]
-    else:
-        la, lb = f"{a['fly']['name']} (1)", f"{b['fly']['name']} (2)"
-    return label_a or la, label_b or lb
-
-
-def side_by_side_spec(a: dict, b: dict, label_a: str = "", label_b: str = "", show_brain: bool = False,
-                      show_senses: bool = True, speed: int = 1) -> dict:
-    _same_start(a, b)
-    a["label"], b["label"] = side_labels(a, b, label_a, label_b)
-    return {"export": "side_by_side", "sides": [a, b], "show_senses": bool(show_senses), "show_brain": bool(show_brain),
-            "speed": _speed(speed)}
-
-
-def montage_spec(evo_id: str, gens: list | None = None, clip_seconds: float = 6.0, speed: int = 2,
-                 include_start: bool = False, show_senses: bool = True, show_brain: bool = False, root=None) -> dict:
+def montage_spec(evo_id: str, clip_seconds: float = 6.0, speed: int = 2, show_senses: bool = True,
+                 show_brain: bool = True, root=None) -> dict:
+    """One clip per finished generation (its best fly), with the fitness chart along the bottom."""
     folder = _runs(root) / evo_id
     prog = _json(folder / "progress.json")
     if not prog or not _json(folder / "job.json"):
@@ -164,19 +96,13 @@ def montage_spec(evo_id: str, gens: list | None = None, clip_seconds: float = 6.
     rows = [r for r in prog["rows"] if r["gen"] >= 0]
     if not rows:
         raise ValueError("the evolution has not finished a generation yet")
-    have = {r["gen"] for r in rows}
-    chosen = sorted(have) if not gens else sorted(set(int(g) for g in gens))
-    bad = [g for g in chosen if g not in have]
-    if bad:
-        raise ValueError(f"the evolution has no generation(s) {bad}")
     speed = _speed(speed)
     frames = int(round(float(clip_seconds) * 60)) * speed
     if frames < 60:
         raise ValueError("a clip must be at least one second")
-    ids = ([-1] if include_start and any(r["gen"] == -1 for r in prog["rows"]) else []) + chosen
     return {"export": "montage", "evo": evo_id, "speed": speed, "clip_seconds": float(clip_seconds),
             "show_senses": bool(show_senses), "show_brain": bool(show_brain),
-            "sides": [generation_side(evo_id, g, frames, root) for g in ids],
+            "sides": [generation_side(evo_id, r["gen"], frames, root) for r in rows],
             "bars": [{"gen": r["gen"], "best": float(r["best"]), "mean": float(r["mean"])} for r in rows]}
 
 
@@ -184,6 +110,4 @@ def title(spec: dict) -> str:
     sides = spec["sides"]
     if spec["export"] == "run":
         return f"Video of run {sides[0]['run_id']}"
-    if spec["export"] == "side_by_side":
-        return f"Side by side: {sides[0]['label']} and {sides[1]['label']}"
     return f"Montage of {spec['evo']}"
