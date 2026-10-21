@@ -11,6 +11,7 @@ GOAL: a new, simple tool in `fly_mario/` that lets a user attach fly senses to S
 - Each lane also owns its own new test files under tests/ (`tests/test_<lane>_*.py`, `tests/parity/test_<lane>_*.py`).
 - `contracts.py` and this file change only in the lead session.
 - Only stop processes you started yourself (by PID); never kill all node/python processes.
+- Never delete anything in $FLY_MARIO_DATA or the repo that you did not create in this step. Delete by exact path (recorded when you created it), never by pattern.
 
 ## Folder owners (a lane writes only in its own folders; needing a contract change = stop and ask)
 lead = contracts.py, registry.py, CLAUDE.md, pyproject, tests/golden | fly = fly/ | mario = mario/ |
