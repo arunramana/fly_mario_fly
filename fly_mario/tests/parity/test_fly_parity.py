@@ -41,7 +41,7 @@ def _old_brain_module():
     pytest.skip("old flyrun/brain.py not found")
 
 
-pytestmark = pytest.mark.skipif(not os.environ.get("FLY_MARIO_DATA"), reason="FLY_MARIO_DATA not set")
+pytestmark = [pytest.mark.parity_old, pytest.mark.skipif(not os.environ.get("FLY_MARIO_DATA"), reason="FLY_MARIO_DATA not set")]
 
 
 @pytest.mark.parametrize("mechs,wfile,bfile,n", ROWS, ids=[str(r[3]) for r in ROWS])

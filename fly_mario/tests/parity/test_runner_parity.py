@@ -21,7 +21,7 @@ sys.path.insert(0, str(REPO_ROOT))
 from fly_mario.contracts import Scene                     # noqa: E402
 from fly_mario.runner import Options, Run, load_fly       # noqa: E402
 
-pytestmark = pytest.mark.skipif(not os.environ.get("FLY_MARIO_DATA"), reason="FLY_MARIO_DATA not set")
+pytestmark = [pytest.mark.parity_old, pytest.mark.skipif(not os.environ.get("FLY_MARIO_DATA"), reason="FLY_MARIO_DATA not set")]
 
 HOLDOUT = [dict(noop=n, seed=100 + i + 1, sigma=sg) for sg in (0.0, 0.05) for i, n in enumerate((3, 11, 25, 33, 41))]
 NAMES = {frozenset(): "NOOP", frozenset({"right"}): "R", frozenset({"right", "A"}): "R+A",
