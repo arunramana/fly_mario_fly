@@ -77,7 +77,7 @@ def test_catalogue_thumbnails_and_start_screens(tmp_path, monkeypatch):
             assert c["kind"] == "mixed"
             continue
         env.reset(c["id"], "v0", 0)
-        assert names[int(env.ram[0x74E])] == c["kind"], c["id"]
+        assert names[int(env.ram[0x74E])] == {"athletic": "overground"}.get(c["kind"], c["kind"]), c["id"]   # athletic = overground sky levels
         if "-" in c["id"]:
             assert (int(env.ram[0x75F]) + 1, int(env.ram[0x75C]) + 1) == tuple(map(int, c["id"].split("-"))), c["id"]
     env.close()

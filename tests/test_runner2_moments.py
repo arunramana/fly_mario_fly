@@ -199,14 +199,15 @@ def test_cli_runs_a_pits_only_scene_then_resumes_from_a_moment(capsys):
     assert main(["moments", "cli1"]) == 0 and "cli1@120a" in capsys.readouterr().out
 
 
-# ---- level objects = scan + what runs saw ---------------------------------------------------------------------
-def test_level_objects_join_the_scan_with_what_saved_runs_met():
+# ---- level objects: the db for the stages, the scan + what runs saw for the other envs ------------------------------
+def test_level_objects_come_from_the_db_and_runs_add_to_the_other_envs():
+    assert "koopa" in level_info("1-2").objects and "koopa" in level_objects("1-2")          # known without any run or scan
     (record.runs_dir().parent / "levels.json").write_text(json.dumps({"version": L.CACHE_VERSION, "levels": {
-        "1-2": {"width": 323, "flag_x": None, "partial": True, "stop": "cap", "objects": ["brick", "goomba"]}}}))
-    assert "koopa" not in level_info("1-2").objects
-    _, res = play("reach", "1-2")                                            # the champion meets the Koopa at x~890
-    run = Run(load_fly("champion_e1s"), Scene("1-2", noop=3, sigma=0.05, seed=7), run_id="reach2")
-    save_run(run, run.play())
-    assert "koopa" in level_info("1-2").objects and "koopa" in level_objects("1-2")
+        "full": {"width": 323, "flag_x": None, "partial": True, "stop": "cap", "objects": ["brick", "goomba"]}}}))
+    assert "koopa" not in level_info("full").objects
+    (record.runs_dir() / "seen1").mkdir(parents=True)
+    (record.runs_dir() / "seen1" / "summary.json").write_text(json.dumps(
+        {"level": "full", "outcome": "died", "max_x": 900, "objects_seen": ["koopa"]}), encoding="utf-8")
+    assert "koopa" in level_info("full").objects and "koopa" in level_objects("full")
     cat = {c.id: c for c in level_catalogue()}
-    assert "koopa" in cat["1-2"].objects and cat["1-3"].objects is None
+    assert "koopa" in cat["full"].objects and cat["random"].objects is None and cat["1-3"].objects

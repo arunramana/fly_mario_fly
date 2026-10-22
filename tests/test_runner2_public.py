@@ -63,28 +63,36 @@ def test_status_from_saved_runs(tmp_path):
     assert level_statuses(tmp_path / "nowhere") == {}
 
 
-def test_catalogue_is_immediate_and_marks_unscanned_levels_unknown(tmp_path, monkeypatch):
+def test_catalogue_is_immediate_stages_come_from_the_db_and_the_other_envs_from_the_scan(tmp_path, monkeypatch):
     monkeypatch.setattr(L, "cache_path", lambda: tmp_path / "levels.json")
     monkeypatch.setattr(L.record, "runs_dir", lambda: tmp_path / "runs")
     monkeypatch.setattr(L, "MarioEnv", lambda *a, **k: pytest.fail("the catalogue must not touch the emulator"))
     (tmp_path / "levels.json").write_text(json.dumps({"version": L.CACHE_VERSION, "levels": {
-        "1-1": {"width": 3161, "flag_x": 3161, "partial": False, "stop": "flag", "objects": ["goomba", "pit"]},
-        "1-2": {"width": 900, "flag_x": None, "partial": True, "stop": "cap", "objects": ["brick"]}}}), encoding="utf-8")
+        "1-1": {"width": 1, "flag_x": 1, "partial": True, "stop": "cap", "objects": ["koopa"]},       # ignored: 1-1 is in the db
+        "full": {"width": 3161, "flag_x": 3161, "partial": False, "stop": "flag", "objects": ["goomba", "pit"]},
+        "lost_levels": {"width": 900, "flag_x": None, "partial": True, "stop": "cap", "objects": ["brick"]}}}), encoding="utf-8")
     _summary(tmp_path / "runs", "r", "2-1", "flag", 2500)
-    cat = level_catalogue()
-    assert [c.id for c in cat] == level_ids() and len(cat) == 35 and all(isinstance(c, LevelInfo) for c in cat)
-    a, b, c = cat[0], cat[1], cat[2]
-    assert a.scanned and not a.partial and a.objects == ("goomba", "pit") and a.width == a.flag_x == 3161
-    assert b.scanned and b.partial and b.stop == "cap" and b.objects == ("brick",) and b.flag_x is None
-    assert not c.scanned and c.objects is None and c.width is None and c.kind == "overground"
-    assert next(x for x in cat if x.id == "2-1").status.text == "won 1/1" and level_info("1-3").objects is None
-    assert next(x for x in cat if x.id == "2-2").kind == "water" and next(x for x in cat if x.id == "random").kind == "mixed"
+    cat = {c.id: c for c in level_catalogue()}
+    assert list(cat) == level_ids() and len(cat) == 35 and all(isinstance(c, LevelInfo) for c in cat.values())
+    a = cat["1-1"]                                        # exact from the ROM, whatever the scan cache or the runs say
+    assert a.source == "rom" and a.scanned and not a.partial and a.stop == "rom" and a.width == a.flag_x == 3161
+    assert {"goomba", "koopa", "pipe", "pit", "qblock", "brick", "step", "mushroom"} <= set(a.objects)
+    assert "piranha" not in a.objects and a.time_limit == 400 and a.contents["power-up"] >= 1
+    assert all(c.source == "rom" and c.scanned and c.objects and c.width for k, c in cat.items() if k in level_ids()[:32])
+    b, c, r = cat["full"], cat["lost_levels"], cat["random"]                      # not in the db: the old scan semantics
+    assert b.source == "scan" and b.scanned and not b.partial and b.objects == ("goomba", "pit") and b.width == b.flag_x == 3161
+    assert c.scanned and c.partial and c.stop == "cap" and c.objects == ("brick",) and c.flag_x is None
+    assert not r.scanned and r.objects is None and r.width is None and r.kind == "mixed"
+    assert cat["2-1"].status.text == "won 1/1" and level_info("1-3").objects is not None
+    assert cat["2-2"].kind == "water" and cat["1-4"].kind == "castle" and cat["1-2"].kind == "underground"
 
 
-def test_catalogue_with_no_cache_file_is_all_unknown(tmp_path, monkeypatch):
+def test_catalogue_with_no_cache_file_only_the_non_db_envs_are_unknown(tmp_path, monkeypatch):
     monkeypatch.setattr(L, "cache_path", lambda: tmp_path / "levels.json")
     monkeypatch.setattr(L.record, "runs_dir", lambda: tmp_path / "runs")
-    assert all(not c.scanned and c.objects is None for c in level_catalogue())
+    cat = {c.id: c for c in level_catalogue()}
+    assert all(c.scanned and c.objects for k, c in cat.items() if k in level_ids()[:32])
+    assert all(not cat[k].scanned and cat[k].objects is None for k in ("full", "random", "lost_levels"))
 
 
 def test_scan_caches_and_marks_a_capped_scan_partial(tmp_path, monkeypatch):
@@ -92,9 +100,9 @@ def test_scan_caches_and_marks_a_capped_scan_partial(tmp_path, monkeypatch):
     monkeypatch.setattr(L.record, "runs_dir", lambda: tmp_path / "runs")
     monkeypatch.setattr(L, "config", lambda: {**L.yaml.safe_load(L.CONFIG.read_text(encoding="utf-8")),
                                               "scan": {"every": 2, "max_frames": 60, "max_seconds": 60}})
-    e = L.scan_level("1-1")
+    e = L.scan_level("full")                              # the whole-game env is not in the level db: it keeps the scan
     assert e["partial"] and e["stop"] == "cap" and e["flag_x"] is None and e["width"] > 40
-    assert level_info("1-1").partial and L.level_objects("1-1") == tuple(e["objects"])      # cached: no second scan
+    assert level_info("full").partial and L.level_objects("full") == tuple(e["objects"])      # cached: no second scan
 
 
 @needs_data
@@ -116,14 +124,14 @@ def test_a_real_scan_of_1_1_reports_what_it_saw_and_why_it_stopped(tmp_path, mon
     assert {"goomba", "pipe", "pit", "qblock"} <= set(one["objects"])
 
 
-@needs_data
-def test_precomputed_levels_are_in_the_cache(tmp_path, monkeypatch):
+def test_precompute_scans_only_what_the_db_lacks(tmp_path, monkeypatch):
     monkeypatch.setattr(L, "cache_path", lambda: tmp_path / "levels.json")
     monkeypatch.setattr(L.record, "runs_dir", lambda: tmp_path / "runs")
+    monkeypatch.setattr(L, "MarioEnv", lambda *a, **k: pytest.fail("1-1 and 1-2 are in the db: nothing to scan"))
     L.precompute()
+    assert not (tmp_path / "levels.json").exists()
     cat = {c.id: c for c in level_catalogue()}
     assert cat["1-1"].scanned and cat["1-1"].objects and cat["1-2"].scanned
-    assert sum(c.scanned for c in cat.values()) >= 2
 
 
 # ---- brain display data --------------------------------------------------------------------------------------
