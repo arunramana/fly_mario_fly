@@ -265,16 +265,34 @@ def render(header: dict, objs: list, area_type: int, ncols: int, world8: bool = 
     """The tile id of every cell: a list of `ncols` columns of 13 rows."""
     changes = []                                         # (first column the new value applies to, terrain, foreground)
     writes: dict = {}
-    for o in objs:
-        if o.kind == "terrain_change":
-            if o.b1 & 0x40:
-                f = o.b1 & 7
-                changes.append((o.col + 1, "fore", f if f < 4 else 0))
-            else:
-                changes.append((o.col + 1, "terrain", o.b1 & 15))
-            continue
-        for c, lst in _column_writes(o, area_type, header, False).items():
-            writes.setdefault(o.col + c, []).extend(lst)
+    # ProcessAreaData runs the three object slots 2, 1, 0 once per column: a slot holding an object with a length draws its next
+    # column, an empty slot loads the next stream object if it starts in this column. So continuing objects and new ones are
+    # drawn in slot order, not in file order (matters where they overlap, e.g. a brick row across a hole).
+    slots: list = [None, None, None]                     # each [column writes {offset: [...]}, offset of the next column, last offset]
+    ptr = 0
+    for col in range(ncols):
+        while ptr < len(objs) and objs[ptr].col < col:
+            ptr += 1                                     # behind the renderer: never loaded
+        for x in (2, 1, 0):
+            if slots[x] is not None:
+                parts, k, last = slots[x]
+                writes.setdefault(col, []).extend(parts.get(k, ()))
+                slots[x] = None if k >= last else [parts, k + 1, last]
+            elif ptr < len(objs) and objs[ptr].col == col:
+                o = objs[ptr]
+                ptr += 1
+                if o.kind == "terrain_change":
+                    if o.b1 & 0x40:
+                        f = o.b1 & 7
+                        changes.append((col + 1, "fore", f if f < 4 else 0))
+                    else:
+                        changes.append((col + 1, "terrain", o.b1 & 15))
+                    continue
+                parts = _column_writes(o, area_type, header, False)
+                writes.setdefault(col, []).extend(parts.get(0, ()))
+                last = max(parts) if parts else 0
+                if last > 0:
+                    slots[x] = [parts, 1, last]
     terrain, fore, ci = header["terrain"], header["foreground"], 0
     changes.sort(key=lambda t: t[0])
     cols = []

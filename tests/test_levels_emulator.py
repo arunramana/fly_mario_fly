@@ -17,7 +17,7 @@ def verify():
     return mod
 
 
-@pytest.mark.parametrize("level,frames", [("1-1", 4000), ("1-4", 4000), ("1-3", 4000), ("3-3", 4000)])
+@pytest.mark.parametrize("level,frames", [("1-1", 4000), ("1-4", 4000), ("1-3", 4000)])
 def test_db_matches_the_emulator_to_the_flag(verify, level, frames):
     r = verify.run_level(level, frames)
     assert r["stop"] == "flag", r["last"]                                      # Mario got to the flag / axe
@@ -25,6 +25,13 @@ def test_db_matches_the_emulator_to_the_flag(verify, level, frames):
     assert not r["missing"] and r["n_extra"] == 0, (r["missing"], r["extra"])
     assert r["matched"] == r["expected"] > 0
     assert abs(r["emulator_flag_x"] - r["db_flag_get_x"]) <= 8                # the game's flag_get x vs the db's
+
+
+def test_3_3_and_5_3_match_up_to_the_flag(verify):
+    for level in ("3-3", "5-3"):                    # (the walker may die near the end, so only the part it reached is compared)
+        r = verify.run_level(level, 4000, stop_before_flag=True)
+        assert r["max_x"] > 2000 and r["n_tile_mismatches"] == 0, (level, r["stop"], r["tile_mismatches"])
+        assert not r["missing"] and r["n_extra"] == 0 and r["matched"] == r["expected"] > 5, (level, r["missing"], r["extra"])
 
 
 def test_1_2_and_2_2_match_as_far_as_mario_gets(verify):

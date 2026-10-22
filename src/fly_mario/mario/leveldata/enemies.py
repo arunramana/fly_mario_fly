@@ -74,6 +74,10 @@ def expand(e: dict) -> list:
                  "y": top, "ram_y": top + 8, "group": n, "approx_x": True} for k in range(n)]
     ram_y = (row * 16 + (8 if i < 0x15 else 0)) & 0xFF
     out = {**base, "type": NAMES.get(i, f"unknown_{i:#04x}"), "id": i, "x": x, "row": row, "y": row * 16, "ram_y": ram_y}
+    if i == 0x0C:                                        # InitPodoboo: starts below the screen and jumps up from its column
+        out["ram_y"] = 2
+    if i == 0x1F:                                        # DuplicateEnemyObj: a second bar is made at the same spot
+        out["two_bars"] = True
     if i in FIREBARS:
         out["speed"], out["direction"] = FIREBAR_SPEED[i]
         out["ram_x"], out["ram_y"] = x + 4, row * 16 + 4
