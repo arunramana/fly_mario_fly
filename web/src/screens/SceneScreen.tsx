@@ -8,7 +8,7 @@ import { everythingPicked, loadScenes, saveScene, useDraft } from '../draft'
 type Mods = Scene['modifiers']
 const sameMods = (a: Mods, b: Mods) => JSON.stringify(a) === JSON.stringify(b)
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
-const KIND_ORDER = ['overground', 'underground', 'sky', 'water', 'castle', 'mixed']
+const KIND_ORDER = ['overground', 'underground', 'athletic', 'water', 'castle', 'mixed']
 
 function statusClass(l: LevelInfo) {
   return l.status === 'cleared' ? 'ok' : l.status_text.startsWith('best') ? 'bad' : ''

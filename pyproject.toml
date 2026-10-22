@@ -25,4 +25,4 @@ pythonpath = ["src"]
 testpaths = ["tests"]
 
 [tool.setuptools.package-data]
-fly_mario = ["fly/groups.yaml", "fly/data/*.yaml", "mario/facts/**/*.yaml"]
+fly_mario = ["fly/groups.yaml", "fly/data/*.yaml", "mario/facts/**/*.yaml", "mario/facts/*.json"]
