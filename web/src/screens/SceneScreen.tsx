@@ -2,16 +2,13 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api, thumbnailUrl } from '../api/client'
-import type { LevelInfo, ObjectInfo, Scene } from '../api/models'
+import type { LevelInfo, Scene } from '../api/models'
 import { everythingPicked, loadScenes, saveScene, useDraft } from '../draft'
 
 type Mods = Scene['modifiers']
 const sameMods = (a: Mods, b: Mods) => JSON.stringify(a) === JSON.stringify(b)
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 const KIND_ORDER = ['overground', 'underground', 'sky', 'water', 'castle', 'mixed']
-
-/** "Pipe" -> "Pipes only"; a pick-up keeps its singular ("Mushroom only"). */
-const onlyLabel = (o: ObjectInfo) => `${o.kind === 'pickup' || o.label.endsWith('s') ? o.label : `${o.label}s`} only`
 
 function statusClass(l: LevelInfo) {
   return l.status === 'cleared' ? 'ok' : l.status_text.startsWith('best') ? 'bad' : ''
@@ -46,19 +43,9 @@ export default function SceneScreen() {
   const startKind = scene.start === 'level_start' ? 'level_start' : 'moment'
   const objLabel = (n: string) => registry.data.objects.find((o) => o.name === n)?.label ?? n
 
-  // Test-scene chips come from registry data: each plain modifier, and each object-picking modifier x each object
-  // in this level (every object when the level has not been scanned). Modifiers with other parameters are not chips.
-  const objects = registry.data.objects.filter((o) => !level?.objects || level.objects.includes(o.name))
-  const chips: { key: string; label: string; mods: Mods }[] = []
-  for (const m of registry.data.scene_modifiers) {
-    const pick = m.params.find((p) => p.type === 'object_types')
-    if (!m.params.length) chips.push({ key: m.name, label: m.label, mods: [[m.name, {}]] })
-    else if (pick && m.params.length === 1) for (const o of objects)
-      chips.push({
-        key: `${m.name}:${o.name}`, mods: [[m.name, { [String(pick.key)]: [o.name] }]],
-        label: m.label.toLowerCase().endsWith('only') ? onlyLabel(o) : `${m.label}: ${o.label}`,
-      })
-  }
+  // Test-scene chips come from registry data: each modifier that takes no parameters (Whole level, No enemies).
+  const chips: { key: string; label: string; mods: Mods }[] = registry.data.scene_modifiers
+    .filter((m) => !m.params.length).map((m) => ({ key: m.name, label: m.label, mods: [[m.name, {}]] }))
 
   const setStart = (start: Scene['start']) => { setScene({ ...scene, start }); setPicked({ ...picked, start: true }) }
   const pickLevel = (l: LevelInfo) => { setScene({ ...scene, level_id: l.id, start: 'level_start' }); setPicked({ ...picked, level: true, start: false }) }
@@ -115,7 +102,7 @@ export default function SceneScreen() {
 
         <section className="box">
           <h2 className="label">Test scene</h2>
-          <p className="lead" style={{ marginTop: 0 }}>Keep only what you want to test. Everything else is removed from the level.</p>
+          <p className="lead" style={{ marginTop: 0 }}>Play the whole level, or the level with every enemy removed.</p>
           <div className="row" style={{ marginTop: 14, gap: 10 }}>
             {chips.map((c) => (
               <button key={c.key} className={`chip test ${picked.test && sameMods(scene.modifiers, c.mods) ? 'on' : ''}`}
