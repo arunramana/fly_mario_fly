@@ -1,12 +1,16 @@
 """The level catalogue: for each of the 35 envs its kind, how far it runs, which object types it holds, and how
 saved runs have gone on it.
 
-level_catalogue() never touches the emulator: the kind comes from configs/levels.yaml, the width and object list from
-$FLY_MARIO_DATA/levels.json, and a level nobody has scanned yet shows `scanned=False, objects=None, width=None`
-(unknown). scan_level(id) scans one level (mario/walker.py's walk-right-and-jump driver with enemies switched off, capped in frames
-and seconds) and caches it; a scan that stopped before the flag is `partial=True` (width = how far it got, objects =
-what it saw up to there). `objects` also includes every type a saved run on that level found (summary.json
-`objects_seen`), so a run that got past the scan's reach adds what it met. precompute() scans the levels the yaml lists (1-1, 1-2).
+The 32 stages come from the level database (mario/facts/level_db.json, read once out of the game ROM by
+tools/read_rom_levels.py): kind, width, flag/axe x, time limit, block contents (e.g. 1-2's mushroom block) and the object
+types present are exact for every stage, with nothing scanned and no run needed (`scanned=True, partial=False, stop="rom"`).
+Which object plug-ins a stage holds is worked out from the db's tile ids and enemy ids against mario/facts (the
+plug-ins' own tile / type lists), so a new plug-in needs no edit here. Only the three whole-game envs (full, random,
+lost_levels) are not in the db; they keep the old scan: level_catalogue() never touches the emulator, the width and object list
+come from $FLY_MARIO_DATA/levels.json and a level nobody has scanned shows `scanned=False, objects=None, width=None`.
+scan_level(id) scans one such env (mario/walker.py's walk-right-and-jump driver with enemies switched off, capped in frames and
+seconds) and caches it; a scan that stopped before the flag is `partial=True`. For those envs `objects` also includes every
+type a saved run found (summary.json `objects_seen`). precompute() scans the yaml's levels the db lacks.
 The status part (tried / won / best x) is read from $FLY_MARIO_DATA/runs/*/summary.json on every call.
 """
 from __future__ import annotations
@@ -23,13 +27,17 @@ import yaml
 
 from fly_mario import registry
 from fly_mario.fly import connectome as cn
-from fly_mario.mario import ram as R
+from fly_mario.mario import leveldata, ram as R
 from fly_mario.mario.env import MarioEnv, level_ids
+from fly_mario.mario.facts import load_facts
 from fly_mario.mario.walker import Walker
 from fly_mario.runner import record
 
 CONFIG = Path(__file__).resolve().parents[3] / "configs" / "levels.yaml"      # configs/levels.yaml
 CACHE_VERSION = 2
+TILE_OBJECTS = {"pipe": "pipe", "step": "step", "brick": "brick", "qblock": "qblock", "used_block": "usedblock",
+                "ceiling_block": "ceiling_block"}      # facts["tiles"] key -> the object plug-in that finds those tile ids
+GAP_OBJECT = "pit"                                      # the plug-in for the db's gaps (pits, water, lava)
 
 
 @dataclass(frozen=True)
@@ -50,8 +58,11 @@ class LevelInfo:
     flag_x: int | None = None   # x where the scan reached the flag
     partial: bool = False       # the scan stopped before the flag (cap hit or Mario died): width/objects are lower bounds
     stop: str = ""              # why the scan ended: flag | cap | died
-    objects: tuple | None = None    # object type names seen, sorted; None = not scanned yet (unknown)
+    objects: tuple | None = None    # object type names present, sorted; None = not known yet
     status: LevelStatus = field(default_factory=LevelStatus)
+    source: str = "scan"            # "rom" = read from the level database, "scan" = the walker's scan (or nothing yet)
+    contents: dict | None = None    # block contents in the stage, e.g. {"power-up": 3, "coin": 4, "star": 1}; None = unknown
+    time_limit: int | None = None   # the level timer at the start (400 / 300 / 200); None = unknown or untimed
 
 
 def config() -> dict:
@@ -106,9 +117,36 @@ def scan_level(level_id: str, env: MarioEnv | None = None) -> dict:
     return entry
 
 
+def in_db(level_id: str) -> bool:
+    return leveldata.available() and leveldata.stage(level_id) is not None
+
+
+def rom_objects(level_id: str) -> tuple:
+    """Object plug-in names present in a stage, from the db's stage summary: a plug-in is present when one of its tile ids is in
+    the stage's solid tiles or one of its enemy type bytes spawns (hard-mode-only and never-spawning entries are left out by the
+    db), a block that holds a power-up brings the power-up object, and any gap brings the pit."""
+    sm = leveldata.stage(level_id)["summary"]
+    facts, plugins = load_facts(level_id), registry.list_plugins("objects")
+    ids = set(sm["enemy_ids"])
+    if "power-up" in sm["block_contents"]:
+        ids.add(facts["objects"]["mushroom"]["types"][0])
+    found = {name for name, spec in facts["objects"].items() if ids & set(spec["types"])}
+    found |= {name for key, name in TILE_OBJECTS.items() if set(sm["tile_ids"]) & set(facts["tiles"][key])}
+    if sm["gaps"]:
+        found.add(GAP_OBJECT)
+    return tuple(sorted(found & set(plugins)))
+
+
+def _rom_info(lv: str, status: LevelStatus) -> LevelInfo:
+    st = leveldata.stage(lv)
+    end = st["flag_get_x"]                                  # where Mario is when the game says flag_get (what the old scan recorded)
+    return LevelInfo(lv, st["kind"], True, end, end, False, "rom", rom_objects(lv), status, "rom",
+                     dict(st["summary"]["block_contents"]), st["time_limit"])
+
+
 def precompute(levels=None) -> None:
-    """Scan the levels named in the yaml (or `levels`) that are not cached yet."""
-    todo = [lv for lv in (levels or config()["precompute"]) if lv not in _read_cache()]
+    """Scan the levels named in the yaml (or `levels`) that are not cached yet and are not in the level db."""
+    todo = [lv for lv in (levels or config()["precompute"]) if lv not in _read_cache() and not in_db(lv)]
     env = MarioEnv() if todo else None
     for lv in todo:
         scan_level(lv, env)
@@ -117,7 +155,10 @@ def precompute(levels=None) -> None:
 
 
 def level_objects(level_id: str) -> tuple:
-    """The object types in a level: the scan (made the first time it is asked for) plus what saved runs saw there."""
+    """The object types in a level: from the level db when it has the stage, else the scan (made the first time it is asked
+    for) plus what saved runs saw there."""
+    if in_db(level_id):
+        return rom_objects(level_id)
     entry = _read_cache().get(level_id) or scan_level(level_id)
     return tuple(sorted(set(entry["objects"]) | objects_seen_in_runs().get(level_id, set())))
 
@@ -154,6 +195,8 @@ def objects_seen_in_runs(runs_dir: Path | None = None) -> dict:
 def _info(lv, cache, kinds, status, seen=None) -> LevelInfo:
     """The scan's objects joined with those any saved run saw (a run that got further than the scan finds more)."""
     e, st, extra = cache.get(lv), status.get(lv, LevelStatus()), (seen or {}).get(lv, set())
+    if in_db(lv):
+        return _rom_info(lv, st)
     if e is None:
         return LevelInfo(lv, kinds[lv], objects=tuple(sorted(extra)) if extra else None, status=st)
     return LevelInfo(lv, kinds[lv], True, e["width"], e["flag_x"], e["partial"], e["stop"],
