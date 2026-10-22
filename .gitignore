@@ -14,6 +14,7 @@ prof
 # Videos and images are re-rendered from saved data; the few that are documentation were force-added (web/design/).
 *.mp4
 *.png
+!/assets/sprites/*.png
 *.parquet
 *.feather
 # Throwaway local state

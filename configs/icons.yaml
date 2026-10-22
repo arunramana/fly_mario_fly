@@ -1,4 +1,4 @@
-# object type -> sprite file in $FLY_MARIO_DATA/assets/sprites/ (optional; without the file the icon is cropped from the game)
+# object type -> sprite file in assets/sprites/ at the repo root (a type not listed is cropped from the game)
 goomba: "Goomba SMB.png"
 koopa: "SMB Green Koopa Troopa Sprite.png"
 piranha: "SMB Sprite Piranha Plant.png"

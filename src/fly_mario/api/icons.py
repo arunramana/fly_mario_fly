@@ -55,7 +55,7 @@ MAP = Path(__file__).resolve().parents[3] / "configs" / "icons.yaml"      # obje
 
 
 def sprites_dir() -> Path:
-    return runs_dir().parent / "assets" / "sprites"
+    return Path(__file__).resolve().parents[3] / "assets" / "sprites"
 
 
 def sprite_icon(name: str) -> Optional[np.ndarray]:

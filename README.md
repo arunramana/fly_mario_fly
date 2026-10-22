@@ -15,7 +15,6 @@ python -m fly_mario.fly build-brains   # downloads MaleCNS v1.0 (about 1.2 GB), 
 python -m pytest tests -q
 ```
 
-- Optional sprites for the object icons go in `$FLY_MARIO_DATA/assets/sprites/` (never committed); `configs/icons.yaml` maps each object type to a file there, and a type without its file gets a crop of the game picture.
 - numpy must stay `<1.27` (nes-py breaks under numpy 2), which is why `pyarrow` and `pandas` are capped in `pyproject.toml`.
 - `build-brains` fetches three public files (CC-BY 4.0) from Janelia's `flyem-male-cns` bucket into `$FLY_MARIO_DATA/malecns_v1.0/`
   (resumable if interrupted), then builds the brains into `$FLY_MARIO_DATA/brains/`. Measured on a home connection:
