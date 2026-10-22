@@ -5,7 +5,7 @@ so colours match 1-1; enemies removed unless the type is an enemy) until an inst
 Mario clear of it and, for enemies and pickups, moving on its own and clear of every other object (a mushroom that has
 left its block, a whole Koopa). The crop is its box, plus a little of its surroundings (a pit's rims); a box taller
 than a block keeps its top (a pipe's mouth). The level's background colour becomes transparent, the crop is scaled
-up with nearest-neighbour (crisp pixels) onto a transparent square, and saved as $FLY_MARIO_DATA/icons/<type>.png the
+by a whole factor with nearest-neighbour (crisp pixels), leaving a 2 px margin, onto a transparent square, and saved as $FLY_MARIO_DATA/icons/<type>.png the
 moment it is found. A type whose picture is the same as another type's is looked for in other places first; if it
 really is the same art, icons/notes.json says so. Nothing is committed: like the game picture, icons come from the emulator.
 
@@ -33,7 +33,8 @@ from fly_mario.contracts import Scene
 from fly_mario.runner import atomic, Run, level_catalogue, load_fly
 from fly_mario.runner.record import runs_dir
 
-ICON = 80                      # output size, px
+ICON = 48                      # output size, px (the page shows it at exactly this size)
+MARGIN = 2                     # px of transparent margin kept inside the icon on every side
 STATUS_BAR = 32                # level y has the 32 px status bar above it (as the renderer draws it)
 PAD = 4                        # px of the surroundings kept around a box (rims of a gap)
 SPRITE_PAD = 2                 # px of margin around a sprite, so no edge of it touches the crop's edge
@@ -60,7 +61,7 @@ def sprites_dir() -> Path:
 
 def sprite_icon(name: str) -> Optional[np.ndarray]:
     """The downloaded sprite mapped to this type in configs/icons.yaml as an ICON x ICON BGRA (a GIF's first frame),
-    fitted keeping its aspect ratio, nearest-neighbour, transparent padding; None if there is no mapping or no file."""
+    scaled by a whole factor, nearest-neighbour, transparent padding; None if there is no mapping or no file."""
     try:
         file = (yaml.safe_load(MAP.read_text(encoding="utf-8")) or {}).get(name)
         path = sprites_dir() / file if file else None
@@ -71,13 +72,24 @@ def sprite_icon(name: str) -> Optional[np.ndarray]:
             rgba = np.array(im.convert("RGBA"))
     except (OSError, ValueError, yaml.YAMLError):
         return None
-    h, w = rgba.shape[:2]
-    k = ICON / max(h, w)
-    nh, nw = max(1, round(h * k)), max(1, round(w * k))
-    small = cv2.resize(rgba, (nw, nh), interpolation=cv2.INTER_NEAREST)
+    return _place(rgba[..., [2, 1, 0, 3]])
+
+
+def _place(img: np.ndarray) -> np.ndarray:
+    """H x W x 4 BGRA -> ICON x ICON: scaled by the largest whole factor that leaves MARGIN px free (an image already
+    too big is shrunk to fit), nearest-neighbour, centred on transparent padding."""
+    inner = ICON - 2 * MARGIN
+    h, w = img.shape[:2]
+    if max(h, w) > inner:
+        k = inner / max(h, w)
+        img = cv2.resize(img, (max(1, round(w * k)), max(1, round(h * k))), interpolation=cv2.INTER_NEAREST)
+    else:
+        k = inner // max(h, w)
+        img = np.repeat(np.repeat(img, k, axis=0), k, axis=1)
+    h, w = img.shape[:2]
     out = np.zeros((ICON, ICON, 4), np.uint8)
-    y0, x0 = (ICON - nh) // 2, (ICON - nw) // 2
-    out[y0:y0 + nh, x0:x0 + nw] = small[..., [2, 1, 0, 3]]
+    y0, x0 = (ICON - h) // 2, (ICON - w) // 2
+    out[y0:y0 + h, x0:x0 + w] = img
     return out
 
 
@@ -101,17 +113,10 @@ def background(screen: np.ndarray) -> tuple:
 def to_icon(crop: np.ndarray, bg: Optional[tuple] = None) -> np.ndarray:
     """RGB crop -> ICON x ICON BGRA: pixels of the background colour transparent, scaled by a whole factor with
     nearest-neighbour, centred, transparent padding."""
-    h, w = crop.shape[:2]
-    k = max(1, ICON // max(h, w))
-    big = np.repeat(np.repeat(crop, k, axis=0), k, axis=1)
-    alpha = np.full(big.shape[:2], 255, np.uint8)
+    alpha = np.full(crop.shape[:2], 255, np.uint8)
     if bg is not None:
-        alpha[(big == np.array(bg, np.uint8)).all(axis=2)] = 0
-    out = np.zeros((ICON, ICON, 4), np.uint8)
-    y0, x0 = (ICON - big.shape[0]) // 2, (ICON - big.shape[1]) // 2
-    out[y0:y0 + big.shape[0], x0:x0 + big.shape[1], :3] = big[..., ::-1]
-    out[y0:y0 + big.shape[0], x0:x0 + big.shape[1], 3] = alpha
-    return out
+        alpha[(crop == np.array(bg, np.uint8)).all(axis=2)] = 0
+    return _place(np.dstack([crop[..., ::-1], alpha]))
 
 
 def _levels_holding(types: set) -> list:

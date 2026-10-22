@@ -86,6 +86,15 @@ def test_a_mapped_sprite_is_fitted_keeping_its_aspect_and_a_missing_one_gives_no
     Image.fromarray(img).save(tmp_path / "w.png")
     out = icons.sprite_icon("wide")
     assert out.shape == (icons.ICON, icons.ICON, 4)
-    assert out[icons.ICON // 2, 0, 3] == 255 and out[0, 0, 3] == 0            # full width, half height, transparent padding
-    assert out[icons.ICON // 2, 0, :3].tolist() == [0, 0, 255]                # BGR
+    assert out[icons.ICON // 2, 4, 3] == 255 and out[icons.ICON // 2, 3, 3] == 0   # 20 px x2 = 40: 4 px free each side
+    assert out[0, 0, 3] == 0 and out[icons.MARGIN, icons.ICON // 2, 3] == 0   # half height: transparent above
+    assert out[icons.ICON // 2, icons.ICON // 2, :3].tolist() == [0, 0, 255]                # BGR
     assert icons.sprite_icon("absent") is None and icons.sprite_icon("unmapped") is None
+
+
+def test_a_sprite_is_scaled_by_a_whole_factor_with_a_two_pixel_margin():
+    for h, w, k in ((16, 16, 2), (24, 16, 1), (20, 20, 2)):                     # 44 px fit: 16 -> x2, 24 -> x1 (x2 = 48 would touch)
+        out = icons.to_icon(np.full((h, w, 3), 90, np.uint8))
+        ys, xs = np.nonzero(out[..., 3])
+        assert (ys.max() - ys.min() + 1, xs.max() - xs.min() + 1) == (h * k, w * k)
+        assert min(ys.min(), xs.min(), icons.ICON - 1 - ys.max(), icons.ICON - 1 - xs.max()) >= icons.MARGIN
