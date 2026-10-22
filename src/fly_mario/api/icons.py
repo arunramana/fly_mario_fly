@@ -25,6 +25,8 @@ from typing import Optional
 
 import cv2
 import numpy as np
+import yaml
+from PIL import Image
 
 from fly_mario import registry
 from fly_mario.contracts import Scene
@@ -34,6 +36,7 @@ from fly_mario.runner.record import runs_dir
 ICON = 80                      # output size, px
 STATUS_BAR = 32                # level y has the 32 px status bar above it (as the renderer draws it)
 PAD = 4                        # px of the surroundings kept around a box (rims of a gap)
+SPRITE_PAD = 2                 # px of margin around a sprite, so no edge of it touches the crop's edge
 MAX_SIDE = 32                  # a box taller / wider than this keeps its top / middle (two blocks)
 WALKER = "champion_e1s"        # the preset that walks a level (any fly that moves would do)
 MAX_FRAMES = 2400
@@ -46,6 +49,36 @@ def icons_dir() -> Path:
 
 def icon_path(name: str) -> Path:
     return icons_dir() / f"{name}.png"
+
+
+MAP = Path(__file__).resolve().parents[3] / "configs" / "icons.yaml"      # object type -> sprite file name
+
+
+def sprites_dir() -> Path:
+    return Path(__file__).resolve().parents[3] / "assets" / "sprites"
+
+
+def sprite_icon(name: str) -> Optional[np.ndarray]:
+    """The downloaded sprite mapped to this type in configs/icons.yaml as an ICON x ICON BGRA (a GIF's first frame),
+    fitted keeping its aspect ratio, nearest-neighbour, transparent padding; None if there is no mapping or no file."""
+    try:
+        file = (yaml.safe_load(MAP.read_text(encoding="utf-8")) or {}).get(name)
+        path = sprites_dir() / file if file else None
+        if path is None or not path.is_file():
+            return None
+        with Image.open(path) as im:
+            im.seek(0)
+            rgba = np.array(im.convert("RGBA"))
+    except (OSError, ValueError, yaml.YAMLError):
+        return None
+    h, w = rgba.shape[:2]
+    k = ICON / max(h, w)
+    nh, nw = max(1, round(h * k)), max(1, round(w * k))
+    small = cv2.resize(rgba, (nw, nh), interpolation=cv2.INTER_NEAREST)
+    out = np.zeros((ICON, ICON, 4), np.uint8)
+    y0, x0 = (ICON - nh) // 2, (ICON - nw) // 2
+    out[y0:y0 + nh, x0:x0 + nw] = small[..., [2, 1, 0, 3]]
+    return out
 
 
 def crop_box(box, scroll_x: float, pad: int = PAD) -> Optional[tuple]:
@@ -110,11 +143,12 @@ class Maker:
         if o.state.get("open") or o.state.get("shell"):
             return None
         sprite = self.kinds[t] in ("enemy", "pickup")                           # a sprite is cropped tight; a tile keeps its surroundings
-        c = crop_box(o.box, rec.scroll_x, 0 if sprite else PAD)
+        scroll = rec.scroll_x_after                                             # rec.screen is the picture after the action
+        c = crop_box(o.box, scroll, SPRITE_PAD if sprite else PAD)
         if c is None:
             return None
         m = rec.mario
-        if m.x - rec.scroll_x < c[2] and m.x - rec.scroll_x + m.w > c[0] and m.y + STATUS_BAR < c[3] and m.y + m.h + STATUS_BAR > c[1]:
+        if m.x - scroll < c[2] and m.x - scroll + m.w > c[0] and m.y + STATUS_BAR < c[3] and m.y + m.h + STATUS_BAR > c[1]:
             return None                                                    # Mario is in the way
         if sprite:
             if prev_x.get((t, o.id)) in (None, o.box.x) or any(_overlap(o.box, p.box) for p in others):
@@ -124,29 +158,27 @@ class Maker:
     def play(self, level_id: str, want: set, enemies: bool) -> None:
         mods = () if enemies else (("no_enemies", {}),)
         run = Run(load_fly(WALKER), Scene(level_id=level_id, modifiers=mods, max_frames=MAX_FRAMES))
-        prev, prev_x = None, {}
+        prev_x = {}
         while not run.finished and want:
             rec = run.step()
-            if prev is not None:
-                bg = background(prev)
-                for t in sorted(want):
-                    for o in rec.found.get(t, ()):
-                        others = [p for n, objs in rec.found.items() if n != t for p in objs]
-                        c = self._good(t, o, rec, prev_x, others)
-                        if c is None:
-                            continue
-                        sx, sy = int(o.box.x - rec.scroll_x), int(o.box.y + STATUS_BAR)
-                        sig = prev[sy:sy + 16, sx:sx + 16].tobytes().hex()
-                        icon = to_icon(prev[c[1]:c[3], c[0]:c[2]], bg)
-                        same = next((n for n, s in self.sigs.items() if n != t and self.kinds[n] == self.kinds[t] == "terrain" and _alike(s, sig)), None)
-                        if same:
-                            self.dups.setdefault(t, (icon, sig, same))
-                            continue
-                        self.sigs[t] = sig
-                        self.save(t, icon, None)
-                        want = want - {t}
-                        break
-            prev = rec.screen
+            screen, bg = rec.screen, background(rec.screen)
+            for t in sorted(want):
+                for o in rec.found.get(t, ()):
+                    others = [p for n, objs in rec.found.items() if n != t for p in objs]
+                    c = self._good(t, o, rec, prev_x, others)
+                    if c is None:
+                        continue
+                    sx, sy = int(o.box.x - rec.scroll_x_after), int(o.box.y + STATUS_BAR)
+                    sig = screen[sy:sy + 16, sx:sx + 16].tobytes().hex()
+                    icon = to_icon(screen[c[1]:c[3], c[0]:c[2]], bg)
+                    same = next((n for n, s in self.sigs.items() if n != t and self.kinds[n] == self.kinds[t] == "terrain" and _alike(s, sig)), None)
+                    if same:
+                        self.dups.setdefault(t, (icon, sig, same))
+                        continue
+                    self.sigs[t] = sig
+                    self.save(t, icon, None)
+                    want = want - {t}
+                    break
             prev_x = {(t, o.id): o.box.x for t, objs in rec.found.items() for o in objs}
 
     def run(self, names: set) -> None:
@@ -179,11 +211,17 @@ def make_icons(names: list) -> dict:
         if note:
             notes[name] = note
         atomic.write_json(d / "notes.json", notes)
-        atomic.write_json(d / "sigs.json", maker.sigs)
+        atomic.write_json(d / "sigs.json", maker.sigs if maker else sigs)
 
     kinds = {n: o.kind for n, o in registry.list_plugins("objects").items()}
     todo = {n for n in names if not icon_path(n).exists()}
-    maker = Maker(kinds, save, {n: s for n, s in _read(d / "sigs.json").items() if n not in todo})
+    maker, sigs = None, _read(d / "sigs.json")
+    for n in sorted(todo):
+        img = sprite_icon(n)                                                 # a downloaded sprite, when there is one
+        if img is not None:
+            save(n, img, None)
+    todo = {n for n in todo if not icon_path(n).exists()}
+    maker =Maker(kinds, save, {n: s for n, s in _read(d / "sigs.json").items() if n not in todo})
     maker.run(todo)
     return {n: icon_path(n) for n in names if icon_path(n).exists()}
 

@@ -1,0 +1,12 @@
+# object type -> sprite file in assets/sprites/ at the repo root (a type not listed is cropped from the game)
+goomba: "Goomba SMB.png"
+koopa: "SMB Green Koopa Troopa Sprite.png"
+piranha: "SMB Sprite Piranha Plant.png"
+mushroom: "SMB Supermushroom.png"
+brick: "SMB Brick Block Sprite.png"
+ceiling_block: "SMB Brick Block Sprite.png"
+qblock: "SMB Qblock.png"
+usedblock: "SMB1 Empty Block.png"
+step: "SMB Hard Block Sprite.png"
+pipe: "Warp Pipe SMB.png"
+pit: "pit_gap.png"
