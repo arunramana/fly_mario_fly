@@ -39,12 +39,22 @@ export function useDraft(): Draft {
  *  PNG, 256 x 240) and the transparent senses overlay (base64 PNG) with its [x, y] on the game at x4. */
 export interface Picture { game: string; overlay?: string | null; at?: number[] | null }
 export const momentPictures = new Map<string, Picture>()
+const MAX_PICTURES = 40   // the newest moments only: a picture is ~100-300 kB, and auto moments arrive every 2 s
+const MAX_REQUESTS = 30
+
+/** Set a key, newest last, and drop the oldest entries beyond `cap`. */
+export function setCapped<V>(map: Map<string, V>, key: string, value: V, cap: number): void {
+  map.delete(key)
+  map.set(key, value)
+  while (map.size > cap) map.delete(map.keys().next().value as string)
+}
+export const rememberPicture = (id: string, p: Picture) => setCapped(momentPictures, id, p, MAX_PICTURES)
 
 /** The request each run of this session was started with, and which try of that fly on that level it is. */
 export const runRequests = new Map<string, { req: RunRequest; tryNo: number }>()
 export function registerRun(runId: string, req: RunRequest): void {
   const same = [...runRequests.values()].filter((r) => r.req.fly.name === req.fly.name && r.req.scene.level_id === req.scene.level_id)
-  runRequests.set(runId, { req, tryNo: same.length + 1 })
+  setCapped(runRequests, runId, { req, tryNo: same.length + 1 }, MAX_REQUESTS)
 }
 
 /** Width and height of a base64 PNG, read from its header. */

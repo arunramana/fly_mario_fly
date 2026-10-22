@@ -211,7 +211,9 @@ class Runs:
             reader.cancel()
             if live.brain:
                 live.brain.close()
-            live.run = live.pool = live.brain = None
+            run, live.run, live.pool, live.brain = live.run, None, None, None
+            if run is not None:             # free the emulator once the worker has finished its current frame
+                pool.submit(run.close)
             pool.shutdown(wait=False)
 
     async def save_moment(self, live: LiveRun, name: str, frame: Optional[int]) -> S.MomentSummary:
