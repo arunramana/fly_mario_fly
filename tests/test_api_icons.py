@@ -23,15 +23,14 @@ def test_a_tall_box_keeps_its_top_and_a_wide_one_its_middle():
     assert x1 - x0 == 2 * icons.MAX_SIDE + 2 * icons.PAD and (x0 + x1) / 2 == 120
 
 
-def test_icon_is_crisp_scaled_and_padded_transparent():
+def test_icon_is_native_size_with_a_transparent_background_and_no_blending():
     crop = np.zeros((24, 16, 3), np.uint8)
     crop[:, :8] = (10, 20, 30)
     crop[:, 8:] = (200, 100, 50)
-    out = icons.to_icon(crop)
-    assert out.shape == (icons.ICON, icons.ICON, 4)
-    assert out[icons.ICON // 2, icons.ICON // 2 - 1, :3].tolist() == [30, 20, 10]            # BGR, nearest-neighbour: no blended colours
-    assert {tuple(p[:3]) for p in out[out[..., 3] > 0].reshape(-1, 4)} == {(30, 20, 10), (50, 100, 200)}
-    assert out[0, 0, 3] == 0 and out[icons.ICON // 2, 0, 3] == 0                              # padding is transparent
+    out = icons.to_icon(crop, bg=(10, 20, 30))
+    assert out.shape == (24, 16, 4)                                                           # native: no padding, no scaling
+    assert (out[:, :8, 3] == 0).all() and (out[:, 8:, 3] == 255).all()
+    assert {tuple(p[:3]) for p in out[out[..., 3] > 0].reshape(-1, 4)} == {(50, 100, 200)}    # BGR
 
 
 @pytest.fixture
@@ -76,7 +75,7 @@ def test_a_pipe_crop_covers_both_columns_and_a_sprite_keeps_a_two_pixel_margin()
     assert (x0, x1) == (98, 118) and icons.SPRITE_PAD == 2
 
 
-def test_a_mapped_sprite_is_fitted_keeping_its_aspect_and_a_missing_one_gives_none(tmp_path, monkeypatch):
+def test_a_mapped_sprite_keeps_its_native_size_and_a_missing_one_gives_none(tmp_path, monkeypatch):
     from PIL import Image
     monkeypatch.setattr(icons, "sprites_dir", lambda: tmp_path)
     monkeypatch.setattr(icons, "MAP", tmp_path / "icons.yaml")
@@ -85,16 +84,17 @@ def test_a_mapped_sprite_is_fitted_keeping_its_aspect_and_a_missing_one_gives_no
     img[..., 0], img[..., 3] = 255, 255                                       # opaque red, 20 x 10
     Image.fromarray(img).save(tmp_path / "w.png")
     out = icons.sprite_icon("wide")
-    assert out.shape == (icons.ICON, icons.ICON, 4)
-    assert out[icons.ICON // 2, 4, 3] == 255 and out[icons.ICON // 2, 3, 3] == 0   # 20 px x2 = 40: 4 px free each side
-    assert out[0, 0, 3] == 0 and out[icons.MARGIN, icons.ICON // 2, 3] == 0   # half height: transparent above
-    assert out[icons.ICON // 2, icons.ICON // 2, :3].tolist() == [0, 0, 255]                # BGR
+    assert out.shape == (10, 20, 4) and (out[..., 3] == 255).all()
+    assert out[5, 10, :3].tolist() == [0, 0, 255]                             # BGR
     assert icons.sprite_icon("absent") is None and icons.sprite_icon("unmapped") is None
 
 
-def test_a_sprite_is_scaled_by_a_whole_factor_with_a_two_pixel_margin():
-    for h, w, k in ((16, 16, 2), (24, 16, 1), (20, 20, 2)):                     # 44 px fit: 16 -> x2, 24 -> x1 (x2 = 48 would touch)
-        out = icons.to_icon(np.full((h, w, 3), 90, np.uint8))
-        ys, xs = np.nonzero(out[..., 3])
-        assert (ys.max() - ys.min() + 1, xs.max() - xs.min() + 1) == (h * k, w * k)
-        assert min(ys.min(), xs.min(), icons.ICON - 1 - ys.max(), icons.ICON - 1 - xs.max()) >= icons.MARGIN
+def test_a_gif_gives_its_first_frame_at_native_size(tmp_path, monkeypatch):
+    from PIL import Image
+    monkeypatch.setattr(icons, "sprites_dir", lambda: tmp_path)
+    monkeypatch.setattr(icons, "MAP", tmp_path / "icons.yaml")
+    (tmp_path / "icons.yaml").write_text('anim: "a.gif"\n')
+    f1, f2 = Image.new("RGB", (16, 24), (255, 0, 0)), Image.new("RGB", (16, 24), (0, 0, 255))
+    f1.save(tmp_path / "a.gif", save_all=True, append_images=[f2])
+    out = icons.sprite_icon("anim")
+    assert out.shape == (24, 16, 4) and out[0, 0, 2] > 200 and out[0, 0, 0] < 50                 # the red first frame
