@@ -145,9 +145,8 @@ class LevelInfo(BaseModel):
     kind: str                             # overground | underground | sky | water | castle | mixed
     status: Literal["open", "cleared", "locked"]    # cleared = some saved run reached the flag; nothing is locked yet
     status_text: str = "not tried"        # "not tried" | "won 2/5" | "best x 1840"
-    scanned: bool = False                 # False: width and objects are unknown (not yet scanned or seen by any run)
-    partial: bool = False                 # the scan stopped before the flag: width and objects are lower bounds
-    width: Optional[int] = None           # level length in px (how far the scan got if partial); None = unknown
+    scanned: bool = False                 # False: objects are unknown (not yet scanned or seen by any run)
+    partial: bool = False                 # the scan stopped before the flag: objects are a lower bound
     objects: Optional[list[str]] = None   # object types present, scan plus every run's objects_seen; None = unknown
 
 

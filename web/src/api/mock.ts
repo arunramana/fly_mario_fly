@@ -45,8 +45,8 @@ const registry: Registry = {
 }
 
 const levels: LevelInfo[] = [
-  { id: '1-1', label: '1-1', kind: 'overground', status: 'cleared', status_text: 'won 1/1', scanned: true, partial: false, width: 3168, objects: ['goomba', 'pipe', 'pit'] },
-  { id: '1-2', label: '1-2', kind: 'underground', status: 'open', status_text: 'not tried', scanned: false, partial: false, width: null, objects: null },
+  { id: '1-1', label: '1-1', kind: 'overground', status: 'cleared', status_text: 'won 1/1', scanned: true, partial: false, objects: ['goomba', 'pipe', 'pit'] },
+  { id: '1-2', label: '1-2', kind: 'underground', status: 'open', status_text: 'not tried', scanned: false, partial: false, objects: null },
 ]
 
 const flies: Record<string, Fly> = {

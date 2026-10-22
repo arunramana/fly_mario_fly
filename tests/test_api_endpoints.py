@@ -104,7 +104,7 @@ def test_levels(client):
     assert len(levels) == 35 and levels[0]["id"] == "1-1"
     one = client.get("/levels/1-1").json()
     assert one["id"] == "1-1" and one["kind"] == "overground" and one["status"] in ("open", "cleared")
-    assert {"scanned", "partial", "width", "objects", "status_text"} <= set(one)
+    assert {"scanned", "partial", "objects", "status_text"} <= set(one)
     assert client.get("/levels/9-9").status_code == 404
 
 

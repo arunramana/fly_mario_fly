@@ -115,7 +115,5 @@ def test_level_catalogue_reports_scan_status(client):
     lv = {x["id"]: x for x in client.get("/levels").json()}
     assert len(lv) == 35 and lv["2-2"]["kind"] == "water" and lv["1-1"]["status"] in ("open", "cleared")
     for x in lv.values():
-        if not x["scanned"]:
-            assert x["width"] is None                                              # unknown, not zero
         if x["objects"] is not None:
             assert x["objects"] == sorted(x["objects"])

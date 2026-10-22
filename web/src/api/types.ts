@@ -1057,8 +1057,6 @@ export interface components {
              * @default not tried
              */
             status_text: string;
-            /** Width */
-            width?: number | null;
         };
         /** MomentEvent */
         MomentEvent: {
