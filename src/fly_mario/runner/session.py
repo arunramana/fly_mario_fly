@@ -143,6 +143,10 @@ class Run:
         self.outcome = "timeout"
         self.death = None
 
+    def close(self) -> None:
+        """Free the emulator. Call when the run is over or abandoned; the Run is not played after this."""
+        self.env.close()
+
     # ---- start ----------------------------------------------------------------------------------------
     def start(self) -> None:
         sc, env = self.scene, self.env

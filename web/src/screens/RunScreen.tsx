@@ -5,7 +5,7 @@ import type { FrameEvent, MomentSummary, RunResult, RunStream } from '../api/mod
 import RunStage from '../components/RunStage'
 import DownloadButton from '../components/DownloadButton'
 import { errText, useStartRun } from '../hooks'
-import { momentPictures, runRequests, useDraft, type Picture } from '../draft'
+import { rememberPicture, runRequests, useDraft, type Picture } from '../draft'
 
 const SPEEDS: [number, string][] = [[0.5, '0.5×'], [1, '1×'], [100, 'Fast']]
 // Only a recent window of pictures is kept: a moment picture is copied out of it when the moment arrives, and the
@@ -43,7 +43,7 @@ function RunView({ runId }: { runId: string }) {
       let at = -1
       for (const f of keep.keys()) if (f <= m.frame && f > at) at = f
       const p = keep.get(at)
-      if (p) momentPictures.set(m.id, p)
+      if (p) rememberPicture(m.id, p)
     }
     // Connect after a tick: React StrictMode mounts, unmounts and remounts at once in dev, and a run that has been
     // connected to and dropped is aborted by the server.
@@ -82,7 +82,7 @@ function RunView({ runId }: { runId: string }) {
     try {
       const m = await api.saveMoment(runId, `Moment at frame ${frame.frame}`)
       setMoments((x) => (x.some((y) => y.id === m.id) ? x : [...x, m]))
-      momentPictures.set(m.id, pictures.current.get(m.frame) ?? { game: frame.frame_png, overlay: frame.overlay_png, at: frame.overlay_at })
+      rememberPicture(m.id, pictures.current.get(m.frame) ?? { game: frame.frame_png, overlay: frame.overlay_png, at: frame.overlay_at })
     } catch (e) { setError(errText(e)) }
   }
   const rewind = async () => {
