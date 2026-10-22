@@ -25,6 +25,8 @@ from typing import Optional
 
 import cv2
 import numpy as np
+import yaml
+from PIL import Image
 
 from fly_mario import registry
 from fly_mario.contracts import Scene
@@ -47,6 +49,36 @@ def icons_dir() -> Path:
 
 def icon_path(name: str) -> Path:
     return icons_dir() / f"{name}.png"
+
+
+MAP = Path(__file__).resolve().parents[3] / "configs" / "icons.yaml"      # object type -> sprite file name
+
+
+def sprites_dir() -> Path:
+    return runs_dir().parent / "assets" / "sprites"
+
+
+def sprite_icon(name: str) -> Optional[np.ndarray]:
+    """The downloaded sprite mapped to this type in configs/icons.yaml as an ICON x ICON BGRA (a GIF's first frame),
+    fitted keeping its aspect ratio, nearest-neighbour, transparent padding; None if there is no mapping or no file."""
+    try:
+        file = (yaml.safe_load(MAP.read_text(encoding="utf-8")) or {}).get(name)
+        path = sprites_dir() / file if file else None
+        if path is None or not path.is_file():
+            return None
+        with Image.open(path) as im:
+            im.seek(0)
+            rgba = np.array(im.convert("RGBA"))
+    except (OSError, ValueError, yaml.YAMLError):
+        return None
+    h, w = rgba.shape[:2]
+    k = ICON / max(h, w)
+    nh, nw = max(1, round(h * k)), max(1, round(w * k))
+    small = cv2.resize(rgba, (nw, nh), interpolation=cv2.INTER_NEAREST)
+    out = np.zeros((ICON, ICON, 4), np.uint8)
+    y0, x0 = (ICON - nh) // 2, (ICON - nw) // 2
+    out[y0:y0 + nh, x0:x0 + nw] = small[..., [2, 1, 0, 3]]
+    return out
 
 
 def crop_box(box, scroll_x: float, pad: int = PAD) -> Optional[tuple]:
@@ -179,11 +211,17 @@ def make_icons(names: list) -> dict:
         if note:
             notes[name] = note
         atomic.write_json(d / "notes.json", notes)
-        atomic.write_json(d / "sigs.json", maker.sigs)
+        atomic.write_json(d / "sigs.json", maker.sigs if maker else sigs)
 
     kinds = {n: o.kind for n, o in registry.list_plugins("objects").items()}
     todo = {n for n in names if not icon_path(n).exists()}
-    maker = Maker(kinds, save, {n: s for n, s in _read(d / "sigs.json").items() if n not in todo})
+    maker, sigs = None, _read(d / "sigs.json")
+    for n in sorted(todo):
+        img = sprite_icon(n)                                                 # a downloaded sprite, when there is one
+        if img is not None:
+            save(n, img, None)
+    todo = {n for n in todo if not icon_path(n).exists()}
+    maker =Maker(kinds, save, {n: s for n, s in _read(d / "sigs.json").items() if n not in todo})
     maker.run(todo)
     return {n: icon_path(n) for n in names if icon_path(n).exists()}
 
