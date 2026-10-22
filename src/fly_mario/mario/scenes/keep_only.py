@@ -17,7 +17,7 @@ class KeepOnly:
             raise ValueError(f"keep_only: unknown object types {sorted(unknown)}")
         facts = env.facts
         keep_bytes = [b for n in keep if plugins[n].kind == "enemy" for b in facts["objects"][n]["types"]]
-        R.sweep_enemies(env, facts, keep_bytes)          # also enemies no plug-in knows about
+        R.sweep_enemies(env, facts, keep_bytes + facts["objects"]["non_enemy"]["types"])   # also enemies no plug-in knows about; lifts stay
         for name, plugin in plugins.items():
             if name not in keep:
                 plugin.remove(env)                       # pickups; a no-op for terrain

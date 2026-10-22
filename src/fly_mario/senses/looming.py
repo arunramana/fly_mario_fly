@@ -16,7 +16,8 @@ What counts as "the object" depends on the loom shape of its type (senses/shapes
   tower  (far_edge_tower)       a pit: the tower on its far edge looms like a wall, but while the pit is still ahead
                                 it keeps competing with its base (the hole), so an already-released pit holds the
                                 channel at zero (dashed) instead of letting a farther threat through. Released
-                                mid-jump, it stays released until landing.
+                                mid-jump, it stays released until landing. The pit is an inverted L: a bar (the hole) one tile
+                                row below the level Mario takes off from, and the tower on its far end.
 
 Toggles read from the whole-fly senses that run before this one (see headroom.py and rear_eye.py): the headroom
 factor scales a creature's angle by min(1, rise / (height + clearance)); the rear eye also lets an enemy BEHIND
@@ -36,7 +37,13 @@ from fly_mario.contracts import KnobSpec, SenseOutput
 from fly_mario.senses.kit import draw
 from fly_mario.senses.kit.geom import eye_of, feet_of, gap, identity, is_behind, is_cleared, over, theta_of
 from fly_mario.senses.kit.headroom import rise_available
-from fly_mario.senses.kit.world import default_shapes, floor_y, standing_walls, top_of_wall_at
+from fly_mario.senses.kit.world import default_shapes, floor_y, hole_box, standing_walls, top_of_wall_at
+
+
+# Which hole ranks a pit against the other threats. False: the floor row, as the frozen 1-1 champion saw it (the golden
+# episodes pass). True: the bar at the take-off level; on 1-1's brick row above the gap at x=2448 that makes all 10 holdout
+# runs die at x~2469 (see the lane report), so it stays off until the champion is re-frozen.
+HOLE_DISTANCE_FROM_TAKEOFF = False
 
 
 @dataclass
@@ -49,7 +56,8 @@ class _Cand:
     w: float
     h: float                    # the height that sets theta
     vis: tuple                  # the box to draw
-    base: Optional[tuple] = None    # towers: the hole
+    base: Optional[tuple] = None    # towers: the hole, the bar of the inverted L, drawn at the take-off level
+    sel_base: Optional[tuple] = None    # towers: the box whose distance ranks the pit against the other threats
     rims: Optional[tuple] = None
     d: float = 0.0
     dsel: float = 0.0
@@ -154,13 +162,13 @@ class Looming:
             h = 0.0 if (ident in released or is_cleared(mario, b.y, b.x, b.x + b.w)) else ground - b.y
             near_y, far_y = o.state["loom_rims"]
             cands.append(_Cand("tower", o, ident, b.x, b.y, b.w, max(h, 0.0), (b.x, b.y, b.w, b.h),
-                               base=(px, floor, pw, tile), rims=(near_y, far_y, px - tile, px + pw)))
+                               base=hole_box(o.box, near_y, facts), sel_base=hole_box(o.box, near_y, facts) if HOLE_DISTANCE_FROM_TAKEOFF else (px, floor, pw, tile), rims=(near_y, far_y, px - tile, px + pw)))
 
         ahead = [c for c in cands if c.x >= mario.x or c.family == "tower" or over(mario, c.x, c.x + c.w)]
         pit_gain = knobs.get("loom.pit_gain", 1.0)
         for c in ahead:
             c.d = gap(mario, c.x, c.top, c.w, c.h)
-            c.dsel = gap(mario, *c.base) if c.base else c.d    # a pit competes with the others by its nearest part, the hole
+            c.dsel = gap(mario, *c.sel_base) if c.sel_base else c.d    # a pit competes with the others by its nearest part, the hole
             if c.family == "tower":
                 c.theta = pit_gain * theta_of(c.d, c.h) if c.h > 0 else 0.0
             else:

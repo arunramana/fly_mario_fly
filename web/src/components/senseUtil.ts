@@ -6,9 +6,14 @@ export const splitLabel = (label: string): [string, string] => {
   return m ? [m[1], m[2]] : [label, '']
 }
 
-const KIND_ORDER = ['enemy', 'obstacle', 'pickup', 'terrain']
-export const byKind = (objects: ObjectInfo[]) =>
-  [...objects].sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind))
+/** The sub-tabs of the sense grid: each groups registry kinds; a kind that no tab lists falls into the last one. */
+export const OBJECT_TABS: { id: string; label: string; kinds: string[] }[] = [
+  { id: 'enemies', label: 'Enemies', kinds: ['enemy'] },
+  { id: 'objects', label: 'Objects', kinds: ['terrain', 'obstacle'] },
+  { id: 'powerups', label: 'Power-ups', kinds: ['pickup'] },
+]
+export const tabOf = (o: ObjectInfo) =>
+  (OBJECT_TABS.find((t) => t.kinds.includes(o.kind)) ?? OBJECT_TABS[OBJECT_TABS.length - 1]).id
 
 
 /** Columns and buttons in the order the API gives each plug-in (`order`); ties keep the registry's order. */
