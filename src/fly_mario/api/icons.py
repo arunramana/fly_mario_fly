@@ -28,7 +28,7 @@ import numpy as np
 
 from fly_mario import registry
 from fly_mario.contracts import Scene
-from fly_mario.runner import Run, level_catalogue, load_fly
+from fly_mario.runner import atomic, Run, level_catalogue, load_fly
 from fly_mario.runner.record import runs_dir
 
 ICON = 80                      # output size, px
@@ -175,11 +175,11 @@ def make_icons(names: list) -> dict:
     def save(name, img, note):
         ok, buf = cv2.imencode(".png", img)
         if ok:
-            icon_path(name).write_bytes(buf.tobytes())
+            atomic.write_bytes(icon_path(name), buf.tobytes())
         if note:
             notes[name] = note
-        (d / "notes.json").write_text(json.dumps(notes, indent=1), encoding="utf-8")
-        (d / "sigs.json").write_text(json.dumps(maker.sigs, indent=1), encoding="utf-8")
+        atomic.write_json(d / "notes.json", notes)
+        atomic.write_json(d / "sigs.json", maker.sigs)
 
     kinds = {n: o.kind for n, o in registry.list_plugins("objects").items()}
     todo = {n for n in names if not icon_path(n).exists()}
@@ -189,10 +189,7 @@ def make_icons(names: list) -> dict:
 
 
 def _read(path: Path) -> dict:
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
+    return atomic.read_json(path) or {}
 
 
 def get_icon(name: str) -> Optional[Path]:

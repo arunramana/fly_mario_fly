@@ -20,22 +20,18 @@ import time
 from pathlib import Path
 
 from fly_mario.evolve import devset, search
+from fly_mario.runner import atomic
 from fly_mario.runner import config as C
 
 ALIVE_EVERY = 5.0           # seconds between heartbeats
 
 
 def _write(path: Path, data) -> None:
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(data, indent=1), encoding="utf-8")
-    tmp.replace(path)
+    atomic.write_json(path, data)
 
 
 def read_json(path: Path):
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
+    return atomic.read_json(path)
 
 
 def flag_x_for(level: str) -> float:
