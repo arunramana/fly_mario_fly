@@ -66,6 +66,9 @@ const enc = encodeURIComponent
 /** The level's opening screen (PNG), made by the server with the emulator the first time it is asked for. */
 export const thumbnailUrl = (levelId: string): string => `${BASE}/levels/${enc(levelId)}/thumbnail.png`
 
+/** An object's picture, from the path the registry gives. */
+export const iconUrl = (path: string): string => (path.startsWith('data:') ? path : `${BASE}${path}`)
+
 /** The mp4 of a video export from the path the API gave; with `download` the server sends it as an attachment. */
 export const videoUrl = (path: string, download = false): string =>
   path.startsWith('data:') ? path : `${BASE}${path}${download ? '?download=true' : ''}`

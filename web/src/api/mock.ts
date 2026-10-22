@@ -13,10 +13,10 @@ const knob = (key: string, label: string, lo_label: string, hi_label: string,
 
 const registry: Registry = {
   objects: [
-    { name: 'goomba', label: 'Goomba', note: 'Walks toward Mario.', kind: 'enemy', default_loom_shape: 'body' },
-    { name: 'koopa', label: 'Koopa', note: 'Shelled walker.', kind: 'enemy', default_loom_shape: 'body' },
-    { name: 'pipe', label: 'Pipe', note: 'Solid green tube.', kind: 'obstacle', default_loom_shape: 'face' },
-    { name: 'pit', label: 'Pit', note: 'A gap in the ground.', kind: 'terrain', default_loom_shape: 'edge' },
+    { name: 'goomba', label: 'Goomba', note: 'Walks toward Mario.', kind: 'enemy', default_loom_shape: 'body', icon: '' },
+    { name: 'koopa', label: 'Koopa', note: 'Shelled walker.', kind: 'enemy', default_loom_shape: 'body', icon: '' },
+    { name: 'pipe', label: 'Pipe', note: 'Solid green tube.', kind: 'obstacle', default_loom_shape: 'face', icon: '' },
+    { name: 'pit', label: 'Pit', note: 'A gap in the ground.', kind: 'terrain', default_loom_shape: 'edge', icon: '' },
   ],
   senses: [
     { name: 'looming', label: 'Looming', effect: 'Things that grow fast feel dangerous.', scope: 'per_object',

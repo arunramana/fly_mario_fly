@@ -80,6 +80,14 @@ assert.ok(rects.side > rects.grid * 0.6, 'the sidebar has real width')
 await next.click()
 await page.getByLabel('preset').selectOption('champion_e1s')
 await page.getByLabel('Home').waitFor()
+// every row of the grid shows its picture (a real image, loaded), not an empty square
+await page.waitForFunction(() => [...document.querySelectorAll('.sg-row')].every((r) => {
+  const i = r.querySelector('img[data-testid=object-icon]'); return i && i.complete && i.naturalWidth > 0
+}), null, { timeout: 300_000 })
+const rowsN = await page.locator('.sg-row').count()
+assert.ok(rowsN > 0 && (await page.locator('.sg-row img[data-testid=object-icon]').count()) === rowsN, 'every Fly-grid row shows an image')
+console.log('Fly grid: rows with an icon image', rowsN, 'of', rowsN)
+await page.screenshot({ path: `${out}/2-fly_grid_icons_1440x900.png` })
 await shoot('2-fly')
 await page.getByText('Advanced: fine-tune').click()
 const drawer = page.getByRole('dialog', { name: 'Fine-tune this fly' })

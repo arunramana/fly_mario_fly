@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { Fly, ObjectInfo, SenseInfo, ShapeInfo } from '../api/models'
+import ObjectIcon from './ObjectIcon'
 import { byOrder, splitLabel } from './senseUtil'
 
 const shapeWords = (shape?: ShapeInfo) => {
@@ -46,7 +47,7 @@ export default function SenseGrid({ objects, senses, shapes, fly, onChange }: Pr
         return (
           <div className="sg-row" key={o.name}>
             <div className="sg-thing" title={o.note}>
-              <span className="sprite" />
+              <ObjectIcon object={o} />
               <span><b>{o.label}</b><small>{o.kind} · {shapeWords(shape) || o.note}</small></span>
             </div>
             {cols.map((s) => {
