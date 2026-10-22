@@ -67,3 +67,10 @@ def test_the_background_colour_is_transparent_and_found_below_the_status_bar():
     out = icons.to_icon(screen[96:120, 96:120], bg)
     assert out[..., 3].min() == 0 and out[..., 3].max() == 255
     assert (out[out[..., 3] > 0][:, :3] == (50, 50, 200)).all()               # only the sprite is opaque (BGR)
+
+
+def test_a_pipe_crop_covers_both_columns_and_a_sprite_keeps_a_two_pixel_margin():
+    x0, y0, x1, y1 = icons.crop_box(Box(100, 100, 32, 48), 0)
+    assert x0 <= 100 - icons.PAD and x1 >= 132 + icons.PAD
+    x0, y0, x1, y1 = icons.crop_box(Box(100, 100, 16, 16), 0, icons.SPRITE_PAD)
+    assert (x0, x1) == (98, 118) and icons.SPRITE_PAD == 2

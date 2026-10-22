@@ -34,6 +34,7 @@ from fly_mario.runner.record import runs_dir
 ICON = 80                      # output size, px
 STATUS_BAR = 32                # level y has the 32 px status bar above it (as the renderer draws it)
 PAD = 4                        # px of the surroundings kept around a box (rims of a gap)
+SPRITE_PAD = 2                 # px of margin around a sprite, so no edge of it touches the crop's edge
 MAX_SIDE = 32                  # a box taller / wider than this keeps its top / middle (two blocks)
 WALKER = "champion_e1s"        # the preset that walks a level (any fly that moves would do)
 MAX_FRAMES = 2400
@@ -110,11 +111,12 @@ class Maker:
         if o.state.get("open") or o.state.get("shell"):
             return None
         sprite = self.kinds[t] in ("enemy", "pickup")                           # a sprite is cropped tight; a tile keeps its surroundings
-        c = crop_box(o.box, rec.scroll_x, 0 if sprite else PAD)
+        scroll = rec.scroll_x_after                                             # rec.screen is the picture after the action
+        c = crop_box(o.box, scroll, SPRITE_PAD if sprite else PAD)
         if c is None:
             return None
         m = rec.mario
-        if m.x - rec.scroll_x < c[2] and m.x - rec.scroll_x + m.w > c[0] and m.y + STATUS_BAR < c[3] and m.y + m.h + STATUS_BAR > c[1]:
+        if m.x - scroll < c[2] and m.x - scroll + m.w > c[0] and m.y + STATUS_BAR < c[3] and m.y + m.h + STATUS_BAR > c[1]:
             return None                                                    # Mario is in the way
         if sprite:
             if prev_x.get((t, o.id)) in (None, o.box.x) or any(_overlap(o.box, p.box) for p in others):
@@ -124,29 +126,27 @@ class Maker:
     def play(self, level_id: str, want: set, enemies: bool) -> None:
         mods = () if enemies else (("no_enemies", {}),)
         run = Run(load_fly(WALKER), Scene(level_id=level_id, modifiers=mods, max_frames=MAX_FRAMES))
-        prev, prev_x = None, {}
+        prev_x = {}
         while not run.finished and want:
             rec = run.step()
-            if prev is not None:
-                bg = background(prev)
-                for t in sorted(want):
-                    for o in rec.found.get(t, ()):
-                        others = [p for n, objs in rec.found.items() if n != t for p in objs]
-                        c = self._good(t, o, rec, prev_x, others)
-                        if c is None:
-                            continue
-                        sx, sy = int(o.box.x - rec.scroll_x), int(o.box.y + STATUS_BAR)
-                        sig = prev[sy:sy + 16, sx:sx + 16].tobytes().hex()
-                        icon = to_icon(prev[c[1]:c[3], c[0]:c[2]], bg)
-                        same = next((n for n, s in self.sigs.items() if n != t and self.kinds[n] == self.kinds[t] == "terrain" and _alike(s, sig)), None)
-                        if same:
-                            self.dups.setdefault(t, (icon, sig, same))
-                            continue
-                        self.sigs[t] = sig
-                        self.save(t, icon, None)
-                        want = want - {t}
-                        break
-            prev = rec.screen
+            screen, bg = rec.screen, background(rec.screen)
+            for t in sorted(want):
+                for o in rec.found.get(t, ()):
+                    others = [p for n, objs in rec.found.items() if n != t for p in objs]
+                    c = self._good(t, o, rec, prev_x, others)
+                    if c is None:
+                        continue
+                    sx, sy = int(o.box.x - rec.scroll_x_after), int(o.box.y + STATUS_BAR)
+                    sig = screen[sy:sy + 16, sx:sx + 16].tobytes().hex()
+                    icon = to_icon(screen[c[1]:c[3], c[0]:c[2]], bg)
+                    same = next((n for n, s in self.sigs.items() if n != t and self.kinds[n] == self.kinds[t] == "terrain" and _alike(s, sig)), None)
+                    if same:
+                        self.dups.setdefault(t, (icon, sig, same))
+                        continue
+                    self.sigs[t] = sig
+                    self.save(t, icon, None)
+                    want = want - {t}
+                    break
             prev_x = {(t, o.id): o.box.x for t, objs in rec.found.items() for o in objs}
 
     def run(self, names: set) -> None:
