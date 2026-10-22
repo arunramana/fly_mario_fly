@@ -18,7 +18,7 @@ from fly_mario.runner.config import FLIES
 from fly_mario.runner.levels import level_thumbnail
 from fly_mario.runner.record import runs_dir
 from fly_mario.api import convert as V
-from fly_mario.api import layers
+from fly_mario.api import icons, layers
 from fly_mario.api import ports
 from fly_mario.api import schemas as S
 from fly_mario.api.jobs import Jobs
@@ -83,6 +83,18 @@ def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = N
     def get_level_thumbnail(level_id: str):
         """The level's opening screen (256 x 208 PNG); made with the emulator the first time, then cached."""
         return Response(level_thumbnail(level_id), media_type="image/png", headers={"Cache-Control": "max-age=86400"})
+
+    @app.get("/objects/{object_type}/icon.png", responses={200: {"content": {"image/png": {}}}})
+    def get_object_icon(object_type: str):
+        """The object's picture, cropped from the game. A separate process makes the set when the API starts and caches it
+        under $FLY_MARIO_DATA/icons/; until this one is ready (or if none could be found) the answer is 404, at once."""
+        try:
+            path = icons.get_icon(object_type)
+        except KeyError as e:
+            raise HTTPException(404, str(e))
+        if path is None:
+            raise HTTPException(404, f"the icon for {object_type!r} is not ready")
+        return FileResponse(path, media_type="image/png", headers={"Cache-Control": "max-age=86400"})
 
     # ---- flies ------------------------------------------------------------------------------------------------
     @app.get("/flies", response_model=list[S.FlySummary])

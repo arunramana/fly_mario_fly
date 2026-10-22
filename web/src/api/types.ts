@@ -292,6 +292,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/objects/{object_type}/icon.png": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Object Icon
+         * @description The object's picture, cropped from the game. A separate process makes the set when the API starts and caches it
+         *     under $FLY_MARIO_DATA/icons/; until this one is ready (or if none could be found) the answer is 404, at once.
+         */
+        get: operations["get_object_icon_objects__object_type__icon_png_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/registry": {
         parameters: {
             query?: never;
@@ -1121,6 +1142,11 @@ export interface components {
         ObjectInfo: {
             /** Default Loom Shape */
             default_loom_shape: string;
+            /**
+             * Icon
+             * @default
+             */
+            icon: string;
             /**
              * Kind
              * @enum {string}
@@ -2242,6 +2268,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TryDTO"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_object_icon_objects__object_type__icon_png_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                object_type: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/png": unknown;
                 };
             };
             /** @description Validation Error */

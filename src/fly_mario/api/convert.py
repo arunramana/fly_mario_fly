@@ -36,7 +36,8 @@ def registry_info(levels: list, presets: list) -> S.RegistryInfo:
                   for n, m in mods.items()}
     return S.RegistryInfo(
         objects=[S.ObjectInfo(name=o.name, label=o.label, note=getattr(o, "note", ""), kind=o.kind,
-                              default_loom_shape=o.default_loom_shape) for o in objs.values()],
+                              default_loom_shape=o.default_loom_shape,
+                              icon=f"/objects/{o.name}/icon.png") for o in objs.values()],
         senses=[S.SenseInfo(name=s.name, label=s.label, effect=s.effect, scope=s.scope, colour=s.colour,
                             line=s.line, feeds=list(getattr(s, "feeds", ())), knobs=_knobs(s),
                             order=int(getattr(s, "order", 0)))

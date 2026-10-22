@@ -26,6 +26,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
+from fly_mario.runner import atomic
 from fly_mario.runner import config as C
 from fly_mario.runner import levels, record
 from fly_mario.evolve import devset
@@ -102,9 +103,7 @@ def evaluate(pool: Pool, fly, genes, us, scenes, flag_x) -> list:
 
 
 def _atomic_write(path: Path, data: bytes) -> None:
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_bytes(data)
-    tmp.replace(path)
+    atomic.write_bytes(path, data)
 
 
 def best_fly(fly, values: dict, cfg: dict, gen: int, fitness: float):
@@ -126,7 +125,7 @@ def run(cfg: dict, pool: Pool | None = None, log=print) -> dict:
     import cma
     folder = Path(cfg["folder"]) if cfg.get("folder") else record.runs_dir() / cfg["id"]
     folder.mkdir(parents=True, exist_ok=True)
-    (folder / "config.json").write_text(json.dumps(cfg, indent=1), encoding="utf-8")
+    atomic.write_json(folder / "config.json", cfg)
     fly0 = C.load_fly(cfg["fly"])
     (folder / "start.yaml").write_text(C.dump_fly(fly0), encoding="utf-8")
     genes = G.build_genome(fly0)
@@ -218,6 +217,6 @@ def finish(cfg, fly0, genes, best, rows, flag_x, pool, folder: Path, log) -> dic
         eps = ev["episodes"]
         out[tag] = {**ev["summary"], "summary": ev["summary"], "fitness": F.candidate_fitness(eps),
                     "violations": sum(e["violations"] for e in eps), "episodes": eps}
-    (folder / "dev.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
+    atomic.write_json(folder / "dev.json", out)
     log(f"dev set: best {out['best']['flags']}/{out['best']['n']} flags, start {out['start']['flags']}/{out['start']['n']}")
     return {"folder": str(folder), "best": _slim(best), "rows": rows, "dev": out}

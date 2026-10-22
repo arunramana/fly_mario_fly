@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Optional
 
 from fly_mario import runner
+from fly_mario.runner import atomic
 from fly_mario.api import convert as V
 from fly_mario.api import knobs as K
 from fly_mario.api import schemas as S
@@ -28,16 +29,11 @@ SRC = str(Path(__file__).resolve().parents[2])
 
 
 def _read(path: Path):
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
+    return atomic.read_json(path)
 
 
 def _write(path: Path, data) -> None:
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(data, indent=1), encoding="utf-8")
-    tmp.replace(path)
+    atomic.write_json(path, data)
 
 
 def kill_tree(pid: int) -> None:

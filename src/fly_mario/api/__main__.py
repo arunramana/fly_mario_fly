@@ -12,6 +12,8 @@ def main() -> None:
         print(export_openapi())
         return
     import uvicorn
+    from fly_mario.api import icons
+    icons.ensure_generating()               # object pictures are made in their own process, never on a request
     uvicorn.run(create_app(), host="127.0.0.1", port=args.port)
 
 

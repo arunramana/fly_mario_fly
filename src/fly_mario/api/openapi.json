@@ -1324,6 +1324,11 @@
             "title": "Default Loom Shape",
             "type": "string"
           },
+          "icon": {
+            "default": "",
+            "title": "Icon",
+            "type": "string"
+          },
           "kind": {
             "enum": [
               "enemy",
@@ -3321,6 +3326,45 @@
           }
         },
         "summary": "Moment Tries"
+      }
+    },
+    "/objects/{object_type}/icon.png": {
+      "get": {
+        "description": "The object's picture, cropped from the game. A separate process makes the set when the API starts and caches it\nunder $FLY_MARIO_DATA/icons/; until this one is ready (or if none could be found) the answer is 404, at once.",
+        "operationId": "get_object_icon_objects__object_type__icon_png_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "object_type",
+            "required": true,
+            "schema": {
+              "title": "Object Type",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/png": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Object Icon"
       }
     },
     "/registry": {

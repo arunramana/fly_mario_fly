@@ -42,6 +42,7 @@ class ObjectInfo(BaseModel):
     note: str
     kind: Literal["enemy", "obstacle", "pickup", "terrain"]
     default_loom_shape: str
+    icon: str = ""                        # URL of its picture (GET /objects/{type}/icon.png); the page shows a plain square if it fails
 
 
 class SenseInfo(BaseModel):

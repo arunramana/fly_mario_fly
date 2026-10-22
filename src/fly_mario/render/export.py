@@ -26,6 +26,7 @@ from fly_mario import registry
 from fly_mario.render import palette as P
 from fly_mario.render import source
 from fly_mario.render.draw import H, LEFT_W, W, BrainPanel, Renderer, font, game_panel
+from fly_mario.runner import atomic
 from fly_mario.runner.record import runs_dir
 
 FPS = 60
@@ -42,16 +43,11 @@ def videos_dir() -> Path:
 
 
 def _write_json(path: Path, data) -> None:
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(data, indent=1), encoding="utf-8")
-    tmp.replace(path)
+    atomic.write_json(path, data)
 
 
 def read_json(path: Path):
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
+    return atomic.read_json(path)
 
 
 class HashMismatch(RuntimeError):
@@ -334,7 +330,7 @@ def make_video(folder: Path, spec: dict) -> dict:
         checks = ex.report
     except AttributeError:
         checks = []
-    part.replace(final)
+    atomic.replace_retry(part, final)
     info = {"export": spec["export"], "file": "video.mp4", "width": W, "height": H, "fps": FPS, "frames": n,
             "duration_s": round(n / FPS, 2), "bytes": final.stat().st_size, "render_s": round(time.time() - t0, 1),
             "replay_checks": checks, "speed": spec.get("speed", 1)}
