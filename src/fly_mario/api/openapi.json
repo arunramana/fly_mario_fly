@@ -1186,17 +1186,6 @@
             "default": "not tried",
             "title": "Status Text",
             "type": "string"
-          },
-          "width": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Width"
           }
         },
         "required": [

@@ -43,8 +43,7 @@ export default function SceneScreen() {
   const level = all.find((l) => l.id === scene.level_id)
   const kinds = KIND_ORDER.filter((k) => all.some((l) => l.kind === k))
   const shown = kind === 'all' ? all : all.filter((l) => l.kind === kind)
-  const startKind = scene.start === 'level_start' ? 'level_start' : typeof scene.start === 'number' ? 'point' : 'moment'
-  const width = level?.width ?? null
+  const startKind = scene.start === 'level_start' ? 'level_start' : 'moment'
   const objLabel = (n: string) => registry.data.objects.find((o) => o.name === n)?.label ?? n
 
   // Test-scene chips come from registry data: each plain modifier, and each object-picking modifier x each object
@@ -104,15 +103,8 @@ export default function SceneScreen() {
             <h2 className="label">{level?.label ?? scene.level_id} · {cap(level?.kind ?? '')}</h2>
             {level && <span className={statusClass(level)}>{statusText(level)}</span>}
           </div>
-          <div className={`strip-preview ${startKind === 'point' && width != null ? 'pick' : ''}`}
-            role={startKind === 'point' ? 'slider' : undefined} aria-label="start point"
-            onClick={(e) => {
-              if (startKind !== 'point' || width == null) return
-              const r = e.currentTarget.getBoundingClientRect()
-              setStart(Math.round(((e.clientX - r.left) / r.width) * width))
-            }}>
+          <div className="strip-preview">
             <img src={thumbnailUrl(scene.level_id)} alt={`${level?.label ?? scene.level_id} opening screen`} />
-            {startKind === 'point' && width != null && <div className="strip-pin" style={{ left: `${(Number(scene.start) / width) * 100}%` }} />}
           </div>
           <p className="facts">
             {level?.objects == null
@@ -133,8 +125,6 @@ export default function SceneScreen() {
           <div className="group">
             <h3>Start from</h3>
             <label className="radio"><input type="radio" name="start" checked={picked.start && startKind === 'level_start'} onChange={() => setStart('level_start')} />the level start</label>
-            <label className="radio"><input type="radio" name="start" checked={picked.start && startKind === 'point'} disabled={width == null}
-              onChange={() => setStart(typeof scene.start === 'number' ? scene.start : 0)} />a point on the level strip</label>
             <label className="radio"><input type="radio" name="start" checked={picked.start && startKind === 'moment'} disabled={!moments.data?.length}
               onChange={() => moments.data?.[0] && setStart(moments.data[0].id)} />a saved moment</label>
             {startKind === 'moment' && (

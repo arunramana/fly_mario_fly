@@ -187,7 +187,7 @@ LEVEL_ORDER = [f"{w}-{s}" for w in range(1, 9) for s in range(1, 5)] + list(LEVE
 
 def level_to_dto(lv) -> S.LevelInfo:
     return S.LevelInfo(id=lv.id, label=LEVEL_NAMES.get(lv.id, lv.id), kind=lv.kind, status="cleared" if lv.status.wins else "open",
-                       status_text=lv.status.text, scanned=lv.scanned, partial=lv.partial, width=lv.width,
+                       status_text=lv.status.text, scanned=lv.scanned, partial=lv.partial,
                        objects=None if lv.objects is None else list(lv.objects))
 
 

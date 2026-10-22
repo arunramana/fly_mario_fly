@@ -103,8 +103,6 @@ input[type='text'] { background: #000; border: calc(3 * var(--px)) solid var(--l
 .side { display: flex; flex-direction: column; gap: calc(20 * var(--px)); min-width: 0; }
 .strip-preview { border: calc(3 * var(--px)) dashed #777; background: var(--card); aspect-ratio: 314 / 126; margin: calc(14 * var(--px)) 0 calc(14 * var(--px)); position: relative; overflow: hidden; }
 .strip-preview img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 78%; image-rendering: pixelated; display: block; }
-.strip-pin { position: absolute; top: 0; bottom: 0; width: calc(6 * var(--px)); background: var(--gold); border: calc(2 * var(--px)) solid #000; transform: translateX(-50%); pointer-events: none; }
-.strip-preview.pick { cursor: crosshair; }
 .facts { color: #d8d8d8; font-size: calc(15 * var(--px)); line-height: 1.3; }
 .facts-top { display: flex; justify-content: space-between; gap: calc(12 * var(--px)); align-items: baseline; }
 .facts-top .label { margin: 0; }
