@@ -301,8 +301,8 @@ export interface paths {
         };
         /**
          * Get Object Icon
-         * @description The object's picture, cropped from the game; made with the emulator the first time (a minute for the whole
-         *     set), then cached under $FLY_MARIO_DATA/icons/. 404 if no instance could be found.
+         * @description The object's picture, cropped from the game. A separate process makes the set when the API starts and caches it
+         *     under $FLY_MARIO_DATA/icons/; until this one is ready (or if none could be found) the answer is 404, at once.
          */
         get: operations["get_object_icon_objects__object_type__icon_png_get"];
         put?: never;

@@ -86,14 +86,14 @@ def create_app(flies_dir: Optional[Path] = None, runs_folder: Optional[Path] = N
 
     @app.get("/objects/{object_type}/icon.png", responses={200: {"content": {"image/png": {}}}})
     def get_object_icon(object_type: str):
-        """The object's picture, cropped from the game; made with the emulator the first time (a minute for the whole
-        set), then cached under $FLY_MARIO_DATA/icons/. 404 if no instance could be found."""
+        """The object's picture, cropped from the game. A separate process makes the set when the API starts and caches it
+        under $FLY_MARIO_DATA/icons/; until this one is ready (or if none could be found) the answer is 404, at once."""
         try:
             path = icons.get_icon(object_type)
         except KeyError as e:
             raise HTTPException(404, str(e))
         if path is None:
-            raise HTTPException(404, f"no icon could be made for {object_type!r}")
+            raise HTTPException(404, f"the icon for {object_type!r} is not ready")
         return FileResponse(path, media_type="image/png", headers={"Cache-Control": "max-age=86400"})
 
     # ---- flies ------------------------------------------------------------------------------------------------

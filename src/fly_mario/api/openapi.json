@@ -3330,7 +3330,7 @@
     },
     "/objects/{object_type}/icon.png": {
       "get": {
-        "description": "The object's picture, cropped from the game; made with the emulator the first time (a minute for the whole\nset), then cached under $FLY_MARIO_DATA/icons/. 404 if no instance could be found.",
+        "description": "The object's picture, cropped from the game. A separate process makes the set when the API starts and caches it\nunder $FLY_MARIO_DATA/icons/; until this one is ready (or if none could be found) the answer is 404, at once.",
         "operationId": "get_object_icon_objects__object_type__icon_png_get",
         "parameters": [
           {
