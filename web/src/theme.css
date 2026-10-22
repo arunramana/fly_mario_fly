@@ -132,7 +132,9 @@ input[type='text'] { background: #000; border: calc(3 * var(--px)) solid var(--l
 .sg-row { padding: calc(10 * var(--px)) calc(16 * var(--px)); border-top: calc(1 * var(--px)) solid #333; }
 .sg-row:first-of-type { border-top: 0; }
 .sg-thing { display: flex; align-items: center; gap: calc(12 * var(--px)); min-width: 0; }
-.sprite { flex: none; width: calc(48 * var(--px)); height: calc(48 * var(--px)); object-fit: contain; image-rendering: pixelated; display: block; }
+.sprite { flex: none; width: calc(64 * var(--px)); height: calc(56 * var(--px)); margin: calc(-4 * var(--px)) 0; display: block; } /* box 64x56; the negative margin keeps the row as high as with 48x48 */
+.sprite.frame { display: flex; align-items: center; justify-content: center; }
+.sprite-img { flex: none; display: block; image-rendering: pixelated; max-width: none; } /* size set by ObjectIcon: a whole factor in device px */
 .sprite.plain { display: grid; place-items: center; font-family: var(--pix); font-size: calc(14 * var(--px)); color: #000; background: var(--dim); }
 .sprite.plain.enemy { background: var(--red); }
 .sprite.plain.obstacle { background: var(--green); }
