@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Fly } from '../api/models'
 import SenseGrid from '../components/SenseGrid'
-import { byKind, byOrder, splitLabel } from '../components/senseUtil'
+import { OBJECT_TABS, byOrder, splitLabel, tabOf } from '../components/senseUtil'
 import { AdvancedDrawer, type KnobSection } from '../components/Knobs'
 import { errText, useStartRun } from '../hooks'
 import { useDraft } from '../draft'
@@ -29,16 +29,14 @@ export default function FlyScreen() {
   const { scene, fly, setFly, dials, setDials } = useDraft()
   const [open, setOpen] = useState(false)
   const [naming, setNaming] = useState(false)
+  const [tab, setTab] = useState(OBJECT_TABS[0].id)
   const registry = useQuery({ queryKey: ['registry'], queryFn: api.getRegistry })
-  const levels = useQuery({ queryKey: ['levels'], queryFn: api.getLevels })
   const save = useMutation({ mutationFn: (f: Fly) => api.saveFly(f, true) })
   const run = useStartRun()
   const brainMap = useBrainMap(fly)
-  if (!registry.data || !levels.data) return <p>Loading…</p>
+  if (!registry.data) return <p>Loading…</p>
   const reg = registry.data
-  const level = levels.data.find((l) => l.id === scene.level_id)
-  // A level that has not been scanned has unknown objects: offer every object type then.
-  const rows = byKind(reg.objects.filter((o) => !level?.objects || level.objects.includes(o.name)))
+  const rows = reg.objects.filter((o) => tabOf(o) === tab)      // every registered object type, grouped by kind
   const wholeSenses = reg.senses.filter((s) => s.scope === 'whole_fly')
 
   const attached = new Set(Object.entries(fly.attachments).filter(([, v]) => v.length).map(([k]) => k))
@@ -70,6 +68,12 @@ export default function FlyScreen() {
                 {reg.presets.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             </label>
+          </div>
+          <div className="chips object-tabs" role="tablist" aria-label="Kind of thing">
+            {OBJECT_TABS.map((t) => (
+              <button key={t.id} role="tab" aria-selected={tab === t.id} className={`chip ${tab === t.id ? 'on' : ''}`}
+                onClick={() => setTab(t.id)}>{t.label}</button>
+            ))}
           </div>
           <SenseGrid objects={rows} senses={reg.senses} shapes={reg.shapes} fly={fly} onChange={setFly} />
 

@@ -150,12 +150,12 @@ def _tower(box, rims):
     return TOWER.shape(ObjectInstance("pit", 1, box, "ahead", {"loom_rims": rims}), FACTS, {})
 
 
-def test_tower_stands_on_the_far_rim_top_and_is_as_tall_as_the_gap_or_a_jump():
+def test_tower_stands_on_the_hole_bar_at_take_off_level_and_tops_the_far_rim():
     flat = _tower(Box(160, 176, 32, 32), (176, 176))
     assert (flat.x, flat.h, flat.y + flat.h) == (192, 32, 176)
-    up = _tower(Box(160, 176, 32, 32), (176, 144))                      # far rim 32 px higher: still 32 tall, on 144
-    assert (up.h, up.y + up.h) == (32, 144)
-    down = _tower(Box(160, 176, 32, 32), (144, 176))                    # far rim lower: no rise, base on the far rim (176)
-    assert (down.h, down.y + down.h) == (32, 176)
+    up = _tower(Box(160, 176, 32, 32), (176, 144))                      # far rim 32 px higher: 32 + 32 tall, on the bar at 176
+    assert (up.h, up.y + up.h, up.y) == (64, 176, 112)
+    down = _tower(Box(160, 176, 32, 32), (144, 176))                    # far rim lower: 32 tall, on the bar at the take-off level 144
+    assert (down.h, down.y + down.h) == (32, 144)
     wide = _tower(Box(160, 176, 160, 32), (176, 176))
     assert wide.h == FACTS["mario"]["jump_apex"]                        # capped at one jump

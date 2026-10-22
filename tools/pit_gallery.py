@@ -31,6 +31,8 @@ from fly_mario.mario.env import MarioEnv                                      # 
 from fly_mario.mario.walker import Walker                                     # noqa: E402
 from fly_mario.senses.kit.geom import eye_of, gap, theta_of                   # noqa: E402
 from fly_mario.senses.kit.memory import SenseMemory                           # noqa: E402
+from fly_mario.senses.kit.world import hole_box                              # noqa: E402
+from fly_mario.contracts import Box                                           # noqa: E402
 
 HUD, SCALE = 32, 3                  # the status bar is 32 px; frames are drawn at 3x
 APPROACH = 120                      # px between Mario's front and the near edge for the first frame
@@ -116,8 +118,9 @@ def render(frame, ram, facts, mario, pit, tower, rims, theta, label, is_open=Fal
                (sx(tower.x), sy(tower.y + tower.h)), (sx(tower.x + tower.w), sy(tower.y + tower.h))]
     d.polygon(hull([(sx(ex), sy(ey))] + corners), fill=(255, 48, 48, 60), outline=(255, 48, 48, 200))
     box(pit, WHITE, 2, dash=True)
-    box(tower, RED, 3)
     near_y, far_y = rims
+    box(Box(*hole_box(pit, near_y, facts)), YELLOW, 3, dash=True)           # the bar of the inverted L, at the take-off level
+    box(tower, RED, 3)
     t = facts["grid"]["tile"]
     d.line([sx(pit.x - t), sy(near_y), sx(pit.x), sy(near_y)], fill=CYAN, width=4)
     d.line([sx(pit.x + pit.w), sy(far_y), sx(pit.x + pit.w + t), sy(far_y)], fill=CYAN, width=4)

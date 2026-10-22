@@ -120,6 +120,7 @@ input[type='text'] { background: #000; border: calc(3 * var(--px)) solid var(--l
 .fly > section { display: flex; flex-direction: column; min-height: 0; }
 .fly-head { flex: none; display: flex; justify-content: space-between; align-items: flex-start; gap: calc(16 * var(--px)); margin-bottom: calc(18 * var(--px)); }
 .fly-head .preset { flex: none; display: flex; align-items: center; gap: calc(12 * var(--px)); }
+.object-tabs { display: flex; gap: calc(8 * var(--px)); margin-bottom: calc(10 * var(--px)); }
 .sense-grid { flex: 1; min-height: calc(120 * var(--px)); overflow-y: auto; scrollbar-color: #555 #000; border: calc(4 * var(--px)) solid var(--line); background: var(--panel); }
 .sg-head, .sg-row { display: grid; grid-template-columns: minmax(calc(180 * var(--px)), 1fr) repeat(var(--cols), minmax(calc(110 * var(--px)), calc(150 * var(--px)))); align-items: center; }
 .sg-head { position: sticky; top: 0; z-index: 1; background: var(--panel); border-bottom: calc(4 * var(--px)) solid var(--line); padding: calc(18 * var(--px)) calc(16 * var(--px)) calc(16 * var(--px)); color: #bbb; }

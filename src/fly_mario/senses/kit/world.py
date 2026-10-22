@@ -27,6 +27,11 @@ def floor_y(facts) -> float:
     return float(g["ground_row"] * g["tile"])
 
 
+def hole_box(pit_box, takeoff_y: float, facts) -> tuple:
+    """(x, y, w, h) of a pit's horizontal bar: the tile row just below the level Mario takes off from, spanning the gap."""
+    return (pit_box.x, takeoff_y, pit_box.w, facts["grid"]["tile"])
+
+
 def standing_walls(world, facts) -> list:
     """Boxes of terrain that stand on the floor (a pipe, a stair column): what a pit's rim is made of."""
     fl = floor_y(facts)
