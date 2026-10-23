@@ -9,7 +9,7 @@ description = "Attach MaleCNS fly senses to Super Mario objects; watch, rewind, 
 requires-python = ">=3.12"
 # Same pins as the old repo: nes-py breaks under numpy 2.
 # numpy stays <1.27, so pyarrow and pandas are capped to the releases that still support it.
-dependencies = ["numpy>=1.26,<1.27", "pyyaml", "pyarrow<23",
+dependencies = ["numpy>=1.26,<1.27", "scipy>=1.11", "pyyaml", "pyarrow<23",
     "fastapi>=0.150,<0.151", "uvicorn", "websockets", "pydantic>=2", "httpx",
     "setuptools<70", "gym==0.23.1", "nes-py", "gym-super-mario-bros", "opencv-python-headless<4.10", "pillow", "cma", "imageio-ffmpeg"]
 
