@@ -53,7 +53,7 @@ function RunView({ runId }: { runId: string }) {
       stream.current = s
       s.onEvent((e) => {
         if (e.type === 'frame') {
-          keep.set(e.frame, { game: e.frame_png, overlay: e.overlay_png, at: e.overlay_at })
+          keep.set(e.frame, { game: e.frame_png, overlay: e.overlay, scrollX: e.scroll_x })
           keep.delete(e.frame - KEEP_PICTURES)
           lastFrame.current = e.frame
           if (e.brain_jpg) setBrain(e.brain_jpg)
@@ -82,7 +82,7 @@ function RunView({ runId }: { runId: string }) {
     try {
       const m = await api.saveMoment(runId, `Moment at frame ${frame.frame}`)
       setMoments((x) => (x.some((y) => y.id === m.id) ? x : [...x, m]))
-      rememberPicture(m.id, pictures.current.get(m.frame) ?? { game: frame.frame_png, overlay: frame.overlay_png, at: frame.overlay_at })
+      rememberPicture(m.id, pictures.current.get(m.frame) ?? { game: frame.frame_png, overlay: frame.overlay, scrollX: frame.scroll_x })
     } catch (e) { setError(errText(e)) }
   }
   const rewind = async () => {
@@ -104,7 +104,7 @@ function RunView({ runId }: { runId: string }) {
   return (
     <div className="run">
       <div className="stage-wrap">
-        <RunStage brain={brain} game={frame?.frame_png} overlay={frame?.overlay_png} at={frame?.overlay_at}
+        <RunStage brain={brain} game={frame?.frame_png} overlay={frame?.overlay} scrollX={frame?.scroll_x}
           showBrain={showBrain} showSenses={showSenses} />
       </div>
 

@@ -25,6 +25,8 @@ Z_SPLIT = 52000.0                                    # somata with z above this 
 TEXT_Y = 574
 INDEX_Y, INDEX_DY = 746, 27
 FONT, FONT_B = "C:/Windows/Fonts/DejaVuSans.ttf", "C:/Windows/Fonts/DejaVuSans-Bold.ttf"
+# The somata and their halo (blur sigma 2.5 -> ~10 px) lie inside this box of the left panel: (y0, y1, x0, x1).
+GLOW_BOX = (0, TEXT_Y + 8, COL_X - 24, COL_X + COL_W + 24)
 FLOOR = 0.02                                         # brightness floor: a ~1e-3 baseline must not look lit
 
 
@@ -64,6 +66,7 @@ class BrainPanel:
         px, py = self._cord(a[vn, 0], a[vn, 2])
         np.add.at(dens_v, (py.astype(int), px.astype(int)), 1.0)
         self.bg = np.maximum(_grey(dens_b), _grey(dens_v))
+        self._bg_u8 = np.clip(self.bg, 0, 255).astype(np.uint8)     # the cached background: everything outside GLOW_BOX
         self.px = {g: self._project(v) for g, v in brain.xyz.items()}
         self.other = self._project(brain.other_xyz)
         self.rows = [(lab, role, [g for g in gs if g in brain.xyz]) for lab, role, gs in brain.index]
@@ -85,18 +88,23 @@ class BrainPanel:
         return float(np.clip(rates.get(g, 0.0) / max(self.b.rate_max.get(g, 0.0), FLOOR), 0, 1))
 
     def glow(self, rates: dict) -> np.ndarray:
-        layer = np.zeros((H, LEFT_W, 3), np.float32)
+        """The panel with the somata glowing. Only the box around the brain and the cord (+ halo margin) is drawn and blurred;
+        the rest of the panel is the cached background, so the result is the same as blurring the whole panel."""
+        y0, y1, x0, x1 = GLOW_BOX
+        layer = np.zeros((y1 - y0, x1 - x0, 3), np.float32)
         for x, y in self.other:                                        # relays: faint, constant
-            cv2.circle(layer, (int(x), int(y)), 1, tuple(0.28 * c for c in self.b.other_colour), -1, cv2.LINE_AA)
+            cv2.circle(layer, (int(x) - x0, int(y) - y0), 1, tuple(0.28 * c for c in self.b.other_colour), -1, cv2.LINE_AA)
         for g, pts in self.px.items():
             a = self.level(rates, g) ** 0.7
             bright = 0.28 + 0.72 * a
             col = tuple(float(c) * bright for c in self.b.colours[g])
             r = max(1, int(round((1.8 if g in self.b.big else 1.0) * (1 + 0.5 * a))))
             for x, y in pts:
-                cv2.circle(layer, (int(x), int(y)), r, col, -1, cv2.LINE_AA)
-        out = self.bg + layer + cv2.GaussianBlur(layer, (0, 0), 2.5) * 1.2     # additive core + soft halo
-        return np.clip(out, 0, 255).astype(np.uint8)
+                cv2.circle(layer, (int(x) - x0, int(y) - y0), r, col, -1, cv2.LINE_AA)
+        out = self._bg_u8.copy()
+        out[y0:y1, x0:x1] = np.clip(self.bg[y0:y1, x0:x1] + layer + cv2.GaussianBlur(layer, (0, 0), 2.5) * 1.2,   # additive core + soft halo
+                                    0, 255).astype(np.uint8)
+        return out
 
     def draw(self, rates: dict, frame: int) -> np.ndarray:
         pil = Image.fromarray(self.glow(rates))

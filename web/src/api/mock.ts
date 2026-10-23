@@ -90,7 +90,7 @@ function frameEvent(frame: number): FrameEvent {
       { kind: 'dot', geometry: [0, 152, 2.75], colour: '#FFFFFF', line: 'solid', anchor: 'screen_right' },
     ],
     rates: { LC4: near, LPLC2: near * 0.8, GF: near * near, TTMn: near * near * 0.9 },
-    overlay_png: null, overlay_at: null, brain_jpg: null,
+    brain_jpg: null,
   }
 }
 

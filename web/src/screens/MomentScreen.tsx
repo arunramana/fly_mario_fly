@@ -60,7 +60,7 @@ export default function MomentScreen() {
           <div className="stage frozen" data-testid="stage">
             {pic
               ? <div className="still"><img className="pic" data-testid="picture" alt="the game, frozen at this moment" src={`data:image/png;base64,${pic.game}`} />
-                  <Overlay png={pic.overlay} at={pic.at} visible={showSenses} /></div>
+                  <Overlay items={pic.overlay} scrollX={pic.scrollX} visible={showSenses} /></div>
               : <p className="muted">No picture was kept for this moment (it was saved in an earlier session).</p>}
           </div>
         </div>

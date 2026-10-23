@@ -223,7 +223,7 @@ input[type='range']::-moz-range-thumb { width: calc(16 * var(--px)); height: cal
 .stage.nobrain .game { left: 23.3333%; }
 .stage.nobrain .brain { opacity: 0; }
 .stage .wait { position: absolute; inset: 0; display: grid; place-items: center; color: #777; font-family: var(--pix); font-size: calc(9 * var(--px)); }
-.stage .game .ov { image-rendering: auto; }
+.stage .game .ov { inset: 0; width: 100%; height: 100%; image-rendering: auto; }
 .stage.frozen { filter: saturate(0.85); }
 .toolrow { display: flex; align-items: center; gap: calc(28 * var(--px)); flex-wrap: wrap; padding: calc(2 * var(--px)) calc(4 * var(--px)); }
 .transport { display: flex; align-items: center; gap: calc(14 * var(--px)); }
@@ -254,7 +254,7 @@ input[type='range']::-moz-range-thumb { width: calc(16 * var(--px)); height: cal
 .moment .stage .still { position: relative; height: 100%; aspect-ratio: 16 / 15; }
 .moment .stage .still > * { position: absolute; image-rendering: pixelated; }
 .moment .stage .still .pic { inset: 0; width: 100%; height: 100%; }
-.moment .stage .still .ov { image-rendering: auto; }
+.moment .stage .still .ov { inset: 0; width: 100%; height: 100%; image-rendering: auto; }
 .momentbar { flex: none; display: flex; align-items: center; gap: calc(12 * var(--px)); flex-wrap: wrap; margin-top: calc(14 * var(--px)); }
 .momentbar .chip { font-size: calc(7 * var(--px)); border-color: var(--line); border-width: calc(3 * var(--px)); box-shadow: calc(3 * var(--px)) calc(3 * var(--px)) 0 #666; }
 .momentbar .chip.on { background: var(--gold); color: #000; border-color: var(--gold); }

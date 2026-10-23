@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { Dials, Fly, RunRequest, Scene } from './api/models'
+import type { Dials, Fly, OverlayItem, RunRequest, Scene } from './api/models'
 
 export const emptyFly: Fly = {
   name: 'blank', attachments: {}, loom_shapes: {}, whole_fly: [], actions: [], knobs: {}, provenance: {},
@@ -36,8 +36,8 @@ export function useDraft(): Draft {
 }
 
 /** What the run screen showed at a frame, kept so the moment screen can show the same picture: the game screen (base64
- *  PNG, 256 x 240) and the transparent senses overlay (base64 PNG) with its [x, y] on the game at x4. */
-export interface Picture { game: string; overlay?: string | null; at?: number[] | null }
+ *  PNG, 256 x 240) and the senses overlay items (level pixels) with the screen's scroll. */
+export interface Picture { game: string; overlay?: readonly OverlayItem[] | null; scrollX?: number }
 export const momentPictures = new Map<string, Picture>()
 const MAX_PICTURES = 40   // the newest moments only: a picture is ~100-300 kB, and auto moments arrive every 2 s
 const MAX_REQUESTS = 30
@@ -55,13 +55,6 @@ export const runRequests = new Map<string, { req: RunRequest; tryNo: number }>()
 export function registerRun(runId: string, req: RunRequest): void {
   const same = [...runRequests.values()].filter((r) => r.req.fly.name === req.fly.name && r.req.scene.level_id === req.scene.level_id)
   setCapped(runRequests, runId, { req, tryNo: same.length + 1 }, MAX_REQUESTS)
-}
-
-/** Width and height of a base64 PNG, read from its header. */
-export function pngSize(b64: string): [number, number] {
-  const head = atob(b64.slice(0, 36))
-  const at = (i: number) => (head.charCodeAt(i) << 24 | head.charCodeAt(i + 1) << 16 | head.charCodeAt(i + 2) << 8 | head.charCodeAt(i + 3)) >>> 0
-  return [at(16), at(20)]
 }
 
 /** Scenes saved by hand ("Save scene"), kept in this browser. */

@@ -167,8 +167,7 @@ def png_b64(screen: np.ndarray) -> str:
     return base64.b64encode(png).decode("ascii")
 
 
-def frame_event(rec, total: int, overlay_png: str | None = None, overlay_at: list | None = None,
-                brain_jpg: str | None = None, screen: np.ndarray | None = None) -> S.FrameEvent:
+def frame_event(rec, total: int, brain_jpg: str | None = None, screen: np.ndarray | None = None) -> S.FrameEvent:
     m = rec.mario
     overlay = [S.OverlayItem(kind=it.kind, geometry=[float(g) for g in it.geometry], colour=it.colour, line=it.line, anchor=it.anchor)
                for out in rec.outputs.values() for it in out.overlay]
@@ -177,8 +176,7 @@ def frame_event(rec, total: int, overlay_png: str | None = None, overlay_at: lis
     return S.FrameEvent(frame=rec.frame, total=total, frame_png=png_b64(rec.screen if screen is None else screen),
                         mario=S.Box(x=m.x, y=m.y, w=m.w, h=m.h), x=float(rec.x), buttons=sorted(rec.buttons),
                         overlay=overlay, objects=objects, scroll_x=rec.scroll_x, scroll_x_after=rec.scroll_x_after,
-                        rates={g: float(v) for g, v in rec.rates.items()}, overlay_png=overlay_png, overlay_at=overlay_at,
-                        brain_jpg=brain_jpg)
+                        rates={g: float(v) for g, v in rec.rates.items()}, brain_jpg=brain_jpg)
 
 
 # ---- levels and moments ---------------------------------------------------------------------------------------------

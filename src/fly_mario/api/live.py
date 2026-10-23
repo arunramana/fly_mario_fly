@@ -239,16 +239,12 @@ class Runs:
 
     @staticmethod
     def _event(live: LiveRun, rec, total: int, screen) -> S.FrameEvent:
-        """One frame with its picture layers: game screen, transparent overlay and, when a newer one is ready, the brain."""
-        items = [it for out in rec.outputs.values() for it in out.overlay]
-        ov = Lay.overlay_rgba(items, rec.scroll_x)
+        """One frame: the game screen, the overlay items (the browser draws them) and, when a newer one is ready, the brain."""
         b64 = lambda b: base64.b64encode(b).decode("ascii")
         brain = live.brain.latest(live.brain_sent) if live.brain else None
         if brain:
             live.brain_sent = brain[0]
-        return V.frame_event(rec, total, overlay_png=None if ov is None else b64(Lay.png_bytes(ov[0])),
-                             overlay_at=None if ov is None else [ov[1], ov[2]],
-                             brain_jpg=None if brain is None else b64(brain[1]), screen=screen)
+        return V.frame_event(rec, total, brain_jpg=None if brain is None else b64(brain[1]), screen=screen)
 
     @staticmethod
     async def _finish(ws: WebSocket, live: LiveRun) -> None:
