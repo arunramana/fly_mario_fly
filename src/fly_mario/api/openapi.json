@@ -520,7 +520,7 @@
         "type": "object"
       },
       "FrameEvent": {
-        "description": "One frame. The game picture and the overlay are separate layers; `rates` is the light state (0..1 per\nneuron group).",
+        "description": "One frame. The browser draws `overlay` over the game picture itself; `rates` is the light state (0..1 per\nneuron group).",
         "properties": {
           "brain_jpg": {
             "anyOf": [
@@ -566,33 +566,6 @@
             },
             "title": "Overlay",
             "type": "array"
-          },
-          "overlay_at": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "integer"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Overlay At"
-          },
-          "overlay_png": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Overlay Png"
           },
           "rates": {
             "additionalProperties": {

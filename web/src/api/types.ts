@@ -740,7 +740,7 @@ export interface components {
         };
         /**
          * FrameEvent
-         * @description One frame. The game picture and the overlay are separate layers; `rates` is the light state (0..1 per
+         * @description One frame. The browser draws `overlay` over the game picture itself; `rates` is the light state (0..1 per
          *     neuron group).
          */
         FrameEvent: {
@@ -763,16 +763,6 @@ export interface components {
             objects: components["schemas"]["ObjectOnScreen"][];
             /** Overlay */
             overlay: components["schemas"]["OverlayItem"][];
-            /**
-             * Overlay At
-             * @default null
-             */
-            overlay_at: number[] | null;
-            /**
-             * Overlay Png
-             * @default null
-             */
-            overlay_png: string | null;
             /** Rates */
             rates: {
                 [key: string]: number;

@@ -250,7 +250,7 @@ class ObjectOnScreen(BaseModel):
 
 
 class FrameEvent(BaseModel):
-    """One frame. The game picture and the overlay are separate layers; `rates` is the light state (0..1 per
+    """One frame. The browser draws `overlay` over the game picture itself; `rates` is the light state (0..1 per
     neuron group)."""
     type: Literal["frame"] = "frame"
     frame: int
@@ -266,9 +266,6 @@ class FrameEvent(BaseModel):
                                           # to get screen pixels (they are read before the frame's action)
     scroll_x_after: int = 0               # the same after the action (frame_png shows the screen before it, as the videos do)
     rates: dict[str, float]
-    overlay_png: Optional[str] = None     # base64 PNG, transparent: the senses overlay, cropped to what is drawn;
-                                          # null = nothing to draw on this frame
-    overlay_at: Optional[list[int]] = None  # [x, y] of the overlay's top-left on the 1024 x 960 game-at-x4 canvas
     brain_jpg: Optional[str] = None       # base64 JPEG, 896 x 1080: the R3 brain panel (glowing somata, nerve cord, LIVE
                                           # BRAIN, index). Sent only when a newer picture is ready (~10 per second):
                                           # null = keep showing the last one

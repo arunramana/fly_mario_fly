@@ -1,4 +1,4 @@
-"""The UI lane: the picture layers of the live stream, the level catalogue as the browser sees it, level thumbnails."""
+﻿"""The UI lane: the picture layers of the live stream, the level catalogue as the browser sees it, level thumbnails."""
 import base64
 import os
 import shutil
@@ -11,39 +11,10 @@ from fastapi.testclient import TestClient
 from fly_mario.api import convert as V
 from fly_mario.api import layers as L
 from fly_mario.api.app import create_app
-from fly_mario.contracts import OverlayItem
-from fly_mario.render.draw import GAME_H, GAME_W, game_panel
 from fly_mario.runner import record
 from fly_mario.runner.config import FLIES
 
 needs_data = pytest.mark.skipif(not os.environ.get("FLY_MARIO_DATA"), reason="FLY_MARIO_DATA not set")
-
-ITEMS = [OverlayItem("box", (100.0, 100.0, 16.0, 16.0), "#e53935"),
-         OverlayItem("wedge", (80.0, 120.0, 100.0, 100.0, 16.0, 16.0), "#e53935", "dashed"),
-         OverlayItem("line", (90.0, 90.0, 140.0, 90.0), "#43a047", "dotted"),
-         OverlayItem("dot", (0.0, 152.0, 2.75), "#ffffff", "solid", "screen_right")]
-
-
-def test_overlay_layer_agrees_with_render_game_panel():
-    """Our transparent overlay, composited over a picture, matches what render draws on that picture (a few anti-aliased
-    edge pixels apart at most)."""
-    game = np.random.default_rng(0).integers(0, 256, (240, 256, 3), dtype=np.uint8)
-    want = game_panel(game, ITEMS, 40.0).astype(float)
-    crop, x, y = L.overlay_rgba(ITEMS, 40.0)
-    full = np.zeros((GAME_H, GAME_W, 4), np.uint8)
-    full[y:y + crop.shape[0], x:x + crop.shape[1]] = crop
-    a = full[..., 3:4] / 255.0
-    got = (cv2.resize(game, None, fx=4, fy=4, interpolation=cv2.INTER_NEAREST) * (1 - a) + full[..., :3] * a)
-    assert np.mean(np.abs(got - want)) < 1.0
-    assert np.mean(np.abs(got - want) > 40) < 0.002
-
-
-def test_overlay_is_cropped_and_empty_overlay_is_none():
-    assert L.overlay_rgba([], 0.0) is None
-    crop, x, y = L.overlay_rgba(ITEMS[:1], 0.0)
-    assert crop.shape[0] < 80 and crop.shape[1] < 80 and 0 <= x < GAME_W and 0 <= y < GAME_H
-    assert crop[..., 3].max() == 255
-
 
 def test_png_bytes_round_trip_rgb_and_rgba():
     for ch in (3, 4):
@@ -106,12 +77,11 @@ def test_live_frames_carry_the_layers(tmp_path, monkeypatch):
             elif m["type"] == "end":
                 break
     assert len(frames) == 150
-    with_overlay = [f for f in frames if f["overlay_png"]]
+    with_overlay = [f for f in frames if f["overlay"]]
     assert with_overlay, "the champion's senses draw something in 150 frames"
     f = with_overlay[0]
-    png = base64.b64decode(f["overlay_png"])
-    assert png[:8] == b"\x89PNG\r\n\x1a\n" and len(f["overlay_at"]) == 2
-    assert cv2.imdecode(np.frombuffer(png, np.uint8), cv2.IMREAD_UNCHANGED).shape[2] == 4         # transparent
+    assert {"kind", "geometry", "colour", "line", "anchor"} <= set(f["overlay"][0]) and "scroll_x" in f
+    assert all("overlay_png" not in fr and "overlay_at" not in fr for fr in frames)       # the browser draws the overlay
     brains = [f["brain_jpg"] for f in frames if f["brain_jpg"]]
     assert brains, "a brain picture arrives within 150 frames"
     jpg = cv2.imdecode(np.frombuffer(base64.b64decode(brains[0]), np.uint8), cv2.IMREAD_COLOR)

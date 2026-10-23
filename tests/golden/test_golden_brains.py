@@ -51,4 +51,5 @@ def test_200_steps_of_the_rate_model_equal_the_frozen_old_rates():
         h = new.advance(h, I, model)
     want = np.load(GOLDEN / "brains_rate.npz")["h"]
     assert want.max() > 0
-    assert np.array_equal(h, want)
+    # sparse W (CSR) sums in another order than the dense product the answer was frozen with: last bits only
+    assert np.allclose(h, want, rtol=0, atol=1e-12)

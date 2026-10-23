@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
+import scipy.sparse as sp
 
 from fly_mario import registry
 from fly_mario.fly import connectome as cn
@@ -61,6 +62,7 @@ def step(h, W, g, I_t, alpha, clip):
 class Brain:
     def __init__(self, spec: BrainSpec, W, body_ids, types, sides, signs):
         self.spec, self.W = spec, W
+        self._Ws = sp.csr_matrix(W)              # W is 4-7 % non-zero: advance() multiplies by the sparse copy
         self.body_ids = np.asarray(body_ids, dtype=np.int64)
         self.types, self.sides, self.signs = np.asarray(types, dtype="U40"), np.asarray(sides, dtype="U40"), np.asarray(signs, dtype=float)
         self.masks = masks_for(self.types, self.sides)
@@ -87,7 +89,7 @@ class Brain:
     def advance(self, h, I, model: RateModel = RateModel()) -> np.ndarray:
         """One game frame: `model.substeps` rate updates under the same input."""
         for _ in range(model.substeps):
-            h = step(h, self.W, model.g, I, model.alpha, model.clip)
+            h = step(h, self._Ws, model.g, I, model.alpha, model.clip)
         return h
 
     def rates(self, h) -> dict:
