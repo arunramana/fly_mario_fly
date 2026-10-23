@@ -1,11 +1,11 @@
-"""AST scan of src/fly_mario: enforce the import boundaries in CLAUDE.md."""
+"""AST scan of src/fly_mario_fly: enforce the import boundaries in CLAUDE.md."""
 import ast
 import sys
 from pathlib import Path
 
 import pytest
 
-SRC = Path(__file__).resolve().parents[1] / "src" / "fly_mario"
+SRC = Path(__file__).resolve().parents[1] / "src" / "fly_mario_fly"
 FILES = sorted(SRC.rglob("*.py"))
 STDLIB = set(sys.stdlib_module_names)
 # Old-repo top-level modules, forbidden even if they happen to be importable.
@@ -15,7 +15,7 @@ OLD_REPO = {"brain", "bridge", "config", "fly", "mario", "render", "sim", "tool"
 
 def _imports(path: Path) -> list[str]:
     """Absolute dotted module names imported by a file (relative imports resolved)."""
-    pkg = ["fly_mario"] + list(path.relative_to(SRC).parent.parts)
+    pkg = ["fly_mario_fly"] + list(path.relative_to(SRC).parent.parts)
     out = []
     for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
         if isinstance(node, ast.Import):
@@ -45,7 +45,7 @@ def test_files_found():
 def test_no_foreign_imports(path):
     for name in _imports(path):
         top = name.split(".")[0]
-        if top == "fly_mario" or top in STDLIB or not top:
+        if top == "fly_mario_fly" or top in STDLIB or not top:
             continue
         assert top not in OLD_REPO, f"{path.name} imports old-repo module {name}"
 
@@ -59,28 +59,28 @@ def _violations(area: str, forbidden: str):
 
 
 def test_fly_does_not_import_mario():
-    assert not list(_violations("fly", "fly_mario.mario"))
+    assert not list(_violations("fly", "fly_mario_fly.mario"))
 
 
 def test_mario_does_not_import_fly():
-    assert not list(_violations("mario", "fly_mario.fly"))
+    assert not list(_violations("mario", "fly_mario_fly.fly"))
 
 
-def test_contracts_imports_nothing_from_fly_mario():
+def test_contracts_imports_nothing_from_fly_mario_fly():
     for n in _imports(SRC / "contracts.py"):
-        assert n.split(".")[0] != "fly_mario", n
+        assert n.split(".")[0] != "fly_mario_fly", n
 
 
 @pytest.mark.parametrize("area", ["evolve", "api", "render"])
 def test_outer_lanes_only_runner(area):
-    allowed = {"fly_mario.runner", "fly_mario.contracts", "fly_mario.registry"}
+    allowed = {"fly_mario_fly.runner", "fly_mario_fly.contracts", "fly_mario_fly.registry"}
     if area == "api":
-        allowed.add("fly_mario.render")        # render is presentation, so the API may call it
+        allowed.add("fly_mario_fly.render")        # render is presentation, so the API may call it
     for f in FILES:
         if _area(f) != area:
             continue
         for n in _imports(f):
-            if n.split(".")[0] != "fly_mario" or n == "fly_mario":
+            if n.split(".")[0] != "fly_mario_fly" or n == "fly_mario_fly":
                 continue
-            assert any(n == a or n.startswith(a + ".") for a in allowed) or n.startswith(f"fly_mario.{area}"), \
+            assert any(n == a or n.startswith(a + ".") for a in allowed) or n.startswith(f"fly_mario_fly.{area}"), \
                 f"{f.relative_to(SRC)} imports {n}"

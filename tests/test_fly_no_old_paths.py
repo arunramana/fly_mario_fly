@@ -1,10 +1,10 @@
-"""Nothing under src/fly_mario reads from the old repo's folders: only the package itself and $FLY_MARIO_DATA."""
+"""Nothing under src/fly_mario_fly reads from the old repo's folders: only the package itself and $FLY_MARIO_FLY_DATA."""
 import re
 from pathlib import Path
 
 import pytest
 
-SRC = Path(__file__).resolve().parents[1] / "src" / "fly_mario"
+SRC = Path(__file__).resolve().parents[1] / "src" / "fly_mario_fly"
 OLD = re.compile(r"tutorials|fly" r"run|(?<![A-Za-z])_cache|L2c|\.\./data|malecns_v1\.0/derived")
 FILES = sorted(SRC.rglob("*.py"))
 

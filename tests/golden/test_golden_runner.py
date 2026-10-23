@@ -1,15 +1,15 @@
 """Golden: the E1s champion plays the 10 HOLDOUT episodes (noop 3/11/25/33/41 x sigma 0/0.05, seeds 101..110) exactly like the old
 tool did: same outcome, max_x and score, the same x after every frame and the same buttons on every frame (frozen by
-tools/freeze_golden.py). configs/flies/champion_e1s.yaml in legacy mode, on the 907-neuron sour brain. Needs $FLY_MARIO_DATA."""
+tools/freeze_golden.py). configs/flies/champion_e1s.yaml in legacy mode, on the 907-neuron sour brain. Needs $FLY_MARIO_FLY_DATA."""
 import os
 
 import pytest
 
-from fly_mario.contracts import Scene
-from fly_mario.runner import Options, Run, load_fly
+from fly_mario_fly.contracts import Scene
+from fly_mario_fly.runner import Options, Run, load_fly
 from golden_data import expand, load
 
-pytestmark = pytest.mark.skipif(not os.environ.get("FLY_MARIO_DATA"), reason="FLY_MARIO_DATA not set")
+pytestmark = pytest.mark.skipif(not os.environ.get("FLY_MARIO_FLY_DATA"), reason="FLY_MARIO_FLY_DATA not set")
 NAMES = {frozenset(): "NOOP", frozenset({"right"}): "R", frozenset({"right", "A"}): "R+A",
          frozenset({"left"}): "L", frozenset({"left", "A"}): "L+A"}
 OURS = {"HOME_R": "home.drive", "HUM_GAIN": "hearing.gain", "SMELL_GAIN": "sweet_smell.gain", "SOUR_GAIN": "sour_smell.gain",

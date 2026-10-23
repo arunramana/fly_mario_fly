@@ -1,8 +1,8 @@
 """The in-memory fast path of load_state gives the same game as the replay, and never breaks reset."""
 import numpy as np
 
-from fly_mario.mario import ram as R
-from fly_mario.mario.env import MarioEnv
+from fly_mario_fly.mario import ram as R
+from fly_mario_fly.mario.env import MarioEnv
 
 
 def play(env, start, n):

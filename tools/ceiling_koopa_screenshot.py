@@ -9,9 +9,9 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fly_mario import registry                    # noqa: E402
-from fly_mario.mario import ram as R               # noqa: E402
-from fly_mario.mario.env import MarioEnv           # noqa: E402
+from fly_mario_fly import registry                    # noqa: E402
+from fly_mario_fly.mario import ram as R               # noqa: E402
+from fly_mario_fly.mario.env import MarioEnv           # noqa: E402
 
 HUD, SCALE = 32, 2
 COL = {"ceiling_block": "#ff00ff", "brick": "#ffffff", "step": "#e0a000", "pipe": "#00e0e0", "qblock": "#ffff00",

@@ -5,11 +5,11 @@ import shutil
 import pytest
 from fastapi.testclient import TestClient
 
-from fly_mario.api.app import create_app
-from fly_mario.runner import record
-from fly_mario.runner.config import FLIES
+from fly_mario_fly.api.app import create_app
+from fly_mario_fly.runner import record
+from fly_mario_fly.runner.config import FLIES
 
-pytestmark = pytest.mark.skipif(not os.environ.get("FLY_MARIO_DATA"), reason="FLY_MARIO_DATA not set")
+pytestmark = pytest.mark.skipif(not os.environ.get("FLY_MARIO_FLY_DATA"), reason="FLY_MARIO_FLY_DATA not set")
 
 
 @pytest.fixture

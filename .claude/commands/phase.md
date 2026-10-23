@@ -1,5 +1,5 @@
 ---
-description: Run one phase of the fly_mario redesign with the investigator, implementer, experimenter and reviewer subagents
+description: Run one phase of the fly_mario_fly redesign with the investigator, implementer, experimenter and reviewer subagents
 argument-hint: <phase number 0-7> [optional note]
 ---
 

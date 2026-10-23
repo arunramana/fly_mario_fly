@@ -3,10 +3,10 @@ import os
 
 import pytest
 
-from fly_mario import registry
-from fly_mario.mario import ram as R
-from fly_mario.mario import walker
-from fly_mario.mario.env import MarioEnv
+from fly_mario_fly import registry
+from fly_mario_fly.mario import ram as R
+from fly_mario_fly.mario import walker
+from fly_mario_fly.mario.env import MarioEnv
 
 NAMES = ["mushroom", "fire_flower", "star", "one_up"]
 

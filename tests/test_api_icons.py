@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
-from fly_mario.api import icons
-from fly_mario.api.app import create_app
-from fly_mario.contracts import Box
+from fly_mario_fly.api import icons
+from fly_mario_fly.api.app import create_app
+from fly_mario_fly.contracts import Box
 
 
 def test_crop_is_in_screen_coordinates_with_the_status_bar_and_a_little_padding():

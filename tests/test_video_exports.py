@@ -8,12 +8,12 @@ import pytest
 import yaml
 from fastapi.testclient import TestClient
 
-from fly_mario.api import videos as VD
-from fly_mario.api.app import create_app
-from fly_mario.render import export as X
-from fly_mario.render import specs as Sp
-from fly_mario.runner import fly_to_dict, load_fly
-from fly_mario.runner.config import FLIES
+from fly_mario_fly.api import videos as VD
+from fly_mario_fly.api.app import create_app
+from fly_mario_fly.render import export as X
+from fly_mario_fly.render import specs as Sp
+from fly_mario_fly.runner import fly_to_dict, load_fly
+from fly_mario_fly.runner.config import FLIES
 
 SCENE = {"level_id": "1-1", "rom": "v0", "modifiers": [], "start": "level_start", "noop": 3, "sigma": 0.0, "seed": 101,
          "max_frames": 3000, "stuck_frames": 150}

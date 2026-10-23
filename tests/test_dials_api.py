@@ -4,11 +4,11 @@ import shutil
 import pytest
 from fastapi.testclient import TestClient
 
-from fly_mario.api import convert as V
-from fly_mario.api import knobs as K
-from fly_mario.api.app import create_app
-from fly_mario.runner import load_fly
-from fly_mario.runner.config import FLIES
+from fly_mario_fly.api import convert as V
+from fly_mario_fly.api import knobs as K
+from fly_mario_fly.api.app import create_app
+from fly_mario_fly.runner import load_fly
+from fly_mario_fly.runner.config import FLIES
 
 
 @pytest.fixture

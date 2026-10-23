@@ -8,11 +8,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from fly_mario import registry
-from fly_mario.contracts import Box, ObjectInstance
-from fly_mario.mario import ram as R
-from fly_mario.mario.env import MarioEnv
-from fly_mario.mario.facts import load_facts
+from fly_mario_fly import registry
+from fly_mario_fly.contracts import Box, ObjectInstance
+from fly_mario_fly.mario import ram as R
+from fly_mario_fly.mario.env import MarioEnv
+from fly_mario_fly.mario.facts import load_facts
 
 FACTS = load_facts("1-1")
 PIT = registry.list_plugins("objects")["pit"]

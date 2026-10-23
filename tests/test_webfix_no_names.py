@@ -5,8 +5,8 @@ from pathlib import Path
 
 from typing import get_args
 
-from fly_mario import registry
-from fly_mario.api.schemas import ClientMessage
+from fly_mario_fly import registry
+from fly_mario_fly.api.schemas import ClientMessage
 
 SRC = Path(__file__).resolve().parents[1] / "web" / "src"
 ALLOWED = {SRC / "api" / "mock.ts", SRC / "api" / "types.ts"}

@@ -7,12 +7,12 @@ import numpy as np
 import pytest
 import yaml
 
-from fly_mario.contracts import Scene
-from fly_mario.runner import Options, Run, fly_from_dict, fly_to_dict, load_fly, save_run
-from fly_mario.runner import record
-from fly_mario.runner.__main__ import main
+from fly_mario_fly.contracts import Scene
+from fly_mario_fly.runner import Options, Run, fly_from_dict, fly_to_dict, load_fly, save_run
+from fly_mario_fly.runner import record
+from fly_mario_fly.runner.__main__ import main
 
-pytestmark = pytest.mark.skipif(not os.environ.get("FLY_MARIO_DATA"), reason="FLY_MARIO_DATA not set")
+pytestmark = pytest.mark.skipif(not os.environ.get("FLY_MARIO_FLY_DATA"), reason="FLY_MARIO_FLY_DATA not set")
 
 
 def play(fly="champion_e1s", legacy=False, **scene):
@@ -49,7 +49,7 @@ def test_legacy_max_frames_counts_the_idle_frames():
 
 def test_legacy_drops_a_bare_a():
     """The old tool had no A-alone combination; the new rule presses A on its own."""
-    from fly_mario.runner.session import legacy_buttons
+    from fly_mario_fly.runner.session import legacy_buttons
     assert legacy_buttons(frozenset({"A"})) == frozenset()
     assert legacy_buttons(frozenset({"right", "A"})) == {"right", "A"}
     assert legacy_buttons(frozenset({"left"})) == {"left"}
@@ -104,7 +104,7 @@ def test_a_saved_moment_resumes_exactly():
 def test_scene_modifiers_apply():
     run = Run(load_fly("champion_e1s"), Scene("1-1", modifiers=(("no_enemies", {}),), max_frames=3))
     run.start()
-    from fly_mario.mario import ram as R
+    from fly_mario_fly.mario import ram as R
     assert R.active_slots(run.env.ram, run.env.facts) == []
 
 

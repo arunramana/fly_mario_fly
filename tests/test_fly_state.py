@@ -4,8 +4,8 @@ import os
 import numpy as np
 import pytest
 
-from fly_mario.fly.brain import Brain
-from fly_mario.fly.spec import BrainSpec
+from fly_mario_fly.fly.brain import Brain
+from fly_mario_fly.fly.spec import BrainSpec
 
 
 def _toy(ids, seed=0):
@@ -43,9 +43,9 @@ def test_set_state_accepts_json_string_keys():
     assert b.set_state({"7": 1.5, "8": 2.5}).tolist() == [1.5, 2.5]
 
 
-@pytest.mark.skipif(not os.environ.get("FLY_MARIO_DATA"), reason="FLY_MARIO_DATA not set")
+@pytest.mark.skipif(not os.environ.get("FLY_MARIO_FLY_DATA"), reason="FLY_MARIO_FLY_DATA not set")
 def test_real_636_into_907_and_continue_running():
-    from fly_mario.fly.brain import build_brain
+    from fly_mario_fly.fly.brain import build_brain
     small, big = build_brain(BrainSpec()), build_brain(BrainSpec(mechanisms=("hearing", "attraction", "aversion")))
     h = small.advance(small.new_state(), small.drive({"LPLC2_R": 0.4, "LC4_R": 0.2}))
     assert h.max() > 0

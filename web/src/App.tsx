@@ -46,7 +46,7 @@ export default function App() {
     <>
       <header className="app-header">
         <span className="logo" aria-hidden />
-        <NavLink to="/scene" className="brand">fly_mario</NavLink>
+        <NavLink to="/scene" className="brand">fly_mario_fly</NavLink>
         <span className="subtitle"><Subtitle /></span>
         <nav>
           {tab('/scene', 0, '1 Scene')}

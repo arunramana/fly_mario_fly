@@ -5,11 +5,11 @@ import shutil
 import pytest
 from fastapi.testclient import TestClient
 
-from fly_mario import registry
-from fly_mario.api import knobs as K
-from fly_mario.api.app import OPENAPI_PATH, create_app
-from fly_mario.contracts import KnobSpec
-from fly_mario.runner.config import FLIES
+from fly_mario_fly import registry
+from fly_mario_fly.api import knobs as K
+from fly_mario_fly.api.app import OPENAPI_PATH, create_app
+from fly_mario_fly.contracts import KnobSpec
+from fly_mario_fly.runner.config import FLIES
 
 
 @pytest.fixture
@@ -126,7 +126,7 @@ def test_fly_post_put_roundtrip_through_the_runner(client):
     r = client.post("/flies", json=fly)
     assert r.status_code == 201 and r.json()["knobs"]["home.drive"] == pytest.approx(0.25)
     assert client.post("/flies", json=fly).status_code == 409
-    from fly_mario.runner import load_fly
+    from fly_mario_fly.runner import load_fly
     spec = K.specs_by_key()["home.drive"]
     assert load_fly(client.flies / "mine.yaml").knobs["home.drive"] == pytest.approx(K.from_position(spec, 0.25))
     fly["knobs"]["home.drive"] = 0.75

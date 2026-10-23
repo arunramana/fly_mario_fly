@@ -1,5 +1,5 @@
 """NOTE: needs the old code to run: check out git tag `pre-cleanup` (it imports the removed `old_pkg` package).
-Freeze the OLD code's answers into tests/data/golden/, so fly_mario can be tested with the old code gone.
+Freeze the OLD code's answers into tests/data/golden/, so fly_mario_fly can be tested with the old code gone.
 
 Runs the old side of the four parity tests (tests/parity/*) exactly once and writes small versioned fixtures:
 
@@ -13,7 +13,7 @@ Needs the old repo (the `old_pkg` package) and its tutorials/_cache. It is a one
 made; once the old code is deleted it can no longer run, and it does not have to (the fixtures are the record).
 
     python tools/freeze_golden.py all [--old-root DIR] [--cache DIR]      # or: brains | mario | ceiling | runner
-Needs $FLY_MARIO_DATA (the new brains are read to drive the sequences, not to produce any answer).
+Needs $FLY_MARIO_FLY_DATA (the new brains are read to drive the sequences, not to produce any answer).
 """
 from __future__ import annotations
 
@@ -70,8 +70,8 @@ SOUR = ("hearing", "attraction", "aversion")
 
 def freeze_brains(cache: Path) -> None:
     import pandas as pd
-    from fly_mario.fly.brain import RateModel, build_brain
-    from fly_mario.fly.spec import BrainSpec
+    from fly_mario_fly.fly.brain import RateModel, build_brain
+    from fly_mario_fly.fly.spec import BrainSpec
     from old_pkg import brain as OB                                  # the old loader, for masks and the update step
 
     rows = {}
@@ -142,8 +142,8 @@ def driver_sequence(level, MarioEnv):
 
 
 def freeze_mario() -> None:
-    from fly_mario.mario import ram as R
-    from fly_mario.mario.env import MarioEnv
+    from fly_mario_fly.mario import ram as R
+    from fly_mario_fly.mario.env import MarioEnv
     cases = {}
     for level, kind in [("1-1", "driver"), ("1-2", "pulse"), ("1-1", "mushroom")]:
         OE, OL, OS = old_modules(level)
@@ -180,8 +180,8 @@ def freeze_mario() -> None:
 
 # ---- ceiling: headroom per frame ------------------------------------------------------------------------------
 def freeze_ceiling() -> None:
-    from fly_mario.mario import ram as R
-    from fly_mario.mario.env import MarioEnv
+    from fly_mario_fly.mario import ram as R
+    from fly_mario_fly.mario.env import MarioEnv
     cases = {}
     for level, stop_x in [("1-2", 900), ("1-1", 1700)]:
         os.environ["OLD_LEVEL"] = level
@@ -251,11 +251,11 @@ def find_old_root(arg) -> Path:
 
 
 def find_cache(arg, old_root: Path) -> Path:
-    env = os.environ.get("FLY_MARIO_OLD_CACHE")
+    env = os.environ.get("FLY_MARIO_FLY_OLD_CACHE")
     for c in ([Path(arg)] if arg else []) + ([Path(env)] if env else []) + [p / "tutorials" / "_cache" for p in [old_root, *HERE.parents]]:
         if (c / "W_steer.npy").exists():
             return c
-    sys.exit("old tutorials/_cache not found: pass --cache or set FLY_MARIO_OLD_CACHE")
+    sys.exit("old tutorials/_cache not found: pass --cache or set FLY_MARIO_FLY_OLD_CACHE")
 
 
 def main() -> None:

@@ -3,13 +3,13 @@ import math
 
 import pytest
 
-from fly_mario import registry
-from fly_mario.contracts import Action, Box, ButtonIntent, LoomShape, MarioState, ObjectInstance, Sense, SenseOutput
-from fly_mario.fly.groups import load_groups
-from fly_mario.mario.env import BUTTONS
-from fly_mario.mario.facts import load_facts
-from fly_mario.runner import config as C
-from fly_mario.senses.kit.memory import SenseMemory
+from fly_mario_fly import registry
+from fly_mario_fly.contracts import Action, Box, ButtonIntent, LoomShape, MarioState, ObjectInstance, Sense, SenseOutput
+from fly_mario_fly.fly.groups import load_groups
+from fly_mario_fly.mario.env import BUTTONS
+from fly_mario_fly.mario.facts import load_facts
+from fly_mario_fly.runner import config as C
+from fly_mario_fly.senses.kit.memory import SenseMemory
 
 FACTS = load_facts("1-1")
 MARIO = MarioState(x=100.0, y=160.0, w=12.0, h=16.0, airborne=False, power="small", facing=1)

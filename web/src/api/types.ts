@@ -302,7 +302,7 @@ export interface paths {
         /**
          * Get Object Icon
          * @description The object's picture, cropped from the game. A separate process makes the set when the API starts and caches it
-         *     under $FLY_MARIO_DATA/icons/; until this one is ready (or if none could be found) the answer is 404, at once.
+         *     under $FLY_MARIO_FLY_DATA/icons/; until this one is ready (or if none could be found) the answer is 404, at once.
          */
         get: operations["get_object_icon_objects__object_type__icon_png_get"];
         put?: never;

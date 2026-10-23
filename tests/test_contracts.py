@@ -1,5 +1,5 @@
 """Every dataclass in contracts.py can be built from simple values."""
-from fly_mario import contracts as c
+from fly_mario_fly import contracts as c
 
 
 def test_construct_all():

@@ -4,10 +4,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from fly_mario import registry
-from fly_mario.contracts import Box, ObjectInstance
-from fly_mario.mario.facts import load_facts
-from fly_mario.senses.kit.world import hole_box
+from fly_mario_fly import registry
+from fly_mario_fly.contracts import Box, ObjectInstance
+from fly_mario_fly.mario.facts import load_facts
+from fly_mario_fly.senses.kit.world import hole_box
 
 FACTS = load_facts("1-2")
 R_ = FACTS["ram"]

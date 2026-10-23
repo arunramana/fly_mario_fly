@@ -2,7 +2,7 @@
 level object list joined with what saved runs saw.
 
 Moments, runs and levels.json go to a temp folder (record.runs_dir / levels.cache_path are redirected); the MaleCNS data and
-the brain caches are only read, from the real $FLY_MARIO_DATA."""
+the brain caches are only read, from the real $FLY_MARIO_FLY_DATA."""
 import json
 import os
 from dataclasses import replace
@@ -11,15 +11,15 @@ import numpy as np
 import pytest
 import yaml
 
-from fly_mario.contracts import Scene
-from fly_mario.runner import (Options, Run, delete_moment, describe_change, get_moment, level_catalogue, level_info,
+from fly_mario_fly.contracts import Scene
+from fly_mario_fly.runner import (Options, Run, delete_moment, describe_change, get_moment, level_catalogue, level_info,
                               level_objects, list_moments, load_fly, moment_info, rename_moment, save_moment, save_run,
                               tries_from)
-from fly_mario.runner import levels as L
-from fly_mario.runner import record
-from fly_mario.runner.__main__ import main, parse_scene_modifier
+from fly_mario_fly.runner import levels as L
+from fly_mario_fly.runner import record
+from fly_mario_fly.runner.__main__ import main, parse_scene_modifier
 
-pytestmark = pytest.mark.skipif(not os.environ.get("FLY_MARIO_DATA"), reason="FLY_MARIO_DATA not set")
+pytestmark = pytest.mark.skipif(not os.environ.get("FLY_MARIO_FLY_DATA"), reason="FLY_MARIO_FLY_DATA not set")
 
 
 @pytest.fixture(autouse=True)

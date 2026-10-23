@@ -2,9 +2,9 @@
 import numpy as np
 import pytest
 
-from fly_mario import contracts, registry
-from fly_mario.fly import groups
-from fly_mario.fly.spec import BrainSpec
+from fly_mario_fly import contracts, registry
+from fly_mario_fly.fly import groups
+from fly_mario_fly.fly.spec import BrainSpec
 
 MECHS = registry.list_plugins("mechanisms")
 
@@ -44,14 +44,14 @@ def test_group_masks_split_hemispheres():
 
 
 def test_unknown_mechanism_is_an_error(tmp_path, monkeypatch):
-    from fly_mario.fly import brain
-    monkeypatch.setenv("FLY_MARIO_DATA", str(tmp_path))
+    from fly_mario_fly.fly import brain
+    monkeypatch.setenv("FLY_MARIO_FLY_DATA", str(tmp_path))
     with pytest.raises(ValueError, match="unknown mechanism"):
         brain.brain_name(BrainSpec(mechanisms=("nope",)))
 
 
 def test_spec_order_does_not_change_the_brain_name(tmp_path, monkeypatch):
-    from fly_mario.fly import brain
-    monkeypatch.setenv("FLY_MARIO_DATA", str(tmp_path))
+    from fly_mario_fly.fly import brain
+    monkeypatch.setenv("FLY_MARIO_FLY_DATA", str(tmp_path))
     a = brain.brain_name(BrainSpec(mechanisms=("aversion", "hearing")))
     assert a == brain.brain_name(BrainSpec(mechanisms=("hearing", "aversion", "escape"))) == "steer636+hearing+aversion"

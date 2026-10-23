@@ -3,10 +3,10 @@ frame of two recorded sequences (1-2 pulse up to x ~ 900 with the Koopa and the 
 87 / 88 blocks). 8 probes per frame: feet 176 / actual x box 16 / 24 x span of his own columns / the 160 px ahead."""
 import pytest
 
-from fly_mario import registry
-from fly_mario.mario import ram as R
-from fly_mario.mario.env import MarioEnv
-from fly_mario.senses.kit.headroom import rise_available
+from fly_mario_fly import registry
+from fly_mario_fly.mario import ram as R
+from fly_mario_fly.mario.env import MarioEnv
+from fly_mario_fly.senses.kit.headroom import rise_available
 from golden_data import buttons_of, expand
 
 

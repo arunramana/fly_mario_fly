@@ -10,9 +10,9 @@ from __future__ import annotations
 import argparse
 import sys
 
-from fly_mario.mario import leveldata, ram as RM
-from fly_mario.mario.env import MarioEnv
-from fly_mario.mario.walker import walk_to
+from fly_mario_fly.mario import leveldata, ram as RM
+from fly_mario_fly.mario.env import MarioEnv
+from fly_mario_fly.mario.walker import walk_to
 
 POWERUP_TYPE = 0x0039                    # PowerUpType: 0 mushroom, 1 fire flower, 2 star, 3 1-up
 COINS = 0x075E

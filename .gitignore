@@ -1,5 +1,5 @@
 # Never saved: environments and caches, build output, run output (re-renderable), and the connectome data (lives
-# outside the repo at $FLY_MARIO_DATA).
+# outside the repo at $FLY_MARIO_FLY_DATA).
 .venv/
 __pycache__/
 *.pyc

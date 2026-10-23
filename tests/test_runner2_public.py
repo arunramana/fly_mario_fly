@@ -5,13 +5,13 @@ import os
 import numpy as np
 import pytest
 
-from fly_mario.contracts import ObjectInstance, Scene
-from fly_mario.mario.env import level_ids
-from fly_mario.runner import (BrainDisplay, LevelInfo, LevelStatus, Run, brain_display, level_catalogue, level_info, level_statuses,
+from fly_mario_fly.contracts import ObjectInstance, Scene
+from fly_mario_fly.mario.env import level_ids
+from fly_mario_fly.runner import (BrainDisplay, LevelInfo, LevelStatus, Run, brain_display, level_catalogue, level_info, level_statuses,
                               load_fly, screen_scroll)
-from fly_mario.runner import levels as L
+from fly_mario_fly.runner import levels as L
 
-needs_data = pytest.mark.skipif(not os.environ.get("FLY_MARIO_DATA"), reason="FLY_MARIO_DATA not set")
+needs_data = pytest.mark.skipif(not os.environ.get("FLY_MARIO_FLY_DATA"), reason="FLY_MARIO_FLY_DATA not set")
 
 
 # ---- per-frame objects and scroll ---------------------------------------------------------------------------
@@ -107,7 +107,7 @@ def test_scan_caches_and_marks_a_capped_scan_partial(tmp_path, monkeypatch):
 
 @needs_data
 def test_kinds_in_the_yaml_match_the_area_type_in_ram():
-    from fly_mario.mario.env import MarioEnv
+    from fly_mario_fly.mario.env import MarioEnv
     cfg, env = L.config(), MarioEnv()
     names = {0: "water", 1: "overground", 2: "underground", 3: "castle"}
     for lv in level_ids()[:32]:
@@ -137,8 +137,8 @@ def test_precompute_scans_only_what_the_db_lacks(tmp_path, monkeypatch):
 # ---- brain display data --------------------------------------------------------------------------------------
 @needs_data
 def test_brain_display_matches_the_brain_and_groups_yaml():
-    from fly_mario.fly import groups as G
-    from fly_mario.runner import get_brain, brain_spec
+    from fly_mario_fly.fly import groups as G
+    from fly_mario_fly.runner import get_brain, brain_spec
     fly = load_fly("champion_e1s")
     d = brain_display(fly)
     brain = get_brain(brain_spec(fly))
@@ -157,7 +157,7 @@ def test_brain_display_matches_the_brain_and_groups_yaml():
 
 @needs_data
 def test_terminals_sit_in_the_brain_not_the_nerve_cord():
-    from fly_mario.runner.display import BRAIN_Z_MAX
+    from fly_mario_fly.runner.display import BRAIN_Z_MAX
     d = brain_display(load_fly("champion_e1s"))
     xyz = d.groups["JO"].xyz
     assert (xyz[:, 2] < BRAIN_Z_MAX).all()

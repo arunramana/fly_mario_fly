@@ -4,11 +4,11 @@ import math
 import numpy as np
 import pytest
 
-from fly_mario import registry
-from fly_mario.contracts import Box, MarioState, ObjectInstance
-from fly_mario.mario.facts import load_facts
-from fly_mario.senses.kit.geom import theta_of
-from fly_mario.senses.kit.memory import SenseMemory
+from fly_mario_fly import registry
+from fly_mario_fly.contracts import Box, MarioState, ObjectInstance
+from fly_mario_fly.mario.facts import load_facts
+from fly_mario_fly.senses.kit.geom import theta_of
+from fly_mario_fly.senses.kit.memory import SenseMemory
 
 FACTS = load_facts("1-1")
 SENSES = registry.list_plugins("senses")

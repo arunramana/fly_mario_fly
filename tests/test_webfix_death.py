@@ -1,5 +1,5 @@
 """The API sends death as {x, kind, object_type, object_label}; the runner's cause string is read only in convert."""
-from fly_mario.api.convert import death_to_dto
+from fly_mario_fly.api.convert import death_to_dto
 
 
 def test_enemy_fall_other_and_none():

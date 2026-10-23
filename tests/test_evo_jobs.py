@@ -7,11 +7,11 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from fly_mario.api import jobs as J
-from fly_mario.api.app import create_app
-from fly_mario.evolve import devset
-from fly_mario.runner import load_fly
-from fly_mario.runner.config import FLIES
+from fly_mario_fly.api import jobs as J
+from fly_mario_fly.api.app import create_app
+from fly_mario_fly.evolve import devset
+from fly_mario_fly.runner import load_fly
+from fly_mario_fly.runner.config import FLIES
 
 
 # ---- the dev set -------------------------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ def test_evaluate_runs_each_start_and_original_resets_the_knobs():
 
 # ---- knob changes in words ---------------------------------------------------------------------------------------
 def test_change_words_have_no_digits():
-    from fly_mario.api.knobs import specs_by_key
+    from fly_mario_fly.api.knobs import specs_by_key
     spec = specs_by_key()["sour_smell.gain"]
     seen = set()
     for after in (spec.default, spec.default * 1.2, spec.default * 3, spec.hi, spec.lo):
@@ -150,7 +150,7 @@ def test_use_saves_the_best_fly_with_provenance(client):
     best = load_fly("champion_e1s")
     from dataclasses import replace
 
-    from fly_mario.runner import dump_fly
+    from fly_mario_fly.runner import dump_fly
     prov = {"evolved_from": "champion_e1s", "generation": 1, "evolved": ["sour_smell.gain"], "evolution": jid}
     (folder / "start.yaml").write_text(dump_fly(best))
     (folder / "best.yaml").write_text(dump_fly(replace(best, name="champion_e1s_evo_k1",

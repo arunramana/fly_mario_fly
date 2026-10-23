@@ -3,9 +3,9 @@ what the old perception saw (frozen by tools/freeze_golden.py). Same intentional
 brick/usedblock/step are new types, the old "shell" kind is a koopa in its shell, pipe + step are compared per column height."""
 import pytest
 
-from fly_mario import registry
-from fly_mario.mario import ram as R
-from fly_mario.mario.env import MarioEnv
+from fly_mario_fly import registry
+from fly_mario_fly.mario import ram as R
+from fly_mario_fly.mario.env import MarioEnv
 from golden_data import buttons_of, expand
 
 CASES = ["1-1/driver", "1-2/pulse", "1-1/mushroom"]

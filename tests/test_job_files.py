@@ -6,7 +6,7 @@ import threading
 
 import pytest
 
-from fly_mario.runner import atomic
+from fly_mario_fly.runner import atomic
 
 
 def test_replace_retries_on_permission_error_then_succeeds(tmp_path, monkeypatch):

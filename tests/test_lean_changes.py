@@ -2,9 +2,9 @@
 from dataclasses import replace
 from pathlib import Path
 
-from fly_mario.api import jobs as J
-from fly_mario.api import knobs as K
-from fly_mario.runner import load_fly
+from fly_mario_fly.api import jobs as J
+from fly_mario_fly.api import knobs as K
+from fly_mario_fly.runner import load_fly
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -23,4 +23,4 @@ def test_every_knob_has_an_owner():
 
 def test_the_web_app_has_one_name_and_no_stills_or_side_by_side():
     text = "".join(p.read_text(encoding="utf-8") for p in (ROOT / "web" / "src").rglob("*") if p.suffix in (".ts", ".tsx", ".css") and p.name != "types.ts")
-    assert "fly_mario" in text and "stills" not in text.lower() and "side_by_side" not in text
+    assert "fly_mario_fly" in text and "stills" not in text.lower() and "side_by_side" not in text

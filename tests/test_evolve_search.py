@@ -4,7 +4,7 @@ import json
 import numpy as np
 import pytest
 
-from fly_mario.evolve import search
+from fly_mario_fly.evolve import search
 
 
 class FakePool:
@@ -28,7 +28,7 @@ class FakePool:
 
 @pytest.fixture
 def patched(tmp_path, monkeypatch):
-    monkeypatch.setenv("FLY_MARIO_DATA", str(tmp_path))
+    monkeypatch.setenv("FLY_MARIO_FLY_DATA", str(tmp_path))
     monkeypatch.setattr(search, "_keep_run", lambda *a, **k: "run")
     return tmp_path
 

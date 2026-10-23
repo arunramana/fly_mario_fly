@@ -15,9 +15,9 @@ import json
 import os
 import sys
 
-from fly_mario.mario import leveldata, ram as RM
-from fly_mario.mario.env import MarioEnv
-from fly_mario.mario.walker import Walker
+from fly_mario_fly.mario import leveldata, ram as RM
+from fly_mario_fly.mario.env import MarioEnv
+from fly_mario_fly.mario.walker import Walker
 
 PLAYER_Y_HIGH, PLAYER_Y, PLAYER_YSPEED, PLAYER_PAGE, PLAYER_X, STAR_TIMER = 0x00B5, 0x00CE, 0x009F, 0x006D, 0x0086, 0x079F
 TOL = 16

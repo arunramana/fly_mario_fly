@@ -1,4 +1,4 @@
-// The only module components import for data. `python -m fly_mario.api` serves it (default http://127.0.0.1:8000,
+// The only module components import for data. `python -m fly_mario_fly.api` serves it (default http://127.0.0.1:8000,
 // override with VITE_API_URL); VITE_MOCK=1 swaps in the offline mock.
 import type {
   EvolveRequest, Fly, JobDetail, JobSummary, LevelInfo, MomentSummary, TestJobRequest, Registry, RunEvent, RunRequest, RunResult, RunStream, RunSummary, Try, VideoRequest, VideoSummary,

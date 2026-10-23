@@ -1,6 +1,6 @@
 """Run the web e2e scripts against a private stack: python tools/e2e_stack.py [e2e/flow.mjs]  (from the repo root).
 
-The API gets a temp flies folder (FLY_MARIO_FLIES_DIR, a copy of the preset flies), so "Save as fly" never writes into
+The API gets a temp flies folder (FLY_MARIO_FLY_FLIES_DIR, a copy of the preset flies), so "Save as fly" never writes into
 configs/flies/. It starts its own API (8010) and vite (5180), stops exactly those two process trees, and removes exactly
 the temp folder it made; nothing else is touched.
 """
@@ -37,12 +37,12 @@ def wait_for(url, seconds=60):
 
 
 def main(scripts):
-    flies = Path(tempfile.mkdtemp(prefix="fly_mario_e2e_flies_"))
+    flies = Path(tempfile.mkdtemp(prefix="fly_mario_fly_e2e_flies_"))
     procs = []
     try:
         shutil.copytree(ROOT / "configs" / "flies", flies, dirs_exist_ok=True, ignore=shutil.ignore_patterns("*_evo_*"))
-        env = {**os.environ, "FLY_MARIO_FLIES_DIR": str(flies)}
-        procs.append(subprocess.Popen([sys.executable, "-m", "fly_mario.api", "--port", str(API_PORT)], cwd=ROOT, env=env))
+        env = {**os.environ, "FLY_MARIO_FLY_FLIES_DIR": str(flies)}
+        procs.append(subprocess.Popen([sys.executable, "-m", "fly_mario_fly.api", "--port", str(API_PORT)], cwd=ROOT, env=env))
         procs.append(subprocess.Popen(["npx", "vite", "--port", str(WEB_PORT), "--strictPort"], cwd=WEB, shell=SHELL,
                                       env={**os.environ, "VITE_API_URL": f"http://127.0.0.1:{API_PORT}"}))
         wait_for(f"http://127.0.0.1:{API_PORT}/levels")

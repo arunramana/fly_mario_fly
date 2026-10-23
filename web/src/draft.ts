@@ -59,7 +59,7 @@ export function registerRun(runId: string, req: RunRequest): void {
 
 /** Scenes saved by hand ("Save scene"), kept in this browser. */
 export interface SavedScene { name: string; scene: Scene }
-const SCENES_KEY = 'fly_mario.scenes'
+const SCENES_KEY = 'fly_mario_fly.scenes'
 export function loadScenes(): SavedScene[] {
   try { return JSON.parse(localStorage.getItem(SCENES_KEY) ?? '[]') as SavedScene[] } catch { return [] }
 }

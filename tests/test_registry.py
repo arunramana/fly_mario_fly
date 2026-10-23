@@ -1,7 +1,7 @@
 """Registry finds one PLUGIN per module and rejects duplicate names."""
 import pytest
 
-from fly_mario.registry import KINDS, list_plugins, load_folder
+from fly_mario_fly.registry import KINDS, list_plugins, load_folder
 
 
 def _write(folder, fname, name):

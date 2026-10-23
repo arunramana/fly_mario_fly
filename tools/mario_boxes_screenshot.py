@@ -9,10 +9,10 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fly_mario import registry                    # noqa: E402
-from fly_mario.mario import ram as R               # noqa: E402
-from fly_mario.mario.env import MarioEnv           # noqa: E402
-from fly_mario.mario.walker import Walker          # noqa: E402
+from fly_mario_fly import registry                    # noqa: E402
+from fly_mario_fly.mario import ram as R               # noqa: E402
+from fly_mario_fly.mario.env import MarioEnv           # noqa: E402
+from fly_mario_fly.mario.walker import Walker          # noqa: E402
 
 HUD = 32          # the status bar: tile-buffer y 0 is screen y 32
 COLOURS = {"goomba": "#ff3030", "koopa": "#30c030", "piranha": "#ff30ff", "pipe": "#00e0e0", "step": "#e0a000",

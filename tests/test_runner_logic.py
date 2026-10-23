@@ -1,11 +1,11 @@
 """The runner's rules that need no emulator: button priorities, the jump muscle, fly configs."""
 import pytest
 
-from fly_mario import registry
-from fly_mario.contracts import ButtonIntent, FlyConfig
-from fly_mario.runner import (brain_spec, dump_fly, fly_from_dict, fly_to_dict, load_fly, resolve_buttons, resolve_knobs,
+from fly_mario_fly import registry
+from fly_mario_fly.contracts import ButtonIntent, FlyConfig
+from fly_mario_fly.runner import (brain_spec, dump_fly, fly_from_dict, fly_to_dict, load_fly, resolve_buttons, resolve_knobs,
                               validate)
-from fly_mario.runner import config as C
+from fly_mario_fly.runner import config as C
 
 ACTIONS = registry.list_plugins("actions")
 K = {k.key: k.default for a in ACTIONS.values() for k in a.knobs}

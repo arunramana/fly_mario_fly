@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "fly_mario_fly_web",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "gen:types": "npx --yes -p typescript@5.9.3 -p openapi-typescript@7.13.0 openapi-typescript ../src/fly_mario/api/openapi.json -o src/api/types.ts",
+    "gen:types": "npx --yes -p typescript@5.9.3 -p openapi-typescript@7.13.0 openapi-typescript ../src/fly_mario_fly/api/openapi.json -o src/api/types.ts",
     "test:e2e": "node e2e/flow.mjs",
     "dev:mock": "vite --mode mock"
   },

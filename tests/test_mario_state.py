@@ -2,8 +2,8 @@
 import numpy as np
 import pytest
 
-from fly_mario.mario import ram as R
-from fly_mario.mario.env import MarioEnv, level_ids, env_id
+from fly_mario_fly.mario import ram as R
+from fly_mario_fly.mario.env import MarioEnv, level_ids, env_id
 
 SAVE_AT, PLAY = 150, 200
 

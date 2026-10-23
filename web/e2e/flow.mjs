@@ -1,6 +1,6 @@
 // End-to-end against the REAL backend, run through `python tools/e2e_stack.py` (from the repo root). That starts a private
-// API (its own flies folder, FLY_MARIO_FLIES_DIR) and vite, runs this script and cleans up; nothing lands in configs/flies/.
-// Or by hand: python -m fly_mario.api  ;  npm run dev  ;  npm run test:e2e   (BASE points at the dev server).
+// API (its own flies folder, FLY_MARIO_FLY_FLIES_DIR) and vite, runs this script and cleans up; nothing lands in configs/flies/.
+// Or by hand: python -m fly_mario_fly.api  ;  npm run dev  ;  npm run test:e2e   (BASE points at the dev server).
 // Flow: Scene -> Fly (champion) -> Run (dies at the Koopa) -> Download video (an .mp4 file is saved) -> Rewind 3 s ->
 // sour smell stronger -> Resume -> Original dials run -> Evolution: Test this fly, a tiny evolution (graph, parameters,
 // montage plays, Download montage saves a file, Save as fly -> in the Fly presets).
@@ -57,8 +57,8 @@ const ids = await page.locator('[data-level]').evaluateAll((els) => els.map((e) 
 const stages = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`))
 assert.deepEqual(ids, [...stages, 'full', 'lost_levels', 'random'])
 await page.waitForFunction(() => [...document.querySelectorAll('.thumb img')].every((i) => i.complete && i.naturalWidth > 0), null, { timeout: 120_000 })
-assert.equal(await page.title(), 'fly_mario')
-assert.equal(await page.locator('.brand').innerText(), 'fly_mario')
+assert.equal(await page.title(), 'fly_mario_fly')
+assert.equal(await page.locator('.brand').innerText(), 'fly_mario_fly')
 assert.deepEqual((await page.locator('.app-header nav a').allInnerTexts()).map((t) => t.replace(/ ✓$/, '')), ['1 Scene', '2 Fly', '3 Run', '4 Evolution'])
 await page.locator('[data-level="1-2"]').click()
 assert.equal(await page.locator('[data-level="1-2"]').getAttribute('aria-pressed'), 'true')

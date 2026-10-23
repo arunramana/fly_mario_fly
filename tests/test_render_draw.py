@@ -2,9 +2,9 @@
 import cv2
 import numpy as np
 
-from fly_mario.contracts import OverlayItem
-from fly_mario.render import H, W, BrainData, FrameData, Renderer
-from fly_mario.render.draw import GAME_H, GAME_W, GAME_X, GAME_Y, LEFT_W, game_panel
+from fly_mario_fly.contracts import OverlayItem
+from fly_mario_fly.render import H, W, BrainData, FrameData, Renderer
+from fly_mario_fly.render.draw import GAME_H, GAME_W, GAME_X, GAME_Y, LEFT_W, game_panel
 
 
 def _game(seed=0):

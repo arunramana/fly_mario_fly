@@ -1,16 +1,16 @@
 """Golden: the 636/656/881/907 matrices equal what the old code cached (hash of W, same neuron order, same types and
-signs, same group masks), and 200 steps of the rate model give the old rate vector. Needs $FLY_MARIO_DATA."""
+signs, same group masks), and 200 steps of the rate model give the old rate vector. Needs $FLY_MARIO_FLY_DATA."""
 import hashlib
 import os
 
 import numpy as np
 import pytest
 
-from fly_mario.fly.brain import RateModel, build_brain
-from fly_mario.fly.spec import BrainSpec
+from fly_mario_fly.fly.brain import RateModel, build_brain
+from fly_mario_fly.fly.spec import BrainSpec
 from golden_data import GOLDEN
 
-pytestmark = pytest.mark.skipif(not os.environ.get("FLY_MARIO_DATA"), reason="FLY_MARIO_DATA not set")
+pytestmark = pytest.mark.skipif(not os.environ.get("FLY_MARIO_FLY_DATA"), reason="FLY_MARIO_FLY_DATA not set")
 SIZES = ["636", "656", "881", "907"]
 SOUR = ("hearing", "attraction", "aversion")
 

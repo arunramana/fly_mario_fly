@@ -8,13 +8,13 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
-from fly_mario.api import convert as V
-from fly_mario.api import layers as L
-from fly_mario.api.app import create_app
-from fly_mario.runner import record
-from fly_mario.runner.config import FLIES
+from fly_mario_fly.api import convert as V
+from fly_mario_fly.api import layers as L
+from fly_mario_fly.api.app import create_app
+from fly_mario_fly.runner import record
+from fly_mario_fly.runner.config import FLIES
 
-needs_data = pytest.mark.skipif(not os.environ.get("FLY_MARIO_DATA"), reason="FLY_MARIO_DATA not set")
+needs_data = pytest.mark.skipif(not os.environ.get("FLY_MARIO_FLY_DATA"), reason="FLY_MARIO_FLY_DATA not set")
 
 def test_png_bytes_round_trip_rgb_and_rgba():
     for ch in (3, 4):
@@ -33,8 +33,8 @@ def test_level_labels_and_order():
 
 @needs_data
 def test_catalogue_thumbnails_and_start_screens(tmp_path, monkeypatch):
-    from fly_mario.mario.env import MarioEnv
-    from fly_mario.runner import levels
+    from fly_mario_fly.mario.env import MarioEnv
+    from fly_mario_fly.runner import levels
     monkeypatch.setattr(record, "runs_dir", lambda: tmp_path / "runs")
     client = TestClient(create_app(tmp_path / "flies", tmp_path / "runs"))
     cat = client.get("/levels").json()

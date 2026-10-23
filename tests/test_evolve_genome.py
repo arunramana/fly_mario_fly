@@ -4,12 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from fly_mario.contracts import KnobSpec
-from fly_mario.evolve import fitness as F
-from fly_mario.evolve import genome as G
-from fly_mario.runner import load_fly
+from fly_mario_fly.contracts import KnobSpec
+from fly_mario_fly.evolve import fitness as F
+from fly_mario_fly.evolve import genome as G
+from fly_mario_fly.runner import load_fly
 
-EVOLVE = Path(__file__).resolve().parents[1] / "src" / "fly_mario" / "evolve"
+EVOLVE = Path(__file__).resolve().parents[1] / "src" / "fly_mario_fly" / "evolve"
 
 
 def test_genome_is_only_what_is_on():
@@ -73,16 +73,16 @@ def test_train_and_dev_sets_are_the_old_ones_and_disjoint():
 
 def test_evolve_imports_only_runner_contracts_registry():
     """evolve/ goes through runner, contracts and registry; it never names a sense, object or action."""
-    allowed = {"fly_mario.runner", "fly_mario.contracts", "fly_mario.registry", "fly_mario.evolve"}
+    allowed = {"fly_mario_fly.runner", "fly_mario_fly.contracts", "fly_mario_fly.registry", "fly_mario_fly.evolve"}
     for path in EVOLVE.glob("*.py"):
         text = path.read_text(encoding="utf-8")
         for node in ast.walk(ast.parse(text)):
             if isinstance(node, ast.ImportFrom) and node.module:
-                mods = [node.module] if node.module != "fly_mario" else [f"fly_mario.{a.name}" for a in node.names]
+                mods = [node.module] if node.module != "fly_mario_fly" else [f"fly_mario_fly.{a.name}" for a in node.names]
             else:
                 mods = [a.name for a in node.names] if isinstance(node, ast.Import) else []
             for m in mods:
-                if m.startswith("fly_mario"):
+                if m.startswith("fly_mario_fly"):
                     assert any(m == a or m.startswith(a + ".") for a in allowed), f"{path.name} imports {m}"
         for name in ("looming", "goomba", "jump", "sweet_smell", "hearing", "koopa", "qblock", "pipe"):
             assert f'"{name}' not in text and f"'{name}" not in text, f"{path.name} names {name}"

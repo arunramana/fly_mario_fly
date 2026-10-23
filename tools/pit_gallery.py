@@ -5,7 +5,7 @@ it saves two annotated frames, ~120 px before the near edge and at take-off, dra
 rim tops the sense uses (cyan), the tower box (red) and the looming wedge from Mario's eye (red). A CSV classifies
 each pit; one contact sheet per world. Nothing in src/ is touched or changed.
 
-    python tools/pit_gallery.py                  -> $FLY_MARIO_DATA/pit_gallery/
+    python tools/pit_gallery.py                  -> $FLY_MARIO_FLY_DATA/pit_gallery/
     python tools/pit_gallery.py --levels 1-1 3-1 --workers 4
 """
 from __future__ import annotations
@@ -24,15 +24,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import yaml                                                                   # noqa: E402
 
-from fly_mario import registry                                                # noqa: E402
-from fly_mario.contracts import ObjectInstance                                # noqa: E402
-from fly_mario.mario import ram as R                                          # noqa: E402
-from fly_mario.mario.env import MarioEnv                                      # noqa: E402
-from fly_mario.mario.walker import Walker                                     # noqa: E402
-from fly_mario.senses.kit.geom import eye_of, gap, theta_of                   # noqa: E402
-from fly_mario.senses.kit.memory import SenseMemory                           # noqa: E402
-from fly_mario.senses.kit.world import hole_box                              # noqa: E402
-from fly_mario.contracts import Box                                           # noqa: E402
+from fly_mario_fly import registry                                                # noqa: E402
+from fly_mario_fly.contracts import ObjectInstance                                # noqa: E402
+from fly_mario_fly.mario import ram as R                                          # noqa: E402
+from fly_mario_fly.mario.env import MarioEnv                                      # noqa: E402
+from fly_mario_fly.mario.walker import Walker                                     # noqa: E402
+from fly_mario_fly.senses.kit.geom import eye_of, gap, theta_of                   # noqa: E402
+from fly_mario_fly.senses.kit.memory import SenseMemory                           # noqa: E402
+from fly_mario_fly.senses.kit.world import hole_box                              # noqa: E402
+from fly_mario_fly.contracts import Box                                           # noqa: E402
 
 HUD, SCALE = 32, 3                  # the status bar is 32 px; frames are drawn at 3x
 APPROACH = 120                      # px between Mario's front and the near edge for the first frame
@@ -44,7 +44,7 @@ WATER = {lv for lv, k in yaml.safe_load((Path(__file__).resolve().parents[1] / "
 
 
 def out_dir() -> Path:
-    return Path(os.environ["FLY_MARIO_DATA"]) / "pit_gallery"
+    return Path(os.environ["FLY_MARIO_FLY_DATA"]) / "pit_gallery"
 
 
 # ---- geometry -------------------------------------------------------------------------------------------------

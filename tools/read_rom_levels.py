@@ -1,10 +1,10 @@
-"""Read every level out of the SMB1 ROM the gym env uses and write src/fly_mario/mario/facts/level_db.json.
+"""Read every level out of the SMB1 ROM the gym env uses and write src/fly_mario_fly/mario/facts/level_db.json.
 
     python tools/read_rom_levels.py            # writes the db, prints a summary
     python tools/read_rom_levels.py --check    # exit 1 if the committed db differs from what the ROM gives
 
 The ROM format (area objects, enemy objects, header bits, area pointers) is from the community SMB disassembly
-("smbdis.asm"); see src/fly_mario/mario/leveldata/. The db is generated and committed.
+("smbdis.asm"); see src/fly_mario_fly/mario/leveldata/. The db is generated and committed.
 """
 from __future__ import annotations
 
@@ -13,8 +13,8 @@ import json
 import sys
 from pathlib import Path
 
-from fly_mario.mario import leveldata
-from fly_mario.mario.leveldata import build
+from fly_mario_fly.mario import leveldata
+from fly_mario_fly.mario.leveldata import build
 
 
 def dumps(obj, depth=0, max_depth=3) -> str:

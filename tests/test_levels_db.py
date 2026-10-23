@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from fly_mario.mario import leveldata
-from fly_mario.mario.env import level_ids
-from fly_mario.mario.leveldata import areas as A, build, rom as R
+from fly_mario_fly.mario import leveldata
+from fly_mario_fly.mario.env import level_ids
+from fly_mario_fly.mario.leveldata import areas as A, build, rom as R
 
 STAGES = level_ids()[:32]
 ROOT = Path(__file__).resolve().parents[1]
@@ -114,7 +114,7 @@ def test_rom_tables_are_found_and_every_block_decodes():
 
 
 def test_level_catalogue_reads_the_db(db):
-    from fly_mario.runner import level_catalogue
+    from fly_mario_fly.runner import level_catalogue
     cat = {c.id: c for c in level_catalogue()}
     assert cat["1-2"].contents["power-up"] >= 1 and "mushroom" in cat["1-2"].objects and cat["1-2"].source == "rom"
     assert cat["1-1"].width == cat["1-1"].flag_x == db["stages"]["1-1"]["flag_get_x"] == 3161 and cat["1-4"].flag_x == 2263 and cat["1-4"].kind == "castle" and cat["1-3"].kind == "athletic"

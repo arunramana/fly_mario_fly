@@ -156,7 +156,7 @@ for (let i = 0; i < 1800; i++) {
   await new Promise((r) => setTimeout(r, 2000))
 }
 assert.equal(v.status, 'finished', v.error)
-const data = process.env.FLY_MARIO_DATA
+const data = (process.env.FLY_MARIO_FLY_DATA ?? process.env.FLY_MARIO_DATA)
 const info = JSON.parse(readFileSync(join(data, 'videos', vid.id, 'info.json'), 'utf8'))
 const game = info.clips.map((c) => c.game_frames)
 const expected = info.clips.reduce((s, c) => s + c.output_frames, 0) / 60
