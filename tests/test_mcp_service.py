@@ -64,7 +64,7 @@ def test_list_plugins_labels_every_plugin_teal_or_orange():
     assert all(p["colour"] == ("teal" if p["origin"] == "fly" else "orange") for p in out)
     assert {p["name"] for p in S.list_plugins("mechanisms")["plugins"]} == {"escape", "walking", "hearing", "attraction", "aversion"}
     assert all(p["colour"] == "teal" for p in S.list_plugins("mechanisms")["plugins"])
-    assert S.list_plugins("characters")["plugins"] == []          # none yet: the kind exists, nothing uses it
+    assert {p["name"] for p in S.list_plugins("characters")["plugins"]} == {"buzzy_beetle", "red_koopa", "hammer_bro", "podoboo"}
     assert S.list_plugins("nonsense")["ok"] is False
 
 

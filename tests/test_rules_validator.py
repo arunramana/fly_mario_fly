@@ -43,7 +43,8 @@ def test_every_plugin_of_every_kind_has_a_declaration_of_the_right_kind():
         for name, mod in registry.list_modules(kind).items():
             d = getattr(mod, "DECLARATION", None)
             assert isinstance(d, Declaration), f"{kind}/{name}"
-            assert d.kind == V.DECL_KIND[kind] and d.origin in ("fly", "invented")
+            allowed = (V.DECL_KIND[kind], "character") if kind == "objects" else (V.DECL_KIND[kind],)     # creatures live with the objects
+            assert d.kind in allowed and d.origin in ("fly", "invented"), f"{kind}/{name}"
 
 
 def test_only_mechanisms_are_teal():
