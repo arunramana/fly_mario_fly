@@ -1,5 +1,6 @@
 """Start at a given x: a scripted walker carries Mario there with the enemies off, then the game is handed back."""
 from fly_mario_fly.mario import walker
+from fly_mario_fly.rules import declare
 
 
 class StartAtX:
@@ -17,3 +18,7 @@ class StartAtX:
 
 
 PLUGIN = StartAtX()
+
+
+DECLARATION = declare("scene", "invented",
+    "A test-scene edit of the running game (ours). Walks Mario to world pixel x (jumping walls and pits, enemies off) before the run starts. Enemies further on spawn as usual.")

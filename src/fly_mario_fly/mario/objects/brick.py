@@ -1,6 +1,7 @@
 """Breakable brick block (and the underground brick variants). Terrain."""
 from fly_mario_fly.contracts import Box
 from fly_mario_fly.mario import ram as R
+from fly_mario_fly.rules import declare
 
 
 class Brick:
@@ -22,3 +23,7 @@ class Brick:
 
 
 PLUGIN = Brick()
+
+
+DECLARATION = declare("object", "invented",
+    "A game object found by reading the game's RAM (ours, not the fly's). One 16 x 16 box per brick tile above the ground; also the ceiling that stops a jump.")

@@ -2,6 +2,7 @@
 (fire_flower, star, one_up): one object id (0x2E), told apart by PowerUpType."""
 from fly_mario_fly.contracts import Box
 from fly_mario_fly.mario import ram as R
+from fly_mario_fly.rules import declare
 
 
 class PowerUp:
@@ -36,3 +37,7 @@ class Mushroom(PowerUp):
 
 
 PLUGIN = Mushroom()
+
+
+DECLARATION = declare("object", "invented",
+    "A game object found by reading the game's RAM (ours, not the fly's). The live super mushroom in object slot 5.")

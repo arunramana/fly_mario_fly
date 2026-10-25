@@ -13,6 +13,7 @@ from fly_mario_fly.contracts import KnobSpec, SenseOutput
 from fly_mario_fly.senses.kit import draw
 from fly_mario_fly.senses.kit.geom import eye_of, theta_of
 from fly_mario_fly.senses.kit.world import floor_y
+from fly_mario_fly.rules import Route, declare
 
 
 class Hearing:
@@ -66,3 +67,11 @@ class Hearing:
 
 
 PLUGIN = Hearing()
+
+
+DECLARATION = declare(
+    "sense", "invented",
+    "Invented cue: a ? block 'hums' with a level that grows as Mario gets close, fed to the real Johnston's organ neurons; the "
+    "JO -> Giant Fiber wiring is real.",
+    route=Route("hearing", ("JO*",), "JO (Johnston's organ) -> DNp01 (Giant Fiber)"),
+    drives=("JO",))

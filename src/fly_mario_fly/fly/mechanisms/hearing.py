@@ -7,6 +7,7 @@ into the rows already in the brain.
 import numpy as np
 
 from fly_mario_fly.fly.spec import ExtraNeurons, MechanismSpec
+from fly_mario_fly.rules import Route, declare
 
 
 def _jo_onto_giant_fiber(conn):
@@ -32,3 +33,9 @@ PLUGIN = MechanismSpec(
         recipe={"rule": "JO* types with a >=5 synapse edge onto DNp01, ascending body id", "min_syn": 5},
     ),
 )
+
+
+DECLARATION = declare(
+    "mechanism", "fly",
+    "Real wiring: 20 Johnston's organ neurons with a >=5-synapse edge straight onto the Giant Fiber are added to the base brain.",
+    route=Route("hearing", ("JO*", "DNp01", "TTMn"), "JO -> DNp01 (Giant Fiber) -> TTMn"))

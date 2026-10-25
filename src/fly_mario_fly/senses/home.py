@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from fly_mario_fly.contracts import KnobSpec, OverlayItem, SenseOutput
 from fly_mario_fly.senses.kit import draw
+from fly_mario_fly.rules import Route, declare
 
 
 class Home:
@@ -35,3 +36,11 @@ class Home:
 
 
 PLUGIN = Home()
+
+
+DECLARATION = declare(
+    "sense", "invented",
+    "Invented cue: a constant pull to the right (the direction of travel is ours) fed into the right-eye target tracker; the "
+    "wiring from LC10a to forward walking and steering is real.",
+    route=Route("walking", ("LC10a",), "LC10a -> DNp09 (forward walking) and DNa01/02 (steering)"),
+    drives=("LC10a_R",))

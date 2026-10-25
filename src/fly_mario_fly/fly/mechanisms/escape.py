@@ -6,6 +6,7 @@ drive onto the Giant Fiber, so it is run as a dynamical system, never collapsed 
 sits inside the 636-neuron base; nothing is added.
 """
 from fly_mario_fly.fly.spec import MechanismSpec
+from fly_mario_fly.rules import Route, declare
 
 PLUGIN = MechanismSpec(
     name="escape",
@@ -15,3 +16,10 @@ PLUGIN = MechanismSpec(
     neuron_sets=["LC4_L", "LC4_R", "LPLC2_L", "LPLC2_R", "DNp01", "TTMn"],
     note="Real wiring: 302 of the 311 detectors have a direct >=5-synapse edge onto the Giant Fiber.",
 )
+
+
+DECLARATION = declare(
+    "mechanism", "fly",
+    "Real wiring: looming detectors LC4/LPLC2 converge on the Giant Fiber (DNp01), which drives the jump muscle motor neuron (TTMn). "
+    "Nothing is added; all of it lives in the 636-neuron base brain.",
+    route=Route("escape", ("LC4", "LPLC2", "DNp01", "TTMn"), "LC4/LPLC2 -> DNp01 -> TTMn"))

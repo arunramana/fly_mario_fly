@@ -11,6 +11,7 @@ import numpy as np
 import yaml
 
 from fly_mario_fly.fly.spec import ExtraNeurons, MechanismSpec
+from fly_mario_fly.rules import Route, declare
 
 ORN_TYPES = ("ORN_DM1", "ORN_VA2", "ORN_DM4")
 IDS = tuple(yaml.safe_load((Path(__file__).parents[1] / "data" / "attraction_relays.yaml").read_text(encoding="utf-8"))["body_ids"])
@@ -38,3 +39,9 @@ PLUGIN = MechanismSpec(
         recipe={"rule": "pruned k=3,N=5 set ORN_DM1/VA2/DM4 -> DNa01/02", "ids": list(IDS)},
     ),
 )
+
+
+DECLARATION = declare(
+    "mechanism", "fly",
+    "Real wiring: attractive-smell olfactory receptor neurons (ORN) and the relays that connect them to the steering neurons DNa01/02.",
+    route=Route("attraction", ("ORN*", "DNa01", "DNa02"), "ORN -> relays -> DNa01/02"))

@@ -1,5 +1,6 @@
 """A hole has no face to loom, so it gets a tower: the upright of an inverted L whose bar is the hole at the level Mario takes off from."""
 from fly_mario_fly.contracts import Box, KnobSpec
+from fly_mario_fly.rules import declare
 
 
 class FarEdgeTower:
@@ -27,3 +28,7 @@ class FarEdgeTower:
 
 
 PLUGIN = FarEdgeTower()
+
+
+DECLARATION = declare("shape", "invented",
+    "How an object's box is turned into the box the looming cue measures (our choice). For a pit: a 16 px wide tower on the far edge, standing on the hole's bar at the level Mario takes off from. Height = min(the pit's width, a full jump) + how far the far rim's top is above that level, so its top is always above the far rim.")

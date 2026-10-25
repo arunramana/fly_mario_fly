@@ -1,5 +1,6 @@
 """A solid block: a wall (pipe, stair column) that Mario has to get over."""
 from fly_mario_fly.contracts import Box
+from fly_mario_fly.rules import declare
 
 
 class SolidBlock:
@@ -17,3 +18,7 @@ class SolidBlock:
 
 
 PLUGIN = SolidBlock()
+
+
+DECLARATION = declare("shape", "invented",
+    "How an object's box is turned into the box the looming cue measures (our choice). The block's own box. One that stands on the floor is a wall: it looms from the ground Mario took off from up to its top, and stops looming once his feet are above that top and his body is over it. A block floating in the air is just a box.")

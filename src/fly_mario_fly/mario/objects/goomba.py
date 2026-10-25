@@ -1,5 +1,6 @@
 """Goomba: a walking mushroom enemy. Raw box from the enemy slots."""
 from fly_mario_fly.mario import enemies
+from fly_mario_fly.rules import declare
 
 
 class Goomba:
@@ -19,3 +20,7 @@ class Goomba:
 
 
 PLUGIN = Goomba()
+
+
+DECLARATION = declare("object", "invented",
+    "A game object found by reading the game's RAM (ours, not the fly's). Walks toward Mario; a stomp kills it, a touch kills Mario.")

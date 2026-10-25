@@ -8,6 +8,7 @@ rule applies again from the next frame. No hold timer, no cooldown.
 `state` is this action's own dict, kept from frame to frame; the runner sets state["airborne"] each frame.
 """
 from fly_mario_fly.contracts import ButtonIntent, KnobSpec
+from fly_mario_fly.rules import Route, declare
 
 
 class Jump:
@@ -53,3 +54,12 @@ class Jump:
 
 
 PLUGIN = Jump()
+
+
+DECLARATION = declare(
+    "action", "invented",
+    "Invented readout: A is held while the real jump muscle motor neuron (TTMn) is above thresholds we chose. The game state "
+    "'airborne' only enforces the NES rule that A must be released once on landing before another jump is accepted: a mechanical "
+    "constraint, not a decision.",
+    route=Route("escape", ("TTMn",), "LC4/LPLC2 -> DNp01 (Giant Fiber) -> TTMn (jump muscle)"),
+    reads_groups=("TTMn",), buttons=("A",), game_reads=("airborne",))

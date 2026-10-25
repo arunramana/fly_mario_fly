@@ -21,7 +21,8 @@ To run the fly itself you need the MaleCNS data (about 1.2 GB, see the README): 
 5. **Nothing injected past the senses.** A sense turns game state into neuron input; it does not give the fly the answer, and nothing is tuned on game outcomes except through `evolve/` on the training set (the dev set in `configs/dev_sets.yaml` only judges).
 6. **Results must not change silently.** The golden tests (`tests/golden/`) compare against answers recorded from the old code. If your change alters a run's `hash`, say so in the PR and explain why; do not edit the golden data to make a test pass.
 7. **`contracts.py`, `CLAUDE.md`, `registry.py`, `pyproject.toml` and `tests/golden/` are maintainer-owned.** If you need a change there, open an issue first.
-8. **Never commit** data, caches, videos, or secrets (`.gitignore` covers the usual ones). Don't commit anything from `$FLY_MARIO_FLY_DATA`.
+8. **Declare every plug-in.** Next to `PLUGIN`, add `DECLARATION = declare(kind, origin, what, ...)` (see `src/fly_mario_fly/rules/`): `origin` is `"fly"` (teal, real wiring: only mechanisms) or `"invented"` (orange), `what` says in one sentence what is real and what is invented, and a sense or action cites the real route it rides (`Route(mechanism, cell_types, wiring)`). Check it with `python -m fly_mario_fly.rules validate` (CI runs it; `python -m fly_mario_fly.rules list` prints the rules). Nothing may write the weights, fire neurons directly, or let our code choose a button: runtime guards and the validator enforce this.
+9. **Never commit** data, caches, videos, or secrets (`.gitignore` covers the usual ones). Don't commit anything from `$FLY_MARIO_FLY_DATA`.
 
 ## Tests
 

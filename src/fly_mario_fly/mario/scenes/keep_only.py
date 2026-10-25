@@ -1,6 +1,7 @@
 """Keep only the listed object types; remove every other enemy and pickup. Works for any registered object."""
 from fly_mario_fly import registry
 from fly_mario_fly.mario import ram as R
+from fly_mario_fly.rules import declare
 
 
 class KeepOnly:
@@ -30,3 +31,7 @@ class KeepOnly:
 
 
 PLUGIN = KeepOnly()
+
+
+DECLARATION = declare("scene", "invented",
+    "A test-scene edit of the running game (ours). Keeps the chosen object types and switches off every other enemy and pickup; terrain stays.")

@@ -2,6 +2,7 @@
 an underground ceiling (84), the solid blocks of 1-1 (87, 88) and 1-2's sideways exit pipe (28-33). Terrain."""
 from fly_mario_fly.contracts import Box
 from fly_mario_fly.mario import ram as R
+from fly_mario_fly.rules import declare
 
 
 class CeilingBlock:
@@ -23,3 +24,7 @@ class CeilingBlock:
 
 
 PLUGIN = CeilingBlock()
+
+
+DECLARATION = declare("object", "invented",
+    "A game object found by reading the game's RAM (ours, not the fly's). One 16 x 16 box per solid tile above the ground that is not a brick, pipe, step or ? block; it only matters overhead.")
