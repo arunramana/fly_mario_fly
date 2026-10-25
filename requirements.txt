@@ -37,7 +37,7 @@ python-dateutil==3.0.0
 pytz==2026.5
 PyYAML==6.0.3
 scipy==1.17.1
-setuptools==69.5.1
+setuptools==84.1.0
 six==1.17.0
 starlette==1.10.0
 tqdm==4.70.1
