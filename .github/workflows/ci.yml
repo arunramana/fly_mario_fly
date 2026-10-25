@@ -2,14 +2,17 @@ name: CI
 on:
   push: {branches: [main]}
   pull_request:
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# The three job names below are what branch rules require (Settings -> Rules): python, web, rules. Keep them stable; a test checks.
 jobs:
   python:
+    name: python
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -28,6 +31,7 @@ jobs:
         run: python -m pytest tests -q --timeout=600
 
   web:
+    name: web
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -45,6 +49,7 @@ jobs:
       - run: npm run build
 
   rules:
+    name: rules
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
