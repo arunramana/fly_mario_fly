@@ -4,6 +4,8 @@ import re
 import tomllib
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -52,3 +54,10 @@ def test_download_script_imports_and_has_a_help():
 def test_the_optional_mcp_extra_is_pinned_like_requirements_txt():
     extras = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["optional-dependencies"]
     assert extras["mcp"] == [f"mcp=={_requirements()['mcp']}"]
+
+
+def test_evaluate_script_imports_and_needs_flies():
+    ev = _load("evaluate")
+    assert callable(ev.main)
+    with pytest.raises(SystemExit):
+        ev.main([])                                   # argparse: at least one fly name is required
