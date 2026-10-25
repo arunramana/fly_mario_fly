@@ -37,6 +37,18 @@ def list_plugins(kind: str) -> dict:
     return load_package(KINDS[kind])
 
 
+def list_modules(kind: str) -> dict:
+    """Like list_plugins, but returns {plug-in name: its module}: the module also holds the plug-in's DECLARATION."""
+    package = KINDS[kind]
+    pkg = importlib.import_module(package)
+    out = {}
+    for info in pkgutil.iter_modules(pkg.__path__):
+        if not info.ispkg:
+            mod = importlib.import_module(package + "." + info.name)
+            out[mod.PLUGIN.name] = mod
+    return out
+
+
 def _collect(paths, prefix: str, importer) -> dict:
     found: dict = {}
     for info in pkgutil.iter_modules(paths):
