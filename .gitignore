@@ -49,3 +49,14 @@ build/
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Generated output: renders, screenshots, galleries, run folders (all re-creatable)
+renders/
+screenshots/
+pit_gallery/
+tools/_out/
+runs/
+Thumbs.db
+# GIFs are generated output too; documentation GIFs live under docs/
+*.gif
+!/docs/**/*.gif
