@@ -41,4 +41,4 @@ By contributing you agree your work is released under the repository's MIT licen
 
 ## Read first
 
-[concepts](docs/concepts.md) · [rules of the fly](docs/rules-of-the-fly.md) · [writing a plug-in](docs/plugin-authoring.md) · [adding a creature or object](docs/adding_creatures.md) · [MCP server](docs/mcp.md) · [architecture](docs/architecture.md) · [roadmap](ROADMAP.md) · [tutorials](tutorials/README.md)
+[concepts](docs/concepts.md) · [rules of the fly](docs/rules-of-the-fly.md) · [writing a plug-in](docs/plugin-authoring.md) · [adding a creature or object](docs/adding_creatures.md) · [MCP server](docs/mcp.md) · [architecture](docs/architecture.md) · [roadmap](ROADMAP.md) · [tutorials](tutorials/README.md) · [maintainers](docs/maintainers.md)
