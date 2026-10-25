@@ -38,3 +38,7 @@ To run the fly itself you need the MaleCNS data (about 1.2 GB, see the README): 
 4. CI must be green. A maintainer reviews; CODEOWNERS are requested automatically.
 
 By contributing you agree your work is released under the repository's MIT licence. Be kind: see the [Code of Conduct](CODE_OF_CONDUCT.md). Starter tasks: [docs/issues.md](docs/issues.md).
+
+## Read first
+
+[concepts](docs/concepts.md) · [rules of the fly](docs/rules-of-the-fly.md) · [writing a plug-in](docs/plugin-authoring.md) · [adding a creature or object](docs/adding_creatures.md) · [MCP server](docs/mcp.md) · [architecture](docs/architecture.md) · [roadmap](ROADMAP.md) · [tutorials](tutorials/README.md)
