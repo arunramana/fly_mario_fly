@@ -282,6 +282,18 @@ def _fly_path(name: str, ws: Workspace) -> Path:
     return p
 
 
+MCP_MADE = "created by the MCP server"
+
+
+def _protected(base, fly_name: str, save_as: str) -> Optional[str]:
+    """Only a fly this server created may be edited in place. Every other fly (the committed reference flies such as the champion
+    among them) must be copied with save_as, so a client can never silently change a result the project depends on."""
+    if save_as or str(base.provenance.get("source", "")).startswith(MCP_MADE):
+        return None
+    return (f"fly {fly_name!r} was not created by this server, so it is never edited in place. Pass save_as with a new name to "
+            f"edit a copy (or create_fly first).")
+
+
 def _save(fly, name: str, ws: Workspace, dry_run: bool, overwrite_ok: bool) -> dict:
     target = ws.flies() / f"{name}.yaml"
     if target.exists() and not overwrite_ok:
@@ -300,7 +312,7 @@ def create_fly(name: str, copy_from: str = "blank", dry_run: bool = False, works
         src = load_fly(_fly_path(copy_from, ws))
         if not isinstance(name, str) or not cg.FLY_RE.match(name):
             raise ValueError(f"fly name {name!r} must be letters, digits, - or _ (no paths)")
-        fly = dataclasses.replace(src, name=name, provenance={"source": f"created by the MCP server as a copy of {copy_from}"})
+        fly = dataclasses.replace(src, name=name, provenance={"source": f"{MCP_MADE} as a copy of {copy_from}"})
         return _save(fly, name, ws, dry_run, overwrite_ok=False)
     except (ValueError, FileNotFoundError) as e:
         return _refused(e)
@@ -308,10 +320,14 @@ def create_fly(name: str, copy_from: str = "blank", dry_run: bool = False, works
 
 def add_cue(fly: str, sense: str, objects: Optional[list] = None, save_as: str = "", dry_run: bool = False,
             workspace: Optional[Workspace] = None) -> dict:
-    """Attach a sense (a cue) to object types in a fly. A whole-fly sense takes no objects."""
+    """Attach a sense (a cue) to object types in a fly. A whole-fly sense takes no objects. Flies not created by this server are
+    never edited in place: use save_as."""
     ws = workspace or Workspace()
     try:
         base = load_fly(_fly_path(fly, ws))
+        locked = _protected(base, fly, save_as)
+        if locked:
+            raise ValueError(locked)
         senses = registry.list_plugins("senses")
         if sense not in senses:
             raise ValueError(f"no sense {sense!r}; known: {sorted(senses)}")
@@ -342,10 +358,14 @@ def declaration_for(kind: str, name: str):
 
 def set_dial(fly: str, key: str, value: float, save_as: str = "", dry_run: bool = False,
              workspace: Optional[Workspace] = None) -> dict:
-    """Set one dial (a KnobSpec value) of a fly, within its range. Dials scale cues and readouts; they are orange."""
+    """Set one dial (a KnobSpec value) of a fly, within its range. Dials scale cues and readouts; they are orange. Flies not
+    created by this server are never edited in place: use save_as."""
     ws = workspace or Workspace()
     try:
         base = load_fly(_fly_path(fly, ws))
+        locked = _protected(base, fly, save_as)
+        if locked:
+            raise ValueError(locked)
         if not isinstance(key, str) or not cg.KEY_RE.match(key):
             raise ValueError(f"{key!r} is not a dial. Only dials can be set (never weights or neurons)")
         value = cg.check_number(value, "value", -1e9, 1e9)

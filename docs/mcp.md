@@ -63,15 +63,17 @@ On Windows use `C:\\path\\to\\.venv\\Scripts\\python.exe`. Set `FLY_MARIO_FLY_FL
 | `set_dial(fly, key, value)` | one dial of a fly, inside its range | the fly's YAML |
 | `run_fly(fly, level, seed, ...)` | play one episode headlessly: outcome, furthest x, frames, a reproducible hash, optional mp4 | `$FLY_MARIO_FLY_DATA/runs` (and videos) |
 
-`add_*`, `create_fly` and `set_dial` take `dry_run=true` (check, write nothing). `set_dial` and `add_cue` take `save_as` to leave the original fly untouched
-(use it for the committed reference flies such as `champion_e1s`).
+`add_*`, `create_fly` and `set_dial` take `dry_run=true` (check, write nothing).
+
+**Committed flies are protected.** `set_dial` and `add_cue` edit a fly in place only if this server created it (`create_fly`). Every other fly, including all the
+reference flies in `configs/flies/` such as `champion_e1s`, is refused with "pass `save_as`"; with `save_as` the edit goes to a new copy and the original is never touched.
 
 ### What gets refused (and why)
 
 - a sense that drives a **motor or descending neuron** (e.g. `DNp01`, `TTMn`), or any group that is not an input group of the circuit it rides: *"cannot be driven"*;
 - a route that is not a real mechanism, or cites cell types the circuit does not use;
 - a dial that does not exist: *"only dials can be set (never weights or neurons)"*; a value outside its range;
-- a name that already exists, an existing file (nothing is ever overwritten), a fly name that is a path;
+- an in-place edit of a fly this server did not create (use `save_as`); a name that already exists, an existing file (nothing is ever overwritten), a fly name that is a path;
 - a creature whose RAM type byte already belongs to another, terrain whose tile ids are already named in the game facts;
 - text with line breaks, and numbers that are out of range, not finite, or not numbers.
 
@@ -85,7 +87,7 @@ Before a file is written it must pass the compliance validator (`python -m fly_m
 ```text
 add_sense(name="pipe_smell", label="Pipe smell", effect="Pipes smell faintly of metal.", cue="angular_size",
           route="attraction", drives=["ORN_L", "ORN_R"], gain=80, split_by_side=true)
-create_fly(name="pipe_fan", copy_from="looming_only")
+create_fly(name="pipe_fan", copy_from="looming_only")          # a copy the server may then edit in place
 add_cue(fly="pipe_fan", sense="pipe_smell", objects=["pipe"])
 run_fly(fly="pipe_fan", seed=101, noop=3)
 ```

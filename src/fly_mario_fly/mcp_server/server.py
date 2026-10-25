@@ -50,7 +50,8 @@ def build_server() -> MCPServer:
 
     @mcp.tool()
     def add_cue(fly: str, sense: str, objects: list[str] | None = None, save_as: str = "", dry_run: bool = False) -> dict:
-        """Attach a sense (a cue) to object types in a fly config. Use save_as to leave the original fly untouched."""
+        """Attach a sense (a cue) to object types in a fly config. Only flies made by this server (create_fly) are edited in place; for any
+        other fly (the committed reference flies) pass save_as to edit a copy."""
         return service.add_cue(fly, sense, objects, save_as, dry_run)
 
     @mcp.tool()
@@ -67,7 +68,7 @@ def build_server() -> MCPServer:
     @mcp.tool()
     def set_dial(fly: str, key: str, value: float, save_as: str = "", dry_run: bool = False) -> dict:
         """Set one dial (how strong a cue or readout is) of a fly, within its range. Only dials; never weights or neurons.
-        Use save_as to leave the original fly untouched."""
+        Only flies made by this server (create_fly) are edited in place; for any other fly pass save_as to edit a copy."""
         return service.set_dial(fly, key, value, save_as, dry_run)
 
     @mcp.tool()

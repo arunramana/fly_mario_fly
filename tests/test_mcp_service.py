@@ -244,9 +244,10 @@ def test_add_cue_refuses_unknown_things(ws, args):
 
 
 def test_set_dial_changes_one_dial_and_reports_old_and_new(ws):
-    res = S.set_dial("looming_only", "jump.ttmn_thresh", 0.12, workspace=ws)
+    S.create_fly("mine", "looming_only", workspace=ws)                        # a fly this server made may be edited in place
+    res = S.set_dial("mine", "jump.ttmn_thresh", 0.12, workspace=ws)
     assert res["ok"] and res["dial"]["colour"] == "orange" and res["dial"]["new"] == 0.12 and res["dial"]["old"] != 0.12
-    assert load_fly(ws.flies() / "looming_only.yaml").knobs["jump.ttmn_thresh"] == 0.12
+    assert load_fly(ws.flies() / "mine.yaml").knobs["jump.ttmn_thresh"] == 0.12
 
 
 def test_set_dial_save_as_leaves_the_original_alone(ws):
@@ -257,21 +258,24 @@ def test_set_dial_save_as_leaves_the_original_alone(ws):
 
 
 def test_set_dial_dry_run_writes_nothing(ws):
-    before = (ws.flies() / "looming_only.yaml").read_text()
-    assert S.set_dial("looming_only", "jump.ttmn_thresh", 0.12, dry_run=True, workspace=ws)["ok"]
-    assert (ws.flies() / "looming_only.yaml").read_text() == before
+    S.create_fly("mine", "looming_only", workspace=ws)
+    before = (ws.flies() / "mine.yaml").read_text()
+    assert S.set_dial("mine", "jump.ttmn_thresh", 0.12, dry_run=True, workspace=ws)["ok"]
+    assert (ws.flies() / "mine.yaml").read_text() == before
 
 
 @pytest.mark.parametrize("key", ["W", "weights", "brain.W", "LPLC2_R", "neurons.DNp01", "jump.nothing", "../x", ""])
 def test_only_dials_can_be_set_never_weights_or_neurons(ws, key):
-    res = S.set_dial("looming_only", key, 1.0, workspace=ws)
-    assert res["ok"] is False and res["nothing_written"]
+    res = S.set_dial("looming_only", key, 1.0, save_as="probe", workspace=ws)
+    assert res["ok"] is False and res["nothing_written"] and "protected" not in res["refused"][0]["message"]
+    assert not (ws.flies() / "probe.yaml").exists()
     assert (ws.flies() / "looming_only.yaml").read_text() == (FLIES / "looming_only.yaml").read_text()
 
 
 @pytest.mark.parametrize("value", [99.0, -1.0, float("nan"), float("inf"), "0.1", None, True])
 def test_a_dial_value_must_be_inside_its_range(ws, value):
-    assert S.set_dial("looming_only", "jump.ttmn_thresh", value, workspace=ws)["ok"] is False
+    res = S.set_dial("looming_only", "jump.ttmn_thresh", value, save_as="probe", workspace=ws)
+    assert res["ok"] is False and not (ws.flies() / "probe.yaml").exists()
 
 
 def test_fly_names_cannot_be_paths(ws):
@@ -332,3 +336,37 @@ def test_a_sense_written_while_the_server_runs_is_found_at_once(tmp_path, monkey
         assert lookup.declaration_of("senses", "warm_smell").drives == ("ORN_L", "ORN_R")
     finally:
         lookup._modules.cache_clear()
+
+
+# ---- the committed reference flies are never edited in place ----------------------------------------------------------------
+
+COMMITTED = sorted(p.stem for p in FLIES.glob("*.yaml") if p.stem in ("blank", "looming_only", "champion_e1s"))
+
+
+@pytest.mark.parametrize("name", COMMITTED)
+def test_committed_flies_are_never_edited_in_place(ws, name):
+    repo_before = (FLIES / f"{name}.yaml").read_bytes()
+    tmp_before = {p.name: p.read_bytes() for p in ws.flies().glob("*.yaml")}
+    for res in (S.set_dial(name, "jump.ttmn_thresh", 0.12, workspace=ws),
+                S.add_cue(name, "looming", ["goomba"], workspace=ws),
+                S.set_dial(name, "jump.ttmn_thresh", 0.12, dry_run=True, workspace=ws)):
+        assert refused_rules(res) == {"R-INPUT"} and "save_as" in res["refused"][0]["message"]
+    assert (FLIES / f"{name}.yaml").read_bytes() == repo_before
+    assert {p.name: p.read_bytes() for p in ws.flies().glob("*.yaml")} == tmp_before
+
+
+def test_a_committed_fly_can_be_edited_as_a_copy(ws):
+    before = (FLIES / "champion_e1s.yaml").read_bytes()
+    res = S.set_dial("champion_e1s", "jump.ttmn_thresh", 0.12, save_as="champ_copy", workspace=ws)
+    assert res["ok"] and load_fly(ws.flies() / "champ_copy.yaml").knobs["jump.ttmn_thresh"] == 0.12
+    assert S.add_cue("champion_e1s", "looming", ["koopa"], save_as="champ_copy2", workspace=ws)["ok"]
+    assert (FLIES / "champion_e1s.yaml").read_bytes() == before
+
+
+def test_a_fly_the_server_made_is_editable_in_place_but_a_hand_made_lookalike_is_not(ws):
+    S.create_fly("mine", "blank", workspace=ws)
+    assert S.set_dial("mine", "jump.ttmn_thresh", 0.12, workspace=ws)["ok"]
+    assert S.set_dial("mine", "jump.ttmn_thresh", 0.13, workspace=ws)["ok"]                      # still the server's own
+    path = ws.flies() / "handmade.yaml"
+    path.write_text((ws.flies() / "blank.yaml").read_text().replace("name: blank", "name: handmade"))
+    assert refused_rules(S.set_dial("handmade", "jump.ttmn_thresh", 0.12, workspace=ws)) == {"R-INPUT"}

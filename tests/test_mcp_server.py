@@ -45,7 +45,7 @@ async def _session():
         bad = json.loads((await c.call_tool("add_sense", dict(name="evil", label="Evil", effect="Fires the giant fibre directly.",
                                                               cue="constant", route="escape", drives=["DNp01"], gain=1.0,
                                                               dry_run=True))).content[0].text)
-        weights = json.loads((await c.call_tool("set_dial", dict(fly="looming_only", key="W", value=1.0, dry_run=True))).content[0].text)
+        weights = json.loads((await c.call_tool("set_dial", dict(fly="looming_only", key="W", value=1.0, save_as="probe", dry_run=True))).content[0].text)
         return rules, bad, weights
 
 
