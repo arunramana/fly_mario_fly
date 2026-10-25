@@ -26,3 +26,23 @@ prof
 /.claude/skills/
 /claude_setup/
 /skills-lock.json
+
+# Added for open-source contributions: data, videos, secrets, editor/OS/test leftovers
+/data/
+/videos/
+*.avi
+*.mov
+*.webm
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.vscode/
+.idea/
+.DS_Store
+.coverage
+htmlcov/
+build/
+# A README demo GIF is documentation: allowed
+!/docs/media/*.gif
