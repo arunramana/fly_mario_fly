@@ -36,7 +36,7 @@ from fly_mario_fly.runner import record
 CONFIG = Path(__file__).resolve().parents[3] / "configs" / "levels.yaml"      # configs/levels.yaml
 CACHE_VERSION = 2
 TILE_OBJECTS = {"pipe": "pipe", "step": "step", "brick": "brick", "qblock": "qblock", "used_block": "usedblock",
-                "ceiling_block": "ceiling_block"}      # facts["tiles"] key -> the object plug-in that finds those tile ids
+                "ceiling_block": "ceiling_block", "coin": "coin"}      # facts["tiles"] key -> the object plug-in that finds those tile ids
 GAP_OBJECT = "pit"                                      # the plug-in for the db's gaps (pits, water, lava)
 
 
