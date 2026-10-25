@@ -108,7 +108,7 @@ Derived caches are written to `$FLY_MARIO_FLY_DATA/brains/` and `derived/` and a
 ## Learn and contribute
 
 - **Tutorials:** [tutorials/](tutorials/README.md): seven Jupyter notebooks, from loading the connectome to one whole run.
-- **Docs:** [concepts](docs/concepts.md) · [rules of the fly](docs/rules-of-the-fly.md) · [writing a plug-in](docs/plugin-authoring.md) · [adding a creature or object](docs/adding_creatures.md) · [MCP server](docs/mcp.md) · [architecture](docs/architecture.md).
+- **Docs:** [concepts](docs/concepts.md) · [rules of the fly](docs/rules-of-the-fly.md) · [writing a plug-in](docs/plugin-authoring.md) · [adding a creature or object](docs/adding_creatures.md) · [MCP server](docs/mcp.md) · [architecture](docs/architecture.md) · [maintainers](docs/maintainers.md).
 - **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md); starter ideas in [docs/issues.md](docs/issues.md). Security issues: [SECURITY.md](SECURITY.md). Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Project layout

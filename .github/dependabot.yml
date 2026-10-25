@@ -1,0 +1,32 @@
+# Dependabot version updates. One small PR per package per week, grouped by ecosystem for minor and patch.
+# Packages that must stay where they are (the project's pins, see pyproject.toml and requirements.txt) are ignored for the
+# updates that would break the emulator or the numerics; everything else can move, and CI decides.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule: {interval: weekly, day: monday}
+    open-pull-requests-limit: 5
+    groups:
+      python-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: numpy                       # nes-py breaks under numpy 2; the project needs numpy < 1.27
+        versions: [">=1.27"]
+      - dependency-name: gym                         # 0.23.1 is the last release the emulator wrapper supports
+      - dependency-name: nes-py                      # 9.x returns 5-tuples from step() and breaks MarioEnv
+        update-types: [version-update:semver-major]
+      - dependency-name: gym-super-mario-bros        # 9.x moved to the gymnasium API
+        update-types: [version-update:semver-major]
+      - dependency-name: opencv-python-headless      # pinned below 4.10 (numpy 1.26)
+        versions: [">=4.10"]
+  - package-ecosystem: npm
+    directory: /web
+    schedule: {interval: weekly, day: monday}
+    open-pull-requests-limit: 5
+    groups:
+      web-minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: {interval: monthly}
