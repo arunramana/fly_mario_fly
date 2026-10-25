@@ -45,6 +45,7 @@ tiles:                     # metatile ids
   pipe: [16, 17, 18, 19, 20, 21]   # 16/17 = the rim of 1-1 pipe 4; 18-21 = top-left/right, body-left/right
   step: [97]                       # hard (staircase) block
   brick: [81]
+  coin: [194, 195]                 # 0xC2, 0xC3: the floating coin tiles (read in 4-3); they are in collision.not_solid
   qblock: [192, 193]               # unused ? block (192 coin, 193 mushroom)
   used_block: [196, 35]            # 196 used, 35 = the bump animation
   block_hit: 196                   # the used_block id that means a block was hit (35 is only the bump animation)
@@ -78,6 +79,22 @@ objects:                   # per-object facts; type bytes are the RAM object ids
   piranha:
     types: [0x0D]
     size: [16, 24]         # the part above its pipe's rim is all that exists
+    live_states: [0]
+  buzzy_beetle:            # type byte read on the emulator in 6-2 (also 4-2); state 0 while walking; a stomped beetle's shell is not tracked
+    types: [0x02]
+    size: [16, 16]
+    live_states: [0, 1]
+  red_koopa:               # the green Koopa is `koopa` (0x00); read in 3-3: states 0 and 1; its shell is not tracked
+    types: [0x03]
+    size: [16, 24]
+    live_states: [0, 1]
+  hammer_bro:              # read in 3-1: states 0 and 1, hops between ledges; the thrown hammers are not tracked
+    types: [0x05]
+    size: [16, 24]
+    live_states: [0, 1]
+  podoboo:                 # read in 2-4: state 0, leaps out of the lava (its box can be below the screen)
+    types: [0x0C]
+    size: [16, 16]
     live_states: [0]
   lift:
     types: [0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B]   # platforms in the enemy slots (APPROXIMATE id range: balance, vertical, horizontal, falling)
