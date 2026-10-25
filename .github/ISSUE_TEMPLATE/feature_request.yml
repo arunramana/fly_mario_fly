@@ -1,0 +1,16 @@
+name: Feature or idea
+description: Propose a sense, object, action, scene, or tooling change
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes: {label: What and why, description: "What should it do, and what problem does it solve?"}
+    validations: {required: true}
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where does it live?
+      options: [sense, action, mario object, scene, evolve, render, api / web, docs, tests / CI, other]
+  - type: textarea
+    id: honesty
+    attributes: {label: Real or invented?, description: "If it adds a dial or cue: which parts come from the connectome (teal) and which are invented by us (orange)?"}
