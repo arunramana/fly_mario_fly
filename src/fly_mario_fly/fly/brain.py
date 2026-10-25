@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -25,6 +26,7 @@ from fly_mario_fly import registry
 from fly_mario_fly.fly import connectome as cn
 from fly_mario_fly.fly.groups import group_types, masks_for
 from fly_mario_fly.fly.spec import BrainSpec
+from fly_mario_fly.rules import guards as G
 
 BUILD_VERSION = 1
 N_RELAYS = 40
@@ -59,14 +61,39 @@ def step(h, W, g, I_t, alpha, clip):
     return (1.0 - alpha) * h + alpha * np.clip(drive, 0.0, clip)
 
 
+@lru_cache(maxsize=1)
+def allowed_input_groups() -> frozenset:
+    """The only groups that may be driven: the input groups declared by the mechanisms (sensory input neurons)."""
+    return frozenset(g for m in registry.list_plugins("mechanisms").values() for g in m.input_groups)
+
+
 class Brain:
+    """The weights are READ-ONLY (rule N1) and only declared input groups can be driven (rule N2): see fly_mario_fly/rules."""
+
     def __init__(self, spec: BrainSpec, W, body_ids, types, sides, signs):
-        self.spec, self.W = spec, W
-        self._Ws = sp.csr_matrix(W)              # W is 4-7 % non-zero: advance() multiplies by the sparse copy
+        self.spec = spec
+        self._W = G.frozen_copy(W)               # a private read-only copy: nothing can edit the wiring through this brain
+        self._fingerprint = G.weights_fingerprint(self._W)
+        self._Ws = sp.csr_matrix(self._W)        # W is 4-7 % non-zero: advance() multiplies by the sparse copy
+        for a in (self._Ws.data, self._Ws.indices, self._Ws.indptr):
+            a.setflags(write=False)
         self.body_ids = np.asarray(body_ids, dtype=np.int64)
         self.types, self.sides, self.signs = np.asarray(types, dtype="U40"), np.asarray(sides, dtype="U40"), np.asarray(signs, dtype=float)
         self.masks = masks_for(self.types, self.sides)
         self._row = {int(b): i for i, b in enumerate(self.body_ids)}
+        self._input_mask = np.zeros(len(self.body_ids), dtype=bool)
+        for g in allowed_input_groups():
+            if g in self.masks:
+                self._input_mask |= self.masks[g]
+
+    @property
+    def W(self) -> np.ndarray:
+        """The weight matrix. Read-only: `brain.W[...] = x` raises. Use `brain.W.copy()` to experiment on a copy."""
+        return self._W
+
+    def verify_weights(self) -> None:
+        """Raise RuleViolation if the weights differ from what they were when this brain was built or loaded."""
+        G.check_weights(self._W, self._fingerprint)
 
     @property
     def n(self) -> int:
@@ -81,6 +108,7 @@ class Brain:
 
     def drive(self, inputs: dict) -> np.ndarray:
         """Input vector from {group name: level}; a group this brain does not have is an error."""
+        G.check_input_groups(inputs, allowed_input_groups(), "drive()")     # rule N2: input groups only
         I = np.zeros(self.n)
         for name, level in inputs.items():
             I[self.masks[name]] = level
@@ -88,6 +116,7 @@ class Brain:
 
     def advance(self, h, I, model: RateModel = RateModel()) -> np.ndarray:
         """One game frame: `model.substeps` rate updates under the same input."""
+        G.check_input_vector(I, self._input_mask)                           # rule N2: nothing fired directly
         for _ in range(model.substeps):
             h = step(h, self._Ws, model.g, I, model.alpha, model.clip)
         return h

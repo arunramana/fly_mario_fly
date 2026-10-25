@@ -27,6 +27,8 @@ from fly_mario_fly.mario import ram as R
 from fly_mario_fly.mario import walker
 from fly_mario_fly.mario.env import MarioEnv, button_byte
 from fly_mario_fly.runner import config as C
+from fly_mario_fly.rules import guards as G
+from fly_mario_fly.rules.lookup import declaration_of
 from fly_mario_fly.runner import moments as M
 from fly_mario_fly.senses.kit.memory import SenseMemory
 
@@ -129,6 +131,8 @@ class Run:
         self.knobs = C.resolve_knobs(fly)
         self.senses = C.active_senses(fly)
         self.actions = C.active_actions(fly)
+        self._sense_decl = {s.name: declaration_of("senses", s.name) for s in self.senses}      # what each may drive / read / press
+        self._action_decl = {a.name: declaration_of("actions", a.name) for a in self.actions}
         self.brain = get_brain(C.brain_spec(fly))
         self.model = RateModel()
         self.objects = registry.list_plugins("objects")
@@ -206,6 +210,7 @@ class Run:
                 attached = fly.attachments.get(s.name, ())
                 objs = [self._annotated(o) for o in world if o.type in attached]
             out = s.cue(objs, mario, facts, self.knobs, mem)
+            G.check_sense_output(s.name, out.inputs, self._sense_decl[s.name].drives)       # rule D3: only declared groups
             outputs[s.name] = out
             mods.update(out.modifiers)
             for g, v in out.inputs.items():
@@ -217,7 +222,9 @@ class Run:
         for a in self.actions:
             st = self.astate[a.name]
             st["airborne"], st["mods"] = mario.airborne, mods
-            intents[a.name] = a.decide(rates, self.knobs, st)
+            ad = self._action_decl[a.name]
+            intents[a.name] = a.decide(G.GuardedRates(rates, ad.reads_groups, a.name), self.knobs, st)   # rules D1/N3: only its own neurons
+            G.check_buttons(a.name, intents[a.name], ad.buttons)
         buttons = resolve_buttons(intents.values())
         if self.options.legacy:
             buttons = legacy_buttons(buttons)
@@ -290,6 +297,7 @@ class Run:
 
     def _finish(self, outcome: str, x: int) -> None:
         self.finished, self.outcome = True, outcome
+        self.brain.verify_weights()              # rule N1: the wiring is exactly what was loaded
         if outcome == "died":
             near = [(abs(o.box.x - self._last_mario.x), o.type) for objs in self._last_found.values() for o in objs
                     if self.objects[o.type].kind == "enemy"]
