@@ -82,6 +82,10 @@ If you add a dial, a sense or an action, set `origin` truthfully. A result that 
 - The sense cues, action thresholds and rate-update constants are invented (orange); a win shows the *combination* works, not that a fly would do this.
 - The game runs on an emulator through `gym-super-mario-bros`, which bundles the game ROM; see [Licensing](#licensing).
 
+## Tutorials
+
+`tutorials/` has seven Jupyter notebooks that explain how the repo works, from loading the connectome to one whole run: see [tutorials/README.md](tutorials/README.md).
+
 ## Contributing
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md); starter ideas are in [docs/issues.md](docs/issues.md). Security issues: [SECURITY.md](SECURITY.md). Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).

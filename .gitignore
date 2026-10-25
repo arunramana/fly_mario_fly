@@ -46,3 +46,6 @@ htmlcov/
 build/
 # A README demo GIF is documentation: allowed
 !/docs/media/*.gif
+
+# Jupyter
+.ipynb_checkpoints/
