@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 # Same pins as the old repo: nes-py breaks under numpy 2. nes-py 9 / gym-super-mario-bros 9 moved to the gymnasium API
 # (step() returns 5 values) and break MarioEnv, so both are held at the last gym-0.23 releases.
 # numpy stays <1.27, so pyarrow and pandas are capped to the releases that still support it.
-dependencies = ["numpy>=1.26,<1.27", "scipy>=1.11", "pyyaml", "pyarrow<23",
+dependencies = ["numpy>=1.26,<1.27", "scipy>=1.11", "pyyaml", "pyarrow<24",
     "fastapi>=0.150,<0.151", "uvicorn", "websockets", "pydantic>=2", "httpx",
     "setuptools<70", "gym==0.23.1", "nes-py==8.2.1", "gym-super-mario-bros==7.4.0", "opencv-python-headless<4.10", "pillow", "cma", "imageio-ffmpeg"]
 
