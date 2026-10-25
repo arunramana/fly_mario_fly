@@ -1,0 +1,23 @@
+name: Bug report
+description: Something does not work or gives a wrong result
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes: {label: What happened, description: "What you did, what you expected, what you got."}
+    validations: {required: true}
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: "The exact command, fly yaml, level, and seed (e.g. `python -m fly_mario_fly.runner run champion_e1s --level 1-1 --noop 3 --sigma 0.05 --seed 101`). Paste the printed JSON summary including `hash`."
+    validations: {required: true}
+  - type: input
+    id: env
+    attributes: {label: Environment, placeholder: "OS, Python version, `pip freeze | grep -i -E 'nes|mario|numpy'`"}
+  - type: checkboxes
+    id: data
+    attributes:
+      label: Data
+      options:
+        - label: I have the MaleCNS data built (`FLY_MARIO_FLY_DATA` is set) and the bug needs it

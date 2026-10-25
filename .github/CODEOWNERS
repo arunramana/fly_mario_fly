@@ -1,0 +1,9 @@
+# Maintainer reviews everything by default; the lead-owned files are listed explicitly (see CLAUDE.md "Folder owners").
+*                                  @arunramana
+/src/fly_mario_fly/contracts.py    @arunramana
+/src/fly_mario_fly/registry.py     @arunramana
+/CLAUDE.md                         @arunramana
+/pyproject.toml                    @arunramana
+/tests/golden/                     @arunramana
+/tests/data/golden/                @arunramana
+/.github/                          @arunramana
