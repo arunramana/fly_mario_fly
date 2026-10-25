@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61,<70"]
+requires = ["setuptools>=61,<85"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -12,7 +12,7 @@ requires-python = ">=3.12"
 # numpy stays <1.27, so pyarrow and pandas are capped to the releases that still support it.
 dependencies = ["numpy>=1.26,<1.27", "scipy>=1.11", "pyyaml", "pyarrow<24",
     "fastapi>=0.150,<0.151", "uvicorn", "websockets", "pydantic>=2", "httpx",
-    "setuptools<70", "gym==0.23.1", "nes-py==8.2.1", "gym-super-mario-bros==7.4.0", "opencv-python-headless<4.10", "pillow", "cma", "imageio-ffmpeg"]
+    "setuptools<85", "gym==0.23.1", "nes-py==8.2.1", "gym-super-mario-bros==7.4.0", "opencv-python-headless<4.10", "pillow", "cma", "imageio-ffmpeg"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
