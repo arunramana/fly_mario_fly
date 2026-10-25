@@ -71,11 +71,13 @@ def test_contracts_imports_nothing_from_fly_mario_fly():
         assert n.split(".")[0] != "fly_mario_fly", n
 
 
-@pytest.mark.parametrize("area", ["evolve", "api", "render"])
+@pytest.mark.parametrize("area", ["evolve", "api", "render", "mcp_server"])
 def test_outer_lanes_only_runner(area):
     allowed = {"fly_mario_fly.runner", "fly_mario_fly.contracts", "fly_mario_fly.registry"}
     if area == "api":
         allowed.add("fly_mario_fly.render")        # render is presentation, so the API may call it
+    if area == "mcp_server":
+        allowed |= {"fly_mario_fly.render", "fly_mario_fly.rules"}     # videos, and the compliance validator every write goes through
     for f in FILES:
         if _area(f) != area:
             continue

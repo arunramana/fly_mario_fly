@@ -47,3 +47,8 @@ def test_demo_script_uses_a_fixed_seed_and_a_flies_config_that_exists():
 def test_download_script_imports_and_has_a_help():
     dl = _load("download_data")
     assert callable(dl.main)
+
+
+def test_the_optional_mcp_extra_is_pinned_like_requirements_txt():
+    extras = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["optional-dependencies"]
+    assert extras["mcp"] == [f"mcp=={_requirements()['mcp']}"]

@@ -16,7 +16,11 @@ dependencies = ["numpy>=1.26,<1.27", "scipy>=1.11", "pyyaml", "pyarrow<24",
 
 [project.optional-dependencies]
 dev = ["pytest"]
+mcp = ["mcp==2.3.0"]            # the MCP server (python -m fly_mario_fly.mcp_server); tests skip without it
 test = ["pandas<3", "pytest-timeout"]
+
+[project.scripts]
+fly-mario-fly-mcp = "fly_mario_fly.mcp_server.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

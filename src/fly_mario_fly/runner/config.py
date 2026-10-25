@@ -129,3 +129,12 @@ def validate(fly: FlyConfig, strict_range: bool = True) -> None:
         s = specs[key]
         if strict_range and not (s.lo <= value <= s.hi):
             raise ValueError(f"{fly.name}: knob {key} = {value} is outside its range [{s.lo}, {s.hi}]")
+
+
+def brain_ready(fly: FlyConfig) -> bool:
+    """True if this fly's brain is already cached under $FLY_MARIO_FLY_DATA (so running it will not build one or download data)."""
+    from fly_mario_fly.fly import brain as fb
+    try:
+        return fb.brain_path(brain_spec(fly)).exists()
+    except RuntimeError:             # $FLY_MARIO_FLY_DATA is not set
+        return False
