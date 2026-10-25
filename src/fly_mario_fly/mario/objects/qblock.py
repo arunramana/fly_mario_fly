@@ -1,6 +1,7 @@
 """? block that has not been hit yet. Terrain."""
 from fly_mario_fly.contracts import Box
 from fly_mario_fly.mario import ram as R
+from fly_mario_fly.rules import declare
 
 
 class QBlock:
@@ -22,3 +23,7 @@ class QBlock:
 
 
 PLUGIN = QBlock()
+
+
+DECLARATION = declare("object", "invented",
+    "A game object found by reading the game's RAM (ours, not the fly's). Unused ? block; state['tile'] is the tile id (192 or 193).")

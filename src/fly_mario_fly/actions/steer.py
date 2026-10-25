@@ -4,6 +4,7 @@ left more active -> Left, and Left also lets go of Right (you cannot hold both).
 Overrides walk (higher priority); backing up overrides it in turn.
 """
 from fly_mario_fly.contracts import ButtonIntent, KnobSpec
+from fly_mario_fly.rules import Route, declare
 
 
 class Steer:
@@ -29,3 +30,10 @@ class Steer:
 
 
 PLUGIN = Steer()
+
+
+DECLARATION = declare(
+    "action", "invented",
+    "Invented readout: Left or Right is held when the real steering neurons (DNa01/02) differ by more than a threshold we chose.",
+    route=Route("walking", ("DNa01", "DNa02"), "LC10a -> DNa01/02 (steering)"),
+    reads_groups=("DNa_L", "DNa_R"), buttons=("left", "right"))

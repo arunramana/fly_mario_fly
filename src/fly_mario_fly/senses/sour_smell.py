@@ -15,6 +15,7 @@ import numpy as np
 from fly_mario_fly.contracts import KnobSpec, SenseOutput
 from fly_mario_fly.senses.kit import draw
 from fly_mario_fly.senses.kit.geom import gap, identity, is_behind, is_cleared, over, theta_of
+from fly_mario_fly.rules import Route, declare
 
 
 class SourSmell:
@@ -72,3 +73,11 @@ class SourSmell:
 
 
 PLUGIN = SourSmell()
+
+
+DECLARATION = declare(
+    "sense", "invented",
+    "Invented cue: an acid smell whose level grows with the enemy's angular size, on both antennae; the DC4 receptor -> "
+    "moonwalker wiring is real.",
+    route=Route("aversion", ("ORN_DC4",), "ORN_DC4 (acid smell receptors) -> relays -> MDN (moonwalker, walk backwards)"),
+    drives=("DC4_L", "DC4_R"))

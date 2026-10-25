@@ -1,5 +1,6 @@
 """Pipe: a vertical wall face standing on the ground. Terrain, so remove() does nothing."""
 from fly_mario_fly.mario import ram as R
+from fly_mario_fly.rules import declare
 
 
 class Pipe:
@@ -20,3 +21,7 @@ class Pipe:
 
 
 PLUGIN = Pipe()
+
+
+DECLARATION = declare("object", "invented",
+    "A game object found by reading the game's RAM (ours, not the fly's). Raw column stack of pipe tiles; neighbouring equal-height columns are one pipe.")

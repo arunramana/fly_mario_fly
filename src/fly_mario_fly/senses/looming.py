@@ -38,6 +38,7 @@ from fly_mario_fly.senses.kit import draw
 from fly_mario_fly.senses.kit.geom import eye_of, feet_of, gap, identity, is_behind, is_cleared, over, theta_of
 from fly_mario_fly.senses.kit.headroom import rise_available
 from fly_mario_fly.senses.kit.world import default_shapes, floor_y, hole_box, standing_walls, top_of_wall_at
+from fly_mario_fly.rules import Route, declare
 
 
 # Which hole ranks a pit against the other threats. False: the floor row, as the frozen 1-1 champion saw it (the golden
@@ -224,3 +225,11 @@ class Looming:
 
 
 PLUGIN = Looming()
+
+
+DECLARATION = declare(
+    "sense", "invented",
+    "Invented cue: the angle theta = 2*atan(h/2d) that a nearby object would subtend, computed from the game's RAM and fed to the "
+    "real looming detectors (LC4: change of theta, LPLC2: theta). The wiring from there to the jump is real.",
+    route=Route("escape", ("LC4", "LPLC2"), "LC4/LPLC2 -> DNp01 (Giant Fiber) -> TTMn (jump muscle)"),
+    drives=("LC4_L", "LC4_R", "LPLC2_L", "LPLC2_R"))

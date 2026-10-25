@@ -1,5 +1,6 @@
 """Terrain only: every enemy is switched off, every frame. Lifts and moving platforms share the enemy slots but are not enemies."""
 from fly_mario_fly.mario import ram as R
+from fly_mario_fly.rules import declare
 
 
 class NoEnemies:
@@ -17,3 +18,7 @@ class NoEnemies:
 
 
 PLUGIN = NoEnemies()
+
+
+DECLARATION = declare("scene", "invented",
+    "A test-scene edit of the running game (ours). Switches off every enemy slot each frame (also ones that spawn as the screen scrolls); lifts and moving platforms stay.")

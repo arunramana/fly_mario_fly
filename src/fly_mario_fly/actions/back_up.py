@@ -3,6 +3,7 @@
 The highest priority: it overrides walking and steering. The jump (A) is the jump circuit's and is not affected.
 """
 from fly_mario_fly.contracts import ButtonIntent, KnobSpec
+from fly_mario_fly.rules import Route, declare
 
 
 class BackUp:
@@ -24,3 +25,10 @@ class BackUp:
 
 
 PLUGIN = BackUp()
+
+
+DECLARATION = declare(
+    "action", "invented",
+    "Invented readout: Left is held, and Right let go, while the real moonwalker descending neurons (MDN) are above a threshold we chose.",
+    route=Route("aversion", ("MDN",), "ORN_DC4 -> relays -> MDN (walk backwards)"),
+    reads_groups=("MDN",), buttons=("left", "right"))

@@ -1,5 +1,6 @@
 """A box the user shapes by hand: shift and scale the object's own box."""
 from fly_mario_fly.contracts import Box, KnobSpec
+from fly_mario_fly.rules import declare
 
 
 class CustomBox:
@@ -21,3 +22,7 @@ class CustomBox:
 
 
 PLUGIN = CustomBox()
+
+
+DECLARATION = declare("shape", "invented",
+    "How an object's box is turned into the box the looming cue measures (our choice). The object's box shifted by (dx, dy) px and scaled in width and height: for trying what the fly would do.")

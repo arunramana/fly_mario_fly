@@ -10,6 +10,7 @@ from fly_mario_fly.contracts import SenseOutput
 from fly_mario_fly.senses.kit import draw
 from fly_mario_fly.senses.kit.geom import is_behind
 from fly_mario_fly.senses.kit.world import kind_of
+from fly_mario_fly.rules import Route, declare
 
 
 class RearEye:
@@ -35,3 +36,10 @@ class RearEye:
 
 
 PLUGIN = RearEye()
+
+
+DECLARATION = declare(
+    "sense", "invented",
+    "Invented modulator: lets an enemy behind Mario compete in the looming cue while it closes in. It drives no neuron itself.",
+    route=Route("escape", ("LC4", "LPLC2"), "widens the cue that drives LC4/LPLC2 -> DNp01 -> TTMn"),
+    modulates=("rear_eye",))

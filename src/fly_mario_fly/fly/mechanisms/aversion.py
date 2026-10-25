@@ -10,6 +10,7 @@ import numpy as np
 import yaml
 
 from fly_mario_fly.fly.spec import ExtraNeurons, MechanismSpec
+from fly_mario_fly.rules import Route, declare
 
 IDS = tuple(yaml.safe_load((Path(__file__).parents[1] / "data" / "aversion_relays.yaml").read_text(encoding="utf-8"))["body_ids"])
 
@@ -34,3 +35,10 @@ PLUGIN = MechanismSpec(
         recipe={"rule": "k=3,N=5 set ORN_DC4 -> MDN (data/aversion_relays.yaml)", "ids": list(IDS)},
     ),
 )
+
+
+DECLARATION = declare(
+    "mechanism", "fly",
+    "Real wiring: acid-smell receptor neurons ORN_DC4 and relays onto the moonwalker descending neurons (MDN). Read-only: it adds "
+    "no connections onto neurons already in the brain.",
+    route=Route("aversion", ("ORN_DC4", "MDN"), "ORN_DC4 -> relays -> MDN"))

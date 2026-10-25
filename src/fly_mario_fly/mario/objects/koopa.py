@@ -1,5 +1,6 @@
 """Koopa Troopa (green and red): walks until stomped, then sits in a shell."""
 from fly_mario_fly.mario import enemies
+from fly_mario_fly.rules import declare
 
 
 class Koopa:
@@ -19,3 +20,7 @@ class Koopa:
 
 
 PLUGIN = Koopa()
+
+
+DECLARATION = declare("object", "invented",
+    "A game object found by reading the game's RAM (ours, not the fly's). 16 x 24 walking; 16 x 16 in its shell (state['shell']).")

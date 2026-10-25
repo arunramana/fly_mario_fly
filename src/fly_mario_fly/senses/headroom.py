@@ -11,6 +11,7 @@ from fly_mario_fly.contracts import KnobSpec, SenseOutput
 from fly_mario_fly.senses.kit import draw
 from fly_mario_fly.senses.kit.geom import feet_of
 from fly_mario_fly.senses.kit.headroom import rise_available
+from fly_mario_fly.rules import Route, declare
 
 
 class Headroom:
@@ -42,3 +43,10 @@ class Headroom:
 
 
 PLUGIN = Headroom()
+
+
+DECLARATION = declare(
+    "sense", "invented",
+    "Invented modulator: a low ceiling quiets the looming cue (a factor applied in looming.py). It drives no neuron itself.",
+    route=Route("escape", ("LC4", "LPLC2"), "scales the cue that drives LC4/LPLC2 -> DNp01 -> TTMn"),
+    modulates=("headroom", "headroom_clearance"))

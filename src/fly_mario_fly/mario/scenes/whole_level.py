@@ -1,5 +1,7 @@
 """The level exactly as the game plays it."""
 
+from fly_mario_fly.rules import declare
+
 
 class WholeLevel:
     name = "whole_level"
@@ -15,3 +17,7 @@ class WholeLevel:
 
 
 PLUGIN = WholeLevel()
+
+
+DECLARATION = declare("scene", "invented",
+    "A test-scene edit of the running game (ours). Nothing changed: every enemy, pipe and pit as in the game.")

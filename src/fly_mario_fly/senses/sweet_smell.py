@@ -11,6 +11,7 @@ import numpy as np
 from fly_mario_fly.contracts import KnobSpec, SenseOutput
 from fly_mario_fly.senses.kit import draw
 from fly_mario_fly.senses.kit.geom import eye_of, theta_of
+from fly_mario_fly.rules import Route, declare
 
 
 class SweetSmell:
@@ -63,3 +64,11 @@ class SweetSmell:
 
 
 PLUGIN = SweetSmell()
+
+
+DECLARATION = declare(
+    "sense", "invented",
+    "Invented cue: an attractive smell whose level grows with the object's angular size, on the antenna on the object's side; the "
+    "ORN -> steering wiring is real.",
+    route=Route("attraction", ("ORN*",), "ORN (attractive smell receptors) -> DNa01/02 (steering)"),
+    drives=("ORN_L", "ORN_R"))

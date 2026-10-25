@@ -3,6 +3,7 @@
 Buttons are the env's names (right, left, A, B...). The lowest priority: steering and backing up both override it.
 """
 from fly_mario_fly.contracts import ButtonIntent, KnobSpec
+from fly_mario_fly.rules import Route, declare
 
 
 class Walk:
@@ -24,3 +25,10 @@ class Walk:
 
 
 PLUGIN = Walk()
+
+
+DECLARATION = declare(
+    "action", "invented",
+    "Invented readout: Right is held while the real forward-walking neurons (DNp09) are above a threshold we chose.",
+    route=Route("walking", ("DNp09",), "LC10a -> DNp09 (forward walking)"),
+    reads_groups=("DNp09",), buttons=("right",))

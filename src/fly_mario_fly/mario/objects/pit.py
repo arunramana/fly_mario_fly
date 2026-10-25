@@ -5,6 +5,7 @@ tile at or below the ground he took off from (ram.support_top). A column is a ga
 empty air, lava and water need no code, only facts."""
 from fly_mario_fly.contracts import Box
 from fly_mario_fly.mario import ram as R
+from fly_mario_fly.rules import declare
 
 
 class Pit:
@@ -54,3 +55,7 @@ class Pit:
 
 
 PLUGIN = Pit()
+
+
+DECLARATION = declare("object", "invented",
+    "A game object found by reading the game's RAM (ours, not the fly's). A gap in what Mario can stand on. state: open (runs off the right screen edge, width is a lower bound), rims (near rim top y, far rim top y), ground (take-off ground y), too_wide, lift_near.")
