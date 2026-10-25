@@ -233,6 +233,9 @@ def validate_all() -> list:
         for name, mod in registry.list_modules(kind).items():
             plugin = mod.PLUGIN
             ek = DECL_KIND[kind]
+            declared = getattr(getattr(mod, "DECLARATION", None), "kind", None)
+            if kind == "objects" and declared == "character":      # a creature plug-in lives with the objects
+                ek = "character"
             out += check_declaration(ek, name, plugin, getattr(mod, "DECLARATION", None), ctx)
             out += check_knobs(ek, name, plugin)
             for k in getattr(plugin, "knobs", []) or []:
