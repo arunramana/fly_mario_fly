@@ -150,8 +150,8 @@ See [ROADMAP.md](ROADMAP.md): **evolution across all levels**, and **a lightweig
 
 ## Credits
 
-- **MaleCNS v1.0**, the connectome: the **FlyEM project at HHMI Janelia Research Campus in collaboration with Google**, released under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) (see the dataset's release notes, https://www.janelia.org/project-team/flyem, for the citation to use).
-- **Ro0oney / The Fly Project**: inspiration for wiring a real fly connectome to a game.
+- **MaleCNS v1.0**, the connectome, released under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) by a collaboration of **FlyEM (HHMI Janelia Research Campus)**, the **University of Cambridge (Department of Zoology)**, the **MRC Laboratory of Molecular Biology** and **Google Research**. See the [release notes](https://male-cns.janelia.org/release/). The release page gives no citation string; if you use the data, cite the dataset's paper.
+- **[The Fly Project](https://flyproject.io/)**: a fly connectome brain in the browser, with a Minecraft mod where the fly responds to looming shapes, food smells and more. **Ro0oney** has shown a fly-connectome brain playing Minecraft ([TweakTown](https://www.tweaktown.com/news/113507/googles-mapped-fruit-fly-brain-has-played-doom-more-than-6000-times-and-still-hasnt-beaten-it/index.html)). Inspiration for wiring a real fly connectome to a game.
 - **SethBling's MarI/O** (2015): the well-known demonstration of a neural network learning a Mario level. There the network is *trained* (NEAT neuroevolution); here the fly's wiring is real and left untouched.
 - **Super Mario Bros.** is a Nintendo game; the emulator stack is [`nes-py`](https://github.com/Kautenja/nes-py) and [`gym-super-mario-bros`](https://github.com/Kautenja/gym-super-mario-bros) by Christian Kauten.
 
