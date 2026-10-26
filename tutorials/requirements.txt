@@ -1,6 +1,6 @@
 # Extra packages for the notebooks. Install the project first (see the main README), then:  pip install -r tutorials/requirements.txt
 # numpy is held below 1.27 by the project; these versions are compatible with it.
-jupyterlab>=4.2,<5
+jupyterlab>=4.6.4,<5
 ipykernel>=6.29
 ipywidgets>=8.1,<9
 pandas<3
