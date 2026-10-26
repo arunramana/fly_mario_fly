@@ -5,7 +5,7 @@ import { api } from '../api/client'
 import type { Fly } from '../api/models'
 import { KnobSlider } from '../components/Knobs'
 import { Overlay } from '../components/RunStage'
-import { splitLabel } from '../components/senseUtil'
+import { byOrder, splitLabel } from '../components/senseUtil'
 import { errText, useStartRun } from '../hooks'
 import { momentPictures } from '../draft'
 
@@ -38,7 +38,7 @@ export default function MomentScreen() {
   const level = m.scene.level_id
 
   const cols = reg.senses.filter((s) => s.scope === 'per_object')
-  const rows = reg.objects.filter((o) => m.on_screen.includes(o.name))
+  const rows = byOrder(reg.objects.filter((o) => m.on_screen.includes(o.name)))
   const whole = reg.senses.filter((s) => s.scope === 'whole_fly')
   const toggle = (sense: string, obj: string) => {
     const cur = fly.attachments[sense] ?? []

@@ -1323,6 +1323,11 @@
           "note": {
             "title": "Note",
             "type": "string"
+          },
+          "order": {
+            "default": 1000,
+            "title": "Order",
+            "type": "integer"
           }
         },
         "required": [

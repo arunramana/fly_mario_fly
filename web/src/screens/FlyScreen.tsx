@@ -36,7 +36,7 @@ export default function FlyScreen() {
   const brainMap = useBrainMap(fly)
   if (!registry.data) return <p>Loading…</p>
   const reg = registry.data
-  const rows = reg.objects.filter((o) => tabOf(o) === tab)      // every registered object type, grouped by kind
+  const rows = byOrder(reg.objects.filter((o) => tabOf(o) === tab))      // every registered object type, grouped by kind, in the API's display order
   const wholeSenses = reg.senses.filter((s) => s.scope === 'whole_fly')
 
   const attached = new Set(Object.entries(fly.attachments).filter(([, v]) => v.length).map(([k]) => k))
