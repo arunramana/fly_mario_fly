@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Fly } from '../api/models'
 import SenseGrid from '../components/SenseGrid'
-import { OBJECT_TABS, byOrder, splitLabel, tabOf } from '../components/senseUtil'
+import { OBJECT_TABS, byObjectOrder, byOrder, splitLabel, tabOf } from '../components/senseUtil'
 import { AdvancedDrawer, type KnobSection } from '../components/Knobs'
 import { errText, useStartRun } from '../hooks'
 import { useDraft } from '../draft'
@@ -36,7 +36,7 @@ export default function FlyScreen() {
   const brainMap = useBrainMap(fly)
   if (!registry.data) return <p>Loading…</p>
   const reg = registry.data
-  const rows = reg.objects.filter((o) => tabOf(o) === tab)      // every registered object type, grouped by kind
+  const rows = byObjectOrder(reg.objects.filter((o) => tabOf(o) === tab))      // every registered object type, grouped by kind, in display order
   const wholeSenses = reg.senses.filter((s) => s.scope === 'whole_fly')
 
   const attached = new Set(Object.entries(fly.attachments).filter(([, v]) => v.length).map(([k]) => k))
