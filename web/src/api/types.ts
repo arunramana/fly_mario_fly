@@ -1148,6 +1148,11 @@ export interface components {
             name: string;
             /** Note */
             note: string;
+            /**
+             * Order
+             * @default 1000
+             */
+            order: number;
         };
         /**
          * ObjectOnScreen

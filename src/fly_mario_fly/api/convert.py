@@ -5,8 +5,11 @@ import base64
 import struct
 import zlib
 from dataclasses import asdict, replace
+from functools import lru_cache
+from pathlib import Path
 
 import numpy as np
+import yaml
 
 from fly_mario_fly import registry
 from fly_mario_fly.contracts import FlyConfig, Scene
@@ -26,8 +29,20 @@ def _knobs(plugin) -> list:
     return [knob_ui(k) for k in getattr(plugin, "knobs", ())]
 
 
+ORDER_FILE = Path(__file__).resolve().parents[3] / "configs" / "object_order.yaml"      # the display order of things
+
+
+@lru_cache(maxsize=1)
+def _object_ranks() -> dict:
+    """{plug-in name: display rank} from configs/object_order.yaml (every tab's list, one after the other)."""
+    lists = yaml.safe_load(ORDER_FILE.read_text(encoding="utf-8"))
+    return {n: i for i, n in enumerate(n for names in lists.values() for n in names)}
+
+
 def registry_info(levels: list, presets: list) -> S.RegistryInfo:
     objs = registry.list_plugins("objects")
+    ranks = _object_ranks()
+    base = len(ranks)
     senses = registry.list_plugins("senses")
     shapes = registry.list_plugins("shapes")
     actions = registry.list_plugins("actions")
@@ -37,7 +52,8 @@ def registry_info(levels: list, presets: list) -> S.RegistryInfo:
     return S.RegistryInfo(
         objects=[S.ObjectInfo(name=o.name, label=o.label, note=getattr(o, "note", ""), kind=o.kind,
                               default_loom_shape=o.default_loom_shape,
-                              icon=f"/objects/{o.name}/icon.png") for o in objs.values()],
+                              icon=f"/objects/{o.name}/icon.png",
+                              order=ranks.get(o.name, base + i)) for i, o in enumerate(objs.values())],
         senses=[S.SenseInfo(name=s.name, label=s.label, effect=s.effect, scope=s.scope, colour=s.colour,
                             line=s.line, feeds=list(getattr(s, "feeds", ())), knobs=_knobs(s),
                             order=int(getattr(s, "order", 0)))

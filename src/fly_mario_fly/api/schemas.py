@@ -43,6 +43,7 @@ class ObjectInfo(BaseModel):
     kind: Literal["enemy", "obstacle", "pickup", "terrain"]
     default_loom_shape: str
     icon: str = ""                        # URL of its picture (GET /objects/{type}/icon.png); the page shows a plain square if it fails
+    order: int = 1000                     # display rank (configs/object_order.yaml): enemies, objects, power-ups; unlisted types come last
 
 
 class SenseInfo(BaseModel):

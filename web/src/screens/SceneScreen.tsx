@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom'
 import { api, thumbnailUrl } from '../api/client'
 import type { LevelInfo, Scene } from '../api/models'
 import { everythingPicked, loadScenes, saveScene, useDraft } from '../draft'
-import { objectRank } from '../components/senseUtil'
 
 type Mods = Scene['modifiers']
 const sameMods = (a: Mods, b: Mods) => JSON.stringify(a) === JSON.stringify(b)
@@ -43,6 +42,7 @@ export default function SceneScreen() {
   const shown = kind === 'all' ? all : all.filter((l) => l.kind === kind)
   const startKind = scene.start === 'level_start' ? 'level_start' : 'moment'
   const objLabel = (n: string) => registry.data.objects.find((o) => o.name === n)?.label ?? n
+  const objOrder = (n: string) => registry.data.objects.find((o) => o.name === n)?.order ?? 1000      // the API's display order
 
   // Test-scene chips come from registry data: each modifier that takes no parameters (Whole level, No enemies).
   const chips: { key: string; label: string; mods: Mods }[] = registry.data.scene_modifiers
@@ -97,7 +97,7 @@ export default function SceneScreen() {
           <p className="facts">
             {level?.objects == null
               ? 'Not scanned yet: every kind of thing is offered on the Fly page.'
-              : `Things found in this level: ${[...level.objects].sort((a, b) => objectRank(a) - objectRank(b)).map(objLabel).join(', ') || 'none'}${level.partial ? ' (so far)' : ''}.`}
+              : `Things found in this level: ${[...level.objects].sort((a, b) => objOrder(a) - objOrder(b)).map(objLabel).join(', ') || 'none'}${level.partial ? ' (so far)' : ''}.`}
           </p>
         </section>
 

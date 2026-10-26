@@ -1,0 +1,5 @@
+# The order things are listed in the web app (Fly, Scene and Moment screens): enemies, then objects, then power-ups.
+# Names are plug-in names. A type not listed here comes after these, in the registry's order.
+enemies: [goomba, koopa, piranha, hammer_bro, buzzy_beetle, podoboo, red_koopa]
+objects: [pipe, step, pit, qblock, usedblock, brick, ceiling_block]
+powerups: [mushroom, fire_flower, one_up, star, coin]
