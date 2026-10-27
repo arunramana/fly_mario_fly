@@ -49,7 +49,18 @@ def test_dependabot_covers_every_ecosystem_and_protects_the_pins():
     assert {u["directory"] for u in cfg["updates"]} == {"/", "/web"}
     pip = next(u for u in cfg["updates"] if u["package-ecosystem"] == "pip")
     ignored = {i["dependency-name"] for i in pip["ignore"]}
-    assert {"numpy", "gym", "nes-py", "gym-super-mario-bros", "opencv-python-headless"} <= ignored
+    assert {"numpy", "gym", "nes-py", "gym-super-mario-bros", "opencv-python-headless", "scipy", "pyarrow", "pyglet", "contourpy"} <= ignored
+
+
+def test_every_numpy_bound_ignore_matches_a_real_constraint():
+    """The ignores exist because numpy stays below 1.27; if that ever changes, these ignores must be revisited."""
+    import tomllib
+    deps = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["dependencies"]
+    assert any(d.replace(" ", "").startswith("numpy") and "<1.27" in d.replace(" ", "") for d in deps)
+    cfg = yaml.safe_load((GH / "dependabot.yml").read_text(encoding="utf-8"))
+    pip = next(u for u in cfg["updates"] if u["package-ecosystem"] == "pip")
+    by_name = {i["dependency-name"]: i.get("versions") for i in pip["ignore"]}
+    assert by_name["scipy"] == [">=1.18"] and by_name["pyarrow"] == [">=24"] and by_name["pyglet"] is None
 
 
 def test_codeowners_covers_everything_and_names_real_paths():

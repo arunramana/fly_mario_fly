@@ -45,4 +45,6 @@ What is already in the repository, and the settings that only the owner can swit
 ## When Dependabot opens a PR
 
 CI runs the tests without data. For a bump of `numpy`, `pyarrow`, `scipy`, `pydantic`, `fastapi` or the MCP SDK, also run the data-backed suite and the demo before merging: a numerical library can change results that CI cannot see.
+Some updates are **ignored on purpose** in `.github/dependabot.yml` because the project stays on numpy 1.26 (the emulator wrapper breaks under numpy 2): `scipy` 1.18+ and `contourpy` 1.4+ need numpy 2 (pip cannot resolve them), `pyarrow` 24+ installs but then refuses to import without numpy 2 (so CI's install step would pass and every run would break), `pyglet` 2.x is outside `nes-py`'s requirement, and `nes-py`, `gym-super-mario-bros`, `gym`, `numpy` and `opencv-python-headless` are pinned. Moving the project to numpy 2 is a decision for its own PR (the emulator stack first), after which these ignores go.
+
 `requirements.txt` holds the exact pins (Python 3.12); Dependabot edits one line at a time, so after a bump make sure `pip install -r requirements.txt && pip check` is still clean.
