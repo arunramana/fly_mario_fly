@@ -29,6 +29,13 @@ jobs:
       # FLY_MARIO_FLY_DATA is deliberately unset: tests that need the 1 GB MaleCNS weights skip, nothing is downloaded.
       - name: Tests
         run: python -m pytest tests -q --timeout=600
+      # The lite server must start with only its own, smaller set of packages (no pandas / pyarrow / cma).
+      - name: Lite server imports with its own requirements
+        run: |
+          python -m venv /tmp/lite-venv
+          /tmp/lite-venv/bin/pip install -q -r deploy/lite/requirements.txt
+          /tmp/lite-venv/bin/pip install -q --no-deps .
+          /tmp/lite-venv/bin/python -c "import sys; import fly_mario_fly.lite.app, fly_mario_fly.lite.engine; bad = [m for m in ('pandas', 'pyarrow', 'cma') if m in sys.modules]; assert not bad, bad"
 
   web:
     name: web
@@ -47,6 +54,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+      - run: npm run build:lite
 
   rules:
     name: rules
