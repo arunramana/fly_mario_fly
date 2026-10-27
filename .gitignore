@@ -60,3 +60,5 @@ Thumbs.db
 # GIFs are generated output too; documentation GIFs live under docs/
 *.gif
 !/docs/**/*.gif
+deploy/lite/bundle/
+!deploy/lite/requirements.txt

@@ -41,6 +41,18 @@ export type ErrorEvent = S['ErrorEvent']
 export type RunEvent = S['RunEvent']
 export type ClientMessage = S['ClientMessage']
 
+/** A run on the lite server: queued, running (frame of max_frames), done (a video) or failed. */
+export interface LiteRun {
+  run_id: string
+  status: 'queued' | 'running' | 'done' | 'failed'
+  position?: number
+  frame?: number
+  max_frames?: number
+  error?: string | null
+  video_url?: string
+  summary?: { result: RunResult; video_frames: number; fps: number; wall_s: number; video_bytes: number }
+}
+
 /** A run's live connection. Events arrive through `onEvent`; the rest are the client messages of the API. */
 export interface RunStream {
   onEvent(cb: (e: RunEvent) => void): void

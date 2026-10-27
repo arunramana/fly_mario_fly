@@ -1,0 +1,32 @@
+# The lite server's dependencies: the pins of ../../requirements.txt (a test keeps them identical) minus everything it does not
+# import: no pandas / pyarrow / cma (they read and search the MaleCNS data), no httpx / websockets / mcp, no test tools.
+# setuptools stays: mario/env.py imports it before gym on Python 3.12.
+# Install:  pip install -r deploy/lite/requirements.txt && pip install --no-deps .
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.15.1
+certifi==2026.10.23
+click==8.5.0
+cloudpickle==3.1.2
+fastapi==0.162.0
+gym-notices==0.1.0
+gym-super-mario-bros==7.4.0
+gym==0.23.1
+h11==0.16.0
+idna==3.20
+imageio-ffmpeg==0.6.0
+nes_py==8.2.1
+numpy==1.26.4
+opencv-python-headless==4.9.0.80
+pillow==13.0.0
+pydantic==2.14.1
+pydantic_core==2.50.1
+pyglet==1.5.21
+PyYAML==6.0.3
+scipy==1.17.1
+setuptools==84.2.1
+starlette==1.10.0
+tqdm==4.70.1
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+uvicorn==0.54.0

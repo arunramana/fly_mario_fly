@@ -7,6 +7,7 @@ import { OBJECT_TABS, byOrder, splitLabel, tabOf } from '../components/senseUtil
 import { AdvancedDrawer, type KnobSection } from '../components/Knobs'
 import { errText, useStartRun } from '../hooks'
 import { useDraft } from '../draft'
+import { FEATURES, LITE_PRESETS } from '../features'
 
 const toggleIn = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v])
 
@@ -15,6 +16,7 @@ function useBrainMap(fly: Fly) {
   const [url, setUrl] = useState('')
   const key = JSON.stringify([fly.attachments, fly.whole_fly, fly.actions, fly.loom_shapes])
   useEffect(() => {
+    if (FEATURES.lite) return          // the lite server draws no brain map
     let live = true
     const t = setTimeout(() => {
       api.getBrainMap(fly).then((u) => { if (live) setUrl((old) => { if (old) URL.revokeObjectURL(old); return u }) }).catch(() => {})
@@ -37,6 +39,7 @@ export default function FlyScreen() {
   if (!registry.data) return <p>Loading…</p>
   const reg = registry.data
   const rows = byOrder(reg.objects.filter((o) => tabOf(o) === tab))      // every registered object type, grouped by kind, in the API's display order
+  const presets = FEATURES.lite ? reg.presets.filter((p) => LITE_PRESETS.includes(p)) : reg.presets      // the lite build offers the blank fly only
   const wholeSenses = reg.senses.filter((s) => s.scope === 'whole_fly')
 
   const attached = new Set(Object.entries(fly.attachments).filter(([, v]) => v.length).map(([k]) => k))
@@ -50,7 +53,7 @@ export default function FlyScreen() {
   const nSenses = reg.senses.filter((s) => senseOn(s.name)).length
   const nTuned = Object.values(fly.dials ?? {}).filter((d) => d.tuned).length
   const tunedNote = nTuned ? `${nTuned} knob${nTuned === 1 ? '' : 's'} changed by evolution.` : 'No knob changed by evolution.'
-  const startRun = () => run.mutate({ fly, scene, from_moment: null, dials })
+  const startRun = () => run.mutate({ fly, scene: FEATURES.lite ? { ...scene, start: 'level_start' } : scene, from_moment: null, dials })
 
   return (
     <>
@@ -62,10 +65,10 @@ export default function FlyScreen() {
               <p className="lead">Each row is a thing in the level. Any sense can be given to any thing. Open a sense&apos;s lab to see how it works.</p>
             </div>
             <label className="preset">Preset
-              <select aria-label="preset" value={reg.presets.includes(fly.name) ? fly.name : ''}
+              <select aria-label="preset" value={presets.includes(fly.name) ? fly.name : ''}
                 onChange={async (e) => setFly(await api.getFly(e.target.value))}>
                 <option value="" disabled>choose…</option>
-                {reg.presets.map((p) => <option key={p} value={p}>{p}</option>)}
+                {presets.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             </label>
           </div>
@@ -115,13 +118,13 @@ export default function FlyScreen() {
           <section className="box this-fly">
             <h2 className="label">This fly</h2>
             <p>{fly.name} · {nSenses} senses on · {fly.actions.length} actions</p>
-            <div className="brainmap">{brainMap && <img src={brainMap} alt="the neuron groups this fly uses, at their real somas" />}</div>
+            {!FEATURES.lite && <div className="brainmap">{brainMap && <img src={brainMap} alt="the neuron groups this fly uses, at their real somas" />}</div>}
             <div className="legend">
               <span><i style={{ background: 'var(--teal)' }} />Teal = from the real fly brain</span>
               <span><i style={{ background: 'var(--orange)' }} />Orange = invented by us</span>
             </div>
           </section>
-          <div className="dials" role="group" aria-label="Dials">
+          {!FEATURES.lite && <div className="dials" role="group" aria-label="Dials">
             <span className="label">Dials</span>
             {(['original', 'tuned'] as const).map((d) => (
               <button key={d} className={`chip ${dials === d ? 'on' : ''}`} aria-pressed={dials === d} onClick={() => setDials(d)}>
@@ -129,12 +132,12 @@ export default function FlyScreen() {
               </button>
             ))}
             <small>{dials === 'original' ? 'Every knob at the value set by hand before evolution.' : tunedNote}</small>
-          </div>
+          </div>}
           <button className="adv-toggle" onClick={() => { window.scrollTo(0, 0); setOpen(true) }} aria-expanded={open}>
             <span>Advanced: fine-tune</span><span>›</span>
           </button>
           <div className="fly-foot">
-            <button className="btn" onClick={() => setNaming(!naming)}>Save fly as…</button>
+            {FEATURES.saveFly && <button className="btn" onClick={() => setNaming(!naming)}>Save fly as…</button>}
             <button className="btn gold big" onClick={startRun} disabled={run.isPending}>▶ Run</button>
           </div>
           {naming && (

@@ -7,6 +7,7 @@ import FlyScreen from './screens/FlyScreen'
 import RunScreen from './screens/RunScreen'
 import MomentScreen from './screens/MomentScreen'
 import EvolutionScreen from './screens/EvolutionScreen'
+import LiteRunScreen from './screens/LiteRunScreen'
 import { FEATURES } from './features'
 
 const STEPS = ['/scene', '/fly', '/run', '/evolution']
@@ -61,8 +62,8 @@ export default function App() {
           <Route path="/" element={<Navigate to="/scene" replace />} />
           <Route path="/scene" element={<SceneScreen />} />
           <Route path="/fly" element={<FlyScreen />} />
-          <Route path="/run/:runId" element={<RunScreen />} />
-          <Route path="/moment/:momentId" element={<MomentScreen />} />
+          <Route path="/run/:runId" element={FEATURES.lite ? <LiteRunScreen /> : <RunScreen />} />
+          {FEATURES.moments && <Route path="/moment/:momentId" element={<MomentScreen />} />}
           {FEATURES.evolution && <Route path="/evolution/:id?" element={<EvolutionScreen />} />}
         </Routes>
       </main>
