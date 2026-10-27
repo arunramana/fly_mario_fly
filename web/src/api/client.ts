@@ -1,9 +1,10 @@
 // The only module components import for data. `python -m fly_mario_fly.api` serves it (default http://127.0.0.1:8000,
 // override with VITE_API_URL); VITE_MOCK=1 swaps in the offline mock.
 import type {
-  EvolveRequest, Fly, JobDetail, JobSummary, LevelInfo, MomentSummary, TestJobRequest, Registry, RunEvent, RunRequest, RunResult, RunStream, RunSummary, Try, VideoRequest, VideoSummary,
+  EvolveRequest, Fly, JobDetail, LiteRun, JobSummary, LevelInfo, MomentSummary, TestJobRequest, Registry, RunEvent, RunRequest, RunResult, RunStream, RunSummary, Try, VideoRequest, VideoSummary,
 } from './models'
 import { mockApi } from './mock'
+import { FEATURES } from '../features'
 
 export interface Api {
   getRegistry(): Promise<Registry>
@@ -14,6 +15,8 @@ export interface Api {
   startRun(req: RunRequest): Promise<{ run_id: string }>
   openRun(runId: string): RunStream
   getRun(runId: string): Promise<RunResult | null>
+  /** Lite server only: where a run is (queued / running / done with its video). */
+  getLiteRun(runId: string): Promise<LiteRun>
   /** frame: null = the moment is "now"; a number = one of the recent in-memory snapshots. */
   saveMoment(runId: string, name: string, frame?: number | null): Promise<MomentSummary>
   getRunMoments(runId: string): Promise<MomentSummary[]>
@@ -109,12 +112,16 @@ const httpApi: Api = {
       throw e
     }
   },
-  startRun: async (req) => ({ run_id: (await call<RunSummary>('POST', '/runs', req)).id }),
+  startRun: async (req) => {
+    const r = await call<{ id?: string; run_id?: string }>('POST', '/runs', req)       // the full API says `id`, the lite one `run_id`
+    return { run_id: (r.run_id ?? r.id) as string }
+  },
   openRun,
+  getLiteRun: (runId) => call('GET', `/runs/${enc(runId)}`),
   getRun: async (runId) => (await call<{ result: RunResult | null }>('GET', `/runs/${enc(runId)}`)).result,
   saveMoment: (runId, name, frame = null) => call('POST', `/runs/${enc(runId)}/moments`, { name, frame }),
   getRunMoments: (runId) => call('GET', `/runs/${enc(runId)}/moments`),
-  getRuns: () => call('GET', '/runs'),
+  getRuns: async () => (FEATURES.lite ? [] : call<RunSummary[]>('GET', '/runs')),       // the lite server keeps no run list
   getMoment: (id) => call('GET', `/moments/${enc(id)}`),
   getTries: (momentId) => call('GET', `/moments/${enc(momentId)}/tries`),
   getBrainMap: async (fly) => {

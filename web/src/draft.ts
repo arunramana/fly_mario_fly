@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react'
+import { FEATURES } from './features'
 import type { Dials, Fly, OverlayItem, RunRequest, Scene } from './api/models'
 
 export const emptyFly: Fly = {
@@ -11,7 +12,7 @@ export const defaultScene: Scene = {
 
 /** What the user has actually chosen on the Scene page: the defaults in `defaultScene` do not count until clicked. */
 export interface Picked { level: boolean; test: boolean; start: boolean }
-export const nothingPicked: Picked = { level: false, test: false, start: false }
+export const nothingPicked: Picked = { level: false, test: false, start: FEATURES.lite }      // the lite build has only the level start
 export const everythingPicked: Picked = { level: true, test: true, start: true }
 
 export interface Draft {

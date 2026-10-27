@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { api, thumbnailUrl } from '../api/client'
 import type { LevelInfo, Scene } from '../api/models'
 import { everythingPicked, loadScenes, saveScene, useDraft } from '../draft'
+import { FEATURES } from '../features'
 
 type Mods = Scene['modifiers']
 const sameMods = (a: Mods, b: Mods) => JSON.stringify(a) === JSON.stringify(b)
@@ -23,7 +24,7 @@ export default function SceneScreen() {
   const [saved, setSaved] = useState(false)
   const levels = useQuery({ queryKey: ['levels'], queryFn: api.getLevels })
   const registry = useQuery({ queryKey: ['registry'], queryFn: api.getRegistry })
-  const runs = useQuery({ queryKey: ['runs'], queryFn: api.getRuns })
+  const runs = useQuery({ queryKey: ['runs'], queryFn: api.getRuns, enabled: FEATURES.moments })
   // Saved moments of this level, newest runs first (the API lists moments per run).
   const moments = useQuery({
     queryKey: ['moments', scene.level_id, runs.data?.length ?? 0],
@@ -49,7 +50,7 @@ export default function SceneScreen() {
     .filter((m) => !m.params.length).map((m) => ({ key: m.name, label: m.label, mods: [[m.name, {}]] }))
 
   const setStart = (start: Scene['start']) => { setScene({ ...scene, start }); setPicked({ ...picked, start: true }) }
-  const pickLevel = (l: LevelInfo) => { setScene({ ...scene, level_id: l.id, start: 'level_start' }); setPicked({ ...picked, level: true, start: false }) }
+  const pickLevel = (l: LevelInfo) => { setScene({ ...scene, level_id: l.id, start: 'level_start' }); setPicked({ ...picked, level: true, start: FEATURES.lite }) }
   const missing = [!picked.level && 'a level', !picked.test && 'a test scene', !picked.start && 'a start'].filter(Boolean) as string[]
   const ready = missing.length === 0
   const sceneName = `${level?.label ?? scene.level_id} · ${chips.find((c) => sameMods(c.mods, scene.modifiers))?.label ?? 'custom'}`
@@ -79,7 +80,7 @@ export default function SceneScreen() {
           ))}
         </div>
         <p className="caption">
-          {kind === 'all'
+          {FEATURES.lite ? `${all.length} levels on this server` : kind === 'all'
             ? `Showing ${all[0].label} to ${all[15]?.label ?? all[all.length - 1].label} · scroll for ${all[16]?.label ?? ''} … ${all[31]?.label ?? ''}, ${all.slice(32).map((l) => l.label.toLowerCase().replace('whole game', 'the whole game').replace(/^(lost levels|random stages)$/, (m) => cap(m))).join(', ')}`
             : `${shown.length} ${kind} levels`}
         </p>
@@ -110,7 +111,7 @@ export default function SceneScreen() {
                 onClick={() => { setScene({ ...scene, modifiers: c.mods }); setPicked({ ...picked, test: true }) }}>{c.label}</button>
             ))}
           </div>
-          <div className="group">
+          {FEATURES.moments && <div className="group">
             <h3>Start from</h3>
             <label className="radio"><input type="radio" name="start" checked={picked.start && startKind === 'level_start'} onChange={() => setStart('level_start')} />the level start</label>
             <label className="radio"><input type="radio" name="start" checked={picked.start && startKind === 'moment'} disabled={!moments.data?.length}
@@ -120,7 +121,7 @@ export default function SceneScreen() {
                 {moments.data?.map((m) => <option key={m.id} value={m.id}>{level?.label ?? m.scene.level_id} · {m.name} (x {Math.round(m.x)})</option>)}
               </select>
             )}
-          </div>
+          </div>}
         </section>
 
         <div className="scene-foot">

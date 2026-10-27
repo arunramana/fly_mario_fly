@@ -208,6 +208,7 @@ export const mockApi: Api = {
   },
   openRun,
   getRun: () => delay(null),
+  getLiteRun: (runId) => delay({ run_id: runId, status: 'failed', error: 'The offline mock has no lite server.' }),
   saveMoment: (runId, name, frame) => {
     const req = runs.get(runId)?.req
     const m: MomentSummary = {
