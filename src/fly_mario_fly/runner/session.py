@@ -35,10 +35,13 @@ from fly_mario_fly.senses.kit.memory import SenseMemory
 _BRAINS: dict = {}
 
 
+BRAIN_LOADER = None          # spec -> Brain; set by runner.brainstore.install() on a server that ships its brains as files
+
+
 def get_brain(spec):
     """Brains are big and read-only: build/load once per process and mechanism set."""
     if spec not in _BRAINS:
-        _BRAINS[spec] = build_brain(spec)
+        _BRAINS[spec] = (BRAIN_LOADER or build_brain)(spec)
     return _BRAINS[spec]
 
 

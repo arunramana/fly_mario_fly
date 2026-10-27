@@ -14,8 +14,6 @@ import urllib.request
 from pathlib import Path
 
 import numpy as np
-import pyarrow as pa
-import pyarrow.feather as feather
 
 from fly_mario_fly.fly.groups import type_counts
 
@@ -33,6 +31,13 @@ NT_SIGN = {"acetylcholine": 1.0, "dopamine": 1.0, "gaba": -1.0, "glutamate": -1.
 # Verified against the downloaded data; a changed file fails loudly at load time (per-type counts: groups.yaml).
 N_BODIES = 211_577
 MIN_SYN = 5   # a connection to or from an added neuron needs this many synapses (the project's N = 5 rule)
+
+
+def _arrow():
+    """pyarrow, imported when the connectome files are actually read (a server that only runs cached brains never needs it)."""
+    import pyarrow as pa
+    import pyarrow.feather as feather
+    return pa, feather
 
 
 def data_dir() -> Path:
@@ -99,6 +104,7 @@ class Connectome:
 
     # ---- bodies -----------------------------------------------------------------------------------
     def _load_annotations(self) -> None:
+        _, feather = _arrow()
         t = feather.read_table(self.paths["annotations"],
                                columns=["bodyId", "type", "instance", "rootSide", "somaSide", "subclass", "somaLocation"])
         order = np.argsort(t.column("bodyId").to_numpy(), kind="stable")
@@ -145,6 +151,7 @@ class Connectome:
 
     def signs(self, body_ids) -> np.ndarray:
         """+1 / -1 / 0 per body from its consensus transmitter (the file holds one row per body)."""
+        _, feather = _arrow()
         t = feather.read_table(self.paths["neurotransmitters"], columns=["body", "consensus_nt"])
         body, nt = t.column("body").to_numpy(), t.column("consensus_nt").to_pylist()
         sign = np.array([NT_SIGN.get(v.lower(), 0.0) if v else 0.0 for v in nt])
@@ -158,6 +165,7 @@ class Connectome:
     def edge_batches(self):
         """(pre, post, weight) numpy arrays, one Arrow record batch at a time."""
         path = str(self.paths["weights"])
+        pa, feather = _arrow()
         try:
             reader = pa.ipc.open_file(path)
             batches = (reader.get_batch(i) for i in range(reader.num_record_batches))
