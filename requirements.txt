@@ -9,7 +9,7 @@ click==8.5.0
 cloudpickle==3.1.2
 cma==4.5.0
 cryptography==50.0.2
-fastapi==0.150.0
+fastapi==0.162.0
 gym==0.23.1
 gym-notices==0.1.0
 gym-super-mario-bros==7.4.0
@@ -44,7 +44,7 @@ python-multipart==0.0.32
 pytz==2026.5
 PyYAML==6.0.3
 scipy==1.17.1
-setuptools==84.1.0
+setuptools==84.2.1
 six==1.17.0
 sse-starlette==3.5.1
 starlette==1.10.0
