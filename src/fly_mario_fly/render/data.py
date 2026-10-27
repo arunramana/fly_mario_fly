@@ -40,3 +40,4 @@ class FrameData:
     rates: dict = field(default_factory=dict)    # {group: mean rate}
     scroll_x: float = 0.0                       # level x of the screen's left edge, to put the overlay on the screen
     frame: int = 0
+    player: dict | None = None                  # hitbox + pose of the player, for the skin (render/skin.py)

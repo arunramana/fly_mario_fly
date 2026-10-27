@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 
 from fly_mario_fly.render import palette as P
+from fly_mario_fly.render import skin
 from fly_mario_fly.render.data import BrainData, FrameData
 from fly_mario_fly.runner import Options, Run, brain_display, fly_from_dict
 
@@ -72,12 +73,21 @@ def frames(run: Run):
     run.start()
     history: dict = {g: [] for g in run.brain.masks}
     prev = None
+    last_x = None
+    use_skin = skin.enabled()
     while not run.finished:
         rec = run.step()
         for g, v in rec.rates.items():
             history[g].append(v)
         rates = {g: float(np.mean(h[-SMOOTH:])) for g, h in history.items()}
         first = prev is None                         # no earlier picture: use this frame's, with its own scroll
-        yield FrameData(game=rec.screen if first else prev, overlay=_overlay(rec.outputs), rates=rates,
+        m = rec.mario
+        player = dict(x=m.x, y=m.y, w=m.w, h=m.h, big=m.power != "small", airborne=m.airborne, facing=m.facing,
+                      moving=last_x is not None and int(m.x) != last_x)
+        last_x = int(m.x)
+        game = rec.screen if first else prev
+        if use_skin and not first:
+            game = skin.apply(game, player, rec.scroll_x, rec.frame)
+        yield FrameData(game=game, player=player, overlay=_overlay(rec.outputs), rates=rates,
                         scroll_x=float(rec.scroll_x_after if first else rec.scroll_x), frame=rec.frame)
         prev = rec.screen
