@@ -1,0 +1,64 @@
+# Never saved: environments and caches, build output, run output (re-renderable), and the connectome data (lives
+# outside the repo at $FLY_MARIO_FLY_DATA).
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+node_modules/
+dist/
+# Profiler output
+prof
+*.prof
+*.pstats
+# Videos and images are re-rendered from saved data; the few that are documentation were force-added (web/design/).
+*.mp4
+*.png
+!/assets/sprites/*.png
+*.parquet
+*.feather
+# Throwaway local state
+/runs/
+/logs/
+.claude/worktrees/
+# Local tooling that stays on this machine
+/.agents/
+/.claude/skills/
+/claude_setup/
+/skills-lock.json
+
+# Added for open-source contributions: data, videos, secrets, editor/OS/test leftovers
+/data/
+/videos/
+*.avi
+*.mov
+*.webm
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.vscode/
+.idea/
+.DS_Store
+.coverage
+htmlcov/
+build/
+# A README demo GIF is documentation: allowed
+!/docs/media/*.gif
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Generated output: renders, screenshots, galleries, run folders (all re-creatable)
+renders/
+screenshots/
+pit_gallery/
+tools/_out/
+runs/
+Thumbs.db
+# GIFs are generated output too; documentation GIFs live under docs/
+*.gif
+!/docs/**/*.gif
+deploy/lite/bundle/
+!deploy/lite/requirements.txt
