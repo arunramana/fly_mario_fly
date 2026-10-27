@@ -8,4 +8,4 @@
 
 The run is the same `runner.Run` as the full tool's: same decisions, same hash. Only the picture is lighter.
 """
-VERSION = "1"        # bump when a change would make an old cached video wrong (it is part of every cache key)
+VERSION = "2"        # bump when a change would make an old cached video wrong (it is part of every cache key)

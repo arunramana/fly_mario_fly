@@ -103,7 +103,12 @@ def terminal_positions(body_ids) -> np.ndarray:
 
 def brain_display(fly: FlyConfig) -> BrainDisplay:
     """The display data for the brain this fly runs on."""
-    brain = get_brain(C.brain_spec(fly))
+    return brain_display_for(C.brain_spec(fly))
+
+
+def brain_display_for(spec) -> BrainDisplay:
+    """The display data for the brain of a mechanism set (what the lite bundle stores for each brain)."""
+    brain = get_brain(spec)
     sid, sxyz = all_somata()
     ids = brain.body_ids
     j = np.clip(np.searchsorted(sid, ids), 0, len(sid) - 1)

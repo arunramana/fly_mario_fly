@@ -24,6 +24,11 @@ def spec_key(spec) -> str:
                                        # mechanisms that add no neurons (escape, walking) share one brain
 
 
+def all_specs() -> list:
+    """Every mechanism set that has a brain (what export_brains copies)."""
+    return fb.all_specs()
+
+
 def export_brains(data_root: Path, dest: Path) -> dict:
     """Copy each cached brain npz of `fb.all_specs()` into `dest`; write manifest.json {key: {file, sha256, neurons}}."""
     dest = Path(dest)
