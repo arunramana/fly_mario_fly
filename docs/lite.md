@@ -11,7 +11,7 @@ browser (GitHub Pages)  ->  POST /runs  ->  lite server  ->  worker process: the
 ```
 
 The run is the full tool's run, frame for frame: the same buttons and the same run hash (a test checks this). Only the picture is
-lighter: 15 fps instead of 60, 512 x 504, sense boxes and a thin strip of neuron activity under it.
+lighter: 15 fps instead of 60 and 788 x 504: the brain panel (the fly's real neurons at their somas, glowing with their group's activity, and the index of groups with a bar each), the game at x2 with the sense boxes, and a strip of the buttons held. The panel is drawn from `panels/*.npz` in the bundle (about 0.3 MB), so the server still needs no data; brightness is a group's rate against the largest rate it has had so far in the run.
 
 ## Run it on your machine
 
@@ -53,9 +53,9 @@ cached video**, which is what keeps a busy day cheap. A scene that needs a diffe
 
 | | |
 | --- | --- |
-| time | about 12 s on one core (the plain run without video: 10 s) |
+| time | about 12-14 s on one core (the plain run without video: 10 s) |
 | memory | the server about 90 MB, the worker about 110 MB: fits a 512 MB machine |
-| video | about 1 MB for 39 s of play |
+| video | about 1.3 MB for 39 s of play |
 | cached answer | a few milliseconds |
 | bundle on disk | about 40 MB |
 
