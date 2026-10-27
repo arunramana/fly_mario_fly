@@ -47,8 +47,8 @@ export default function LiteRunScreen() {
             {info ? ` · ${info.req.fly.name}` : ''}
           </p>
           <p className="muted">
-            The video is drawn at {s?.fps ?? 15} frames a second (the game ran at 60). The boxes are what the fly&apos;s senses look at; the bars under the picture are
-            its neurons and the squares the buttons it holds.
+            The video is drawn at {s?.fps ?? 15} frames a second (the game ran at 60). Left: the fly&apos;s real neurons at their somas, lit by how active
+            their group is, and the groups listed below. The boxes on the game are what its senses look at; the squares under it are the buttons it holds.
           </p>
         </>
       )}

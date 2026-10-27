@@ -29,7 +29,7 @@ MB = 2**20
 # Budgets for one full 1-1 run of the champion fly (about 2350 frames, a flag run).
 WALL_S = 30 * SLACK          # one run with its video, measured ~12 s
 RSS_MB = 350 * SLACK         # measured ~105 MB, one brain, no data, no pyarrow
-VIDEO_MB = 2.0               # measured ~0.95 MB for a 39 s clip
+VIDEO_MB = 2.5               # measured ~1.3 MB for a 39 s clip with the brain panel
 OVERHEAD = 1.7 * SLACK       # drawing + encoding vs the same run with no video: measured ~1.3x
 BUNDLE_MB = 60               # brains 41 MB + a few small files
 HEAVY = ("pyarrow", "pandas", "cma", "httpx", "websockets")
@@ -67,7 +67,7 @@ SCRIPT = textwrap.dedent('''
     from fly_mario_fly.lite.config import LiteConfig
     from fly_mario_fly.lite.settings import Settings
     from fly_mario_fly.runner import session
-    cfg = LiteConfig()
+    cfg = LiteConfig(bundle_dir=Path(bundle_dir))
     engine.init_worker(bundle_dir, int(keep))
     t0 = time.perf_counter()
     out = engine.render(settings_json, out_mp4, out_mp4 + ".progress", cfg.worker_json())
@@ -81,11 +81,16 @@ SCRIPT = textwrap.dedent('''
     r = Run(V.with_dials(V.dto_to_fly(st.fly_dto()), st.dials), st.scene(cfg), Options())
     res = r.play(); r.close()
     plain_s = time.perf_counter() - t0
+    # VmHWM is this process's own peak; ru_maxrss can carry the (large) test runner's peak over fork + exec, so prefer VmHWM
+    rss = None
     try:
-        import resource
-        rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 if sys.platform != "darwin" else 1024 * 1024)
-    except ImportError:
-        rss = None
+        rss = int([l for l in open("/proc/self/status") if l.startswith("VmHWM")][0].split()[1]) / 1024
+    except OSError:
+        try:
+            import resource
+            rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 if sys.platform != "darwin" else 1024 * 1024)
+        except ImportError:
+            pass
     heavy = [m for m in %r if m in sys.modules]
     print("RESULT" + json.dumps({"hash": out["result"]["hash"], "plain_hash": res.hash, "outcome": out["result"]["outcome"],
           "frames": out["result"]["counts"]["frames"], "video_bytes": out["video_bytes"], "video_frames": out["video_frames"],
@@ -160,6 +165,7 @@ def test_the_video_is_small(champion_run):
 
 def test_the_bundle_is_small(lite_bundle):
     dest, info = lite_bundle
+    assert len(list((dest / "panels").glob("*.npz"))) == len(list((dest / "brains").glob("*.npz")))     # one brain panel per brain
     assert info["bytes"] < BUNDLE_MB * MB, f"{info['bytes'] / MB:.1f} MB"
 
 

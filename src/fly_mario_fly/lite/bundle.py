@@ -3,6 +3,7 @@
     python -m fly_mario_fly.lite.bundle <dest> [--levels 1-1,1-2]      (on a machine that has the data, once)
 
     brains/manifest.json, brains/*.npz   the cached brains of every mechanism set (~41 MB in all)
+    panels/<brain>.npz                   what the video's brain panel draws: soma positions, colours, index rows (small)
     registry.json  levels.json  flies.json  fly_blank.json   the answers the page asks for before a run
     thumbs/<level>.png  icons/<object>.png                  pictures
     version.txt                                             part of every cache key: a new bundle never serves an old video
@@ -59,6 +60,8 @@ def build(dest: Path, data_root: Path, levels: tuple = ("1-1", "1-2")) -> dict:
     dest = Path(dest)
     dest.mkdir(parents=True, exist_ok=True)
     brainstore.export_brains(Path(data_root), dest / "brains")
+    from fly_mario_fly.lite import panel
+    panel.export(dest, brainstore.all_specs())
     # the catalogue reads this machine's saved runs for "cleared / dies at x": a public server shows no one's history
     lv = [d.model_copy(update={"status": "open", "status_text": ""}) for d in ports.level_catalogue() if d.id in levels]
     missing = sorted(set(levels) - {d.id for d in lv})
@@ -84,6 +87,8 @@ def build(dest: Path, data_root: Path, levels: tuple = ("1-1", "1-2")) -> dict:
     h = hashlib.sha256()
     for name in ("brains/manifest.json", "registry.json", "levels.json", "fly_blank.json"):
         h.update((dest / name).read_bytes())
+    for p in sorted((dest / "panels").glob("*.npz")):
+        h.update(p.read_bytes())
     (dest / "version.txt").write_text(h.hexdigest()[:12], encoding="utf-8")
     size = sum(p.stat().st_size for p in dest.rglob("*") if p.is_file())
     return {"bytes": size, "levels": [d.id for d in lv], "icons_missing": no_icon}

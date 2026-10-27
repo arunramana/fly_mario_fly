@@ -32,12 +32,13 @@ class LiteConfig:
     trust_proxy: bool = False                # read the client address from X-Forwarded-For (behind Fly.io / Cloud Run)
     seed: int = 101
     noop: int = 3
+    panels_dir: str = ""                     # worker side only: set from the bundle by worker_json
     version: str = ""                        # set from the bundle at start (see bundle.read_version)
 
     def worker_json(self) -> str:
         """The few values a worker process needs to play and draw a run (what `engine.render` rebuilds a config from)."""
         import json
-        return json.dumps({k: getattr(self, k) for k in ("scale", "stride", "crf", "wall_budget_s", "noop", "seed")})
+        return json.dumps({k: getattr(self, k) for k in ("scale", "stride", "crf", "wall_budget_s", "noop", "seed")} | {"panels_dir": str(self.bundle_dir / "panels")})
 
     @classmethod
     def from_env(cls) -> "LiteConfig":
