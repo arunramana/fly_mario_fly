@@ -26,7 +26,7 @@ mcp-types==2.3.0
 nes_py==8.2.1
 numpy==1.26.4
 opencv-python-headless==4.9.0.80
-opentelemetry-api==1.45.1
+opentelemetry-api==1.45.2
 packaging==26.3
 pandas==2.3.3
 pillow==13.0.0
